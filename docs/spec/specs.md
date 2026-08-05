@@ -4,6 +4,19 @@
 
 ---
 
+## Thông tin tài liệu
+
+| Thuộc tính | Giá trị |
+| --- | --- |
+| Tên tài liệu | Đặc tả Yêu cầu Hệ thống VieGym |
+| Loại tài liệu | Software Requirements Specification (SRS) |
+| Phiên bản | 1.0 |
+| Phạm vi áp dụng | Đồ án 6 tháng và nền tảng mở rộng startup sau này |
+| File chính thức | `docs/spec/specs.md` |
+| Ngôn ngữ | Tiếng Việt |
+
+---
+
 ## 1. Tổng quan dự án
 
 ### 1.1. Tên đề tài
@@ -82,7 +95,24 @@ Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
 
 ---
 
-## 3. Đối tượng sử dụng
+## 3. Thuật ngữ và viết tắt
+
+| Thuật ngữ | Ý nghĩa |
+| --- | --- |
+| BMI | Body Mass Index — chỉ số khối cơ thể |
+| BMR | Basal Metabolic Rate — năng lượng tiêu hao khi nghỉ ngơi |
+| TDEE | Total Daily Energy Expenditure — tổng năng lượng tiêu hao mỗi ngày |
+| Calories mục tiêu | Lượng kcal người dùng nên nạp mỗi ngày theo mục tiêu cá nhân |
+| Macro | Các nhóm dinh dưỡng chính: protein, carbohydrate và fat |
+| PR | Personal Record — thành tích tốt nhất của người dùng ở một bài tập |
+| AI Coach | Trợ lý AI tư vấn luyện tập và dinh dưỡng |
+| Meal Planner | Chức năng lập thực đơn và theo dõi dinh dưỡng hằng ngày |
+| JWT | JSON Web Token dùng cho xác thực API |
+| OTP | One-Time Password dùng để xác minh hoặc đặt lại mật khẩu |
+
+---
+
+## 4. Đối tượng sử dụng
 
 | Actor            | Vai trò              | Quyền hạn chính                                                             |
 | ---------------- | -------------------- | --------------------------------------------------------------------------- |
@@ -94,9 +124,9 @@ Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
 
 ---
 
-## 4. Phân hệ quản lý tài khoản
+## 5. Phân hệ quản lý tài khoản
 
-### 4.1. Chức năng
+### 5.1. Chức năng
 
 | Mã      | Chức năng        | Mô tả                                                             |
 | ------- | ---------------- | ----------------------------------------------------------------- |
@@ -109,7 +139,7 @@ Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
 | AUTH-07 | Cập nhật hồ sơ   | Người dùng cập nhật họ tên, ngày sinh, giới tính, ảnh đại diện    |
 | AUTH-08 | Đăng xuất        | Thu hồi refresh token và kết thúc phiên đăng nhập                 |
 
-### 4.2. Business rules
+### 5.2. Business rules
 
 - Email phải duy nhất trong hệ thống.
 - Mật khẩu phải được hash bằng BCrypt hoặc thuật toán tương đương.
@@ -120,9 +150,9 @@ Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
 
 ---
 
-## 5. Phân hệ hồ sơ sức khỏe
+## 6. Phân hệ hồ sơ sức khỏe
 
-### 5.1. Dữ liệu người dùng nhập
+### 6.1. Dữ liệu người dùng nhập
 
 | Trường             | Mô tả                                         | Bắt buộc |
 | ------------------ | --------------------------------------------- | :------: |
@@ -134,7 +164,7 @@ Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
 | Mức độ vận động    | Ít vận động, nhẹ, vừa, cao, rất cao           |    Có    |
 | Mục tiêu tập luyện | Giảm cân, tăng cân, tăng cơ, duy trì sức khỏe |    Có    |
 
-### 5.2. Chỉ số hệ thống tính toán
+### 6.2. Chỉ số hệ thống tính toán
 
 | Chỉ số                | Ý nghĩa                                       |
 | --------------------- | --------------------------------------------- |
@@ -146,7 +176,7 @@ Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
 | Carbohydrate mục tiêu | Lượng carbohydrate khuyến nghị mỗi ngày       |
 | Fat mục tiêu          | Lượng chất béo khuyến nghị mỗi ngày           |
 
-### 5.3. Công thức đề xuất
+### 6.3. Công thức đề xuất
 
 BMI:
 
@@ -186,7 +216,7 @@ Calories mục tiêu:
 | Tăng cơ  | TDEE + 200 đến 400 kcal, ưu tiên protein cao |
 | Duy trì  | Gần bằng TDEE                                |
 
-### 5.4. Business rules
+### 6.4. Business rules
 
 - Mỗi lần người dùng cập nhật cân nặng hoặc hồ sơ sức khỏe, hệ thống lưu lịch sử để vẽ biểu đồ.
 - Nếu thiếu dữ liệu bắt buộc, hệ thống không tính TDEE và phải yêu cầu hoàn thiện hồ sơ.
@@ -194,13 +224,13 @@ Calories mục tiêu:
 
 ---
 
-## 6. Phân hệ AI Coach
+## 7. Phân hệ AI Coach
 
-### 6.1. Mục tiêu
+### 7.1. Mục tiêu
 
 AI Coach là chức năng nổi bật của VieGym, hỗ trợ người dùng nhận tư vấn luyện tập, dinh dưỡng và giải đáp các câu hỏi liên quan đến gym bằng tiếng Việt.
 
-### 6.2. Chức năng
+### 7.2. Chức năng
 
 | Mã    | Chức năng           | Mô tả                                                                   |
 | ----- | ------------------- | ----------------------------------------------------------------------- |
@@ -211,7 +241,7 @@ AI Coach là chức năng nổi bật của VieGym, hỗ trợ người dùng nh
 | AI-05 | Điều chỉnh kế hoạch | Điều chỉnh lịch tập/thực đơn theo phản hồi của người dùng               |
 | AI-06 | Chat theo ngữ cảnh  | Trả lời dựa trên hồ sơ sức khỏe, lịch tập, thực đơn và tiến độ hiện tại |
 
-### 6.3. Ngữ cảnh AI được phép sử dụng
+### 7.3. Ngữ cảnh AI được phép sử dụng
 
 AI Service có thể nhận các dữ liệu sau từ Backend:
 
@@ -224,7 +254,7 @@ AI Service có thể nhận các dữ liệu sau từ Backend:
 - Mục tiêu macro.
 - Sản phẩm người dùng đang quan tâm nếu đang ở luồng mua sắm.
 
-### 6.4. Business rules
+### 7.4. Business rules
 
 - AI không được thay thế tư vấn y tế chuyên môn.
 - Với câu hỏi liên quan đến bệnh lý, chấn thương hoặc tình trạng sức khỏe nghiêm trọng, AI phải khuyến nghị người dùng hỏi bác sĩ/chuyên gia.
@@ -234,9 +264,9 @@ AI Service có thể nhận các dữ liệu sau từ Backend:
 
 ---
 
-## 7. Phân hệ Workout Builder
+## 8. Phân hệ Workout Builder
 
-### 7.1. Chức năng
+### 8.1. Chức năng
 
 Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá nhân.
 
@@ -247,7 +277,7 @@ Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá 
 | Full Body      | Tập toàn thân trong một buổi                                    |
 | Custom         | Người dùng tự chọn bài tập, số hiệp, số lần lặp, thời gian nghỉ |
 
-### 7.2. Dữ liệu giáo án
+### 8.2. Dữ liệu giáo án
 
 | Trường             | Mô tả                                     |
 | ------------------ | ----------------------------------------- |
@@ -261,7 +291,7 @@ Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá 
 | Rest time          | Thời gian nghỉ giữa các hiệp              |
 | Note               | Ghi chú cá nhân                           |
 
-### 7.3. Business rules
+### 8.3. Business rules
 
 - Một người dùng có thể có nhiều giáo án nhưng chỉ nên có một giáo án đang hoạt động tại một thời điểm.
 - Người dùng có thể chỉnh sửa giáo án sau khi tạo.
@@ -270,9 +300,9 @@ Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá 
 
 ---
 
-## 8. Phân hệ thư viện bài tập
+## 9. Phân hệ thư viện bài tập
 
-### 8.1. Dữ liệu bài tập
+### 9.1. Dữ liệu bài tập
 
 | Trường         | Mô tả                                             |
 | -------------- | ------------------------------------------------- |
@@ -287,7 +317,7 @@ Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá 
 | Lỗi thường gặp | Các lỗi kỹ thuật người tập hay gặp                |
 | Trạng thái     | Active/Inactive                                   |
 
-### 8.2. Chức năng
+### 9.2. Chức năng
 
 - Xem danh sách bài tập.
 - Xem chi tiết bài tập.
@@ -297,7 +327,7 @@ Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá 
 - Lọc theo độ khó.
 - Admin thêm, sửa, ẩn bài tập.
 
-### 8.3. Business rules
+### 9.3. Business rules
 
 - Người dùng chỉ thấy bài tập đang active.
 - Admin có thể quản lý toàn bộ bài tập.
@@ -306,9 +336,9 @@ Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá 
 
 ---
 
-## 9. Phân hệ theo dõi luyện tập
+## 10. Phân hệ theo dõi luyện tập
 
-### 9.1. Chức năng
+### 10.1. Chức năng
 
 Sau mỗi buổi tập, người dùng có thể ghi nhận:
 
@@ -322,7 +352,7 @@ Sau mỗi buổi tập, người dùng có thể ghi nhận:
 | Thời gian tập | Tổng thời gian buổi tập                 |
 | Ghi chú       | Cảm nhận, mức độ khó, tình trạng cơ thể |
 
-### 9.2. Thống kê
+### 10.2. Thống kê
 
 Hệ thống cần thống kê:
 
@@ -333,7 +363,7 @@ Hệ thống cần thống kê:
 - Biểu đồ tiến bộ theo mức tạ/reps/volume.
 - Tỷ lệ hoàn thành lịch tập.
 
-### 9.3. Business rules
+### 10.3. Business rules
 
 - Người dùng chỉ xem và chỉnh sửa lịch sử tập luyện của chính mình.
 - PR được tính theo bài tập và có thể dựa trên mức tạ lớn nhất hoặc estimated 1RM.
@@ -341,9 +371,9 @@ Hệ thống cần thống kê:
 
 ---
 
-## 10. Phân hệ lịch tập
+## 11. Phân hệ lịch tập
 
-### 10.1. Chức năng
+### 11.1. Chức năng
 
 | Mã     | Chức năng           | Mô tả                                      |
 | ------ | ------------------- | ------------------------------------------ |
@@ -354,7 +384,7 @@ Hệ thống cần thống kê:
 | SCH-05 | Đánh dấu hoàn thành | Người dùng đánh dấu buổi tập đã hoàn thành |
 | SCH-06 | Nhắc lịch tập       | Gửi notification trước giờ tập             |
 
-### 10.2. Trạng thái buổi tập
+### 11.2. Trạng thái buổi tập
 
 | Status    | Mô tả                        |
 | --------- | ---------------------------- |
@@ -363,7 +393,7 @@ Hệ thống cần thống kê:
 | MISSED    | Đã qua nhưng chưa hoàn thành |
 | CANCELLED | Đã hủy                       |
 
-### 10.3. Business rules
+### 11.3. Business rules
 
 - Người dùng có thể tạo lịch thủ công hoặc sinh lịch từ giáo án.
 - Notification chỉ gửi khi người dùng bật quyền thông báo.
@@ -371,13 +401,13 @@ Hệ thống cần thống kê:
 
 ---
 
-## 11. Phân hệ Meal Planner
+## 12. Phân hệ Meal Planner
 
-### 11.1. Mục tiêu
+### 12.1. Mục tiêu
 
 Meal Planner là điểm khác biệt lớn của VieGym. Hệ thống cần có cơ sở dữ liệu dinh dưỡng món ăn Việt Nam, cho phép người dùng lập thực đơn hằng ngày và theo dõi calories, protein, carbohydrate, fat so với mục tiêu cá nhân.
 
-### 11.2. Dữ liệu món ăn
+### 12.2. Dữ liệu món ăn
 
 | Trường       | Mô tả                                                 |
 | ------------ | ----------------------------------------------------- |
@@ -394,7 +424,7 @@ Meal Planner là điểm khác biệt lớn của VieGym. Hệ thống cần có
 | Danh mục     | Cơm, phở/bún/mì, món thịt, món rau, đồ uống, snack... |
 | Trạng thái   | Active/Inactive                                       |
 
-### 11.3. Chức năng người dùng
+### 12.3. Chức năng người dùng
 
 - Tìm kiếm món ăn.
 - Xem thông tin dinh dưỡng từng món.
@@ -405,7 +435,7 @@ Meal Planner là điểm khác biệt lớn của VieGym. Hệ thống cần có
 - Nhận cảnh báo khi vượt hoặc thiếu calories/macro.
 - Nhận gợi ý món ăn phù hợp.
 
-### 11.4. Loại bữa ăn
+### 12.4. Loại bữa ăn
 
 | Meal type | Mô tả    |
 | --------- | -------- |
@@ -414,7 +444,7 @@ Meal Planner là điểm khác biệt lớn của VieGym. Hệ thống cần có
 | DINNER    | Bữa tối  |
 | SNACK     | Bữa phụ  |
 
-### 11.5. Business rules
+### 12.5. Business rules
 
 - Mỗi người dùng có một meal plan theo từng ngày.
 - Tổng calories/macro được tính bằng tổng các món đã thêm sau khi nhân với khẩu phần.
@@ -425,9 +455,9 @@ Meal Planner là điểm khác biệt lớn của VieGym. Hệ thống cần có
 
 ---
 
-## 12. Phân hệ theo dõi cân nặng
+## 13. Phân hệ theo dõi cân nặng
 
-### 12.1. Chức năng
+### 13.1. Chức năng
 
 Người dùng cập nhật cân nặng theo ngày để theo dõi tiến độ.
 
@@ -437,7 +467,7 @@ Người dùng cập nhật cân nặng theo ngày để theo dõi tiến độ.
 | Ngày đo  | Ngày ghi nhận    |
 | Ghi chú  | Ghi chú tùy chọn |
 
-### 12.2. Thống kê
+### 13.2. Thống kê
 
 - Cân nặng hiện tại.
 - Cân nặng mục tiêu.
@@ -445,16 +475,16 @@ Người dùng cập nhật cân nặng theo ngày để theo dõi tiến độ.
 - Biểu đồ thay đổi cân nặng.
 - Tỷ lệ hoàn thành mục tiêu.
 
-### 12.3. Business rules
+### 13.3. Business rules
 
 - Một ngày có thể có một bản ghi cân nặng chính; nếu nhập lại cùng ngày thì cập nhật bản ghi hiện có.
 - Khi cân nặng thay đổi, hệ thống có thể tính lại BMI và khuyến nghị calories nếu người dùng đồng ý cập nhật.
 
 ---
 
-## 13. Phân hệ cửa hàng
+## 14. Phân hệ cửa hàng
 
-### 13.1. Danh mục sản phẩm
+### 14.1. Danh mục sản phẩm
 
 Hệ thống hỗ trợ bán các sản phẩm phục vụ luyện tập:
 
@@ -466,7 +496,7 @@ Hệ thống hỗ trợ bán các sản phẩm phục vụ luyện tập:
 - Dây kháng lực.
 - Phụ kiện tập luyện.
 
-### 13.2. Chức năng
+### 14.2. Chức năng
 
 | Mã      | Chức năng         | Mô tả                                                |
 | ------- | ----------------- | ---------------------------------------------------- |
@@ -479,7 +509,7 @@ Hệ thống hỗ trợ bán các sản phẩm phục vụ luyện tập:
 | SHOP-07 | Theo dõi đơn hàng | Xem trạng thái đơn hàng                              |
 | SHOP-08 | Quản lý đơn hàng  | Admin xem và cập nhật trạng thái đơn hàng            |
 
-### 13.3. Trạng thái đơn hàng
+### 14.3. Trạng thái đơn hàng
 
 | Status    | Mô tả                          |
 | --------- | ------------------------------ |
@@ -491,7 +521,7 @@ Hệ thống hỗ trợ bán các sản phẩm phục vụ luyện tập:
 | CANCELLED | Đã hủy                         |
 | REFUNDED  | Đã hoàn tiền                   |
 
-### 13.4. Business rules
+### 14.4. Business rules
 
 - Giá sản phẩm tại thời điểm đặt hàng phải được lưu vào order item, không phụ thuộc giá sản phẩm thay đổi sau này.
 - Không cho đặt số lượng vượt tồn kho nếu hệ thống quản lý tồn kho realtime.
@@ -500,9 +530,9 @@ Hệ thống hỗ trợ bán các sản phẩm phục vụ luyện tập:
 
 ---
 
-## 14. Phân hệ Chatbot bán hàng
+## 15. Phân hệ Chatbot bán hàng
 
-### 14.1. Chức năng
+### 15.1. Chức năng
 
 Chatbot bán hàng hỗ trợ người dùng trong quá trình chọn sản phẩm.
 
@@ -514,7 +544,7 @@ Chatbot bán hàng hỗ trợ người dùng trong quá trình chọn sản ph�
 | SALES-AI-04 | Giải đáp thông tin   | Trả lời câu hỏi về cách dùng, thời điểm dùng, lưu ý    |
 | SALES-AI-05 | Điều hướng mua hàng  | Gợi ý thêm sản phẩm vào giỏ hoặc xem chi tiết sản phẩm |
 
-### 14.2. Business rules
+### 15.2. Business rules
 
 - Chatbot chỉ được gợi ý sản phẩm đang active và còn hàng nếu có quản lý tồn kho.
 - Chatbot không được đưa ra cam kết y tế hoặc điều trị bệnh.
@@ -522,9 +552,9 @@ Chatbot bán hàng hỗ trợ người dùng trong quá trình chọn sản ph�
 
 ---
 
-## 15. Dashboard
+## 16. Dashboard
 
-### 15.1. Dashboard người dùng
+### 16.1. Dashboard người dùng
 
 Trang chủ ứng dụng hiển thị các thông tin quan trọng:
 
@@ -535,7 +565,7 @@ Trang chủ ứng dụng hiển thị các thông tin quan trọng:
 | Cơ thể     | Cân nặng hiện tại, BMI, tiến độ mục tiêu                       |
 | Gợi ý      | Gợi ý món ăn, bài tập hoặc sản phẩm từ AI                      |
 
-### 15.2. Dashboard Admin
+### 16.2. Dashboard Admin
 
 Admin có thể xem:
 
@@ -550,9 +580,9 @@ Admin có thể xem:
 
 ---
 
-## 16. Quản trị hệ thống
+## 17. Quản trị hệ thống
 
-### 16.1. Admin quản lý dữ liệu
+### 17.1. Admin quản lý dữ liệu
 
 | Nhóm dữ liệu | Chức năng                                           |
 | ------------ | --------------------------------------------------- |
@@ -563,7 +593,7 @@ Admin có thể xem:
 | Đơn hàng     | Xem, xác nhận, cập nhật trạng thái                  |
 | Nội dung AI  | Quản lý prompt mẫu, rule tư vấn, cảnh báo an toàn   |
 
-### 16.2. Business rules
+### 17.2. Business rules
 
 - Admin không được xem mật khẩu hoặc refresh token của người dùng.
 - Các thao tác quan trọng của Admin nên được ghi audit log.
@@ -571,9 +601,9 @@ Admin có thể xem:
 
 ---
 
-## 17. Kiến trúc hệ thống
+## 18. Kiến trúc hệ thống
 
-### 17.1. Kiến trúc tổng quan
+### 18.1. Kiến trúc tổng quan
 
 ```text
 Flutter Mobile App
@@ -593,7 +623,7 @@ Python FastAPI AI Service
 OpenAI API hoặc Gemini API
 ```
 
-### 17.2. Thành phần
+### 18.2. Thành phần
 
 | Thành phần       | Công nghệ                                     | Vai trò                                                |
 | ---------------- | --------------------------------------------- | ------------------------------------------------------ |
@@ -609,7 +639,7 @@ OpenAI API hoặc Gemini API
 | DevOps           | Docker, Docker Compose, Nginx, GitHub Actions | Triển khai và vận hành                                 |
 | Design           | Figma                                         | Thiết kế UI/UX                                         |
 
-### 17.3. Nguyên tắc thiết kế
+### 18.3. Nguyên tắc thiết kế
 
 - Mobile App không truy cập trực tiếp database.
 - Backend Spring Boot là nguồn sự thật cho dữ liệu nghiệp vụ.
@@ -619,9 +649,9 @@ OpenAI API hoặc Gemini API
 
 ---
 
-## 18. Mô hình dữ liệu mức khái niệm
+## 19. Mô hình dữ liệu mức khái niệm
 
-### 18.1. Nhóm tài khoản và hồ sơ
+### 19.1. Nhóm tài khoản và hồ sơ
 
 | Entity        | Mô tả                                                           |
 | ------------- | --------------------------------------------------------------- |
@@ -632,7 +662,7 @@ OpenAI API hoặc Gemini API
 | RefreshToken  | Phiên đăng nhập                                                 |
 | OtpCode       | Mã OTP xác thực                                                 |
 
-### 18.2. Nhóm luyện tập
+### 19.2. Nhóm luyện tập
 
 | Entity          | Mô tả                  |
 | --------------- | ---------------------- |
@@ -646,7 +676,7 @@ OpenAI API hoặc Gemini API
 | WorkoutLog      | Nhật ký buổi tập       |
 | WorkoutSetLog   | Chi tiết từng set      |
 
-### 18.3. Nhóm dinh dưỡng
+### 19.3. Nhóm dinh dưỡng
 
 | Entity          | Mô tả                      |
 | --------------- | -------------------------- |
@@ -656,7 +686,7 @@ OpenAI API hoặc Gemini API
 | MealEntry       | Món ăn được thêm vào bữa   |
 | NutritionTarget | Mục tiêu calories và macro |
 
-### 18.4. Nhóm cửa hàng
+### 19.4. Nhóm cửa hàng
 
 | Entity          | Mô tả                   |
 | --------------- | ----------------------- |
@@ -669,7 +699,7 @@ OpenAI API hoặc Gemini API
 | Payment         | Giao dịch thanh toán    |
 | ShippingAddress | Địa chỉ nhận hàng       |
 
-### 18.5. Nhóm AI và log
+### 19.5. Nhóm AI và log
 
 | Entity           | Mô tả                            |
 | ---------------- | -------------------------------- |
@@ -681,9 +711,9 @@ OpenAI API hoặc Gemini API
 
 ---
 
-## 19. API Requirements mức cao
+## 20. API Requirements mức cao
 
-### 19.1. Auth API
+### 20.1. Auth API
 
 | Method | Endpoint                     | Mô tả                    |
 | ------ | ---------------------------- | ------------------------ |
@@ -696,7 +726,7 @@ OpenAI API hoặc Gemini API
 | POST   | /api/v1/auth/verify-otp      | Xác thực OTP             |
 | POST   | /api/v1/auth/reset-password  | Đặt lại mật khẩu         |
 
-### 19.2. User & Health API
+### 20.2. User & Health API
 
 | Method | Endpoint                  | Mô tả                             |
 | ------ | ------------------------- | --------------------------------- |
@@ -707,7 +737,7 @@ OpenAI API hoặc Gemini API
 | GET    | /api/v1/weight-logs       | Lấy lịch sử cân nặng              |
 | POST   | /api/v1/weight-logs       | Thêm/cập nhật cân nặng            |
 
-### 19.3. Workout API
+### 20.3. Workout API
 
 | Method | Endpoint                                | Mô tả                            |
 | ------ | --------------------------------------- | -------------------------------- |
@@ -722,7 +752,7 @@ OpenAI API hoặc Gemini API
 | GET    | /api/v1/workout-logs                    | Lấy lịch sử tập luyện            |
 | POST   | /api/v1/workout-logs                    | Ghi nhận buổi tập                |
 
-### 19.4. Nutrition API
+### 20.4. Nutrition API
 
 | Method | Endpoint                        | Mô tả               |
 | ------ | ------------------------------- | ------------------- |
@@ -734,7 +764,7 @@ OpenAI API hoặc Gemini API
 | PUT    | /api/v1/meal-plans/entries/{id} | Cập nhật khẩu phần  |
 | DELETE | /api/v1/meal-plans/entries/{id} | Xóa món khỏi bữa    |
 
-### 19.5. AI API
+### 20.5. AI API
 
 | Method | Endpoint                      | Mô tả                   |
 | ------ | ----------------------------- | ----------------------- |
@@ -743,7 +773,7 @@ OpenAI API hoặc Gemini API
 | POST   | /api/v1/ai/coach/meal-advice  | Tư vấn thực đơn         |
 | POST   | /api/v1/ai/sales/chat         | Chatbot tư vấn sản phẩm |
 
-### 19.6. Shop API
+### 20.6. Shop API
 
 | Method | Endpoint                | Mô tả                             |
 | ------ | ----------------------- | --------------------------------- |
@@ -758,7 +788,7 @@ OpenAI API hoặc Gemini API
 | GET    | /api/v1/orders/{id}     | Chi tiết đơn hàng                 |
 | POST   | /api/v1/payments        | Tạo thanh toán                    |
 
-### 19.7. Admin API
+### 20.7. Admin API
 
 | Method       | Endpoint                | Mô tả              |
 | ------------ | ----------------------- | ------------------ |
@@ -771,7 +801,71 @@ OpenAI API hoặc Gemini API
 
 ---
 
-## 20. Yêu cầu phi chức năng
+## 21. Giả định, ràng buộc và phụ thuộc
+
+### 21.1. Giả định
+
+- Người dùng có smartphone Android trong phạm vi demo đồ án; iOS là hướng mở rộng sau.
+- Người dùng có kết nối Internet khi sử dụng các chức năng cần đồng bộ dữ liệu, AI hoặc mua hàng.
+- Dữ liệu món ăn Việt Nam ban đầu được thu thập, chuẩn hóa và nhập vào MySQL bởi Admin hoặc script nội bộ.
+- AI Provider hoạt động ổn định trong thời điểm demo; nếu provider lỗi, hệ thống trả thông báo lỗi thân thiện thay vì làm treo ứng dụng.
+- Thanh toán online có thể tích hợp ở mức mô phỏng hoặc sandbox nếu chưa đăng ký cổng thanh toán thật.
+
+### 21.2. Ràng buộc
+
+- Giao diện và phản hồi AI mặc định sử dụng tiếng Việt.
+- Mobile App không truy cập trực tiếp database hoặc AI Provider.
+- API key, JWT secret, storage secret và payment secret chỉ được lưu ở server-side.
+- Dữ liệu sức khỏe, thực đơn, lịch tập, workout log và đơn hàng là dữ liệu cá nhân; backend phải kiểm tra quyền truy cập theo user.
+- Ảnh, video và GIF không lưu trực tiếp trong database.
+- Phiên bản đồ án ưu tiên hoàn thiện MVP trong 6 tháng, các tính năng nâng cao được đưa vào hướng phát triển sau đồ án.
+
+### 21.3. Phụ thuộc bên ngoài
+
+| Phụ thuộc | Vai trò | Rủi ro |
+| --- | --- | --- |
+| OpenAI API hoặc Gemini API | Sinh phản hồi AI Coach/chatbot | Chi phí, rate limit, lỗi provider |
+| Google OAuth | Đăng nhập Google | Cần cấu hình OAuth client đúng môi trường |
+| Payment Provider | Thanh toán online | Có thể cần tài khoản merchant/sandbox |
+| MinIO hoặc Amazon S3 | Lưu media | Cần cấu hình bucket, quyền truy cập và URL |
+| Firebase/local notification | Nhắc lịch và thông báo | Cần quyền notification trên thiết bị |
+
+---
+
+## 22. Yêu cầu giao diện ngoài
+
+### 22.1. Giao diện người dùng
+
+- Mobile App cần hỗ trợ các màn chính: đăng nhập/đăng ký, hồ sơ sức khỏe, dashboard, workout, meal planner, AI Coach, shop, profile.
+- Giao diện ưu tiên tiếng Việt, dễ dùng cho người mới tập gym.
+- Các biểu đồ calories, macro, cân nặng và tiến bộ tập luyện phải dễ đọc trên màn hình điện thoại.
+- Form nhập liệu cần có validation rõ ràng và thông báo lỗi dễ hiểu.
+
+### 22.2. Giao diện phần mềm
+
+| Thành phần | Giao tiếp |
+| --- | --- |
+| Flutter Mobile App ↔ Spring Boot Backend | REST API qua HTTPS |
+| Spring Boot Backend ↔ MySQL | JDBC/JPA |
+| Spring Boot Backend ↔ Redis | Redis protocol |
+| Spring Boot Backend ↔ Object Storage | S3-compatible API |
+| Spring Boot Backend ↔ FastAPI AI Service | HTTP API nội bộ |
+| FastAPI AI Service ↔ AI Provider | Provider SDK/API |
+
+### 22.3. Giao diện phần cứng
+
+- Ứng dụng chạy trên smartphone; không yêu cầu thiết bị phần cứng chuyên dụng trong MVP.
+- Camera, cảm biến sức khỏe, Apple Health và Google Fit chưa thuộc phạm vi bắt buộc của phiên bản đồ án.
+
+### 22.4. Giao diện truyền thông
+
+- Tất cả giao tiếp giữa mobile app và backend nên dùng HTTPS khi triển khai thật.
+- API trả JSON UTF-8.
+- Media được truy cập qua URL do backend kiểm soát hoặc object storage đã cấu hình quyền phù hợp.
+
+---
+
+## 23. Yêu cầu phi chức năng
 
 | #   | Yêu cầu          | Chi tiết                                                                                           |
 | --- | ---------------- | -------------------------------------------------------------------------------------------------- |
@@ -790,16 +884,16 @@ OpenAI API hoặc Gemini API
 
 ---
 
-## 21. Bảo mật và phân quyền
+## 24. Bảo mật và phân quyền
 
-### 21.1. Vai trò
+### 24.1. Vai trò
 
 | Role  | Quyền                                                           |
 | ----- | --------------------------------------------------------------- |
 | USER  | Dùng các chức năng cá nhân: tập luyện, dinh dưỡng, AI, mua hàng |
 | ADMIN | Quản trị dữ liệu hệ thống, người dùng, sản phẩm, đơn hàng       |
 
-### 21.2. Quy tắc bảo mật
+### 24.2. Quy tắc bảo mật
 
 - Người dùng chỉ được truy cập dữ liệu thuộc tài khoản của mình.
 - Admin có quyền quản trị dữ liệu dùng chung nhưng không được xem thông tin nhạy cảm như mật khẩu/token.
@@ -811,7 +905,7 @@ OpenAI API hoặc Gemini API
 
 ---
 
-## 22. Notification Requirements
+## 25. Notification Requirements
 
 | Loại thông báo     | Mô tả                                                        |
 | ------------------ | ------------------------------------------------------------ |
@@ -829,7 +923,7 @@ Business rules:
 
 ---
 
-## 23. Acceptance Criteria
+## 26. Acceptance Criteria
 
 | #   | Tiêu chí nghiệm thu                                                                                                    |
 | --- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -856,7 +950,7 @@ Business rules:
 
 ---
 
-## 24. Kế hoạch thực hiện 6 tháng
+## 27. Kế hoạch thực hiện 6 tháng
 
 | Thời gian | Công việc                                                                                                                                  |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -869,7 +963,7 @@ Business rules:
 
 ---
 
-## 25. Hướng phát triển sau đồ án
+## 28. Hướng phát triển sau đồ án
 
 - AI nhận diện món ăn từ hình ảnh.
 - AI phân tích tư thế tập luyện bằng camera.
@@ -883,8 +977,8 @@ Business rules:
 
 ---
 
-## 26. Tài liệu liên quan
+## 29. Tài liệu liên quan
 
 | Tài liệu            | Đường dẫn              |
 | ------------------- | ---------------------- |
-| Kế hoạch phát triển | [plans.md](./plans.md) |
+| Kế hoạch phát triển | [spec/plans.md](../../spec/plans.md) |

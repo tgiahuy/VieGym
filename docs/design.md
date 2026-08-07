@@ -307,7 +307,7 @@ Mobile App / Emulator
         v
 Nginx / Backend API: 8080
         |
-        ├── MySQL
+        ├── PostgreSQL
         ├── Redis
         ├── MinIO
         └── FastAPI AI Service

@@ -1,1317 +1,1434 @@
-# Đặc tả Yêu cầu Hệ thống — VieGym
+# VieGym — Software Requirements Specification (SRS) v3.0
 
-> Tài liệu đặc tả yêu cầu phần mềm (SRS) cho ứng dụng di động VieGym — nền tảng hỗ trợ luyện tập, dinh dưỡng và mua sắm dành cho người Việt, có tích hợp trí tuệ nhân tạo.
-
----
-
-## Thông tin tài liệu
-
-| Thuộc tính      | Giá trị                                           |
-| --------------- | ------------------------------------------------- |
-| Tên tài liệu    | Đặc tả Yêu cầu Hệ thống VieGym                    |
-| Loại tài liệu   | Software Requirements Specification (SRS)         |
-| Phiên bản       | 1.0                                               |
-| Phạm vi áp dụng | Đồ án 6 tháng và nền tảng mở rộng startup sau này |
-| File chính thức | `docs/spec/specs.md`                              |
-| Ngôn ngữ        | Tiếng Việt                                        |
+> **Mục đích:** Source of Truth cấp yêu cầu cho VieGym Mobile App, Backend và AI Service trong phạm vi đồ án tốt nghiệp.
+>
+> **Phiên bản:** 3.0  
+> **Ngày cập nhật:** 2026-08-19  
+> **Nền tảng MVP:** Flutter Mobile App + Spring Boot Backend + PostgreSQL + Python FastAPI AI Service
+>
+> **Cập nhật đồng bộ:** chuẩn hóa Admin P0/P1, canonical screen ID, Use Case UC-01..UC-21 và Acceptance Criteria AC-01..AC-19.
 
 ---
 
-## 1. Tổng quan dự án
+# 1. Tổng quan dự án
 
-### 1.1. Tên đề tài
+## 1.1. Tên dự án
 
-**Nghiên cứu và phát triển ứng dụng di động VieGym – Nền tảng AI Coach cá nhân hóa luyện tập, dinh dưỡng và theo dõi tiến độ sức khỏe dành cho người Việt.**
+**VieGym — Nền tảng luyện tập, dinh dưỡng và AI Coach cá nhân hóa**
 
-### 1.2. Mục tiêu dự án
+## 1.2. Mục tiêu
 
-VieGym là ứng dụng di động hỗ trợ người dùng Việt Nam trong việc:
+VieGym kết hợp ba nhóm chức năng:
 
-- Quản lý quá trình luyện tập thể hình.
-- Quản lý chế độ dinh dưỡng hằng ngày.
-- Theo dõi sự thay đổi của cơ thể theo thời gian.
-- Nhận tư vấn luyện tập, dinh dưỡng và điều chỉnh kế hoạch thông qua AI Coach cá nhân hóa.
-- Nhận gợi ý hằng ngày và tổng kết tiến độ theo tuần dựa trên dữ liệu cá nhân được người dùng cho phép sử dụng.
+1. Quản lý luyện tập.
+2. Quản lý dinh dưỡng và Meal Planner món Việt.
+3. AI Coach cá nhân hóa dựa trên dữ liệu người dùng được cho phép sử dụng.
 
-Điểm khác biệt chính của VieGym so với nhiều ứng dụng nước ngoài là tập trung vào **người dùng Việt Nam**, **dữ liệu món ăn Việt Nam**, **giao diện tiếng Việt** và khả năng AI hóa tư vấn theo thể trạng, mục tiêu, lịch tập, thói quen ăn uống và tiến độ thực tế của từng người dùng.
+## 1.3. Core User Journey
 
-### 1.3. Mục tiêu hệ thống
+1. User đăng ký/đăng nhập.
+2. User hoàn thiện Health Profile và mục tiêu.
+3. Backend tính BMI, BMR, TDEE, calories và macro mục tiêu.
+4. User lập Meal Plan, ghi nhận bữa ăn, tạo lịch tập và Workout Log.
+5. Dashboard tổng hợp tiến độ.
+6. Khi AI personalization được bật, Backend tạo context tối thiểu theo tác vụ.
+7. Rule Engine xác định các tín hiệu cần chú ý.
+8. AI tạo giải thích/recommendation.
+9. Backend validation/safety kiểm tra kết quả.
+10. User xem, Apply hoặc Dismiss recommendation.
+11. Nếu có thay đổi nghiệp vụ, Backend chỉ thực hiện sau khi User xác nhận.
 
-Hệ thống hướng đến giải quyết ba bài toán chính:
+## 1.4. Nguyên tắc kiến trúc cốt lõi
 
-| #   | Bài toán               | Mô tả                                                                                 |
-| --- | ---------------------- | ------------------------------------------------------------------------------------- |
-| 1   | Quản lý luyện tập      | Tạo giáo án, xem bài tập, ghi nhận buổi tập, theo dõi tiến bộ                         |
-| 2   | Quản lý dinh dưỡng     | Tính nhu cầu calories, lập thực đơn, theo dõi macro, gợi ý món ăn Việt Nam            |
-| 3   | AI cá nhân hóa tiến độ | Phân tích hồ sơ, meal plan, workout log và cân nặng để đưa ra gợi ý phù hợp từng user |
+> **Backend calculates. AI interprets and recommends. User decides. Backend executes.**
 
-### 1.4. Core user journey
-
-Giá trị cốt lõi của VieGym được thể hiện qua vòng lặp sử dụng hằng ngày:
-
-1. Người dùng hoàn thiện hồ sơ sức khỏe và mục tiêu cá nhân.
-2. Hệ thống tính BMI, BMR, TDEE, calories và macro mục tiêu.
-3. Người dùng lập thực đơn, ghi nhận bữa ăn và buổi tập.
-4. Dashboard cập nhật tiến độ về dinh dưỡng, luyện tập và cân nặng.
-5. AI Coach phân tích dữ liệu được phép sử dụng và đưa ra gợi ý điều chỉnh.
-6. Người dùng xác nhận hoặc tự áp dụng thay đổi để tiếp tục cải thiện.
-
-Core loop này giúp các phân hệ Health Profile, Meal Planner, Workout Log, Dashboard và AI Coach liên kết với nhau, tránh việc hệ thống chỉ là tập hợp các chức năng rời rạc.
+- Backend là business authority và source of truth.
+- AI Service không truy cập database trực tiếp.
+- AI không tự mutation dữ liệu nghiệp vụ.
+- User là người quyết định cuối cùng đối với thay đổi do AI đề xuất.
 
 ---
 
-## 2. Phạm vi hệ thống
+# 2. Phạm vi hệ thống
 
-### 2.1. Trong phạm vi
+## 2.1. MVP bắt buộc
 
-| #   | Phân hệ              | Mô tả                                                                                                              |
-| --- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1   | Quản lý tài khoản    | Đăng ký, đăng nhập, Google Login, quên mật khẩu, OTP, đổi mật khẩu, cập nhật hồ sơ                                 |
-| 2   | Hồ sơ sức khỏe       | Nhập chiều cao, cân nặng, tuổi, giới tính, mức độ vận động, mục tiêu; tính BMI/BMR/TDEE                            |
-| 3   | AI Coach cá nhân hóa | Tư vấn lịch tập, bài tập, dinh dưỡng, daily recommendation, weekly review và điều chỉnh kế hoạch theo dữ liệu user |
-| 4   | Workout Builder      | Chọn hoặc tự tạo giáo án Push Pull Legs, Upper Lower, Full Body                                                    |
-| 5   | Thư viện bài tập     | Danh sách bài tập có video/GIF, nhóm cơ, thiết bị, độ khó, hướng dẫn và lỗi thường gặp                             |
-| 6   | Theo dõi luyện tập   | Ghi nhận bài tập, số hiệp, số lần lặp, mức tạ, thống kê PR và biểu đồ tiến bộ                                      |
-| 7   | Lịch tập             | Tạo lịch, sửa lịch, xem theo tuần/tháng, đánh dấu hoàn thành, nhắc lịch qua thông báo                              |
-| 8   | Meal Planner         | Cơ sở dữ liệu món ăn Việt Nam, lập thực đơn, tính calories và macro theo ngày                                      |
-| 9   | Theo dõi cân nặng    | Cập nhật cân nặng theo ngày, so sánh với mục tiêu, biểu đồ tăng/giảm                                               |
-| 10  | Dashboard            | Tổng hợp calories, macro, lịch tập, cân nặng, insight cá nhân hóa và buổi tập tiếp theo                            |
-| 11  | Quản trị dữ liệu     | Admin quản lý bài tập, món ăn, import dữ liệu và rule/prompt AI                                                    |
+| Phân hệ | Chức năng |
+|---|---|
+| Authentication | Đăng ký, đăng nhập, JWT, Google Login, refresh token, OTP, quên mật khẩu, biometric unlock local |
+| Health Profile | Thông tin sức khỏe, mục tiêu, mức vận động |
+| Health Calculation | BMI, BMR, TDEE, calories/macro target |
+| Dashboard | Calories, macro, workout, weight, AI recommendation |
+| Exercise Library | Bài tập, nhóm cơ, thiết bị, video hướng dẫn, mô tả, lỗi sai thường gặp |
+| Gym Equipment Preference | Chọn thiết bị có sẵn khi onboarding/lần đầu tập và chỉnh sửa trong Settings |
+| Workout Builder | Tạo/chọn chương trình và buổi tập cơ bản |
+| Workout Schedule | Lịch tập |
+| Workout Log | Ghi nhận set/reps/weight và tiến độ |
+| Food Database | Món ăn Việt Nam và thông tin dinh dưỡng |
+| Meal Planner | Lập thực đơn, ghi nhận meal và nutrition |
+| Weight Tracking | Lịch sử và xu hướng cân nặng |
+| AI Consent | Bật/tắt AI personalization |
+| AI Context Layer | Backend tạo context theo tác vụ |
+| AI Coach Chat | Chat cá nhân hóa |
+| AI Daily Recommendation | 1–3 recommendation/ngày |
+| Recommendation Apply/Dismiss | User quyết định trước khi thay đổi dữ liệu |
 
-### 2.2. Ngoài phạm vi phiên bản đồ án
+## 2.2. MVP mở rộng nếu còn thời gian
 
-Các chức năng sau được định hướng phát triển sau đồ án, chưa bắt buộc trong phiên bản 6 tháng:
+- AI Weekly Review.
+- User Preference Memory.
+- Admin quản lý AI Rule/Prompt.
+- AI Plan Adjustment Proposal.
 
-- AI nhận diện món ăn từ hình ảnh.
-- AI phân tích tư thế tập luyện bằng camera.
-- Đồng bộ Apple Health và Google Fit.
-- Phiên bản Web dành cho huấn luyện viên.
-- Hệ thống quản lý phòng gym.
-- Machine Learning dự đoán tiến độ và tối ưu lịch tập dài hạn.
-- Shop bán sản phẩm gym, giỏ hàng, đặt hàng, thanh toán, affiliate hoặc marketplace.
+## 2.3. MVP Priority
 
-### 2.3. MVP Cut
+| Priority | Nhóm chức năng | Mục tiêu |
+|---|---|---|
+| P0 | Auth, Health Profile, Health Calculation, Dashboard cơ bản | Hoàn thiện tài khoản, hồ sơ và metric authoritative |
+| P0 | Food Database, Meal Planner, Exercise Library, Equipment Preference, Workout Log | Chứng minh luồng ăn uống + luyện tập |
+| P0 | AI Consent, AI Context, AI Coach, Daily Recommendation | Chứng minh AI personalization an toàn |
+| P0 | Recommendation Apply/Dismiss, Ownership, Security baseline | Chứng minh AI không tự mutation và dữ liệu được bảo vệ |
+| P0 baseline | Admin quản lý Exercise/Food và Audit Log | Đủ dữ liệu catalog và truy vết cho demo |
+| P1 | Weekly Review, Plan Adjustment, Preference Memory, Admin mở rộng, notification local/in-app | Chỉ triển khai khi P0 ổn định |
+| P2 | Push automation, offline queue nâng cao, media cleanup | Không bắt buộc cho demo MVP |
 
-Phiên bản MVP cần ưu tiên hoàn thành luồng cốt lõi sau:
+## 2.4. Ngoài MVP
 
-1. Người dùng đăng ký/đăng nhập.
-2. Người dùng tạo hồ sơ sức khỏe.
-3. Hệ thống tính BMI, BMR, TDEE và calories mục tiêu.
-4. Người dùng xem dashboard cá nhân.
-5. Người dùng xem thư viện bài tập và tạo lịch tập cơ bản.
-6. Người dùng ghi nhận buổi tập.
-7. Người dùng tìm kiếm món ăn Việt Nam và lập thực đơn trong ngày.
-8. AI Coach tư vấn dựa trên hồ sơ, mục tiêu, meal plan, workout log và cân nặng nếu người dùng bật cá nhân hóa AI.
-9. Hệ thống hiển thị AI Daily Recommendation trên Dashboard.
-10. Người dùng xem AI Weekly Review để hiểu tiến độ và đề xuất điều chỉnh.
-
-Để giảm rủi ro scope trong thời gian 6 tháng, MVP nên được chia thành hai mức:
-
-| Mức MVP                       | Nhóm chức năng                                                                                                                                                        | Mục tiêu                                                                                              |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| MVP bắt buộc                  | Auth, Onboarding, Health Profile, BMI/BMR/TDEE, Dashboard, Exercise Library, Workout Schedule/Log, Food Database, Meal Planner, Weight Tracking, AI Coach cá nhân hóa | Chứng minh giá trị cốt lõi của VieGym: theo dõi ăn uống, luyện tập và nhận tư vấn cá nhân hóa bằng AI |
-| MVP mở rộng nếu còn thời gian | AI Daily Recommendation, AI Weekly Review, AI Plan Adjustment, Admin import dữ liệu món ăn/bài tập, quản lý prompt/rule AI                                            | Làm nổi bật khả năng AI hóa trải nghiệm người dùng nhưng không mở rộng sang e-commerce                |
-
-Shop, thanh toán online, giỏ hàng và đặt hàng được chuyển sang hướng phát triển sau đồ án để MVP tập trung vào AI cá nhân hóa luyện tập và dinh dưỡng.
-
-### 2.4. Phân tách MVP, bản đầy đủ và sau đồ án
-
-| Chức năng                           |           MVP đồ án            |               Bản đầy đủ trong 6 tháng               |                  Sau đồ án                  |
-| ----------------------------------- | :----------------------------: | :--------------------------------------------------: | :-----------------------------------------: |
-| Đăng ký/đăng nhập/JWT               |               Có               |                          Có                          |                     Có                      |
-| Hồ sơ sức khỏe và tính BMI/BMR/TDEE |               Có               |                          Có                          |                     Có                      |
-| Dashboard cá nhân                   |               Có               |                          Có                          |                     Có                      |
-| Thư viện bài tập                    |               Có               |                          Có                          |                     Có                      |
-| Workout Builder                     |             Cơ bản             |                Đầy đủ template/custom                |           Cá nhân hóa bằng AI/ML            |
-| Lịch tập và workout log             |               Có               |                          Có                          |         Đồng bộ wearable/health app         |
-| Meal Planner món Việt               |               Có               |                          Có                          |          Cá nhân hóa theo lịch sử           |
-| AI Coach                            | Chat cá nhân hóa theo ngữ cảnh | Daily recommendation, weekly review, plan adjustment |       Nhận diện ảnh, phân tích tư thế       |
-| Shop                                |     Không thuộc MVP đồ án      |               Không thuộc bản 6 tháng                | Marketplace/affiliate, giỏ hàng, thanh toán |
-| Admin                               |    Quản lý dữ liệu cốt lõi     |     Import dữ liệu, rule/prompt AI, audit cơ bản     |           CMS/analytics nâng cao            |
+- Shop/Marketplace.
+- Cart/Order/Payment.
+- Wearable integration.
+- Apple Health/Google Fit.
+- Food image recognition.
+- Pose estimation/computer vision.
+- ML prediction.
+- AI tự động thay đổi kế hoạch không cần User approval.
 
 ---
 
-## 3. Thuật ngữ và viết tắt
+# 3. Actors và Persona
 
-| Thuật ngữ         | Ý nghĩa                                                            |
-| ----------------- | ------------------------------------------------------------------ |
-| BMI               | Body Mass Index — chỉ số khối cơ thể                               |
-| BMR               | Basal Metabolic Rate — năng lượng tiêu hao khi nghỉ ngơi           |
-| TDEE              | Total Daily Energy Expenditure — tổng năng lượng tiêu hao mỗi ngày |
-| Calories mục tiêu | Lượng kcal người dùng nên nạp mỗi ngày theo mục tiêu cá nhân       |
-| Macro             | Các nhóm dinh dưỡng chính: protein, carbohydrate và fat            |
-| PR                | Personal Record — thành tích tốt nhất của người dùng ở một bài tập |
-| AI Coach          | Trợ lý AI tư vấn luyện tập và dinh dưỡng                           |
-| Meal Planner      | Chức năng lập thực đơn và theo dõi dinh dưỡng hằng ngày            |
-| JWT               | JSON Web Token dùng cho xác thực API                               |
-| OTP               | One-Time Password dùng để xác minh hoặc đặt lại mật khẩu           |
+## 3.1. Actor
 
----
+| Actor | Vai trò |
+|---|---|
+| USER | Người dùng luyện tập, dinh dưỡng và sử dụng AI |
+| ADMIN | Quản trị dữ liệu, AI rule/prompt và audit |
+| AI PROVIDER | Provider LLM bên ngoài; chỉ được gọi bởi AI Service |
 
-## 4. Đối tượng sử dụng
+## 3.2. Persona demo
 
-| Actor      | Vai trò              | Quyền hạn chính                                                                            |
-| ---------- | -------------------- | ------------------------------------------------------------------------------------------ |
-| Guest      | Khách chưa đăng nhập | Xem màn giới thiệu, đăng ký, đăng nhập, quên mật khẩu                                      |
-| User       | Người dùng ứng dụng  | Quản lý hồ sơ sức khỏe, lịch tập, thực đơn, cân nặng, chat với AI và xem gợi ý cá nhân hóa |
-| Admin      | Quản trị viên        | Quản lý người dùng, bài tập, món ăn, import dữ liệu và rule/prompt AI                      |
-| AI Service | Dịch vụ AI           | Nhận ngữ cảnh từ hệ thống và trả tư vấn luyện tập, dinh dưỡng, tiến độ cá nhân hóa         |
+| Persona | Mục tiêu | Demo cần chứng minh |
+|---|---|---|
+| Người mới tập giảm cân | Giảm mỡ an toàn | Health Profile → calorie target → meal suggestion → daily recommendation |
+| Người tập tăng cơ | Tăng cơ và theo dõi tiến bộ | Workout Log → volume/PR → protein gap → AI advice |
+| Người duy trì sức khỏe | Duy trì cân nặng | Meal Planner món Việt → Dashboard → Weekly Review |
+
+Persona phục vụ thiết kế, seed data và demo; hệ thống không hard-code logic theo persona.
 
 ---
 
-## 5. Use Case tổng quát
+# 4. Thuật ngữ và trạng thái chính
 
-### 5.1. Danh sách use case chính
+| Thuật ngữ | Ý nghĩa |
+|---|---|
+| BMI | Body Mass Index |
+| BMR | Basal Metabolic Rate |
+| TDEE | Total Daily Energy Expenditure |
+| Macro | Protein, carbohydrate và fat |
+| PR | Personal Record |
+| RPE | Rating of Perceived Exertion |
+| JWT | JSON Web Token |
+| OTP | One-Time Password |
+| PI | Personalization Intelligence |
 
-| Mã    | Actor chính | Use case                                                  | Mức ưu tiên |
-| ----- | ----------- | --------------------------------------------------------- | ----------- |
-| UC-01 | Guest       | Đăng ký tài khoản                                         | Must        |
-| UC-02 | Guest       | Đăng nhập                                                 | Must        |
-| UC-03 | User        | Hoàn thiện hồ sơ sức khỏe                                 | Must        |
-| UC-04 | User        | Xem dashboard cá nhân                                     | Must        |
-| UC-05 | User        | Tạo/chỉnh sửa giáo án tập                                 | Must        |
-| UC-06 | User        | Tạo lịch tập và đánh dấu hoàn thành                       | Must        |
-| UC-07 | User        | Ghi nhận workout log                                      | Must        |
-| UC-08 | User        | Lập thực đơn trong ngày                                   | Must        |
-| UC-09 | User        | Chat với AI Coach cá nhân hóa                             | Should      |
-| UC-10 | User        | Xem AI Daily Recommendation                               | Should      |
-| UC-11 | User        | Xem AI Weekly Review                                      | Should      |
-| UC-12 | User        | Bật/tắt cá nhân hóa AI                                    | Must        |
-| UC-13 | Admin       | Quản lý bài tập, món ăn, import dữ liệu và rule/prompt AI | Should      |
+## 4.1. Enum chính
 
-### 5.2. Use case UC-03 — Hoàn thiện hồ sơ sức khỏe
+### Account/Auth
+- `UserRole`: USER, ADMIN
+- `AuthProvider`: LOCAL, GOOGLE
+- `OtpPurpose`: REGISTER, PASSWORD_RESET, LOGIN_VERIFY
+- `TokenStatus`: ACTIVE, REVOKED, EXPIRED
 
-| Thuộc tính     | Nội dung                                                                                                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Actor          | User                                                                                                                                                                                     |
-| Tiền điều kiện | User đã đăng nhập                                                                                                                                                                        |
-| Luồng chính    | User nhập giới tính, tuổi/ngày sinh, chiều cao, cân nặng, mức độ vận động và mục tiêu; hệ thống validate dữ liệu; hệ thống tính BMI/BMR/TDEE/calories/macro mục tiêu; hệ thống lưu hồ sơ |
-| Luồng thay thế | Nếu thiếu dữ liệu bắt buộc hoặc dữ liệu không hợp lệ, hệ thống hiển thị lỗi và yêu cầu nhập lại                                                                                          |
-| Hậu điều kiện  | User có health profile để dùng cho Dashboard, Meal Planner và AI Coach                                                                                                                   |
+### Health/Nutrition
+- `Gender`: MALE, FEMALE, OTHER, UNSPECIFIED
+- `ActivityLevel`: SEDENTARY, LIGHT, MODERATE, ACTIVE, VERY_ACTIVE
+- `FitnessGoal`: LOSE_WEIGHT, MAINTAIN_WEIGHT, GAIN_WEIGHT, GAIN_MUSCLE
+- `MealType`: BREAKFAST, LUNCH, DINNER, SNACK
+- `FoodVisibility`: PUBLIC, PRIVATE, HIDDEN
 
-### 5.3. Use case UC-08 — Lập thực đơn trong ngày
+### Workout
+- `WorkoutProgramStatus`: ACTIVE, INACTIVE, ARCHIVED
+- `WorkoutScheduleStatus`: PLANNED, COMPLETED, MISSED, CANCELLED
+- `ExerciseDifficulty`: BEGINNER, INTERMEDIATE, ADVANCED
+- `ExerciseVisibility`: PUBLIC, HIDDEN
 
-| Thuộc tính     | Nội dung                                                                                                                                             |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Actor          | User                                                                                                                                                 |
-| Tiền điều kiện | User đã đăng nhập và có hồ sơ sức khỏe                                                                                                               |
-| Luồng chính    | User mở Meal Planner; tìm món ăn; chọn món ăn; nhập khẩu phần; hệ thống thêm món vào meal plan; hệ thống cộng calories/macro và so sánh với mục tiêu |
-| Luồng thay thế | Nếu món ăn inactive hoặc khẩu phần không hợp lệ, hệ thống từ chối thao tác và hiển thị lỗi                                                           |
-| Hậu điều kiện  | Meal plan trong ngày được cập nhật và Dashboard phản ánh tổng calories/macro mới                                                                     |
+### AI
+- `AiConsentMode`: ENABLED, DISABLED
+- `AiContextType`: CHAT, DAILY_RECOMMENDATION, WEEKLY_REVIEW, PLAN_ADJUSTMENT
+- `AiRecommendationType`: NUTRITION, WORKOUT, RECOVERY, HABIT, PLAN
+- `AiRecommendationStatus`: PENDING, APPLIED, DISMISSED, EXPIRED
+- `AiPriority`: LOW, MEDIUM, HIGH
+- `AiSafetyLevel`: NORMAL, CAUTION, BLOCKED
 
-### 5.4. Use case UC-09 — Chat với AI Coach
+## 4.2. State machine
 
-| Thuộc tính     | Nội dung                                                                                                                |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Actor          | User                                                                                                                    |
-| Tiền điều kiện | User đã đăng nhập; AI Service khả dụng                                                                                  |
-| Luồng chính    | User gửi câu hỏi; backend lấy context được phép; AI Service sinh phản hồi; backend lưu hội thoại; app hiển thị phản hồi |
-| Luồng thay thế | Nếu AI Provider lỗi, hệ thống trả thông báo thân thiện và không làm mất câu hỏi của user                                |
-| Hậu điều kiện  | User nhận được tư vấn bằng tiếng Việt; hội thoại được lưu lại                                                           |
-
----
-
-## 6. Onboarding và cá nhân hóa
-
-### 6.1. Mục tiêu onboarding
-
-Onboarding giúp hệ thống thu thập dữ liệu ban đầu để cá nhân hóa calories, macro, lịch tập, gợi ý món ăn và tư vấn AI.
-
-### 6.2. Dữ liệu onboarding
-
-| Nhóm dữ liệu      | Ví dụ                                                          |
-| ----------------- | -------------------------------------------------------------- |
-| Mục tiêu chính    | Giảm mỡ, tăng cơ, tăng cân, duy trì sức khỏe                   |
-| Kinh nghiệm tập   | Mới bắt đầu, trung bình, nâng cao                              |
-| Lịch rảnh         | Số buổi có thể tập mỗi tuần, thời lượng mỗi buổi               |
-| Thiết bị có sẵn   | Gym đầy đủ, tạ đơn, dây kháng lực, bodyweight                  |
-| Thói quen ăn uống | Ăn cơm gia đình, ăn ngoài, tự nấu, ăn chay, ăn ít rau          |
-| Hạn chế thực phẩm | Dị ứng, không ăn được một số nhóm thực phẩm, ghi chú tùy chọn  |
-| Cá nhân hóa AI    | Cho phép hoặc không cho phép AI dùng dữ liệu cá nhân để tư vấn |
-
-### 6.3. Personalization rules
-
-- Calories và macro mục tiêu được tính từ Health Profile, activity factor và mục tiêu chính.
-- Gợi ý món ăn dựa trên calories/macro còn thiếu trong ngày, loại bữa ăn và thói quen ăn uống.
-- Gợi ý lịch tập dựa trên mục tiêu, kinh nghiệm, số buổi/tuần và thiết bị có sẵn.
-- Gợi ý của AI tập trung vào món ăn, lịch tập, thói quen và điều chỉnh kế hoạch; không ưu tiên bán hàng trong MVP.
-- AI Coach chỉ dùng dữ liệu cá nhân khi người dùng đã cho phép cá nhân hóa AI.
-- Mọi đề xuất cá nhân hóa chỉ mang tính tham khảo; người dùng cần xác nhận trước khi hệ thống thay đổi meal plan, workout schedule hoặc cart.
-
----
-
-## 7. Phân hệ quản lý tài khoản
-
-### 7.1. Chức năng
-
-| Mã      | Chức năng               | Mô tả                                                                                     |
-| ------- | ----------------------- | ----------------------------------------------------------------------------------------- |
-| AUTH-01 | Đăng ký                 | Người dùng tạo tài khoản bằng email, mật khẩu và thông tin cơ bản                         |
-| AUTH-02 | Đăng nhập               | Người dùng đăng nhập bằng email/mật khẩu                                                  |
-| AUTH-03 | Đăng nhập Google        | Người dùng đăng nhập bằng tài khoản Google                                                |
-| AUTH-04 | Quên mật khẩu           | Hệ thống gửi OTP hoặc liên kết đặt lại mật khẩu                                           |
-| AUTH-05 | Xác thực OTP            | Xác minh email/số điện thoại hoặc xác nhận đặt lại mật khẩu                               |
-| AUTH-06 | Đổi mật khẩu            | Người dùng đổi mật khẩu khi đã đăng nhập                                                  |
-| AUTH-07 | Cập nhật hồ sơ          | Người dùng cập nhật họ tên, ngày sinh, giới tính, ảnh đại diện                            |
-| AUTH-08 | Đăng xuất               | Thu hồi refresh token và kết thúc phiên đăng nhập                                         |
-| AUTH-09 | Đăng nhập sinh trắc học | Người dùng mở khóa phiên đăng nhập đã lưu bằng Face ID hoặc vân tay trên thiết bị cá nhân |
-
-### 7.2. Business rules
-
-- Email phải duy nhất trong hệ thống.
-- Mật khẩu phải được hash bằng BCrypt hoặc thuật toán tương đương.
-- Access Token dùng JWT, thời hạn ngắn.
-- Refresh Token phải được lưu an toàn và có khả năng thu hồi khi đăng xuất.
-- Tài khoản bị khóa hoặc vô hiệu hóa không được đăng nhập.
-- Google Login phải liên kết với email duy nhất trong hệ thống.
-- Đăng nhập sinh trắc học chỉ được bật sau khi người dùng đăng nhập thành công ít nhất một lần bằng email/mật khẩu hoặc Google.
-- Face ID/vân tay chỉ dùng để mở khóa phiên đăng nhập đã lưu trên thiết bị, không thay thế cơ chế xác thực backend.
-- Ứng dụng không được lưu mật khẩu hoặc dữ liệu sinh trắc học; refresh token phải được lưu bằng secure storage của thiết bị.
-- Khi xác thực sinh trắc học thành công, ứng dụng dùng refresh token để gọi API cấp access token mới.
-- Nếu xác thực sinh trắc học thất bại, bị hủy, thiết bị không còn hỗ trợ biometric hoặc refresh token hết hạn, hệ thống phải đưa người dùng về màn hình đăng nhập thường.
-- Người dùng phải có tùy chọn bật/tắt đăng nhập sinh trắc học trong phần cài đặt tài khoản.
-
-### 7.3. Use case AUTH-09 — Đăng nhập sinh trắc học
-
-| Thuộc tính     | Nội dung                                                                                                                                                                                                                            |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Actor          | User                                                                                                                                                                                                                                |
-| Tiền điều kiện | User đã đăng nhập thành công trước đó; thiết bị hỗ trợ Face ID/vân tay; user đã bật đăng nhập sinh trắc học; refresh token còn hiệu lực trong secure storage                                                                        |
-| Luồng chính    | User mở app; app kiểm tra cấu hình biometric và refresh token; app hiển thị prompt Face ID/vân tay; user xác thực thành công; app gọi `/api/v1/auth/refresh`; backend cấp access token mới; app chuyển vào màn hình chính           |
-| Luồng thay thế | Nếu user hủy prompt, xác thực thất bại, thiết bị không hỗ trợ biometric, biometric chưa được thiết lập hoặc refresh token không hợp lệ/hết hạn, app xóa trạng thái phiên không hợp lệ nếu cần và hiển thị màn hình đăng nhập thường |
-| Hậu điều kiện  | User được đăng nhập nhanh trên thiết bị đã bật biometric; backend vẫn kiểm soát phiên bằng JWT và refresh token                                                                                                                     |
-
-### 7.4. Luồng bật/tắt đăng nhập sinh trắc học
-
-- Sau khi đăng nhập thành công, nếu thiết bị hỗ trợ Face ID/vân tay, app có thể gợi ý user bật đăng nhập sinh trắc học.
-- Khi user chọn bật, app phải yêu cầu xác thực Face ID/vân tay một lần trước khi lưu trạng thái `biometric_enabled`.
-- Khi user chọn tắt, app xóa trạng thái `biometric_enabled` trên thiết bị hiện tại nhưng không bắt buộc đăng xuất khỏi tài khoản.
-- Khi user đăng xuất, app phải xóa access token, refresh token và trạng thái biometric trên thiết bị hiện tại.
-- Cấu hình biometric là theo từng thiết bị, không đồng bộ tự động sang thiết bị khác.
-
-### 7.5. Yêu cầu bảo mật cho đăng nhập sinh trắc học
-
-- Dữ liệu Face ID/vân tay không được gửi lên backend và không được lưu trong database.
-- Mobile app không được lưu mật khẩu người dùng để phục vụ đăng nhập nhanh.
-- Refresh token phải được lưu trong secure storage của hệ điều hành, ví dụ Keychain trên iOS hoặc Keystore trên Android thông qua thư viện bảo mật phù hợp.
-- Backend chỉ lưu hash của refresh token và phải hỗ trợ revoke token khi logout.
-- API private vẫn phải yêu cầu access token hợp lệ; biometric chỉ là bước xác thực cục bộ để lấy lại access token qua refresh token.
-
----
-
-## 8. Phân hệ hồ sơ sức khỏe
-
-### 8.1. Dữ liệu người dùng nhập
-
-| Trường             | Mô tả                                         | Bắt buộc |
-| ------------------ | --------------------------------------------- | :------: |
-| Họ tên             | Tên hiển thị của người dùng                   |    Có    |
-| Tuổi/ngày sinh     | Dùng để tính BMR                              |    Có    |
-| Giới tính          | Nam/Nữ/Khác                                   |    Có    |
-| Chiều cao          | Đơn vị cm                                     |    Có    |
-| Cân nặng           | Đơn vị kg                                     |    Có    |
-| Mức độ vận động    | Ít vận động, nhẹ, vừa, cao, rất cao           |    Có    |
-| Mục tiêu tập luyện | Giảm cân, tăng cân, tăng cơ, duy trì sức khỏe |    Có    |
-
-### 8.2. Chỉ số hệ thống tính toán
-
-| Chỉ số                | Ý nghĩa                                       |
-| --------------------- | --------------------------------------------- |
-| BMI                   | Chỉ số khối cơ thể                            |
-| BMR                   | Năng lượng cơ thể tiêu hao khi nghỉ ngơi      |
-| TDEE                  | Tổng năng lượng tiêu hao mỗi ngày             |
-| Calories mục tiêu     | Lượng calories nên nạp mỗi ngày theo mục tiêu |
-| Protein mục tiêu      | Lượng protein khuyến nghị mỗi ngày            |
-| Carbohydrate mục tiêu | Lượng carbohydrate khuyến nghị mỗi ngày       |
-| Fat mục tiêu          | Lượng chất béo khuyến nghị mỗi ngày           |
-
-### 8.3. Công thức đề xuất
-
-BMI:
+### Recommendation
 
 ```text
-BMI = cân nặng (kg) / (chiều cao (m) * chiều cao (m))
+PENDING
+  ├── APPLY hợp lệ → APPLIED
+  ├── DISMISS → DISMISSED
+  └── hết hạn → EXPIRED
 ```
 
-BMR theo Mifflin-St Jeor:
+Chỉ PENDING mới được APPLY/DISMISS.
+
+### Workout Schedule
+
+```text
+PLANNED
+  ├── hoàn thành → COMPLETED
+  ├── quá hạn không hoàn thành → MISSED
+  └── hủy hợp lệ → CANCELLED
+```
+
+CANCELLED không tính vào mẫu số completionRate nếu user hủy hợp lệ.
+
+---
+
+# 5. Functional Requirements
+
+## 5.1. Authentication
+
+- User có thể đăng ký, đăng nhập, refresh token, logout và reset password.
+- Google Login được xử lý server-side qua Backend.
+- Password không được lưu plaintext.
+- OTP phải có expiry, resend cooldown và giới hạn attempts/rate limit.
+- Refresh token phải có expiry và revoke; rotation được khuyến nghị.
+- Private API yêu cầu JWT hợp lệ.
+- User chỉ truy cập resource thuộc chính mình.
+
+## 5.2. Health Profile
+
+User có thể quản lý:
+
+- tuổi/ngày sinh.
+- giới tính.
+- chiều cao.
+- cân nặng.
+- activity level.
+- fitness goal.
+- training experience.
+
+Backend chịu trách nhiệm tính:
+
+- BMI.
+- BMR.
+- TDEE.
+- calories target.
+- macro target.
+
+AI không thay thế các phép tính deterministic này.
+
+## 5.3. Exercise Library
+
+Mỗi Exercise nên có:
+
+- tên.
+- nhóm cơ chính/phụ.
+- thiết bị.
+- độ khó.
+- mô tả.
+- video hướng dẫn.
+- instruction steps.
+- common mistakes.
+- safety notes.
+
+Video có thể dùng URL/object storage/CDN hoặc asset demo hợp lệ. MVP không yêu cầu streaming nâng cao.
+
+## 5.4. Gym Equipment Preference
+
+Flow:
+
+```text
+Onboarding / Lần đầu bắt đầu tập
+        ↓
+User chọn thiết bị
+        ↓
+Backend lưu UserPreference
+        ↓
+Exercise Library / Workout Builder ưu tiên bài phù hợp
+        ↓
+User có thể chỉnh trong Settings
+```
+
+Rules:
+
+- Không yêu cầu chọn lại thiết bị ở mỗi buổi tập.
+- Settings cho phép thêm/xóa/sửa/reset thiết bị.
+- Thay đổi preference không làm thay đổi WorkoutLog cũ.
+- Nếu chưa chọn thiết bị, ưu tiên BODYWEIGHT và bài không yêu cầu thiết bị đặc thù.
+- “Full gym” có thể được xem là có các equipment phổ biến trong seed data.
+
+Equipment tối thiểu:
+
+`BODYWEIGHT, DUMBBELL, BARBELL, BENCH, CABLE_MACHINE, MACHINE, RESISTANCE_BAND, KETTLEBELL, PULL_UP_BAR, TREADMILL`
+
+## 5.5. Workout Builder
+
+Hỗ trợ:
+
+- Push Pull Legs.
+- Upper Lower.
+- Full Body.
+- Custom workout cơ bản.
+
+Workout Builder ưu tiên bài tập phù hợp với `available_equipment`.
+
+Nếu user không có thiết bị cần thiết:
+
+1. Giảm độ ưu tiên bài đó.
+2. Gợi ý bài thay thế cùng nhóm cơ.
+3. Vẫn cho phép user tìm thủ công.
+
+## 5.6. Workout Schedule
+
+- User tạo/chọn chương trình.
+- Có thể sinh lịch tập từ chương trình.
+- Lịch có trạng thái PLANNED/COMPLETED/MISSED/CANCELLED.
+- Một user nên có tối đa một Workout Program active tại một thời điểm.
+
+## 5.7. Workout Log
+
+User ghi:
+
+- exercise.
+- set.
+- reps.
+- weight.
+- duration nếu có.
+- completion.
+
+Backend tính:
+
+- volume.
+- completion rate.
+- PR.
+
+Exercise bị ẩn vẫn giữ được lịch sử log nhưng không nên cho thêm vào program mới.
+
+## 5.8. Food Database
+
+Food hỗ trợ:
+
+- tên món.
+- category.
+- serving size.
+- calories.
+- protein.
+- carbohydrate.
+- fat.
+- source/ghi chú dữ liệu.
+
+Food Database nội bộ phải có đủ dữ liệu demo món Việt và không phụ thuộc hoàn toàn vào API bên ngoài.
+
+## 5.9. Meal Planner
+
+User có thể:
+
+- tìm món.
+- thêm món vào bữa.
+- thay đổi serving.
+- xem calories/macro.
+- xem tổng ngày.
+- lưu meal template.
+
+Meal type tối thiểu:
+
+`BREAKFAST, LUNCH, DINNER, SNACK`
+
+Meal Planner hỗ trợ khẩu phần:
+
+- tô/chén/phần.
+- đơn vị phổ biến như quả, ly, miếng.
+- gram.
+- multiplier như 0.5, 1, 1.5, 2 phần.
+
+## 5.10. Weight Tracking
+
+User có thể:
+
+- thêm weight log.
+- xem lịch sử.
+- xem chart/trend.
+- so sánh với goal.
+
+Backend tính trend/summary trước khi gửi context cho AI.
+
+## 5.11. Dashboard
+
+Dashboard hiển thị:
+
+### Nutrition
+- target calories.
+- consumed calories.
+- remaining calories.
+- protein/carbs/fat.
+
+### Workout
+- today's workout.
+- next workout.
+- weekly completion.
+
+### Body
+- current weight.
+- BMI.
+- progress.
+
+### AI
+- Daily Recommendation.
+- short insight.
+- action tiếp theo.
+
+Mobile không tự tính lại các metric authoritative đã được Backend cung cấp.
+
+## 5.12. User Preference
+
+Có thể lưu:
+
+- món không thích.
+- dị ứng/ràng buộc do user khai báo.
+- available equipment.
+- thời gian tập.
+- meal preference.
+- apply/dismiss feedback.
+
+Preference về dị ứng/ràng buộc được ưu tiên hơn recommendation tối ưu macro.
+
+## 5.13. Admin
+
+Phạm vi Admin được chia theo priority:
+
+- **P0 baseline:** quản lý/hide Exercise, quản lý/hide Food và xem Audit Log tối thiểu.
+- **P1:** quản lý User, Admin Dashboard, import CSV/Excel qua preview/validation, quản lý AI Rule, prompt version và xem AI recommendation metrics cơ bản.
+
+Exercise/Food đã có history nên ưu tiên hide/soft-delete. Mọi thao tác quản trị quan trọng phải được phân quyền và ghi audit mà không lưu credential hoặc personal context dư thừa.
+
+Shop/Order/Payment không thuộc MVP.
+
+---
+
+# 6. Business Rules và Calculation
+
+## 6.1. BMI
+
+```text
+BMI = weightKg / (heightM * heightM)
+```
+
+## 6.2. BMR — Mifflin-St Jeor
 
 ```text
 Nam: BMR = 10 * weightKg + 6.25 * heightCm - 5 * age + 5
 Nữ:  BMR = 10 * weightKg + 6.25 * heightCm - 5 * age - 161
 ```
 
-TDEE:
+## 6.3. TDEE
 
 ```text
 TDEE = BMR * activityFactor
 ```
 
-Activity factor:
-
-| Mức độ vận động  | Hệ số |
-| ---------------- | ----: |
-| Ít vận động      |   1.2 |
-| Vận động nhẹ     | 1.375 |
-| Vận động vừa     |  1.55 |
-| Vận động cao     | 1.725 |
-| Vận động rất cao |   1.9 |
-
-Calories mục tiêu:
-
-| Mục tiêu | Quy tắc đề xuất                              |
-| -------- | -------------------------------------------- |
-| Giảm cân | TDEE - 300 đến 500 kcal                      |
-| Tăng cân | TDEE + 300 đến 500 kcal                      |
-| Tăng cơ  | TDEE + 200 đến 400 kcal, ưu tiên protein cao |
-| Duy trì  | Gần bằng TDEE                                |
-
-### 8.4. Business rules
-
-- Mỗi lần người dùng cập nhật cân nặng hoặc hồ sơ sức khỏe, hệ thống lưu lịch sử để vẽ biểu đồ.
-- Nếu thiếu dữ liệu bắt buộc, hệ thống không tính TDEE và phải yêu cầu hoàn thiện hồ sơ.
-- Calories và macro mục tiêu phải được dùng làm cơ sở cho Dashboard, Meal Planner và AI Coach.
-
----
-
-## 9. Phân hệ AI Coach
-
-### 9.1. Mục tiêu
-
-AI Coach là chức năng nổi bật của VieGym, hỗ trợ người dùng nhận tư vấn luyện tập, dinh dưỡng và giải đáp các câu hỏi liên quan đến gym bằng tiếng Việt.
-
-### 9.2. Chức năng
-
-| Mã    | Chức năng                | Mô tả                                                                            |
-| ----- | ------------------------ | -------------------------------------------------------------------------------- |
-| AI-01 | Tư vấn lịch tập          | Đề xuất lịch tập theo mục tiêu, số buổi/tuần và kinh nghiệm                      |
-| AI-02 | Tư vấn bài tập           | Gợi ý bài tập phù hợp với nhóm cơ, thiết bị và độ khó                            |
-| AI-03 | Giải thích kỹ thuật      | Hướng dẫn cách thực hiện bài tập và lỗi thường gặp                               |
-| AI-04 | Tư vấn dinh dưỡng        | Đề xuất món ăn, calories và macro theo mục tiêu                                  |
-| AI-05 | Điều chỉnh kế hoạch      | Điều chỉnh lịch tập/thực đơn theo phản hồi của người dùng                        |
-| AI-06 | Chat theo ngữ cảnh       | Trả lời dựa trên hồ sơ sức khỏe, lịch tập, thực đơn và tiến độ hiện tại          |
-| AI-07 | Daily Recommendation     | Tạo gợi ý hôm nay dựa trên calories/macro còn thiếu, lịch tập và tiến độ gần đây |
-| AI-08 | Weekly Review            | Tổng kết meal, workout, cân nặng và mức độ tuân thủ theo tuần                    |
-| AI-09 | Plan Adjustment          | Đề xuất thay đổi lịch tập, calories/macro hoặc meal plan nhưng cần user xác nhận |
-| AI-10 | Lưu phản hồi cá nhân hóa | Ghi nhận món không thích, thiết bị thiếu, thời gian rảnh hoặc ràng buộc cá nhân  |
-
-### 9.3. Ngữ cảnh AI được phép sử dụng
-
-AI Service có thể nhận các dữ liệu sau từ Backend:
-
-- Mục tiêu tập luyện.
-- Tuổi, giới tính, chiều cao, cân nặng.
-- BMI, BMR, TDEE, calories mục tiêu.
-- Lịch tập hiện tại.
-- Lịch sử tập luyện gần đây.
-- Thực đơn trong ngày.
-- Mục tiêu macro.
-- Xu hướng cân nặng gần đây.
-- Tỷ lệ hoàn thành lịch tập trong tuần.
-- Sở thích, hạn chế thực phẩm, thiết bị có sẵn và phản hồi cá nhân hóa đã lưu.
-
-### 9.4. Business rules
-
-- AI không được thay thế tư vấn y tế chuyên môn.
-- Với câu hỏi liên quan đến bệnh lý, chấn thương hoặc tình trạng sức khỏe nghiêm trọng, AI phải khuyến nghị người dùng hỏi bác sĩ/chuyên gia.
-- AI phải trả lời bằng tiếng Việt, dễ hiểu, phù hợp với người mới bắt đầu.
-- Không gửi dữ liệu nhạy cảm không cần thiết sang AI Provider.
-- Backend phải kiểm soát prompt, context và giới hạn token để tránh chi phí vượt kiểm soát.
-- AI chỉ đưa ra đề xuất; các thay đổi vào lịch tập hoặc meal plan chỉ được áp dụng khi người dùng xác nhận.
-- AI không được chẩn đoán bệnh, kê đơn thuốc, cam kết hiệu quả điều trị hoặc khuyến nghị chế độ giảm cân cực đoan.
-- Với thực phẩm bổ sung, AI phải trình bày ở mức thông tin tham khảo và khuyến nghị đọc hướng dẫn sử dụng.
-
-### 9.5. Quyền riêng tư và consent cho AI
-
-Người dùng cần được biết dữ liệu nào có thể được dùng để cá nhân hóa tư vấn AI. Hệ thống nên hỗ trợ:
-
-- Tùy chọn bật/tắt việc cho phép AI dùng hồ sơ sức khỏe, meal plan và workout log để tư vấn.
-- Chỉ gửi context tối thiểu cần thiết cho câu hỏi hiện tại.
-- Không gửi mật khẩu, token, email, số điện thoại hoặc dữ liệu không liên quan sang AI Provider.
-- Khi user tắt cá nhân hóa AI, AI Coach vẫn có thể trả lời kiến thức chung nhưng không dùng dữ liệu cá nhân.
-- Log hội thoại AI cần được bảo vệ như dữ liệu cá nhân và chỉ user sở hữu mới được xem.
-
-### 9.6. AI Daily Recommendation
-
-Dashboard có thể hiển thị gợi ý ngắn hằng ngày từ AI, ví dụ:
-
-- Hôm nay bạn còn thiếu 35 g protein; có thể thêm trứng luộc hoặc ức gà nếu phù hợp khẩu vị.
-- Hôm nay có lịch tập chân; nên ưu tiên ngủ đủ và ăn đủ carbohydrate trước buổi tập.
-- Tuần này bạn mới hoàn thành 1/3 buổi tập; hãy chọn một buổi ngắn 30 phút nếu bận.
-
-Daily Recommendation cần dựa trên dữ liệu đã được backend tổng hợp, không để AI tự truy cập database.
-
-### 9.7. AI Weekly Review
-
-Cuối tuần hoặc khi user mở màn tổng kết, hệ thống có thể tạo weekly review gồm:
-
-| Nhóm             | Nội dung                                                        |
-| ---------------- | --------------------------------------------------------------- |
-| Dinh dưỡng       | Calories trung bình, protein đạt được, ngày vượt/thiếu mục tiêu |
-| Luyện tập        | Số buổi hoàn thành, tỷ lệ hoàn thành lịch tập, bài tập tiến bộ  |
-| Cân nặng         | Cân nặng đầu tuần/cuối tuần, xu hướng tăng/giảm                 |
-| Nhận xét         | Một số insight ngắn bằng tiếng Việt, dễ hiểu                    |
-| Đề xuất tuần sau | Điều chỉnh nhỏ về meal plan, lịch tập hoặc mục tiêu nếu cần     |
-
-### 9.8. AI Plan Adjustment
-
-AI có thể đề xuất điều chỉnh kế hoạch nhưng không tự áp dụng. Các loại điều chỉnh gồm:
-
-- Đổi lịch tập 4 buổi/tuần thành 3 buổi/tuần khi user bận.
-- Gợi ý tăng/giảm calories mục tiêu ở mức nhỏ khi tiến độ lệch mục tiêu.
-- Gợi ý món thay thế nếu user không thích hoặc không có nguyên liệu.
-- Gợi ý bài tập thay thế nếu user thiếu thiết bị hoặc bị đau nhẹ.
-
-Mỗi đề xuất phải có trạng thái `PENDING`, `APPLIED` hoặc `DISMISSED` để user kiểm soát quyết định cuối cùng.
-
----
-
-## 10. Phân hệ Workout Builder
-
-### 10.1. Chức năng
-
-Người dùng có thể chọn giáo án mẫu hoặc tự tạo giáo án cá nhân.
-
-| Loại giáo án   | Mô tả                                                           |
-| -------------- | --------------------------------------------------------------- |
-| Push Pull Legs | Chia buổi theo nhóm đẩy, kéo, chân                              |
-| Upper Lower    | Chia buổi thân trên và thân dưới                                |
-| Full Body      | Tập toàn thân trong một buổi                                    |
-| Custom         | Người dùng tự chọn bài tập, số hiệp, số lần lặp, thời gian nghỉ |
-
-### 10.2. Dữ liệu giáo án
-
-| Trường             | Mô tả                                     |
-| ------------------ | ----------------------------------------- |
-| Tên giáo án        | Tên do hệ thống hoặc người dùng đặt       |
-| Mục tiêu           | Giảm cân, tăng cơ, tăng sức mạnh, duy trì |
-| Số buổi/tuần       | Số ngày tập trong tuần                    |
-| Danh sách buổi tập | Các ngày/buổi trong giáo án               |
-| Danh sách bài tập  | Bài tập thuộc từng buổi                   |
-| Sets               | Số hiệp                                   |
-| Reps               | Số lần lặp                                |
-| Rest time          | Thời gian nghỉ giữa các hiệp              |
-| Note               | Ghi chú cá nhân                           |
-
-### 10.3. Business rules
-
-- Một người dùng có thể có nhiều giáo án nhưng chỉ nên có một giáo án đang hoạt động tại một thời điểm.
-- Người dùng có thể chỉnh sửa giáo án sau khi tạo.
-- Khi tạo lịch tập từ giáo án, hệ thống sinh các buổi tập tương ứng trong lịch.
-- Nếu bài tập bị Admin ẩn hoặc xóa mềm, giáo án cũ vẫn giữ lịch sử nhưng không cho thêm bài tập đó vào giáo án mới.
-
----
-
-## 11. Phân hệ thư viện bài tập
-
-### 11.1. Dữ liệu bài tập
-
-| Trường         | Mô tả                                             |
-| -------------- | ------------------------------------------------- |
-| Tên bài tập    | Tên tiếng Việt hoặc tiếng Anh phổ biến            |
-| Video minh họa | URL video hoặc file lưu trên storage              |
-| GIF minh họa   | Ảnh động minh họa động tác                        |
-| Nhóm cơ chính  | Ngực, lưng, vai, tay, chân, bụng...               |
-| Nhóm cơ phụ    | Các nhóm cơ phụ được tác động                     |
-| Thiết bị       | Tạ đơn, tạ đòn, máy, dây kháng lực, bodyweight... |
-| Độ khó         | Beginner, Intermediate, Advanced                  |
-| Hướng dẫn      | Các bước thực hiện                                |
-| Lỗi thường gặp | Các lỗi kỹ thuật người tập hay gặp                |
-| Trạng thái     | Active/Inactive                                   |
-
-### 11.2. Chức năng
-
-- Xem danh sách bài tập.
-- Xem chi tiết bài tập.
-- Tìm kiếm theo tên bài tập.
-- Lọc theo nhóm cơ.
-- Lọc theo thiết bị.
-- Lọc theo độ khó.
-- Admin thêm, sửa, ẩn bài tập.
-
-### 11.3. Business rules
-
-- Người dùng chỉ thấy bài tập đang active.
-- Admin có thể quản lý toàn bộ bài tập.
-- Video/GIF phải được lưu bằng URL an toàn hoặc object storage.
-- Nội dung hướng dẫn nên ưu tiên tiếng Việt.
-
----
-
-## 12. Phân hệ theo dõi luyện tập
-
-### 12.1. Chức năng
-
-Sau mỗi buổi tập, người dùng có thể ghi nhận:
-
-| Trường        | Mô tả                                   |
-| ------------- | --------------------------------------- |
-| Ngày tập      | Ngày hoàn thành buổi tập                |
-| Bài tập       | Bài tập đã thực hiện                    |
-| Số hiệp       | Tổng số hiệp                            |
-| Số lần lặp    | Số reps mỗi hiệp                        |
-| Mức tạ        | Khối lượng tạ theo kg                   |
-| Thời gian tập | Tổng thời gian buổi tập                 |
-| RPE           | Mức độ nặng cảm nhận, tùy chọn          |
-| Ghi chú       | Cảm nhận, mức độ khó, tình trạng cơ thể |
-
-Workout Log nên hỗ trợ ghi chi tiết theo từng set:
-
-| Cấp dữ liệu        | Nội dung                                        |
-| ------------------ | ----------------------------------------------- |
-| WorkoutLog         | Một buổi tập hoàn chỉnh theo ngày               |
-| WorkoutExerciseLog | Một bài tập trong buổi tập                      |
-| WorkoutSetLog      | Từng set gồm reps, weight, RPE và note tùy chọn |
-
-Người dùng có thể tạo log từ lịch tập đã có, chỉnh số set/reps/weight thực tế và lưu lại để phục vụ thống kê tiến bộ.
-
-### 12.2. Thống kê
-
-Hệ thống cần thống kê:
-
-- Tổng số buổi tập.
-- Tổng thời gian tập.
-- Số buổi hoàn thành trong tuần/tháng.
-- Personal Record theo bài tập.
-- Biểu đồ tiến bộ theo mức tạ/reps/volume.
-- Tỷ lệ hoàn thành lịch tập.
-
-### 12.3. Business rules
-
-- Người dùng chỉ xem và chỉnh sửa lịch sử tập luyện của chính mình.
-- PR được tính theo bài tập và có thể dựa trên mức tạ lớn nhất, số reps cao nhất, tổng volume hoặc estimated 1RM.
-- Volume của một bài tập được tính bằng tổng `sets * reps * weight` của các set có nhập mức tạ.
-- Khi người dùng đánh dấu hoàn thành buổi tập trong lịch, hệ thống liên kết dữ liệu với workout log.
-- Nếu người dùng tạo workout log từ lịch tập, hệ thống copy bài tập dự kiến sang log nhưng cho phép chỉnh lại dữ liệu thực tế.
-
----
-
-## 13. Phân hệ lịch tập
-
-### 13.1. Chức năng
-
-| Mã     | Chức năng           | Mô tả                                      |
-| ------ | ------------------- | ------------------------------------------ |
-| SCH-01 | Tạo lịch tập        | Người dùng tạo lịch theo ngày/tuần/tháng   |
-| SCH-02 | Sửa lịch            | Thay đổi ngày, giờ, bài tập, ghi chú       |
-| SCH-03 | Xem lịch tuần       | Hiển thị lịch tập theo tuần                |
-| SCH-04 | Xem lịch tháng      | Hiển thị lịch tập theo tháng               |
-| SCH-05 | Đánh dấu hoàn thành | Người dùng đánh dấu buổi tập đã hoàn thành |
-| SCH-06 | Nhắc lịch tập       | Gửi notification trước giờ tập             |
-
-### 13.2. Trạng thái buổi tập
-
-| Status    | Mô tả                        |
-| --------- | ---------------------------- |
-| SCHEDULED | Đã lên lịch                  |
-| COMPLETED | Đã hoàn thành                |
-| MISSED    | Đã qua nhưng chưa hoàn thành |
-| CANCELLED | Đã hủy                       |
-
-### 13.3. Business rules
-
-- Người dùng có thể tạo lịch thủ công hoặc sinh lịch từ giáo án.
-- Notification chỉ gửi khi người dùng bật quyền thông báo.
-- Buổi tập quá hạn có thể tự chuyển sang MISSED theo job định kỳ hoặc khi người dùng mở app.
-
----
-
-## 14. Phân hệ Meal Planner
-
-### 14.1. Mục tiêu
-
-Meal Planner là điểm khác biệt lớn của VieGym. Hệ thống cần có cơ sở dữ liệu dinh dưỡng món ăn Việt Nam, cho phép người dùng lập thực đơn hằng ngày và theo dõi calories, protein, carbohydrate, fat so với mục tiêu cá nhân.
-
-### 14.2. Dữ liệu món ăn
-
-| Trường       | Mô tả                                                 |
-| ------------ | ----------------------------------------------------- |
-| Tên món      | Ví dụ: cơm tấm, phở bò, bún chả, ức gà áp chảo        |
-| Hình ảnh     | Ảnh món ăn                                            |
-| Khẩu phần    | Đơn vị khẩu phần tiêu chuẩn                           |
-| Calories     | kcal/khẩu phần                                        |
-| Protein      | gram/khẩu phần                                        |
-| Carbohydrate | gram/khẩu phần                                        |
-| Fat          | gram/khẩu phần                                        |
-| Fiber        | Chất xơ, nếu có                                       |
-| Sodium       | Natri, nếu có                                         |
-| Thành phần   | Nguyên liệu chính                                     |
-| Danh mục     | Cơm, phở/bún/mì, món thịt, món rau, đồ uống, snack... |
-| Trạng thái   | Active/Inactive                                       |
-
-### 14.3. Chức năng người dùng
-
-- Tìm kiếm món ăn.
-- Xem thông tin dinh dưỡng từng món.
-- Thêm món vào bữa sáng, bữa trưa, bữa tối hoặc bữa phụ.
-- Điều chỉnh khẩu phần.
-- Xem tổng calories và macro trong ngày.
-- So sánh lượng đã nạp với mục tiêu.
-- Nhận cảnh báo khi vượt hoặc thiếu calories/macro.
-- Nhận gợi ý món ăn phù hợp.
-- Tạo món ăn cá nhân nếu món chưa có trong hệ thống.
-- Sao chép thực đơn từ ngày trước để nhập liệu nhanh.
-- Lưu meal template cho các bữa ăn thường dùng.
-
-### 14.3.1. Khẩu phần món Việt
-
-Meal Planner nên hỗ trợ khẩu phần gần với thói quen người Việt thay vì chỉ nhập gram:
-
-| Loại khẩu phần       | Ví dụ                                        |
-| -------------------- | -------------------------------------------- |
-| Theo phần/tô/chén    | 1 tô phở, nửa tô, 1 chén cơm, 1 phần cơm tấm |
-| Theo đơn vị phổ biến | 1 quả trứng, 1 ly sữa, 1 miếng ức gà         |
-| Theo khối lượng      | 100 g, 150 g, 200 g                          |
-| Theo hệ số khẩu phần | 0.5 phần, 1 phần, 1.5 phần, 2 phần           |
-
-Mỗi món ăn cần có khẩu phần chuẩn để hệ thống quy đổi calories và macro khi người dùng thay đổi số lượng.
-
-### 14.4. Nguồn dữ liệu và chất lượng dữ liệu
-
-Dữ liệu món ăn Việt Nam cần được chuẩn hóa để Meal Planner đủ tin cậy trong demo và có thể mở rộng sau này.
-
-| Nội dung               | Quy định đề xuất                                                                                     |
-| ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| Nguồn dữ liệu          | Tổng hợp từ nguồn công khai, nhãn dinh dưỡng, dữ liệu tự chuẩn hóa hoặc nhập liệu thủ công bởi Admin |
-| Khẩu phần chuẩn        | Mỗi món cần có khẩu phần mặc định rõ ràng, ví dụ 1 tô, 1 phần, 100 g                                 |
-| Giá trị dinh dưỡng     | Calories, protein, carbohydrate và fat là bắt buộc; fiber/sodium là tùy chọn                         |
-| Độ chính xác           | Hiển thị là giá trị ước lượng, không thay thế tư vấn dinh dưỡng chuyên môn                           |
-| Dữ liệu người dùng tạo | Chỉ thuộc tài khoản của người tạo, trừ khi Admin duyệt thành món dùng chung                          |
-| Duyệt dữ liệu          | Admin có thể chỉnh sửa, ẩn hoặc chuẩn hóa món ăn trước khi public                                    |
-
-### 14.5. Dữ liệu món ăn mẫu
-
-Các giá trị dưới đây chỉ là dữ liệu mẫu để seed/demo; khi triển khai cần chuẩn hóa lại nguồn dữ liệu và khẩu phần.
-
-| Món ăn        | Khẩu phần | Calories | Protein | Carbohydrate |  Fat |
-| ------------- | --------- | -------: | ------: | -----------: | ---: |
-| Phở bò        | 1 tô      | 450 kcal |    25 g |         60 g | 12 g |
-| Cơm tấm sườn  | 1 phần    | 650 kcal |    28 g |         85 g | 22 g |
-| Bún chả       | 1 phần    | 550 kcal |    24 g |         70 g | 18 g |
-| Ức gà áp chảo | 100 g     | 165 kcal |    31 g |          0 g |  4 g |
-| Trứng luộc    | 1 quả     |  70 kcal |     6 g |          1 g |  5 g |
-| Rau luộc      | 100 g     |  35 kcal |     2 g |          7 g |  0 g |
-
-### 14.6. Loại bữa ăn
-
-| Meal type | Mô tả    |
-| --------- | -------- |
-| BREAKFAST | Bữa sáng |
-| LUNCH     | Bữa trưa |
-| DINNER    | Bữa tối  |
-| SNACK     | Bữa phụ  |
-
-### 14.7. Business rules
-
-- Mỗi người dùng có một meal plan theo từng ngày.
-- Tổng calories/macro được tính bằng tổng các món đã thêm sau khi nhân với khẩu phần.
-- Nếu calories đã nạp vượt mục tiêu, hệ thống hiển thị cảnh báo.
-- Nếu calories/macro còn thiếu, hệ thống gợi ý món ăn phù hợp.
-- AI Coach có thể đọc meal plan hiện tại để tư vấn bổ sung hoặc thay thế món ăn.
-- Không nên phụ thuộc hoàn toàn vào API dinh dưỡng bên ngoài; hệ thống nên xây dựng Food Service riêng với dữ liệu món ăn Việt Nam được chuẩn hóa trong PostgreSQL.
-- Món ăn do người dùng tự tạo chỉ thuộc phạm vi tài khoản của người dùng đó, trừ khi Admin duyệt thành món dùng chung.
-- Khi dữ liệu dinh dưỡng chỉ là ước lượng, UI nên hiển thị rõ đây là giá trị tham khảo.
-
----
-
-## 15. Phân hệ theo dõi cân nặng
-
-### 15.1. Chức năng
-
-Người dùng cập nhật cân nặng theo ngày để theo dõi tiến độ.
-
-| Trường   | Mô tả            |
-| -------- | ---------------- |
-| Cân nặng | Đơn vị kg        |
-| Ngày đo  | Ngày ghi nhận    |
-| Ghi chú  | Ghi chú tùy chọn |
-
-### 15.2. Thống kê
-
-- Cân nặng hiện tại.
-- Cân nặng mục tiêu.
-- Mức tăng/giảm so với tuần trước/tháng trước.
-- Biểu đồ thay đổi cân nặng.
-- Tỷ lệ hoàn thành mục tiêu.
-
-### 15.3. Business rules
-
-- Một ngày có thể có một bản ghi cân nặng chính; nếu nhập lại cùng ngày thì cập nhật bản ghi hiện có.
-- Khi cân nặng thay đổi, hệ thống có thể tính lại BMI và khuyến nghị calories nếu người dùng đồng ý cập nhật.
-
----
-
-## 16. Hướng thương mại hóa sau đồ án
-
-Shop không thuộc phạm vi MVP và bản demo 6 tháng. Phần này chỉ được giữ như định hướng phát triển sau khi core AI Coach cá nhân hóa đã ổn định.
-
-### 16.1. Chức năng sau đồ án
-
-| Nhóm chức năng        | Mô tả                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| Product Catalog       | Danh sách sản phẩm gym như whey protein, creatine, vitamin, phụ kiện tập luyện        |
-| Cart & Order          | Giỏ hàng, đặt hàng, theo dõi đơn hàng                                                 |
-| Payment               | Thanh toán COD hoặc thanh toán online                                                 |
-| Affiliate/Marketplace | Liên kết bán hàng hoặc marketplace cho sản phẩm/huấn luyện viên/chuyên gia dinh dưỡng |
-| AI tư vấn sản phẩm    | Gợi ý sản phẩm dựa trên mục tiêu nhưng phải ưu tiên sức khỏe và nhu cầu thật của user |
-
-### 16.2. Nguyên tắc khi phát triển sau này
-
-- Không đưa Shop vào MVP để tránh làm loãng mục tiêu AI cá nhân hóa luyện tập và dinh dưỡng.
-- AI phải ưu tiên gợi ý món ăn, lịch tập hoặc điều chỉnh thói quen trước khi gợi ý supplement.
-- AI không được đưa ra cam kết y tế, điều trị bệnh hoặc khuyến nghị supplement quá mức.
-- Shop chỉ nên triển khai sau khi hệ thống đã có dữ liệu người dùng đủ tốt để tư vấn có trách nhiệm.
-
----
-
-## 17. Dashboard
-
-### 17.1. Dashboard người dùng
-
-Trang chủ ứng dụng hiển thị các thông tin quan trọng:
-
-| Nhóm       | Thông tin                                                      |
-| ---------- | -------------------------------------------------------------- |
-| Dinh dưỡng | Calories mục tiêu, đã nạp, còn lại, protein, carbohydrate, fat |
-| Luyện tập  | Lịch tập hôm nay, buổi tập tiếp theo, tỷ lệ hoàn thành tuần    |
-| Cơ thể     | Cân nặng hiện tại, BMI, tiến độ mục tiêu                       |
-| Gợi ý      | Gợi ý món ăn, bài tập hoặc điều chỉnh kế hoạch từ AI           |
-| Insight    | Nhận xét ngắn về tiến độ và hành động nên làm tiếp theo        |
-
-Dashboard nên hiển thị các insight ngắn, dễ hiểu, ví dụ:
-
-- Bạn đã hoàn thành 3/4 buổi tập trong tuần này.
-- Protein hôm nay còn thiếu khoảng 35 g.
-- Cân nặng giảm 0.6 kg trong 7 ngày gần nhất.
-- Bài tập Bench Press tăng 5 kg so với tháng trước.
-- Bạn thường bỏ bữa sáng; hãy thêm một món nhẹ giàu protein nếu phù hợp mục tiêu.
-
-### 17.2. Dashboard Admin
-
-Admin có thể xem:
-
-- Tổng số người dùng.
-- Tổng số món ăn.
-- Tổng số bài tập.
-- Số lượt import dữ liệu.
-- Số cuộc hội thoại AI.
-- Số gợi ý AI được tạo/được áp dụng/bị bỏ qua.
-- Món ăn/bài tập được xem nhiều.
-
----
-
-## 18. Quản trị hệ thống
-
-### 18.1. Admin quản lý dữ liệu
-
-| Nhóm dữ liệu | Chức năng                                                             |
-| ------------ | --------------------------------------------------------------------- |
-| Người dùng   | Xem danh sách, khóa/mở khóa, xem chi tiết                             |
-| Bài tập      | Thêm, sửa, ẩn, tìm kiếm, phân loại, import CSV/Excel                  |
-| Món ăn       | Thêm, sửa, ẩn, import dữ liệu, chuẩn hóa dinh dưỡng, import CSV/Excel |
-| Sản phẩm     | Thêm, sửa, ẩn, cập nhật giá/tồn kho, import CSV/Excel                 |
-| Đơn hàng     | Xem, xác nhận, cập nhật trạng thái                                    |
-| Nội dung AI  | Quản lý prompt mẫu, rule tư vấn, cảnh báo an toàn                     |
-
-### 18.2. Business rules
-
-- Admin không được xem mật khẩu hoặc refresh token của người dùng.
-- Các thao tác quan trọng của Admin nên được ghi audit log.
-- Xóa dữ liệu chính nên dùng soft delete để tránh mất dữ liệu trong quá trình làm đồ án và demo.
-- Import CSV/Excel phải có bước preview trước khi ghi vào database.
-- Dữ liệu import cần validate trường bắt buộc, định dạng số, calories/macro không âm, tên món/bài tập không trùng theo quy tắc hệ thống.
-- Nếu import lỗi một phần, hệ thống phải báo rõ dòng lỗi để Admin sửa dữ liệu nguồn.
-
----
-
-## 19. Kiến trúc hệ thống
-
-### 19.1. Kiến trúc tổng quan
+| Activity Level | Hệ số |
+|---|---:|
+| SEDENTARY | 1.2 |
+| LIGHT | 1.375 |
+| MODERATE | 1.55 |
+| ACTIVE | 1.725 |
+| VERY_ACTIVE | 1.9 |
+
+## 6.4. Calories Target
+
+| Goal | Quy tắc đề xuất |
+|---|---|
+| LOSE_WEIGHT | TDEE - 300 đến 500 kcal |
+| MAINTAIN_WEIGHT | Gần bằng TDEE |
+| GAIN_WEIGHT | TDEE + 300 đến 500 kcal |
+| GAIN_MUSCLE | TDEE + 200 đến 400 kcal |
+
+## 6.5. Macro Target
 
 ```text
-Flutter Mobile App
-        |
-        | REST API / HTTPS
-        v
-Spring Boot Backend
-        |
-        |------------------- PostgreSQL
-        |------------------- Redis
-        |------------------- MinIO / Amazon S3
-        |
-        v
-Python FastAPI AI Service
-        |
-        v
-OpenAI API hoặc Gemini API
+proteinTargetGram = bodyWeightKg * proteinFactor
+fatTargetGram = caloriesTarget * fatRatio / 9
+carbTargetGram =
+  (caloriesTarget - proteinTargetGram * 4 - fatTargetGram * 9) / 4
 ```
 
-### 19.2. Thành phần
+| Goal | Protein factor | Fat ratio |
+|---|---:|---:|
+| LOSE_WEIGHT | 1.6–2.2 g/kg | 20–30% |
+| GAIN_MUSCLE | 1.6–2.2 g/kg | 20–30% |
+| GAIN_WEIGHT | 1.4–2.0 g/kg | 20–30% |
+| MAINTAIN_WEIGHT | 1.2–1.8 g/kg | 20–30% |
 
-| Thành phần       | Công nghệ                                     | Vai trò                                                   |
-| ---------------- | --------------------------------------------- | --------------------------------------------------------- |
-| Mobile App       | Flutter                                       | Giao diện người dùng trên mobile                          |
-| Admin Web        | React + TypeScript                            | Giao diện admin trên website                              |
-| State Management | Riverpod                                      | Quản lý state phía Flutter                                |
-| Backend API      | Spring Boot                                   | Xử lý nghiệp vụ, REST API, tích hợp DB/storage/AI context |
-| Security         | Spring Security + JWT                         | Xác thực và phân quyền                                    |
-| Database         | PostgreSQL                                    | Lưu dữ liệu chính                                         |
-| Cache            | Redis                                         | Cache session, OTP, dữ liệu truy cập nhanh                |
-| AI Service       | Python FastAPI                                | Đóng gói logic AI Coach/chatbot                           |
-| AI Provider      | OpenAI API hoặc Gemini API                    | Sinh phản hồi AI                                          |
-| Storage          | MinIO hoặc Amazon S3                          | Lưu ảnh món ăn và video/GIF bài tập                       |
-| DevOps           | Docker, Docker Compose, Nginx, GitHub Actions | Triển khai và vận hành                                    |
-| Design           | Figma                                         | Thiết kế UI/UX                                            |
+Nếu carb target âm hoặc cấu hình không hợp lệ, Backend phải reject hoặc điều chỉnh theo rule an toàn trước khi lưu.
 
-### 19.3. Nguyên tắc thiết kế
+## 6.6. Workout Calculation
 
-- Mobile App không truy cập trực tiếp database.
-- Backend Spring Boot là nguồn sự thật cho dữ liệu nghiệp vụ.
-- AI Service không tự ý truy cập database; chỉ nhận context cần thiết từ Backend.
-- Ảnh/video/file media lưu trên object storage, database chỉ lưu metadata và object key/URL.
-- API cần có OpenAPI/Swagger để phục vụ báo cáo và kiểm thử.
+```text
+setVolume = reps * weightKg
+exerciseVolume = sum(setVolume)
+workoutVolume = sum(exerciseVolume)
+completionRate =
+  completedScheduledWorkoutCount / scheduledWorkoutCount
+```
 
----
+CANCELLED không tính vào mẫu số nếu user hủy hợp lệ.
 
-## 20. Mô hình dữ liệu mức khái niệm
+## 6.7. Meal Calculation
 
-### 20.1. Nhóm tài khoản và hồ sơ
+```text
+entryCalories = foodCaloriesPerServing * servingMultiplier
+entryProtein = foodProteinPerServing * servingMultiplier
+entryCarbs = foodCarbsPerServing * servingMultiplier
+entryFat = foodFatPerServing * servingMultiplier
 
-| Entity        | Mô tả                                                           |
-| ------------- | --------------------------------------------------------------- |
-| User          | Tài khoản người dùng                                            |
-| UserProfile   | Thông tin cá nhân                                               |
-| HealthProfile | Chiều cao, cân nặng, tuổi, giới tính, mức độ vận động, mục tiêu |
-| WeightLog     | Lịch sử cân nặng                                                |
-| RefreshToken  | Phiên đăng nhập                                                 |
-| OtpCode       | Mã OTP xác thực                                                 |
+dailyCalories = sum(entryCalories)
+dailyProtein = sum(entryProtein)
+dailyCarbs = sum(entryCarbs)
+dailyFat = sum(entryFat)
 
-### 20.2. Nhóm luyện tập
+remainingCalories = caloriesTarget - dailyCalories
+remainingProtein = proteinTarget - dailyProtein
+remainingCarbs = carbsTarget - dailyCarbs
+remainingFat = fatTarget - dailyFat
+```
 
-| Entity             | Mô tả                           |
-| ------------------ | ------------------------------- |
-| Exercise           | Bài tập                         |
-| MuscleGroup        | Nhóm cơ                         |
-| Equipment          | Thiết bị                        |
-| WorkoutProgram     | Giáo án tập                     |
-| WorkoutDay         | Buổi tập trong giáo án          |
-| WorkoutExercise    | Bài tập thuộc buổi tập          |
-| WorkoutSchedule    | Lịch tập                        |
-| WorkoutLog         | Nhật ký buổi tập                |
-| WorkoutExerciseLog | Chi tiết bài tập trong buổi tập |
-| WorkoutSetLog      | Chi tiết từng set               |
-
-### 20.3. Nhóm dinh dưỡng
-
-| Entity          | Mô tả                      |
-| --------------- | -------------------------- |
-| Food            | Món ăn/thực phẩm           |
-| FoodCategory    | Danh mục món ăn            |
-| MealPlan        | Thực đơn theo ngày         |
-| MealEntry       | Món ăn được thêm vào bữa   |
-| MealTemplate    | Mẫu bữa ăn thường dùng     |
-| UserFood        | Món ăn cá nhân do user tạo |
-| NutritionTarget | Mục tiêu calories và macro |
-
-### 20.4. Nhóm AI, cá nhân hóa và log
-
-| Entity           | Mô tả                                       |
-| ---------------- | ------------------------------------------- |
-| AiConversation   | Cuộc trò chuyện với AI                      |
-| AiMessage        | Tin nhắn trong cuộc trò chuyện              |
-| AiRecommendation | Gợi ý AI sinh ra                            |
-| AiConsentSetting | Cấu hình cho phép AI dùng dữ liệu cá nhân   |
-| UserPreference   | Sở thích và phản hồi cá nhân hóa của user   |
-| WeeklyReview     | Tổng kết tiến độ theo tuần                  |
-| AuditLog         | Nhật ký thao tác quan trọng                 |
-| Notification     | Thông báo nhắc lịch tập/meal plan/AI review |
-
-### 20.5. Nhóm cửa hàng sau đồ án
-
-Các entity sau không thuộc MVP đồ án, chỉ dùng khi phát triển chức năng thương mại hóa sau này:
-
-| Entity          | Mô tả                   |
-| --------------- | ----------------------- |
-| Product         | Sản phẩm                |
-| ProductCategory | Danh mục sản phẩm       |
-| Cart            | Giỏ hàng                |
-| CartItem        | Sản phẩm trong giỏ      |
-| Order           | Đơn hàng                |
-| OrderItem       | Sản phẩm trong đơn hàng |
-| Payment         | Giao dịch thanh toán    |
-| ShippingAddress | Địa chỉ nhận hàng       |
+Dữ liệu nutrition được hiển thị là giá trị tham khảo khi nguồn chỉ là ước lượng.
 
 ---
 
-## 21. API Requirements mức cao
+# 7. AI Requirements
 
-### 21.1. Auth API
+## 7.1. AI Use Cases
 
-| Method | Endpoint                     | Mô tả                          |
-| ------ | ---------------------------- | ------------------------------ |
-| POST   | /api/v1/auth/register        | Đăng ký                        |
-| POST   | /api/v1/auth/login           | Đăng nhập                      |
-| POST   | /api/v1/auth/google          | Đăng nhập Google               |
-| POST   | /api/v1/auth/refresh         | Cấp access token mới           |
-| POST   | /api/v1/auth/logout          | Đăng xuất                      |
-| POST   | /api/v1/auth/logout-all      | Đăng xuất khỏi tất cả thiết bị |
-| POST   | /api/v1/auth/forgot-password | Gửi OTP đặt lại mật khẩu       |
-| POST   | /api/v1/auth/verify-otp      | Xác thực OTP                   |
-| POST   | /api/v1/auth/reset-password  | Đặt lại mật khẩu               |
+| ID | Chức năng | Priority |
+|---|---|---|
+| AI-01 | AI Coach Chat | P0 |
+| AI-02 | Workout advice | P0 |
+| AI-03 | Nutrition advice | P0 |
+| AI-04 | Daily Recommendation | P0 |
+| AI-05 | Weekly Review | P1 |
+| AI-06 | Plan Adjustment Proposal | P1 |
+| AI-07 | Preference Memory | P1 |
 
-### 21.2. User & Health API
+## 7.2. AI được phép
 
-| Method | Endpoint                  | Mô tả                             |
-| ------ | ------------------------- | --------------------------------- |
-| GET    | /api/v1/users/me          | Lấy thông tin người dùng hiện tại |
-| PUT    | /api/v1/users/me          | Cập nhật hồ sơ cá nhân            |
-| GET    | /api/v1/health-profile/me | Lấy hồ sơ sức khỏe                |
-| PUT    | /api/v1/health-profile/me | Tạo/cập nhật hồ sơ sức khỏe       |
-| GET    | /api/v1/weight-logs       | Lấy lịch sử cân nặng              |
-| POST   | /api/v1/weight-logs       | Thêm/cập nhật cân nặng            |
+- Hiểu câu hỏi tự nhiên.
+- Giải thích dữ liệu.
+- Tạo insight.
+- Đưa recommendation.
+- Đề xuất thay đổi.
 
-### 21.3. Workout API
+## 7.3. AI không được phép
 
-| Method | Endpoint                                | Mô tả                            |
-| ------ | --------------------------------------- | -------------------------------- |
-| GET    | /api/v1/exercises                       | Danh sách bài tập                |
-| GET    | /api/v1/exercises/{id}                  | Chi tiết bài tập                 |
-| GET    | /api/v1/workout-programs                | Danh sách giáo án của người dùng |
-| POST   | /api/v1/workout-programs                | Tạo giáo án                      |
-| PUT    | /api/v1/workout-programs/{id}           | Cập nhật giáo án                 |
-| GET    | /api/v1/workout-schedules               | Lấy lịch tập                     |
-| POST   | /api/v1/workout-schedules               | Tạo lịch tập                     |
-| PATCH  | /api/v1/workout-schedules/{id}/complete | Đánh dấu hoàn thành              |
-| GET    | /api/v1/workout-logs                    | Lấy lịch sử tập luyện            |
-| POST   | /api/v1/workout-logs                    | Ghi nhận buổi tập                |
-
-### 21.4. Nutrition API
-
-| Method | Endpoint                        | Mô tả               |
-| ------ | ------------------------------- | ------------------- |
-| GET    | /api/v1/foods                   | Tìm kiếm/lọc món ăn |
-| GET    | /api/v1/foods/{id}              | Chi tiết món ăn     |
-| GET    | /api/v1/meal-plans/today        | Thực đơn hôm nay    |
-| GET    | /api/v1/meal-plans              | Thực đơn theo ngày  |
-| POST   | /api/v1/meal-plans/entries      | Thêm món vào bữa    |
-| PUT    | /api/v1/meal-plans/entries/{id} | Cập nhật khẩu phần  |
-| DELETE | /api/v1/meal-plans/entries/{id} | Xóa món khỏi bữa    |
-
-### 21.5. AI API
-
-| Method | Endpoint                                | Mô tả                                |
-| ------ | --------------------------------------- | ------------------------------------ |
-| POST   | /api/v1/ai/coach/chat                   | Chat với AI Coach cá nhân hóa        |
-| POST   | /api/v1/ai/coach/workout-plan           | Tạo gợi ý lịch tập                   |
-| POST   | /api/v1/ai/coach/meal-advice            | Tư vấn thực đơn                      |
-| GET    | /api/v1/ai/recommendations/today        | Lấy gợi ý AI hôm nay                 |
-| POST   | /api/v1/ai/recommendations/{id}/apply   | Áp dụng gợi ý sau khi user xác nhận  |
-| POST   | /api/v1/ai/recommendations/{id}/dismiss | Bỏ qua gợi ý và lưu phản hồi nếu cần |
-| GET    | /api/v1/ai/weekly-review                | Xem tổng kết tiến độ theo tuần       |
-| PUT    | /api/v1/ai/consent                      | Bật/tắt cá nhân hóa AI               |
-
-### 21.6. Dashboard API
-
-| Method | Endpoint                  | Mô tả                                  |
-| ------ | ------------------------- | -------------------------------------- |
-| GET    | /api/v1/dashboard/me      | Tổng hợp dashboard cá nhân             |
-| GET    | /api/v1/dashboard/insight | Lấy insight ngắn dựa trên dữ liệu user |
-
-### 21.7. Admin API
-
-| Method       | Endpoint                       | Mô tả                  |
-| ------------ | ------------------------------ | ---------------------- |
-| GET          | /api/v1/admin/users            | Quản lý người dùng     |
-| GET/POST/PUT | /api/v1/admin/exercises        | Quản lý bài tập        |
-| GET/POST/PUT | /api/v1/admin/foods            | Quản lý món ăn         |
-| POST         | /api/v1/admin/import/foods     | Import dữ liệu món ăn  |
-| POST         | /api/v1/admin/import/exercises | Import dữ liệu bài tập |
-| GET/POST/PUT | /api/v1/admin/ai-rules         | Quản lý rule/prompt AI |
-| GET          | /api/v1/admin/dashboard        | Dashboard Admin cơ bản |
+- Truy cập database trực tiếp.
+- Tự sửa database.
+- Tự thay đổi Meal Plan/Workout Schedule.
+- Tự tính lại metric authoritative.
+- Đưa chẩn đoán hoặc điều trị y tế.
+- Truy cập user data khác.
+- Yêu cầu password, token hoặc API key.
 
 ---
 
-## 22. Giả định, ràng buộc và phụ thuộc
+# 8. AI Architecture, Personalization và Trust Boundary
 
-### 22.1. Giả định
+## 8.1. AI Decision Pipeline
 
-- Người dùng có smartphone Android trong phạm vi demo đồ án; iOS là hướng mở rộng sau.
-- Người dùng có kết nối Internet khi sử dụng các chức năng cần đồng bộ dữ liệu, AI hoặc mua hàng.
-- Dữ liệu món ăn Việt Nam ban đầu được thu thập, chuẩn hóa và nhập vào PostgreSQL bởi Admin hoặc script nội bộ.
-- AI Provider hoạt động ổn định trong thời điểm demo; nếu provider lỗi, hệ thống trả thông báo lỗi thân thiện thay vì làm treo ứng dụng.
-- Các chức năng thương mại hóa như shop, giỏ hàng và thanh toán không thuộc phạm vi demo MVP.
+```text
+Flutter
+  ↓
+Spring Boot
+  ↓
+Authorization
+  ↓
+Consent Check
+  ↓
+Context Builder
+  ↓
+Rule Engine
+  ↓
+Prompt Builder
+  ↓
+FastAPI AI Service
+  ↓
+AI Provider
+  ↓
+Output Parser
+  ↓
+Schema Validation
+  ↓
+Business Validation
+  ↓
+Safety Validation
+  ↓
+Flutter
+```
 
-### 22.2. Ràng buộc
+## 8.2. AI Trust Boundary
 
-- Giao diện và phản hồi AI mặc định sử dụng tiếng Việt.
-- Mobile App không truy cập trực tiếp database hoặc AI Provider.
-- API key, JWT secret, storage secret và AI provider secret chỉ được lưu ở server-side.
-- Dữ liệu sức khỏe, thực đơn, lịch tập, workout log, cân nặng và hội thoại AI là dữ liệu cá nhân; backend phải kiểm tra quyền truy cập theo user.
-- Ảnh, video và GIF không lưu trực tiếp trong database.
-- Phiên bản đồ án ưu tiên hoàn thiện MVP trong 6 tháng, các tính năng nâng cao được đưa vào hướng phát triển sau đồ án.
+| Boundary | Rule |
+|---|---|
+| Mobile → Backend | Mobile gửi request/JWT; không gửi AI API key |
+| Backend → AI Service | Chỉ gửi context đã authorize, consent-check và tối thiểu hóa |
+| AI Service → Provider | Gọi provider server-side qua abstraction |
+| AI Output → Backend | Output là response/proposal; Backend parse và validate |
+| Backend → Database | Chỉ Backend có quyền mutation |
 
-### 22.2.1. Offline mode mức cơ bản
+AI Service là **stateless decision-support component**, không phải business authority, database owner hay authorization layer.
 
-Trong MVP, các chức năng yêu cầu đồng bộ và AI cần kết nối Internet. Tuy nhiên mobile app nên hỗ trợ offline nhẹ nếu có thời gian:
+## 8.3. Context Groups
 
-- Cache danh sách bài tập đã tải gần đây.
-- Cache danh sách món ăn phổ biến hoặc món người dùng hay dùng.
-- Cho phép xem dashboard gần nhất khi mất mạng.
-- Cho phép ghi workout log tạm thời trên thiết bị và đồng bộ khi có mạng.
-- Hiển thị rõ trạng thái dữ liệu chưa đồng bộ để tránh hiểu nhầm.
+| Context | Nội dung |
+|---|---|
+| Health | age, gender, height, weight, goal, activity |
+| Health Metrics | BMI, BMR, TDEE, calories/macro target |
+| Workout | schedule, recent logs, completion, PR |
+| Nutrition | meal summary, calories/macro remaining |
+| Weight | recent trend |
+| Preference | dislikes, constraints, equipment, schedule |
+| Conversation | recent messages + summary |
+| Safety | thông tin chấn thương/y tế do user cung cấp khi được phép |
 
-Trạng thái đồng bộ đề xuất cho dữ liệu ghi offline:
+## 8.4. Context Whitelist
 
-| Trạng thái  | Ý nghĩa                                                  |
-| ----------- | -------------------------------------------------------- |
-| LOCAL_ONLY  | Dữ liệu mới chỉ có trên thiết bị                         |
-| SYNCING     | App đang đồng bộ dữ liệu lên backend                     |
-| SYNCED      | Dữ liệu đã được backend xác nhận lưu thành công          |
-| SYNC_FAILED | Đồng bộ thất bại, user có thể thử lại hoặc chỉnh dữ liệu |
+| Context Type | Context chính |
+|---|---|
+| CHAT | Recent messages, summary và dữ liệu liên quan câu hỏi |
+| DAILY_RECOMMENDATION | Rule signals, nutrition hôm nay, workout hôm nay/tiếp theo, weight trend, preference cần thiết |
+| WEEKLY_REVIEW | Aggregated weekly metrics |
+| PLAN_ADJUSTMENT | Current plan summary, targets, trends, constraints/preference |
 
-### 22.3. Phụ thuộc bên ngoài
+Không gửi:
 
-| Phụ thuộc                   | Vai trò                        | Rủi ro                                     |
-| --------------------------- | ------------------------------ | ------------------------------------------ |
-| OpenAI API hoặc Gemini API  | Sinh phản hồi AI Coach/chatbot | Chi phí, rate limit, lỗi provider          |
-| Google OAuth                | Đăng nhập Google               | Cần cấu hình OAuth client đúng môi trường  |
-| MinIO hoặc Amazon S3        | Lưu media                      | Cần cấu hình bucket, quyền truy cập và URL |
-| Firebase/local notification | Nhắc lịch và thông báo         | Cần quyền notification trên thiết bị       |
+- raw database history không cần thiết.
+- dữ liệu user khác.
+- password/token/API key.
+- mutation command trực tiếp.
 
----
+## 8.5. Context Budget
 
-## 23. Yêu cầu giao diện ngoài
+Ví dụ:
 
-### 23.1. Giao diện người dùng
+- Workout: 7–14 ngày gần nhất + summary.
+- Weight: trend 7–30 ngày.
+- Meal: hôm nay + summary gần đây.
+- Conversation: recent messages + summary.
 
-- Mobile App cần hỗ trợ các màn chính: đăng nhập/đăng ký, onboarding, hồ sơ sức khỏe, dashboard, workout, meal planner, AI Coach, weekly review và profile.
-- Giao diện ưu tiên tiếng Việt, dễ dùng cho người mới tập gym.
-- Các biểu đồ calories, macro, cân nặng và tiến bộ tập luyện phải dễ đọc trên màn hình điện thoại.
-- Form nhập liệu cần có validation rõ ràng và thông báo lỗi dễ hiểu.
+`AiContextSnapshot` có thể lưu:
 
-### 23.2. Giao diện phần mềm
-
-| Thành phần                               | Giao tiếp          |
-| ---------------------------------------- | ------------------ |
-| Flutter Mobile App ↔ Spring Boot Backend | REST API qua HTTPS |
-| Spring Boot Backend ↔ PostgreSQL         | JDBC/JPA           |
-| Spring Boot Backend ↔ Redis              | Redis protocol     |
-| Spring Boot Backend ↔ Object Storage     | S3-compatible API  |
-| Spring Boot Backend ↔ FastAPI AI Service | HTTP API nội bộ    |
-| FastAPI AI Service ↔ AI Provider         | Provider SDK/API   |
-
-### 23.3. Giao diện phần cứng
-
-- Ứng dụng chạy trên smartphone; không yêu cầu thiết bị phần cứng chuyên dụng trong MVP.
-- Camera, cảm biến sức khỏe, Apple Health và Google Fit chưa thuộc phạm vi bắt buộc của phiên bản đồ án.
-
-### 23.4. Giao diện truyền thông
-
-- Tất cả giao tiếp giữa mobile app và backend nên dùng HTTPS khi triển khai thật.
-- API trả JSON UTF-8.
-- Media được truy cập qua URL do backend kiểm soát hoặc object storage đã cấu hình quyền phù hợp.
-
----
-
-## 24. Yêu cầu phi chức năng
-
-| #   | Yêu cầu          | Chi tiết                                                                                                         |
-| --- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 1   | Hiệu năng API    | P95 API latency < 500ms với các API đọc phổ biến trong môi trường MVP                                            |
-| 2   | Bảo mật          | Tất cả API riêng tư yêu cầu JWT; mật khẩu hash an toàn; phân quyền User/Admin                                    |
-| 3   | Riêng tư dữ liệu | Chỉ người dùng sở hữu dữ liệu mới được xem hồ sơ sức khỏe, lịch tập, thực đơn, cân nặng và hội thoại AI của mình |
-| 4   | Khả dụng         | Hệ thống hoạt động ổn định trong quá trình demo và kiểm thử                                                      |
-| 5   | Mở rộng          | Kiến trúc tách Mobile, Backend, AI Service, Database, Storage                                                    |
-| 6   | Dễ bảo trì       | REST API rõ ràng, có Swagger/OpenAPI, code chia theo module                                                      |
-| 7   | Đa nền tảng      | Flutter có thể build Android trước, mở rộng iOS sau                                                              |
-| 8   | Ngôn ngữ         | Giao diện và phản hồi AI mặc định bằng tiếng Việt                                                                |
-| 9   | An toàn AI       | AI có guardrail với nội dung y tế, chấn thương, thực phẩm bổ sung                                                |
-| 10  | Backup dữ liệu   | Database cần có quy trình backup khi triển khai thật                                                             |
-| 11  | Media storage    | Ảnh/video không lưu trực tiếp trong database                                                                     |
-| 12  | Logging          | Ghi log lỗi backend, AI request failure và thao tác quan trọng                                                   |
+- context_version.
+- context_type.
+- generated_at.
+- data_hash.
 
 ---
 
-## 25. Bảo mật và phân quyền
+# 9. Personalization Intelligence (PI)
 
-### 25.1. Vai trò
+PI là lớp nghiệp vụ cá nhân hóa, không nhất thiết là một model riêng trong MVP.
 
-| Role  | Quyền                                                                    |
-| ----- | ------------------------------------------------------------------------ |
-| USER  | Dùng các chức năng cá nhân: tập luyện, dinh dưỡng, AI, mua hàng          |
-| ADMIN | Quản trị dữ liệu hệ thống, người dùng, món ăn, bài tập và rule/prompt AI |
+## 9.1. Nguồn dữ liệu
 
-### 25.2. Quy tắc bảo mật
+- Health Profile.
+- Health Metrics.
+- Workout.
+- Nutrition.
+- Weight.
+- User Preference.
+- Feedback từ Apply/Dismiss.
 
-- Người dùng chỉ được truy cập dữ liệu thuộc tài khoản của mình.
-- Admin có quyền quản trị dữ liệu dùng chung nhưng không được xem thông tin nhạy cảm như mật khẩu/token.
-- API phải kiểm tra authorization ở backend, không chỉ ẩn nút ở frontend.
-- Refresh token cần có cơ chế revoke khi logout.
-- OTP phải có thời hạn và giới hạn số lần thử.
-- File upload ảnh/video phải validate MIME type, kích thước và extension.
-- Không lưu API key AI Provider ở mobile app; API key chỉ nằm ở server-side.
+## 9.2. Nguyên tắc
 
----
+- PI không mutation database trực tiếp.
+- AI personalization chỉ sử dụng dữ liệu khi consent cho phép.
+- Preference về dị ứng/ràng buộc phải được ưu tiên.
+- Dữ liệu quá ít phải được nói rõ là giới hạn.
+- Recommendation nên ưu tiên hành động nhỏ, có thể thực hiện ngay.
+- Không ưu tiên bán hàng/supplement trong MVP.
 
-## 26. Notification Requirements
+## 9.3. Signals tối thiểu
 
-| Loại thông báo     | Mô tả                                                        |
-| ------------------ | ------------------------------------------------------------ |
-| Nhắc lịch tập      | Gửi trước giờ tập theo cấu hình người dùng                   |
-| Nhắc nhập cân nặng | Nhắc người dùng cập nhật cân nặng định kỳ                    |
-| Nhắc meal plan     | Nhắc nhập bữa ăn nếu chưa ghi nhận                           |
-| AI weekly review   | Thông báo khi có tổng kết tiến độ theo tuần                  |
-| Gợi ý AI           | Gợi ý tập luyện/dinh dưỡng nếu người dùng bật nhận thông báo |
+| Signal | Ví dụ điều kiện | Gợi ý |
+|---|---|---|
+| nutrition_protein_gap | Protein còn thiếu | Gợi ý món Việt giàu protein |
+| calories_over_target | Calories vượt target | Gợi ý cân bằng phần còn lại |
+| workout_today | Có lịch tập hôm nay | Nhắc chuẩn bị buổi tập |
+| adherence_issue | Completion thấp | Gợi ý buổi ngắn/điều chỉnh lịch |
+| weight_trend_off_goal | Trend lệch mục tiêu | Đề xuất review target/lịch |
+| meal_logging_drop | Nhiều ngày không log | Nhắc nhập nhanh/template |
+| preference_conflict | Gợi ý vi phạm preference | Loại bỏ recommendation |
 
-Business rules:
+Nguyên tắc:
 
-- Người dùng có thể bật/tắt notification.
-- Không gửi thông báo marketing nếu người dùng chưa đồng ý.
-- Notification phải phù hợp múi giờ của người dùng.
-
----
-
-## 27. Rủi ro dự án và phương án xử lý
-
-| Rủi ro                                  | Ảnh hưởng                                      | Phương án xử lý                                                                   |
-| --------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------- |
-| Thiếu dữ liệu món ăn Việt Nam chuẩn hóa | Meal Planner kém thuyết phục                   | Seed trước 50–100 món phổ biến, ghi rõ khẩu phần và nguồn dữ liệu trong báo cáo   |
-| Scope quá rộng trong 6 tháng            | Không hoàn thành MVP                           | Ưu tiên Must have, cắt các chức năng Could/Won't have khỏi bản demo               |
-| AI trả lời sai hoặc quá tự tin          | Ảnh hưởng trải nghiệm và an toàn người dùng    | Dùng guardrail, disclaimer y tế và giới hạn phạm vi tư vấn                        |
-| Chi phí/rate limit AI Provider          | AI Coach không ổn định khi demo                | Có mock response hoặc fallback khi provider lỗi                                   |
-| Cá nhân hóa AI chưa đủ ngữ cảnh         | AI trả lời chung chung, kém khác biệt          | Chuẩn hóa AI context gồm profile, meal plan, workout log, weight trend và consent |
-| Media/video bài tập nặng                | Tốn storage và bandwidth                       | Dùng URL/object storage, giới hạn kích thước upload, seed dữ liệu mẫu             |
-| Bảo mật dữ liệu cá nhân chưa chặt       | Lộ dữ liệu health/meal/workout/AI conversation | Kiểm tra ownership ở backend và test các API truy cập chéo user                   |
+> **Rule Engine quyết định WHAT. AI quyết định HOW.**
 
 ---
 
-## 28. Yêu cầu kiểm thử
+# 10. AI Consent và Privacy
 
-### 28.1. Nhóm kiểm thử
+## 10.1. AiConsentSetting
 
-| Nhóm kiểm thử    | Nội dung                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------- |
-| Unit test        | Tính BMI, BMR, TDEE, calories mục tiêu, macro, tổng calories meal plan                                        |
-| API test         | Auth, health profile, exercise, workout schedule/log, food, meal plan, dashboard, AI, admin APIs              |
-| Security test    | JWT thiếu/sai/hết hạn, user không truy cập được dữ liệu user khác, admin endpoint chặn user thường            |
-| AI test          | Prompt tiếng Việt, context đúng, consent đúng, guardrail với chấn thương/bệnh lý/thực phẩm bổ sung            |
-| UI test thủ công | Đăng nhập, onboarding, tạo hồ sơ, dashboard, thêm món, ghi buổi tập, chat AI, weekly review                   |
-| E2E demo test    | Luồng đăng ký/đăng nhập → onboarding → health profile → meal planner → workout log → AI Coach → weekly review |
+Các thuộc tính chính:
 
-### 28.2. Done criteria kiểm thử
+- user_id.
+- enabled.
+- consent_version.
+- accepted_at.
+- updated_at.
 
-1. Các công thức sức khỏe trả kết quả đúng với dữ liệu mẫu.
-2. API private trả `401/403` khi không có quyền.
-3. User A không đọc/sửa được health profile, meal plan, workout log, weight log hoặc AI conversation của User B.
-4. Dashboard cập nhật sau khi thêm món ăn, cập nhật cân nặng hoặc hoàn thành buổi tập.
-5. AI Coach luôn trả lời bằng tiếng Việt và có cảnh báo khi câu hỏi liên quan y tế/chấn thương.
+## 10.2. Khi ENABLE
 
-### 28.3. Success metrics cho đồ án
+Backend được phép sử dụng context cá nhân phù hợp với tác vụ và whitelist.
 
-| Nhóm         | Chỉ số đề xuất                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Dữ liệu demo | Có tối thiểu 50 món ăn Việt Nam và 50 bài tập được seed vào database                                                     |
-| Onboarding   | Người dùng mới có thể hoàn thiện hồ sơ sức khỏe trong dưới 3 phút                                                        |
-| Meal Planner | Người dùng có thể thêm món vào bữa ăn và thấy tổng calories/macro cập nhật trong dưới 1 phút                             |
-| Workout Log  | Người dùng có thể ghi nhận một buổi tập gồm nhiều bài và nhiều set                                                       |
-| AI Coach     | AI trả lời bằng tiếng Việt, đúng ngữ cảnh trong phần lớn test case thủ công và có guardrail với câu hỏi y tế/chấn thương |
-| Bảo mật      | 100% API private quan trọng có kiểm thử JWT và ownership dữ liệu                                                         |
-| Triển khai   | Hệ thống chạy được bằng Docker Compose trong môi trường demo                                                             |
+## 10.3. Khi DISABLE
 
----
+AI hoạt động ở **General Knowledge Mode**:
 
-## 29. Traceability Matrix
+- Chỉ trả lời kiến thức chung.
+- Không dùng Health/Workout/Nutrition/Weight/Preference cá nhân làm context AI.
+- Không tạo Daily Recommendation cá nhân hóa.
+- Nếu user yêu cầu personalization, phải nói rõ cần bật personalization hoặc user cung cấp thông tin thủ công trong câu hỏi.
 
-| Requirement          | Màn hình liên quan                                                     | API liên quan                                                                                                                                                             | Acceptance Criteria               |
-| -------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| AUTH-01..AUTH-09     | Login, Register, Forgot Password, Profile, Biometric Login             | `/auth/register`, `/auth/login`, `/auth/google`, `/auth/refresh`, `/auth/logout`, `/auth/logout-all`, `/auth/forgot-password`, `/auth/verify-otp`, `/auth/reset-password` | AC-1, AC-16, AC-21                |
-| HEALTH-01..HEALTH-08 | Health Profile, Weight History, Dashboard                              | `/health-profile/me`, `/health-profile/me/summary`, `/weight-logs`                                                                                                        | AC-2, AC-3, AC-8, AC-17           |
-| WO-01..WO-12         | Exercise Library, Workout Builder, Calendar, Workout Logging, Progress | `/exercises`, `/workout-programs`, `/workout-schedules`, `/workout-logs`, `/workout-stats/summary`                                                                        | AC-4, AC-5, AC-6, AC-7            |
-| NUTRI-01..NUTRI-10   | Meal Planner, Food Search, Food Detail, Dashboard                      | `/foods`, `/meal-plans`, `/meal-plans/today`, `/meal-plans/entries`, `/nutrition-targets/me`                                                                              | AC-3, AC-9, AC-10, AC-20          |
-| AI-01..AI-10         | AI Coach Chat, Daily Recommendation, Weekly Review, AI Consent         | `/ai/coach/chat`, `/ai/coach/workout-plan`, `/ai/coach/meal-advice`, `/ai/recommendations/today`, `/ai/weekly-review`, `/ai/consent`                                      | AC-11, AC-12, AC-13, AC-14, AC-15 |
-| ADM-01..ADM-06       | Admin Dashboard, User/Food/Exercise/Import/AI Rule Management          | `/admin/users`, `/admin/exercises`, `/admin/foods`, `/admin/import/foods`, `/admin/import/exercises`, `/admin/ai-rules`, `/admin/dashboard`                               | AC-18, AC-19                      |
+Consent phải được kiểm tra **trước Context Builder**.
+
+## 10.4. Consent History
+
+Nên lưu:
+
+- previous_mode.
+- new_mode.
+- consent_version.
+- changed_at.
+- source.
+- revoked_at nếu có.
 
 ---
 
-## 30. Acceptance Criteria
+# 11. AI Recommendation Workflow
 
-| #   | Tiêu chí nghiệm thu                                                                                                                             |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Người dùng đăng ký, đăng nhập, đăng xuất và đặt lại mật khẩu thành công.                                                                        |
-| 2   | Người dùng hoàn thiện hồ sơ sức khỏe và hệ thống tính đúng BMI, BMR, TDEE, calories mục tiêu.                                                   |
-| 3   | Dashboard hiển thị calories mục tiêu, calories đã nạp, macro, lịch tập hôm nay, cân nặng hiện tại và tiến độ mục tiêu.                          |
-| 4   | Người dùng xem được thư viện bài tập, tìm kiếm/lọc theo nhóm cơ, thiết bị và độ khó.                                                            |
-| 5   | Người dùng tạo được giáo án tập hoặc chọn giáo án mẫu.                                                                                          |
-| 6   | Người dùng tạo lịch tập, xem lịch theo tuần/tháng và đánh dấu hoàn thành buổi tập.                                                              |
-| 7   | Người dùng ghi nhận buổi tập với bài tập, sets, reps, mức tạ và xem lịch sử tiến bộ.                                                            |
-| 8   | Người dùng cập nhật cân nặng và xem biểu đồ thay đổi theo thời gian.                                                                            |
-| 9   | Người dùng tìm kiếm món ăn Việt Nam, xem dinh dưỡng và thêm vào từng bữa trong ngày.                                                            |
-| 10  | Meal Planner tự cộng calories, protein, carbohydrate, fat và so sánh với mục tiêu cá nhân.                                                      |
-| 11  | AI Coach trả lời bằng tiếng Việt và tư vấn lịch tập/thực đơn dựa trên hồ sơ, meal plan và workout log nếu user bật consent.                     |
-| 12  | AI Coach có cảnh báo phù hợp với câu hỏi liên quan đến bệnh lý, chấn thương hoặc tư vấn y tế.                                                   |
-| 13  | Dashboard hiển thị AI Daily Recommendation dựa trên calories/macro còn thiếu, lịch tập và tiến độ gần đây.                                      |
-| 14  | Người dùng xem được AI Weekly Review tổng kết meal, workout, cân nặng và đề xuất điều chỉnh tuần tiếp theo.                                     |
-| 15  | Người dùng có thể bật/tắt cá nhân hóa AI; khi tắt, AI không dùng dữ liệu cá nhân để tư vấn.                                                     |
-| 16  | API riêng tư không cho phép truy cập khi thiếu hoặc sai JWT.                                                                                    |
-| 17  | Người dùng không xem được dữ liệu cá nhân, meal plan, workout log, weight log hoặc AI conversation của người dùng khác.                         |
-| 18  | Admin quản lý được bài tập, món ăn, import dữ liệu và rule/prompt AI.                                                                           |
-| 19  | Hệ thống có Swagger/OpenAPI phục vụ kiểm thử và tài liệu kỹ thuật.                                                                              |
-| 20  | Hệ thống có thể chạy bằng Docker Compose trong môi trường demo.                                                                                 |
-| 21  | Người dùng có thể bật Face ID/vân tay để mở khóa phiên đăng nhập đã lưu; nếu xác thực thất bại hoặc token hết hạn thì quay về đăng nhập thường. |
-| 22  | Dữ liệu món ăn Việt Nam được lưu trong database nội bộ thay vì phụ thuộc hoàn toàn vào API dinh dưỡng bên ngoài.                                |
+## 11.1. Daily Recommendation
+
+Backend tạo candidate signals từ:
+
+- calories remaining.
+- macro gap.
+- workout schedule.
+- workout adherence.
+- weight trend.
+- meal logging.
+- preference.
+
+AI tạo 1–3 recommendation.
+
+Recommendation có:
+
+- type.
+- title.
+- content.
+- reason.
+- priority.
+- status.
+- source_metrics.
+- created_at.
+- expires_at.
+- safety_level.
+
+## 11.2. Recommendation State
+
+```text
+AI
+ ↓
+PENDING
+ ↓
+User
+ ├── APPLY
+ └── DISMISS
+```
+
+### APPLY
+
+```text
+User Approval
+ ↓
+Backend Authorization
+ ↓
+Business Validation
+ ↓
+Database Mutation
+ ↓
+Audit Log
+```
+
+### DISMISS
+
+- Lưu trạng thái.
+- Có thể lưu feedback.
+- Có thể dùng feedback để điều chỉnh preference.
+
+AI không được tự gọi mutation endpoint.
+
+## 11.3. Allowed Action Contract
+
+AI có thể trả proposal như:
+
+- `NONE`
+- `ADD_MEAL_ENTRY_PROPOSAL`
+- `CREATE_WORKOUT_SCHEDULE_PROPOSAL`
+- `UPDATE_USER_PREFERENCE_PROPOSAL`
+- `REVIEW_NUTRITION_TARGET_PROPOSAL`
+- `LOG_REMINDER_ONLY`
+
+Mọi action phải:
+
+1. Nằm trong whitelist.
+2. Có payload hợp lệ.
+3. Được Backend validate lại.
+4. Chỉ mutation sau khi User APPLY.
+
+Không được chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
 
 ---
 
-## 31. Demo Scenario
+# 12. AI Safety và Prompt Security
 
-Kịch bản demo đề xuất cho buổi bảo vệ đồ án:
+## 12.1. Safety
 
-1. Người dùng đăng ký hoặc đăng nhập vào ứng dụng.
-2. Người dùng hoàn thiện onboarding và hồ sơ sức khỏe.
-3. Hệ thống tính BMI, BMR, TDEE, calories và macro mục tiêu.
-4. Người dùng xem dashboard cá nhân sau khi hoàn thiện hồ sơ.
-5. Người dùng tìm món ăn Việt Nam, chọn khẩu phần và thêm vào meal plan trong ngày.
-6. Dashboard cập nhật calories, macro còn lại và insight dinh dưỡng.
-7. Người dùng xem thư viện bài tập và tạo lịch tập cơ bản.
-8. Người dùng ghi nhận một buổi tập gồm nhiều bài, nhiều set, reps và mức tạ.
-9. Dashboard cập nhật tiến độ luyện tập và cân nặng.
-10. Dashboard hiển thị AI Daily Recommendation dựa trên dữ liệu hiện tại.
-11. Người dùng hỏi AI Coach nên điều chỉnh ăn uống hoặc lịch tập như thế nào dựa trên dữ liệu hiện tại.
-12. Người dùng xem AI Weekly Review để thấy tổng kết meal, workout, cân nặng và đề xuất tuần tiếp theo.
-13. Người dùng bật/tắt cá nhân hóa AI trong phần cài đặt để chứng minh consent hoạt động.
-14. Admin đăng nhập trang quản trị để quản lý món ăn, bài tập, import dữ liệu và rule/prompt AI.
+AI phải:
 
----
+- tránh chẩn đoán bệnh.
+- tránh kê thuốc.
+- tránh cam kết điều trị.
+- tránh khuyến nghị giảm cân cực đoan.
+- cảnh báo khi user đề cập chấn thương hoặc dấu hiệu y tế nghiêm trọng.
+- không tiết lộ dữ liệu user khác.
+- không yêu cầu password/API key/token.
+- không tự thay đổi dữ liệu nghiệp vụ.
 
-## 32. Kế hoạch thực hiện 6 tháng
+Tình huống y tế/chấn thương phải chuyển sang safe response và khuyến nghị tìm chuyên gia phù hợp.
 
-| Thời gian | Công việc                                                                                                                                     |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tháng 1   | Khảo sát hệ thống tương tự, phân tích yêu cầu, xác định core loop, thiết kế UI/UX Figma, ERD, kiến trúc hệ thống và luồng AI personalization. |
-| Tháng 2   | Xây dựng Backend: auth, JWT, onboarding, hồ sơ sức khỏe, API bài tập, API thực phẩm, Meal Planner và CSDL cốt lõi.                            |
-| Tháng 3   | Phát triển Flutter App: đăng nhập, onboarding, hồ sơ sức khỏe, Dashboard, thư viện bài tập, lịch tập, Workout Builder và kết nối Backend.     |
-| Tháng 4   | Hoàn thiện Meal Planner, import dữ liệu món ăn Việt Nam/bài tập, workout log chi tiết, theo dõi cân nặng, dashboard insight và biểu đồ.       |
-| Tháng 5   | Xây dựng AI Coach cá nhân hóa, AI Daily Recommendation, AI Weekly Review, AI Plan Adjustment, consent và guardrail.                           |
-| Tháng 6   | Kiểm thử tổng thể, kiểm thử bảo mật ownership, tối ưu AI context, triển khai Docker, viết báo cáo, quay video demo và chuẩn bị bảo vệ.        |
+## 12.2. Prompt Injection Boundary
+
+- User message, imported data, food/exercise text và conversation history là untrusted input.
+- Prompt Builder phải phân vùng system instruction, context, user message, rule signals và output schema.
+- User input không được override authorization, consent, safety policy hoặc business rule.
+- AI không được tiết lộ system prompt, internal context, credential hoặc dữ liệu user khác.
+- Structured action phải qua allowed-action validation.
+
+Prompt template có `prompt_version`.
 
 ---
 
-## 33. Hướng phát triển sau đồ án
+# 13. AI Provider và Conversation Memory
 
-- AI nhận diện món ăn từ hình ảnh.
-- AI phân tích tư thế tập luyện bằng camera.
-- Đồng bộ với Apple Health và Google Fit.
-- Phiên bản Web dành cho huấn luyện viên.
-- Hệ thống quản lý phòng gym.
-- Gợi ý thực đơn cá nhân hóa nâng cao dựa trên lịch sử dài hạn.
-- Machine Learning dự đoán tiến độ và tối ưu lịch tập.
-- Shop bán sản phẩm gym, affiliate hoặc marketplace sau khi core AI Coach ổn định.
-- Marketplace cho huấn luyện viên và chuyên gia dinh dưỡng.
-- Gói Premium với giáo án nâng cao và phân tích chuyên sâu.
+## 13.1. Provider Abstraction
+
+Business logic không phụ thuộc trực tiếp vào SDK/provider cụ thể.
+
+Khả năng tối thiểu:
+
+```text
+generateResponse(request)
+generateStructuredResponse(request, schema)
+```
+
+Lợi ích:
+
+- dễ đổi provider.
+- dễ mock khi test.
+- giảm vendor lock-in.
+- hỗ trợ fallback.
+
+## 13.2. Conversation Memory
+
+Entities chính:
+
+- AiConversation.
+- AiMessage.
+- AiConversationSummary.
+
+Flow:
+
+```text
+Old Messages
+    ↓
+Summary
+    ↓
+Recent Messages
+    ↓
+Current Context
+    ↓
+AI
+```
+
+Không gửi toàn bộ lịch sử chat trong mọi request.
 
 ---
 
-## 34. Tài liệu liên quan
+# 14. Weekly Review và Plan Adjustment
 
-| Tài liệu            | Đường dẫn            |
-| ------------------- | -------------------- |
-| Kế hoạch phát triển | [plans.md](plans.md) |
+## 14.1. Weekly Review — P1
+
+Backend tạo aggregated metrics:
+
+- average calories.
+- average protein.
+- workout completion.
+- meal logging rate.
+- weight change.
+- progress trend.
+
+AI tạo:
+
+1. Summary.
+2. Nutrition insight.
+3. Workout insight.
+4. Weight insight.
+5. Strengths.
+6. Improvement areas.
+7. Next-week recommendations.
+
+## 14.2. Plan Adjustment — P1
+
+Plan Adjustment là **proposal**, không phải automatic mutation.
+
+Có thể đề xuất:
+
+- workout frequency.
+- meal structure.
+- calories/macro review.
+
+Flow:
+
+```text
+AI Proposal
+ ↓
+PENDING
+ ↓
+User Review
+ ├── APPLY
+ └── DISMISS
+```
+
+Backend validate proposal trước khi apply.
+
+---
+
+# 15. Security và Non-functional Requirements
+
+## 15.1. Security
+
+| ID | Requirement | Priority |
+|---|---|---|
+| NFR-SEC-001 | Private API yêu cầu JWT và ownership check | P0 |
+| NFR-SEC-002 | Password/refresh token/OTP được bảo vệ bằng hash, expiry, revoke và rate limit | P0 |
+| NFR-SEC-003 | Google Login được verify server-side | P0 |
+| NFR-SEC-004 | AI API key và provider credential chỉ nằm server-side | P0 |
+| NFR-SEC-005 | Audit log không chứa password, token, API key hoặc raw personal context thừa | P0 |
+
+## 15.2. Privacy
+
+| ID | Requirement | Priority |
+|---|---|---|
+| NFR-PRIV-001 | AI personalization tuân thủ consent | P0 |
+| NFR-PRIV-002 | AI context áp dụng data minimization | P0 |
+| NFR-PRIV-003 | User có thể tắt personalization | P0 |
+| NFR-PRIV-004 | Ownership được kiểm tra ở mọi private resource | P0 |
+
+## 15.3. Performance/Reliability
+
+- P95 read API phổ biến < 500ms trong môi trường MVP, không tính AI provider.
+- AI provider timeout/failure phải có retry giới hạn và fallback an toàn.
+- Docker Compose đủ cho môi trường demo.
+- PostgreSQL là source of truth.
+- Redis chỉ là thành phần hỗ trợ cache/rate limit nếu triển khai; core business không phụ thuộc Redis.
+
+---
+
+# 16. Use Cases chính
+
+| ID | Use Case | Priority |
+|---|---|---|
+| UC-01 | Đăng ký/đăng nhập | P0 |
+| UC-02 | Hoàn thiện Health Profile | P0 |
+| UC-03 | Tính và xem Health Metrics | P0 |
+| UC-04 | Exercise Library + Equipment Preference | P0 |
+| UC-05 | Tạo Workout Program | P0 |
+| UC-06 | Workout Schedule | P0 |
+| UC-07 | Workout Log | P0 |
+| UC-08 | Food Database | P0 |
+| UC-09 | Meal Planner | P0 |
+| UC-10 | Weight Tracking | P0 |
+| UC-11 | Dashboard | P0 |
+| UC-12 | AI Coach Chat | P0 |
+| UC-13 | Daily Recommendation | P0 |
+| UC-14 | Apply/Dismiss Recommendation | P0 |
+| UC-15 | Weekly Review | P1 |
+| UC-16 | Plan Adjustment | P1 |
+| UC-17 | AI Consent | P0 |
+| UC-18 | User Preference | P0 |
+| UC-19 | Admin quản lý Exercise/Food và Audit Log | P0 baseline |
+| UC-20 | Admin mở rộng: User/Import/AI Rule/Prompt | P1 |
+| UC-21 | Media/Storage baseline cho Exercise/Food | P0 baseline |
+
+## 16.1. Use Case chi tiết P0
+
+### UC-01 — Authentication
+
+**Actor:** Guest, User
+
+**Luồng chính:**
+
+1. Guest đăng ký local; Backend validate, hash password, tạo account PENDING và gửi OTP.
+2. Guest verify OTP hợp lệ; Backend kích hoạt account rồi mới cấp access token + refresh token.
+3. Hoặc Guest đăng nhập local/Google; Backend xác thực credential và account status trước khi cấp token.
+4. Mobile lưu session credential được phép bằng secure storage.
+
+**Luồng thay thế:** Email trùng, sai credential, OTP hết hạn, Google token không hợp lệ hoặc rate limit → lỗi chuẩn.
+
+**Hậu điều kiện:** User có phiên hợp lệ.
+
+### UC-02 — Health Profile
+
+**Luồng chính:**
+
+1. User nhập Health Profile.
+2. Backend validate.
+3. Backend tính Health Metrics.
+4. Dashboard hiển thị kết quả.
+
+**Hậu điều kiện:** HealthProfile, WeightLog ban đầu và NutritionTarget được lưu theo user.
+
+### UC-03 — Health Metrics
+
+1. User xem hoặc cập nhật Health Profile.
+2. Backend validate các field nền.
+3. Backend tính hoặc tính lại BMI, BMR, TDEE, calories và macro target trong cùng transaction.
+4. Mobile chỉ hiển thị kết quả authoritative từ Backend.
+
+**Luồng thay thế:** Thiếu dữ liệu bắt buộc hoặc kết quả vi phạm rule an toàn → không công bố target không hợp lệ và yêu cầu user bổ sung/chỉnh sửa dữ liệu.
+
+### UC-04 — Exercise Library + Equipment
+
+**Luồng chính:**
+
+1. User chọn thiết bị trong onboarding/lần đầu tập.
+2. Backend lưu UserPreference.
+3. Exercise Library và Workout Builder ưu tiên bài phù hợp.
+4. User có thể sửa equipment trong Settings.
+
+**Hậu điều kiện:** Không phải chọn lại thiết bị ở mỗi buổi tập.
+
+### UC-05 — Workout Program
+
+1. User tạo/chọn loại chương trình PPL, Upper/Lower, Full Body hoặc Custom.
+2. User thêm Workout Day và Exercise với sets, reps, rest, order và note.
+3. Backend validate ownership, exercise visibility và dữ liệu đầu vào.
+4. Backend lưu chương trình; một user có tối đa một program ACTIVE theo rule triển khai.
+
+### UC-06 — Workout Schedule
+
+1. User tạo lịch thủ công hoặc sinh lịch từ Workout Program.
+2. Backend validate program, ngày tập và ownership.
+3. Schedule bắt đầu ở trạng thái PLANNED.
+4. Schedule chuyển sang COMPLETED, MISSED hoặc CANCELLED theo state machine hợp lệ.
+
+### UC-07 — Workout Log
+
+**Luồng chính:**
+
+1. User chọn buổi tập.
+2. Nhập set/reps/weight/duration.
+3. Backend tính volume/completion/PR.
+4. Dashboard cập nhật tiến độ.
+
+Finish session phải tạo WorkoutLog và cập nhật schedule trong một transaction. Discard không tạo completed log, PR hoặc achievement giả.
+
+### UC-08 — Food Database
+
+1. User tìm hoặc lọc món ăn public/active.
+2. Backend trả thông tin serving, calories, protein, carbohydrate, fat và nguồn dữ liệu.
+3. User xem Food Detail hoặc chọn món để thêm vào Meal Plan.
+
+Food bị hidden vẫn giữ history nhưng không được chọn cho Meal Entry mới.
+
+### UC-09 — Meal Planner
+
+**Luồng chính:**
+
+1. User tìm món.
+2. Chọn serving.
+3. Thêm vào meal.
+4. Backend tính tổng calories/macros và remaining target.
+
+### UC-10 — Weight Tracking
+
+1. User thêm hoặc cập nhật WeightLog thuộc chính mình.
+2. Backend lưu history và tính trend/summary 7–30 ngày.
+3. Mobile hiển thị chart/progress và so sánh với goal.
+
+WeightLog hằng ngày không tự thay đổi NutritionTarget.
+
+### UC-11 — Dashboard
+
+Mobile gọi dashboard endpoint; Backend tổng hợp nutrition, workout, body và AI recommendation. Mobile không tự tính lại metric authoritative.
+
+### UC-12 — AI Coach
+
+**Luồng chính:**
+
+1. Backend kiểm tra consent.
+2. Context Builder tạo context tối thiểu.
+3. Rule Engine tạo signals.
+4. AI Service tạo câu trả lời.
+5. Backend validate/safety.
+6. Trả response cho Mobile.
+
+**Consent OFF:** General Knowledge Mode.
+
+### UC-13 — Daily Recommendation
+
+1. Backend tạo candidate signals.
+2. AI tạo 1–3 recommendation.
+3. Validation kiểm tra schema/business/safety.
+4. Dashboard hiển thị PENDING.
+
+### UC-14 — Apply/Dismiss
+
+**APPLY:** Authorization → Business Validation → Mutation → Audit.
+
+**DISMISS:** Lưu trạng thái/feedback, không mutation business data.
+
+### UC-17 — AI Consent
+
+User bật/tắt personalization. Backend lưu consent version và thời gian thay đổi. Trạng thái consent được kiểm tra trước Context Builder.
+
+### UC-18 — User Preference
+
+User xem/cập nhật món không thích, ràng buộc/dị ứng tự khai báo, meal preference, thời gian tập và equipment. Preference vẫn được lưu khi consent OFF nhưng chỉ được đưa vào AI context khi consent ON và đúng whitelist.
+
+### UC-19 — Admin Exercise/Food/Audit baseline
+
+1. Backend xác thực JWT và role ADMIN.
+2. Admin tạo/sửa/hide Exercise hoặc Food phục vụ catalog demo.
+3. Backend validate dữ liệu, media và reference history.
+4. Backend ghi Audit Log cho thao tác quan trọng.
+
+User Management, Admin Dashboard, Import và AI Rule/Prompt không thuộc slice P0 này.
+
+### UC-21 — Media/Storage baseline
+
+1. Admin khởi tạo upload cho ảnh/video Exercise hoặc ảnh Food.
+2. Backend kiểm tra role, target, MIME, extension và size rồi cấp presigned URL TTL ngắn hoặc nhận asset demo hợp lệ.
+3. Client upload object và gọi upload-complete.
+4. Backend xác minh object/metadata trước khi chuyển media sang READY và liên kết với entity.
+
+PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp vụ.
+
+---
+
+# 17. Acceptance Criteria
+
+| ID | Acceptance Criteria |
+|---|---|
+| AC-01 | User đăng ký, verify OTP và đăng nhập được; private API yêu cầu JWT hợp lệ |
+| AC-02 | User chỉ truy cập Health/Meal/Workout/AI/Media private resource của mình |
+| AC-03 | Health Profile hợp lệ tạo BMI/BMR/TDEE/calorie/macro target tại Backend |
+| AC-04 | Sửa field nền Health Profile tính lại metric/target nhất quán trong transaction |
+| AC-05 | Equipment Preference ảnh hưởng ranking nhưng không sửa WorkoutLog cũ |
+| AC-06 | Workout Session chỉ chuyển trạng thái hợp lệ; Finish tạo log, Discard không tạo thành tích giả |
+| AC-07 | CANCELLED bị loại khỏi mẫu số completion rate |
+| AC-08 | Meal summary được Backend tính đúng theo serving/multiplier và NutritionTarget |
+| AC-09 | WeightLog tạo history/trend nhưng không tự sửa NutritionTarget |
+| AC-10 | Dashboard aggregate đúng nguồn và có loading/empty/error state |
+| AC-11 | Consent OFF không gửi personal context hoặc tạo Daily Recommendation cá nhân hóa |
+| AC-12 | AI Service không truy cập database; context tuân thủ ownership, whitelist và data minimization |
+| AC-13 | AI output sai schema/business/safety không trở thành structured action hợp lệ |
+| AC-14 | Daily Recommendation tạo 1–3 item PENDING khi đủ dữ liệu |
+| AC-15 | APPLY chỉ chạy với recommendation đúng user, còn PENDING, chưa hết hạn và action hợp lệ |
+| AC-16 | DISMISS chỉ đổi status/feedback, không mutation domain data |
+| AC-17 | Mutation sau APPLY do domain owner thực hiện atomically và có audit |
+| AC-18 | Media P0 hiển thị asset hợp lệ và enforce role/ownership/MIME/size validation |
+| AC-19 | Audit/log không chứa password, token, OTP, API key hoặc personal context dư thừa |
+
+---
+
+# 18. Traceability rút gọn
+
+| Requirement | Use Case | Acceptance |
+|---|---|---|
+| Authentication | UC-01 | AC-01 |
+| Ownership | UC-04/07/09/10/14/19 | AC-02 |
+| Health Calculation/Recalculation | UC-02/03 | AC-03/04 |
+| Equipment matching | UC-04 | AC-05 |
+| Workout Session/Progress | UC-05/06/07 | AC-06/07 |
+| Nutrition | UC-08/09 | AC-08 |
+| Weight Tracking | UC-10 | AC-09 |
+| Dashboard | UC-11 | AC-10 |
+| AI Consent | UC-17 | AC-11 |
+| AI Context/Trust Boundary | UC-12/13 | AC-12 |
+| AI Validation | UC-12/13/14 | AC-13 |
+| Daily Recommendation | UC-13 | AC-14 |
+| Recommendation Apply/Dismiss | UC-14 | AC-15/16/17 |
+| Media | UC-21 | AC-18 |
+| Admin/Audit | UC-19 | AC-19 |
+
+---
+
+# 19. Kiến trúc hệ thống cấp cao
+
+```text
+┌───────────────────────────────┐
+│       Flutter Mobile App      │
+│ Auth / Health / Workout /     │
+│ Nutrition / Dashboard / AI    │
+└───────────────┬───────────────┘
+                │ REST API
+                ▼
+┌───────────────────────────────┐
+│        Spring Boot API        │
+│ Auth / Business Logic /       │
+│ Calculation / Ownership /     │
+│ Context / Rule / Validation   │
+└───────┬───────────────┬───────┘
+        │               │
+        ▼               ▼
+┌───────────────┐   ┌────────────────┐
+│ PostgreSQL    │   │ FastAPI AI      │
+│ Source of     │   │ AI Service      │
+│ Truth         │   │ Stateless       │
+└───────────────┘   └───────┬────────┘
+                            │
+                            ▼
+                     ┌──────────────┐
+                     │ AI Provider  │
+                     │ LLM          │
+                     └──────────────┘
+```
+
+## 19.1. Responsibility Boundary
+
+| Component | Responsibility |
+|---|---|
+| Flutter | UI, local state, secure token storage, presentation |
+| Spring Boot | Business authority, calculation, authorization, ownership, context, rule, validation, mutation |
+| PostgreSQL | Business data source of truth |
+| FastAPI AI Service | AI orchestration/stateless decision support |
+| AI Provider | LLM inference |
+
+---
+
+# 20. Data Model cấp cao
+
+Các entity chính:
+
+```text
+User
+ ├── HealthProfile
+ ├── WeightLog
+ ├── NutritionTarget
+ ├── UserPreference
+ ├── WorkoutProgram
+ ├── WorkoutSchedule
+ ├── WorkoutLog
+ ├── MealPlan
+ ├── AiConsentSetting
+ ├── AiConversation
+ │    ├── AiMessage
+ │    └── AiConversationSummary
+ └── AiRecommendation
+
+Exercise
+ └── Equipment
+
+WorkoutProgram
+ └── WorkoutDay
+      └── WorkoutExercise
+
+MealPlan
+ └── Meal
+      └── MealEntry
+
+Food
+```
+
+Database schema chi tiết, field-level validation và index được quản lý trong **Database Specification**, không lặp lại trong SRS.
+
+---
+
+# 21. API và Integration Boundary
+
+- Mobile giao tiếp với Spring Boot qua REST API version `/api/v1`.
+- Spring Boot là API chính cho Mobile.
+- AI Service không được Mobile gọi trực tiếp trong MVP.
+- AI provider credential chỉ nằm server-side.
+- API private yêu cầu authentication/authorization.
+- API contract chi tiết, request/response schema và error code được quản lý trong **API Specification**.
+
+---
+
+# 22. Testing Strategy cấp cao
+
+## Unit Test
+
+- Health calculation.
+- Nutrition calculation.
+- Workout calculation.
+- Rule Engine.
+- Validation.
+
+## API/Integration Test
+
+- Authentication.
+- Ownership.
+- Meal/Workout CRUD.
+- AI consent.
+- Recommendation Apply/Dismiss.
+
+## AI Test
+
+- Context whitelist.
+- Consent OFF.
+- Invalid structured output.
+- Prompt injection.
+- Safety scenarios.
+- Provider failure/fallback.
+
+## E2E Demo Flow
+
+```text
+Register/Login
+    ↓
+Health Profile
+    ↓
+Health Metrics
+    ↓
+Equipment Preference
+    ↓
+Workout
+    ↓
+Meal Planner
+    ↓
+Dashboard
+    ↓
+AI Consent
+    ↓
+AI Coach
+    ↓
+Daily Recommendation
+    ↓
+Apply/Dismiss
+```
+
+Test Plan chi tiết được quản lý riêng.
+
+---
+
+# 23. Deployment và Demo Scope
+
+MVP demo có thể triển khai bằng Docker Compose:
+
+```text
+Flutter App
+     ↓
+Spring Boot
+     ├── PostgreSQL
+     └── FastAPI AI Service
+              ↓
+         AI Provider
+```
+
+Yêu cầu demo:
+
+- Có seed/demo users.
+- Food và Exercise có đủ dữ liệu để chạy end-to-end.
+- Seed có thể chạy lại ổn định.
+- Swagger/OpenAPI cho Backend.
+- Có thể chạy toàn bộ stack trong môi trường demo.
+
+Production hardening nằm ngoài MVP.
+
+---
+
+# 24. Out of Scope và Future Scope
+
+## Out of Scope
+
+- Shop/Marketplace.
+- Payment.
+- Wearables.
+- Apple Health/Google Fit.
+- Computer Vision.
+- Pose estimation.
+- Food image recognition.
+- ML prediction.
+- Automatic plan mutation.
+
+## Future Scope
+
+- AI Weekly Review nâng cao.
+- AI Plan Adjustment.
+- Preference Memory nâng cao.
+- Notification nâng cao.
+- Offline queue nâng cao.
+- Wearable integration.
+- Computer Vision.
+- ML prediction.
+- Marketplace/Supplement ecosystem.
+
+---
+
+# 25. Tài liệu liên quan
+
+Để tránh SRS trở thành tài liệu quá dài, chi tiết triển khai và traceability được quản lý trong các tài liệu hiện có:
+
+| Tài liệu | Nội dung |
+|---|---|
+| [`bussiness_mainflow.md`](bussiness_mainflow.md) | Luồng nghiệp vụ end-to-end và demo flow |
+| [`phan_ra_phan_he_he_thong.md`](phan_ra_phan_he_he_thong.md) | Phân hệ, ownership và dependency |
+| [`phan_ra_tinh_nang.md`](phan_ra_tinh_nang.md) | Feature ID, priority và acceptance behavior |
+| [`phan_ra_man_hinh.md`](phan_ra_man_hinh.md) | Màn hình, điều hướng, UI state và API mapping |
+| [`../kientruchethong/API_SPEC.md`](../kientruchethong/API_SPEC.md) | Endpoint, request/response, error code và authentication |
+| [`../kientruchatang/DATABASE.md`](../kientruchatang/DATABASE.md) | ERD, entity, field, FK, index và constraint |
+| [`../kientruchethong/sa.md`](../kientruchethong/sa.md) | Kiến trúc hệ thống, AI trust boundary và security |
+| [`../kientruchatang/server.md`](../kientruchatang/server.md) | Triển khai server, runtime và vận hành |
+| [`../kientruchatang/techstack.md`](../kientruchatang/techstack.md) | Technology baseline và quyết định cần khóa khi bootstrap |
+
+**SRS này chỉ giữ yêu cầu, business rules, architecture boundary và acceptance criteria cần thiết để làm Source of Truth của đồ án.**
+
+---
+
+# 26. Definition of Done cấp hệ thống
+
+VieGym MVP được xem là đạt mức demo khi:
+
+- Authentication hoạt động.
+- Health Profile và Health Calculation hoạt động.
+- Exercise Library và Equipment Preference hoạt động.
+- Workout Builder/Schedule/Log hoạt động ở mức P0.
+- Food Database và Meal Planner hoạt động.
+- Weight Tracking và Dashboard hoạt động.
+- AI Consent hoạt động.
+- AI Context được tạo ở Backend.
+- AI Service không truy cập Database.
+- AI Coach hoạt động ở General Knowledge Mode và Personalized Mode theo consent.
+- Daily Recommendation có validation.
+- Recommendation APPLY/DISMISS có Backend authorization.
+- AI không tự mutation.
+- Private resources có ownership check.
+- Admin quản lý Exercise/Food và xem Audit Log ở mức P0 baseline.
+- Exercise/Food media hợp lệ, có kiểm tra quyền và validation tối thiểu.
+- Các acceptance criteria AC-01..AC-19 có test tương ứng ở đúng tầng.
+- Demo flow chạy end-to-end.

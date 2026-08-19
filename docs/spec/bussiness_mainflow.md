@@ -1,39 +1,50 @@
 # Luồng Nghiệp Vụ Chính — VieGym
 
-> Tài liệu mô tả các luồng nghiệp vụ end-to-end của VieGym, rút gọn từ [specs.md](./specs.md) để phục vụ thiết kế, triển khai, kiểm thử và demo.
+> Tài liệu mô tả các luồng nghiệp vụ end-to-end của VieGym, rút gọn từ `specs.md` v3.0 để phục vụ thiết kế, triển khai, kiểm thử và demo.
+>
+> **Phiên bản:** 3.0  
+> **Ngày cập nhật:** 2026-08-19
+>
+> **Cập nhật v3.0:** bổ sung các luồng P0 còn thiếu (Register + OTP, Health Profile View/Edit + recalculation, Workout Session lifecycle, Media/Storage baseline), chuẩn hóa Admin Exercise/Food/Audit baseline ở P0 và Admin mở rộng ở P1, làm rõ AI Consent / Allowed Action Contract / Weight target review / Notification scope, và thêm bảng traceability đối chiếu SRS use case, feature ID, màn hình và subsystem.
 
 ---
 
 ## 1. Tổng quan luồng chính
 
-VieGym xoay quanh hành trình người dùng từ lúc đăng ký tài khoản, hoàn thiện hồ sơ sức khỏe, theo dõi luyện tập/dinh dưỡng/cân nặng, nhận tư vấn AI và mua sắm sản phẩm hỗ trợ gym.
+VieGym xoay quanh hành trình người dùng từ lúc đăng ký tài khoản, hoàn thiện hồ sơ sức khỏe, thiết lập thiết bị tập luyện, theo dõi luyện tập/dinh dưỡng/cân nặng, nhận tư vấn AI và xử lý các recommendation có kiểm soát.
 
 ```text
 Guest
   └── Đăng ký / Đăng nhập / Google Login
         └── Hoàn thiện hồ sơ sức khỏe
-              └── Dashboard cá nhân
-                    ├── Luyện tập
-                    │     ├── Xem thư viện bài tập
-                    │     ├── Tạo giáo án / lịch tập
-                    │     └── Ghi nhận buổi tập
-                    ├── Dinh dưỡng
-                    │     ├── Tìm món ăn Việt Nam
-                    │     └── Lập meal plan trong ngày
-                    ├── Theo dõi cơ thể
-                    │     └── Cập nhật cân nặng
-                    ├── AI Coach
-                    │     └── Tư vấn theo context cá nhân
-                    └── Cửa hàng
-                          ├── Giỏ hàng / đặt hàng
-                          └── Chatbot tư vấn sản phẩm
+              └── Tính Health Metrics
+                    └── Chọn thiết bị có sẵn
+                          └── Dashboard cá nhân
+                                ├── Luyện tập
+                                │     ├── Xem thư viện bài tập
+                                │     ├── Tạo giáo án
+                                │     ├── Tạo lịch tập
+                                │     └── Ghi nhận buổi tập
+                                ├── Dinh dưỡng
+                                │     ├── Tìm món ăn Việt Nam
+                                │     └── Lập meal plan trong ngày
+                                ├── Theo dõi cơ thể
+                                │     └── Cập nhật cân nặng
+                                ├── AI Coach
+                                │     ├── AI Consent
+                                │     ├── Chat cá nhân hóa
+                                │     └── Daily Recommendation
+                                │           ├── Apply
+                                │           └── Dismiss
+                                └── Settings
+                                      ├── Equipment Preference
+                                      └── User Preference
 
 Admin
   └── Quản trị dữ liệu hệ thống
-        ├── User / bài tập / món ăn / sản phẩm
-        ├── Đơn hàng
-        ├── Nội dung AI
-        └── Dashboard admin / audit log
+        ├── User / bài tập / món ăn
+        ├── AI Rule / Prompt
+        └── Audit Log
 ```
 
 Sơ đồ trực quan:
@@ -42,38 +53,49 @@ Sơ đồ trực quan:
 flowchart TD
     Guest[Guest] --> Auth[Đăng ký / Đăng nhập / Google Login]
     Auth --> Health[Hoàn thiện HealthProfile]
-    Health --> Dashboard[Dashboard cá nhân]
+    Health --> Metrics[Tính BMI / BMR / TDEE / Calories / Macro]
+    Metrics --> Equipment[Chọn Equipment Preference]
+    Equipment --> Dashboard[Dashboard cá nhân]
 
     Dashboard --> Workout[Luyện tập]
     Dashboard --> Nutrition[Meal Planner]
     Dashboard --> Body[Theo dõi cân nặng]
-    Dashboard --> Coach[AI Coach]
-    Dashboard --> Shop[Cửa hàng]
+    Dashboard --> AI[AI Coach]
+    Dashboard --> Settings[Settings]
 
     Workout --> Exercise[Xem thư viện bài tập]
-    Workout --> Program[Tạo giáo án / lịch tập]
-    Workout --> Log[Ghi nhận buổi tập]
+    Workout --> Program[Tạo giáo án]
+    Program --> Schedule[Tạo lịch tập]
+    Schedule --> Log[Ghi nhận buổi tập]
 
     Nutrition --> Food[Tìm món ăn Việt Nam]
     Nutrition --> MealPlan[Lập meal plan trong ngày]
 
-    Shop --> Cart[Giỏ hàng / đặt hàng]
-    Shop --> SalesBot[Chatbot tư vấn sản phẩm]
+    AI --> Consent[AI Consent]
+    Consent --> Coach[AI Coach Chat]
+    Consent --> Recommendation[Daily Recommendation]
+    Recommendation --> Apply[Apply]
+    Recommendation --> Dismiss[Dismiss]
+
+    Settings --> EquipmentSettings[Equipment Preference]
+    Settings --> Preference[User Preference]
 
     Admin[Admin] --> AdminPanel[Quản trị dữ liệu hệ thống]
-    AdminPanel --> AdminData[User / bài tập / món ăn / sản phẩm]
-    AdminPanel --> AdminOrder[Đơn hàng]
-    AdminPanel --> AdminAI[Nội dung AI]
-    AdminPanel --> AdminDash[Dashboard admin / audit log]
+    AdminPanel --> AdminData[User / bài tập / món ăn]
+    AdminPanel --> AdminAI[AI Rule / Prompt]
+    AdminPanel --> Audit[Audit Log]
 ```
 
 Nguyên tắc tổng quát:
 
 - `HealthProfile` và `NutritionTarget` là dữ liệu nền cho Dashboard, Meal Planner và AI Coach.
-- Mobile App chỉ giao tiếp với Backend qua REST API/HTTPS, không truy cập database trực tiếp.
-- Backend Spring Boot là nguồn sự thật cho dữ liệu nghiệp vụ.
-- AI Service chỉ nhận context cần thiết do Backend lọc, không tự truy cập database.
-- Payment Provider chỉ tham gia khi xử lý giao dịch thanh toán online.
+- Backend Spring Boot là business authority và source of truth.
+- Mobile App chỉ giao tiếp với Backend qua REST API/HTTPS.
+- AI Service không truy cập database trực tiếp.
+- AI chỉ nhận context cần thiết do Backend authorize, consent-check và lọc theo whitelist.
+- Backend tính các metric authoritative; AI chỉ diễn giải và đề xuất.
+- User là người quyết định cuối cùng đối với thay đổi do AI đề xuất.
+- AI không tự mutation dữ liệu nghiệp vụ.
 
 ---
 
@@ -99,7 +121,11 @@ Kiểm tra trạng thái tài khoản
         ├── Chưa có hoặc thiếu dữ liệu bắt buộc
         │     └── Điều hướng sang onboarding hồ sơ sức khỏe
         └── Đã hoàn thiện
-              └── Hiển thị Dashboard cá nhân
+              └── Kiểm tra Equipment Preference
+                    ├── Chưa có
+                    │     └── Điều hướng chọn thiết bị
+                    └── Đã có
+                          └── Hiển thị Dashboard cá nhân
 ```
 
 Luồng onboarding hồ sơ sức khỏe:
@@ -111,7 +137,8 @@ User nhập thông tin sức khỏe
   ├── Chiều cao
   ├── Cân nặng
   ├── Mức độ vận động
-  └── Mục tiêu tập luyện
+  ├── Mục tiêu tập luyện
+  └── Kinh nghiệm tập luyện
   ↓
 Backend validate dữ liệu bắt buộc
   ↓
@@ -119,7 +146,9 @@ Tính BMI, BMR, TDEE
   ↓
 Tính calories và macro mục tiêu
   ↓
-Lưu HealthProfile / NutritionTarget
+Lưu HealthProfile / WeightLog / NutritionTarget
+  ↓
+Chuyển sang Equipment Preference
   ↓
 Dashboard, Meal Planner và AI Coach sử dụng dữ liệu này
 ```
@@ -147,10 +176,13 @@ flowchart TD
 
     Profile -- Không --> Onboarding[Onboarding hồ sơ sức khỏe]
     Onboarding --> Calculate[Tính BMI / BMR / TDEE / calories / macro]
-    Calculate --> SaveProfile[Lưu HealthProfile / NutritionTarget]
-    SaveProfile --> Dashboard[Dashboard cá nhân]
+    Calculate --> SaveProfile[Lưu HealthProfile / WeightLog / NutritionTarget]
+    SaveProfile --> Equipment[Thiết lập Equipment Preference]
+    Equipment --> Dashboard[Dashboard cá nhân]
 
-    Profile -- Có --> Dashboard
+    Profile -- Có --> EquipmentCheck{Equipment Preference đã có?}
+    EquipmentCheck -- Không --> Equipment
+    EquipmentCheck -- Có --> Dashboard
 ```
 
 Kết quả:
@@ -158,6 +190,7 @@ Kết quả:
 - User có phiên đăng nhập hợp lệ.
 - User có `HealthProfile` đầy đủ.
 - Hệ thống có BMI, BMR, TDEE, calories mục tiêu và macro mục tiêu.
+- User có `Equipment Preference` để phục vụ Exercise Library và Workout Builder.
 - Dashboard, Meal Planner và AI Coach có dữ liệu nền thống nhất.
 
 Business rules:
@@ -166,16 +199,104 @@ Business rules:
 - Mật khẩu phải được hash an toàn.
 - Access Token dùng JWT và có thời hạn ngắn.
 - Refresh Token phải có khả năng thu hồi khi user đăng xuất.
-- OTP cho luồng quên mật khẩu phải có thời hạn và giới hạn số lần thử.
+- OTP cho luồng đăng ký/khôi phục tài khoản phải có thời hạn, resend cooldown và giới hạn attempts/rate limit.
+- Google Login phải được verify server-side.
+- Biometric unlock chỉ dùng để mở khóa local session/token đã lưu an toàn trên thiết bị.
 - Tài khoản bị khóa hoặc vô hiệu hóa không được đăng nhập.
 - Nếu thiếu dữ liệu bắt buộc, hệ thống không tính TDEE và yêu cầu user hoàn thiện hồ sơ.
-- Khi user cập nhật cân nặng hoặc hồ sơ sức khỏe, hệ thống cần lưu lịch sử để phục vụ biểu đồ và tính toán lại nếu cần.
+- Backend là nơi tính BMI, BMR, TDEE, calories và macro authoritative.
+
+### 2.1. Luồng Register + OTP verification
+
+Đăng ký tài khoản bằng email/mật khẩu yêu cầu xác thực OTP trước khi kích hoạt.
+
+```text
+User chọn Đăng ký
+  ↓
+Nhập email / mật khẩu / thông tin cơ bản
+  ↓
+Backend validate và tạo tài khoản ở trạng thái chưa xác thực
+  ↓
+Backend gửi OTP tới email
+  ↓
+User nhập OTP
+  ↓
+Backend kiểm tra OTP
+  ├── Hợp lệ
+  │     └── Kích hoạt tài khoản → cấp token → tiếp tục onboarding hồ sơ sức khỏe
+  └── Không hợp lệ / hết hạn / vượt attempts
+        └── Hiển thị lỗi và cho phép resend theo cooldown
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Register[User đăng ký] --> Validate[Backend validate + tạo tài khoản pending]
+    Validate --> SendOTP[Gửi OTP]
+    SendOTP --> Enter[User nhập OTP]
+    Enter --> Check{OTP hợp lệ?}
+    Check -- Không --> Fail{Còn attempts / trong cooldown?}
+    Fail -- Còn --> Resend[Cho phép nhập lại / resend]
+    Fail -- Hết --> Locked[Chặn tạm thời theo rate limit]
+    Resend --> Enter
+    Check -- Có --> Activate[Kích hoạt tài khoản]
+    Activate --> Token[Cấp Access / Refresh Token]
+    Token --> Onboarding[Onboarding hồ sơ sức khỏe]
+```
+
+Business rules:
+
+- Tài khoản chưa verify OTP không được kích hoạt và không được cấp token nghiệp vụ.
+- OTP có thời hạn, có resend cooldown và giới hạn attempts/rate limit.
+- OTP dùng chung cơ chế cho đăng ký và khôi phục tài khoản.
+- Không tiết lộ email có tồn tại hay không qua thông báo lỗi OTP.
+
+### 2.2. Luồng cập nhật Health Profile và tính lại metric
+
+User có thể chỉnh sửa hồ sơ sức khỏe sau onboarding; Backend tính lại các metric authoritative.
+
+```text
+User mở Health Profile trong Profile / Settings
+  ↓
+Xem BMI / BMR / TDEE / calories / macro hiện tại
+  ↓
+Chỉnh chiều cao / cân nặng / mức vận động / mục tiêu / kinh nghiệm
+  ↓
+Backend validate dữ liệu bắt buộc
+  ↓
+Backend tính lại BMI / BMR / TDEE / calories / macro
+  ↓
+Cập nhật HealthProfile / NutritionTarget nếu hợp lệ
+  ↓
+Dashboard / Meal Planner / AI context dùng metric mới
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Open[User mở Health Profile] --> View[Xem metric hiện tại]
+    View --> Edit[Chỉnh dữ liệu đầu vào]
+    Edit --> Validate{Dữ liệu hợp lệ?}
+    Validate -- Không --> Error[Hiển thị lỗi validate]
+    Validate -- Có --> Recalculate[Backend tính lại BMI / BMR / TDEE / calories / macro]
+    Recalculate --> Save[Cập nhật HealthProfile / NutritionTarget]
+    Save --> Sync[Dashboard / Meal Planner / AI đồng bộ metric mới]
+```
+
+Business rules:
+
+- User không chỉnh sửa trực tiếp BMI / BMR / TDEE; các giá trị này do Backend tính.
+- Backend là nơi tính lại metric authoritative khi input thay đổi.
+- Cập nhật Health Profile không làm thay đổi WorkoutLog / WeightLog lịch sử.
+- User chỉ xem và chỉnh sửa Health Profile của chính mình.
 
 ---
 
 ## 3. Luồng Dashboard cá nhân
 
-Dashboard là điểm tổng hợp sau khi user đăng nhập, giúp user nắm nhanh tình trạng dinh dưỡng, luyện tập, cơ thể và các gợi ý phù hợp.
+Dashboard là điểm tổng hợp sau khi user đăng nhập, giúp user nắm nhanh tình trạng dinh dưỡng, luyện tập, cơ thể và các recommendation phù hợp.
 
 ```text
 User mở Dashboard
@@ -184,14 +305,16 @@ Backend lấy dữ liệu cá nhân
   ├── HealthProfile / NutritionTarget
   ├── MealPlan hôm nay
   ├── WorkoutSchedule hôm nay / buổi tập tiếp theo
-  ├── WeightLog mới nhất
-  └── Gợi ý AI nếu có
+  ├── WeightLog mới nhất / trend
+  └── AI Daily Recommendation nếu có
+  ↓
+Backend tổng hợp Dashboard
   ↓
 App hiển thị tổng quan
   ├── Calories, macro đã nạp / mục tiêu / còn lại
   ├── Lịch tập hôm nay và tỷ lệ hoàn thành tuần
   ├── Cân nặng hiện tại, BMI và tiến độ mục tiêu
-  └── Gợi ý món ăn, bài tập hoặc sản phẩm
+  └── Daily Recommendation
 ```
 
 Sơ đồ trực quan:
@@ -203,19 +326,21 @@ flowchart TD
     Fetch --> Health[HealthProfile / NutritionTarget]
     Fetch --> Meal[MealPlan hôm nay]
     Fetch --> Schedule[WorkoutSchedule hôm nay / buổi tiếp theo]
-    Fetch --> Weight[WeightLog mới nhất]
-    Fetch --> Suggest[AI suggestions nếu có]
+    Fetch --> Weight[WeightLog mới nhất / trend]
+    Fetch --> Recommendation[AI Daily Recommendation nếu có]
 
-    Health --> Render[App render Dashboard]
-    Meal --> Render
-    Schedule --> Render
-    Weight --> Render
-    Suggest --> Render
+    Health --> Aggregate[Backend tổng hợp Dashboard]
+    Meal --> Aggregate
+    Schedule --> Aggregate
+    Weight --> Aggregate
+    Recommendation --> Aggregate
 
-    Render --> NutritionCard[Card calories / macro]
-    Render --> WorkoutCard[Card lịch tập / tỷ lệ hoàn thành]
-    Render --> BodyCard[Card cân nặng / BMI / mục tiêu]
-    Render --> SuggestCard[Card gợi ý]
+    Aggregate --> Render[App render Dashboard]
+
+    Render --> NutritionCard[Calories / macro]
+    Render --> WorkoutCard[Lịch tập / completion]
+    Render --> BodyCard[Cân nặng / BMI / progress]
+    Render --> AICard[AI recommendation]
 
     Render --> Missing{Thiếu HealthProfile?}
     Missing -- Có --> CompleteProfile[CTA hoàn thiện hồ sơ]
@@ -226,25 +351,62 @@ Kết quả:
 
 - User có một màn hình tổng quan để theo dõi tiến độ hằng ngày.
 - Các thay đổi từ Meal Planner, Workout Log và Weight Log được phản ánh lại trên Dashboard.
+- Mobile không tự tính lại các metric authoritative do Backend cung cấp.
 
 Business rules:
 
 - Dashboard chỉ hiển thị dữ liệu của chính user đang đăng nhập.
 - Nếu thiếu `HealthProfile`, Dashboard phải hiển thị yêu cầu hoàn thiện hồ sơ.
 - Nếu chưa có meal plan, lịch tập hoặc weight log, app hiển thị empty state dễ hiểu thay vì dữ liệu giả.
+- AI recommendation chỉ hiển thị khi recommendation còn hiệu lực và thuộc user hiện tại.
 
 ---
 
 ## 4. Luồng luyện tập
 
-Luồng luyện tập gồm bốn phần chính: xem thư viện bài tập, tạo giáo án, tạo lịch tập và ghi nhận buổi tập.
+Luồng luyện tập gồm bốn phần chính: thiết lập thiết bị, xem thư viện bài tập, tạo giáo án/lịch tập và ghi nhận buổi tập.
 
-### 4.1. Xem thư viện bài tập
+### 4.1. Gym Equipment Preference
+
+```text
+Onboarding / User vào Settings
+  ↓
+Xem danh sách thiết bị
+  ├── BODYWEIGHT
+  ├── DUMBBELL
+  ├── BARBELL
+  ├── BENCH
+  ├── CABLE_MACHINE
+  ├── MACHINE
+  ├── RESISTANCE_BAND
+  ├── KETTLEBELL
+  ├── PULL_UP_BAR
+  └── TREADMILL
+  ↓
+User chọn / bỏ chọn / reset
+  ↓
+Backend lưu UserPreference.available_equipment
+  ↓
+Exercise Library / Workout Builder ưu tiên bài phù hợp
+```
+
+Business rules:
+
+- User không phải chọn lại thiết bị ở mỗi buổi tập.
+- User có thể chỉnh sửa equipment trong Settings bất kỳ lúc nào.
+- Thay đổi equipment preference không làm thay đổi WorkoutLog cũ.
+- Nếu chưa chọn thiết bị, ưu tiên BODYWEIGHT và bài không yêu cầu thiết bị đặc thù.
+- “Full gym” có thể được seed bằng các equipment phổ biến.
+- Nếu user không có thiết bị cần thiết, hệ thống giảm độ ưu tiên và có thể gợi ý bài thay thế cùng nhóm cơ.
+
+### 4.2. Xem thư viện bài tập
 
 ```text
 User vào tab Workout
   ↓
 Backend trả danh sách Exercise đang active
+  ↓
+Áp dụng Equipment Preference để ưu tiên kết quả
   ↓
 User tìm kiếm hoặc lọc
   ├── Theo tên bài tập
@@ -253,21 +415,23 @@ User tìm kiếm hoặc lọc
   └── Theo độ khó
   ↓
 User xem chi tiết bài tập
-  ├── Video / GIF minh họa
+  ├── Video hướng dẫn
   ├── Nhóm cơ chính / phụ
   ├── Thiết bị
   ├── Hướng dẫn thực hiện
-  └── Lỗi thường gặp
+  ├── Lỗi thường gặp
+  └── Safety notes
 ```
 
 Business rules:
 
 - User chỉ thấy bài tập đang active.
-- Admin có thể thêm, sửa, ẩn hoặc xóa mềm bài tập.
-- Video/GIF lưu bằng URL an toàn hoặc object storage; database chỉ lưu metadata/object key/URL.
+- Exercise bị ẩn vẫn giữ được lịch sử log cũ nhưng không nên cho thêm vào program mới.
+- Video có thể dùng URL/object storage/CDN hoặc asset demo hợp lệ.
 - Nội dung hướng dẫn nên ưu tiên tiếng Việt.
+- Equipment Preference chỉ ảnh hưởng việc ưu tiên/gợi ý, không xóa dữ liệu Exercise khỏi hệ thống.
 
-### 4.2. Tạo giáo án tập
+### 4.3. Tạo giáo án tập
 
 ```text
 User chọn tạo giáo án
@@ -278,9 +442,9 @@ Chọn giáo án mẫu hoặc Custom
   ├── Full Body
   └── Custom
   ↓
-Nhập mục tiêu và số buổi / tuần
+Chọn bài tập
   ↓
-Thêm bài tập vào từng buổi
+Workout Builder ưu tiên bài phù hợp available_equipment
   ↓
 Thiết lập sets, reps, rest time và note
   ↓
@@ -289,69 +453,74 @@ Backend lưu WorkoutProgram
 
 Business rules:
 
-- Một user có thể có nhiều `WorkoutProgram`.
+- User có thể có nhiều `WorkoutProgram`.
 - Chỉ nên có một giáo án active tại một thời điểm.
 - User có thể chỉnh sửa giáo án sau khi tạo.
-- Nếu bài tập bị Admin ẩn hoặc xóa mềm, giáo án cũ vẫn giữ lịch sử nhưng không cho thêm bài tập đó vào giáo án mới.
+- Nếu bài tập không phù hợp equipment, hệ thống giảm ưu tiên và có thể gợi ý bài thay thế cùng nhóm cơ.
+- Việc thay đổi giáo án mới không làm thay đổi WorkoutLog lịch sử.
 
-### 4.3. Tạo lịch tập
+### 4.4. Tạo lịch tập
 
 ```text
 User tạo lịch tập
   ├── Tạo thủ công
   └── Sinh lịch từ WorkoutProgram
   ↓
-Chọn ngày, giờ và nội dung buổi tập
+Chọn ngày và nội dung buổi tập
   ↓
 Backend lưu WorkoutSchedule
   ↓
-Nếu user bật notification
-  └── Hệ thống lên lịch nhắc tập
+Trạng thái ban đầu = PLANNED
 ```
 
 Trạng thái `WorkoutSchedule`:
 
-- `SCHEDULED`: đã lên lịch.
+- `PLANNED`: đã lên lịch.
 - `COMPLETED`: đã hoàn thành.
-- `MISSED`: đã qua nhưng chưa hoàn thành.
-- `CANCELLED`: đã hủy.
+- `MISSED`: đã quá hạn nhưng chưa hoàn thành.
+- `CANCELLED`: đã hủy hợp lệ.
 
 Business rules:
 
 - User chỉ xem và chỉnh sửa lịch tập của chính mình.
-- Notification chỉ gửi khi user bật quyền thông báo.
-- Buổi tập quá hạn có thể tự chuyển sang `MISSED` theo job định kỳ hoặc khi user mở app.
+- Một user nên có tối đa một `WorkoutProgram` active tại một thời điểm.
+- `CANCELLED` không tính vào mẫu số `completionRate` nếu user hủy hợp lệ.
+- Notification nâng cao không thuộc core P0; nếu triển khai chỉ hoạt động khi user cho phép.
 
-### 4.4. Ghi nhận buổi tập
+### 4.5. Ghi nhận buổi tập
 
 ```text
 Đến ngày tập
   ↓
-User mở buổi tập
+User mở WorkoutSchedule
   ↓
 Nhập dữ liệu đã thực hiện
-  ├── Bài tập
+  ├── Exercise
   ├── Sets
   ├── Reps
-  ├── Mức tạ
-  ├── Thời gian tập
-  └── Ghi chú
+  ├── Weight
+  ├── Duration nếu có
+  └── Completion
   ↓
-Backend lưu WorkoutLog và WorkoutSetLog
+Backend lưu WorkoutLog
   ↓
-Liên kết với WorkoutSchedule nếu có
+Backend tính
+  ├── Volume
+  ├── Completion Rate
+  └── PR
   ↓
-Cập nhật trạng thái lịch tập thành COMPLETED
+Cập nhật WorkoutSchedule = COMPLETED
   ↓
-Cập nhật thống kê, PR và biểu đồ tiến bộ
+Dashboard cập nhật tiến độ
 ```
 
 Sơ đồ trực quan:
 
 ```mermaid
 flowchart TD
-    Start[User vào Workout] --> Library[Xem thư viện bài tập]
-    Library --> Filter[Tìm kiếm / lọc bài tập]
+    Start[User vào Workout] --> Equipment[Equipment Preference]
+    Equipment --> Library[Exercise Library]
+    Library --> Filter[Tìm kiếm / lọc]
     Filter --> Detail[Xem chi tiết bài tập]
 
     Start --> Build[Tạo giáo án]
@@ -360,40 +529,94 @@ flowchart TD
     Template --> UL[Upper Lower]
     Template --> FB[Full Body]
     Template --> Custom[Custom]
-    PPL --> Program[Thiết lập buổi / bài tập / sets / reps]
+
+    PPL --> Program[Thiết lập bài tập / sets / reps / rest]
     UL --> Program
     FB --> Program
     Custom --> Program
-    Program --> SaveProgram[Lưu WorkoutProgram]
 
+    Program --> SaveProgram[Lưu WorkoutProgram]
     SaveProgram --> ScheduleChoice{Tạo lịch?}
     ScheduleChoice -- Từ giáo án --> Generate[Generate WorkoutSchedule]
     ScheduleChoice -- Thủ công --> Manual[Tạo lịch thủ công]
     Generate --> Schedule[WorkoutSchedule]
     Manual --> Schedule
-    Schedule --> Notify{Bật notification?}
-    Notify -- Có --> Reminder[Lên lịch nhắc tập]
-    Notify -- Không --> Wait[Chờ ngày tập]
-    Reminder --> Wait
 
+    Schedule --> Wait[Chờ ngày tập]
     Wait --> Log[User ghi nhận buổi tập]
-    Log --> SetLog[Lưu WorkoutLog / WorkoutSetLog]
-    SetLog --> Complete[Cập nhật Schedule = COMPLETED]
-    Complete --> Stats[Cập nhật PR / volume / progress]
-    Stats --> Dashboard[Đồng bộ Dashboard]
+    Log --> SetLog[Lưu WorkoutLog / WorkoutSet]
+    SetLog --> Calculate[Volume / Completion / PR]
+    Calculate --> Complete[Cập nhật Schedule = COMPLETED]
+    Complete --> Dashboard[Đồng bộ Dashboard]
 ```
 
 Kết quả:
 
 - User có lịch sử tập luyện theo thời gian.
-- Hệ thống có dữ liệu để tính tổng buổi tập, tổng thời gian, PR, volume và tỷ lệ hoàn thành lịch.
+- Hệ thống có dữ liệu để tính volume, PR và completion rate.
 - Dashboard phản ánh tiến độ luyện tập mới nhất.
 
 Business rules:
 
 - User chỉ xem và chỉnh sửa workout log của chính mình.
-- PR được tính theo bài tập, có thể dựa trên mức tạ lớn nhất hoặc estimated 1RM.
-- Khi user đánh dấu hoàn thành lịch tập, dữ liệu cần liên kết với workout log tương ứng.
+- Backend là nơi tính volume, completion rate và PR.
+- Exercise bị ẩn không làm mất lịch sử WorkoutLog.
+- `WorkoutLog` cũ không bị thay đổi khi User cập nhật Equipment Preference.
+
+### 4.6. Workout Session lifecycle
+
+Ghi nhận buổi tập ở 4.5 có thể diễn ra dưới dạng một session có trạng thái, cho phép user bắt đầu, tạm dừng, tiếp tục và kết thúc buổi tập.
+
+```text
+User mở WorkoutSchedule đến ngày tập
+  ↓
+Start Session → trạng thái IN_PROGRESS
+  ↓
+Nhập set / reps / weight / duration theo từng bài
+  ├── Rest timer giữa các set
+  ├── Pause → PAUSED
+  └── Resume → IN_PROGRESS
+  ↓
+Finish Session
+  ↓
+Backend lưu WorkoutLog / WorkoutSet
+  ↓
+Cập nhật WorkoutSchedule = COMPLETED
+  ↓
+Dashboard cập nhật tiến độ
+```
+
+Trạng thái session:
+
+```text
+PLANNED / READY
+  └── Start → IN_PROGRESS
+        ├── Pause → PAUSED → Resume → IN_PROGRESS
+        ├── Finish → COMPLETED
+        └── Exit giữa chừng → lưu nháp hoặc CANCELLED
+```
+
+Sơ đồ trạng thái:
+
+```mermaid
+stateDiagram-v2
+    [*] --> READY: Mở buổi tập
+    READY --> IN_PROGRESS: Start Session
+    IN_PROGRESS --> PAUSED: Pause
+    PAUSED --> IN_PROGRESS: Resume
+    IN_PROGRESS --> COMPLETED: Finish (lưu WorkoutLog)
+    IN_PROGRESS --> CANCELLED: Exit / hủy hợp lệ
+    PAUSED --> CANCELLED: Exit / hủy hợp lệ
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+```
+
+Business rules:
+
+- `WorkoutSchedule` chỉ chuyển sang `COMPLETED` khi session finish hợp lệ và WorkoutLog được lưu.
+- Khi user thoát giữa chừng, app cho chọn tiếp tục, lưu nháp hoặc thoát.
+- `CANCELLED` hợp lệ không tính vào mẫu số completion rate.
+- Rest timer và Pause/Resume là hỗ trợ thao tác, không thay đổi cách Backend tính volume/PR.
 
 ---
 
@@ -423,6 +646,10 @@ User thêm món vào bữa ăn
   └── SNACK
   ↓
 User điều chỉnh khẩu phần
+  ├── Tô / chén / phần
+  ├── Quả / ly / miếng
+  ├── Gram
+  └── Multiplier 0.5 / 1 / 1.5 / 2
   ↓
 Backend lưu MealEntry
   ↓
@@ -432,7 +659,7 @@ So sánh với NutritionTarget
   ├── Vượt mục tiêu
   │     └── Hiển thị cảnh báo
   └── Còn thiếu
-        └── Gợi ý món phù hợp
+        └── Có thể tạo recommendation phù hợp
 ```
 
 Sơ đồ trực quan:
@@ -463,106 +690,33 @@ flowchart TD
     Entry --> Total[Tính tổng calories / macro]
     Total --> Compare{So với NutritionTarget}
     Compare -- Vượt mục tiêu --> Warning[Hiển thị cảnh báo]
-    Compare -- Còn thiếu --> Suggest[Gợi ý món phù hợp]
-    Compare -- Đạt mức hợp lý --> Summary[Cập nhật tổng quan]
+    Compare -- Còn thiếu --> Suggest[Chuẩn bị recommendation]
+    Compare -- Hợp lý --> Summary[Cập nhật tổng quan]
 
     Warning --> Dashboard[Đồng bộ Dashboard]
     Suggest --> Dashboard
     Summary --> Dashboard
-    Dashboard --> AI[AI Coach có thể dùng MealPlan làm context]
 ```
 
 Kết quả:
 
 - User có meal plan theo từng ngày.
 - Dashboard cập nhật calories/macro đã nạp và còn lại.
-- AI Coach có thể đọc meal plan hiện tại để tư vấn bổ sung hoặc thay thế món ăn.
+- AI Coach và Daily Recommendation có thể sử dụng nutrition summary khi AI personalization được bật.
 
 Business rules:
 
 - Mỗi user có một `MealPlan` theo từng ngày.
 - Tổng calories/macro được tính bằng tổng các món đã thêm sau khi nhân khẩu phần.
-- Nếu calories đã nạp vượt mục tiêu, hệ thống hiển thị cảnh báo.
-- Nếu calories hoặc macro còn thiếu, hệ thống gợi ý món ăn phù hợp.
-- Không phụ thuộc hoàn toàn vào API dinh dưỡng bên ngoài; dữ liệu món ăn Việt Nam nên được chuẩn hóa trong Food Service/dữ liệu nội bộ.
+- Dữ liệu nutrition được hiển thị là giá trị tham khảo khi nguồn chỉ là ước lượng.
+- Food Database nội bộ phải có đủ dữ liệu demo món Việt Nam và không phụ thuộc hoàn toàn vào API bên ngoài.
+- Preference về dị ứng/ràng buộc được ưu tiên hơn recommendation tối ưu macro.
 
 ---
 
-## 6. Luồng AI Coach
+## 6. Luồng theo dõi cân nặng
 
-AI Coach hỗ trợ user bằng tiếng Việt về luyện tập, dinh dưỡng, kỹ thuật tập và điều chỉnh kế hoạch theo context cá nhân.
-
-```text
-User gửi câu hỏi cho AI Coach
-  ↓
-Backend xác thực user
-  ↓
-Backend xác định intent câu hỏi
-  ↓
-Backend gom context được phép
-  ├── Mục tiêu tập luyện
-  ├── Tuổi, giới tính, chiều cao, cân nặng
-  ├── BMI, BMR, TDEE, calories mục tiêu
-  ├── Lịch tập hiện tại
-  ├── Workout log gần đây
-  ├── Meal plan hôm nay
-  ├── Mục tiêu macro
-  └── Sản phẩm đang quan tâm nếu ở luồng mua sắm
-  ↓
-Backend tạo prompt an toàn và giới hạn token
-  ↓
-Gửi request sang FastAPI AI Service
-  ↓
-AI Service gọi AI Provider
-  ↓
-AI Service trả phản hồi
-  ↓
-Backend lưu hội thoại và trả câu trả lời tiếng Việt về app
-```
-
-Sơ đồ trực quan:
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant App as Mobile App
-    participant BE as Spring Boot Backend
-    participant AI as FastAPI AI Service
-    participant Provider as AI Provider
-
-    U->>App: Gửi câu hỏi AI Coach
-    App->>BE: POST câu hỏi kèm JWT
-    BE->>BE: Xác thực user và xác định intent
-    BE->>BE: Gom context được phép
-    BE->>BE: Tạo prompt an toàn, giới hạn token
-    BE->>AI: Gửi prompt + context đã lọc
-    AI->>Provider: Gọi AI Provider
-    Provider-->>AI: Trả phản hồi
-    AI-->>BE: Trả câu trả lời đã xử lý
-    BE->>BE: Lưu hội thoại
-    BE-->>App: Trả câu trả lời tiếng Việt
-    App-->>U: Hiển thị tư vấn
-```
-
-Kết quả:
-
-- User nhận được tư vấn bằng tiếng Việt, phù hợp hồ sơ và mục tiêu hiện tại.
-- Lịch sử hội thoại được lưu để user có thể tiếp tục ngữ cảnh.
-
-Guardrails:
-
-- AI không thay thế tư vấn y tế chuyên môn.
-- Với câu hỏi liên quan bệnh lý, chấn thương hoặc tình trạng sức khỏe nghiêm trọng, AI phải khuyến nghị user hỏi bác sĩ/chuyên gia.
-- AI trả lời dễ hiểu, phù hợp người mới bắt đầu.
-- Không gửi dữ liệu nhạy cảm không cần thiết sang AI Provider.
-- Backend phải kiểm soát prompt, context và giới hạn token để tránh chi phí vượt kiểm soát.
-- AI Service không tự truy cập database.
-
----
-
-## 7. Luồng theo dõi cân nặng
-
-Luồng này giúp user theo dõi sự thay đổi cơ thể theo thời gian và cập nhật lại các chỉ số liên quan khi cần.
+Luồng này giúp user theo dõi sự thay đổi cơ thể theo thời gian và cung cấp trend cho Dashboard và AI khi được phép.
 
 ```text
 User nhập cân nặng theo ngày
@@ -575,12 +729,13 @@ Backend kiểm tra WeightLog cùng ngày
   ↓
 Cập nhật cân nặng hiện tại
   ↓
-Tính lại BMI và tiến độ mục tiêu nếu cần
-  ↓
-Nếu calories mục tiêu có thể bị ảnh hưởng
-  └── Gợi ý user cập nhật lại NutritionTarget
+Backend tính BMI / trend / summary
   ↓
 Dashboard hiển thị cân nặng, biểu đồ và mức thay đổi
+  ↓
+Nếu target có thể cần review
+  └── Đề xuất review NutritionTarget
+        └── User quyết định nếu có thay đổi nghiệp vụ
 ```
 
 Sơ đồ trực quan:
@@ -593,142 +748,216 @@ flowchart TD
 
     Update --> Current[Cập nhật cân nặng hiện tại]
     Create --> Current
-    Current --> BMI[Tính lại BMI nếu cần]
-    BMI --> Target{Calories mục tiêu bị ảnh hưởng?}
-    Target -- Có --> Recommend[Gợi ý cập nhật NutritionTarget]
-    Target -- Không --> Chart[Cập nhật biểu đồ]
-    Recommend --> Chart
+    Current --> Calculate[Backend tính BMI / trend / summary]
+    Calculate --> Review{Có cần review target?}
+    Review -- Có --> Suggest[Đề xuất review NutritionTarget]
+    Review -- Không --> Chart[Cập nhật biểu đồ]
+    Suggest --> UserDecision{User quyết định?}
+    UserDecision -- Không --> Chart
+    UserDecision -- Có --> UpdateTarget[Backend validate và cập nhật target]
+    UpdateTarget --> Chart
     Chart --> Dashboard[Đồng bộ Dashboard]
 ```
 
 Kết quả:
 
 - User có lịch sử cân nặng theo ngày.
-- Dashboard hiển thị cân nặng hiện tại, BMI, biểu đồ thay đổi và tỷ lệ hoàn thành mục tiêu.
+- Dashboard hiển thị cân nặng hiện tại, BMI, biểu đồ thay đổi và tiến độ mục tiêu.
+- Weight trend có thể trở thành context cho AI khi consent cho phép.
 
 Business rules:
 
 - Một ngày chỉ có một bản ghi cân nặng chính.
 - Nếu user nhập lại cùng ngày thì cập nhật bản ghi hiện có.
-- Khi cân nặng thay đổi, hệ thống có thể tính lại BMI và khuyến nghị calories nếu user đồng ý cập nhật.
+- Backend tính trend/summary trước khi gửi context cho AI.
+- Cân nặng thay đổi không tự động mutation NutritionTarget.
+- Nếu cần review target, hệ thống/AI chỉ tạo proposal dạng `REVIEW_NUTRITION_TARGET_PROPOSAL`, không tự thay đổi target.
+- NutritionTarget chỉ được cập nhật sau khi User approval và Backend validation thành công.
 - User chỉ xem và chỉnh sửa `WeightLog` của chính mình.
 
 ---
 
-## 8. Luồng cửa hàng, giỏ hàng, đặt hàng và thanh toán
+## 7. Luồng User Preference và Settings
 
-Luồng Shop hỗ trợ user tìm sản phẩm gym, thêm vào giỏ, tạo đơn hàng và theo dõi trạng thái xử lý.
+User Preference là lớp lưu các thông tin cá nhân hóa được user chủ động khai báo và có thể được sử dụng bởi Exercise, Meal Planner và AI.
 
 ```text
-User mở Shop
+User vào Settings
   ↓
-Xem danh mục hoặc tìm kiếm sản phẩm
+Chọn User Preference
+  ├── Món không thích
+  ├── Dị ứng / ràng buộc
+  ├── Available Equipment
+  ├── Thời gian tập
+  └── Meal Preference
   ↓
-Xem chi tiết sản phẩm
-  ├── Ảnh
-  ├── Giá
-  ├── Mô tả
-  ├── Thành phần / cách dùng
-  └── Tồn kho
+Backend validate
   ↓
-Thêm sản phẩm vào giỏ hàng
+Lưu UserPreference
   ↓
-Cập nhật số lượng hoặc xóa khỏi giỏ
-  ↓
-Checkout
-  ↓
-Backend kiểm tra tồn kho và snapshot giá
-  ↓
-Tạo Order và OrderItem
-  ↓
-User chọn phương thức thanh toán
-  ├── COD
-  │     └── Order chờ xác nhận
-  └── Online
-        └── Payment Provider xử lý giao dịch
-  ↓
-User theo dõi trạng thái đơn hàng
-  ↓
-Admin xác nhận, giao hàng, hoàn thành, hủy hoặc hoàn tiền
+Các module sử dụng preference
+  ├── Exercise Ranking
+  ├── Workout Builder
+  ├── Meal Recommendation
+  └── AI Personalization
 ```
 
 Sơ đồ trực quan:
 
 ```mermaid
 flowchart TD
-    Shop[User mở Shop] --> Browse[Xem danh mục / tìm kiếm]
-    Browse --> Product[Xem chi tiết sản phẩm]
-    Product --> Cart[Thêm vào giỏ hàng]
-    Cart --> UpdateCart[Cập nhật số lượng / xóa sản phẩm]
-    UpdateCart --> Checkout[Checkout]
+    Settings[User mở Settings] --> Preference[User Preference]
+    Preference --> Dislike[Món không thích]
+    Preference --> Constraint[Dị ứng / ràng buộc]
+    Preference --> Equipment[Available Equipment]
+    Preference --> TrainingTime[Thời gian tập]
+    Preference --> MealPreference[Meal Preference]
 
-    Checkout --> Stock{Tồn kho hợp lệ?}
-    Stock -- Không --> StockError[Thông báo không đủ tồn kho]
-    Stock -- Có --> Snapshot[Snapshot giá sản phẩm]
-    Snapshot --> CreateOrder[Tạo Order / OrderItem]
+    Dislike --> Validate[Backend validate]
+    Constraint --> Validate
+    Equipment --> Validate
+    TrainingTime --> Validate
+    MealPreference --> Validate
 
-    CreateOrder --> PaymentMethod{Phương thức thanh toán}
-    PaymentMethod -- COD --> Pending[Order = PENDING]
-    PaymentMethod -- Online --> Provider[Payment Provider xử lý]
-    Provider --> Paid{Thanh toán thành công?}
-    Paid -- Có --> PaidStatus[Order = PAID]
-    Paid -- Không --> PaymentError[Thông báo thanh toán thất bại]
-
-    Pending --> AdminConfirm[Admin xác nhận]
-    PaidStatus --> AdminConfirm
-    AdminConfirm --> Confirmed[Order = CONFIRMED]
-    Confirmed --> Shipping[Order = SHIPPING]
-    Shipping --> Completed[Order = COMPLETED]
-    Confirmed --> Cancelled[Order = CANCELLED]
-    PaidStatus --> Refunded[Order = REFUNDED nếu hoàn tiền]
-
-    Completed --> Tracking[User xem lịch sử đơn]
-    Cancelled --> Tracking
-    Refunded --> Tracking
+    Validate --> Save[Lưu UserPreference]
+    Save --> Exercise[Exercise Ranking]
+    Save --> Workout[Workout Builder]
+    Save --> Meal[Meal Recommendation]
+    Save --> AI[AI Personalization]
 ```
-
-Trạng thái `Order`:
-
-- `PENDING`: đơn hàng mới tạo, chờ xác nhận.
-- `CONFIRMED`: đã xác nhận.
-- `PAID`: đã thanh toán.
-- `SHIPPING`: đang giao hàng.
-- `COMPLETED`: hoàn thành.
-- `CANCELLED`: đã hủy.
-- `REFUNDED`: đã hoàn tiền.
 
 Business rules:
 
-- Giá sản phẩm tại thời điểm đặt hàng phải được lưu vào `OrderItem`.
-- Không cho đặt số lượng vượt tồn kho nếu hệ thống quản lý tồn kho realtime.
-- User chỉ xem đơn hàng của chính mình.
-- Admin có quyền xem và cập nhật trạng thái tất cả đơn hàng.
-- Payment secret và thông tin tích hợp cổng thanh toán chỉ lưu server-side.
+- User có quyền thêm, sửa hoặc xóa preference của chính mình.
+- Dị ứng/ràng buộc phải được ưu tiên hơn mục tiêu tối ưu calories/macros.
+- Equipment Preference có thể chỉnh sửa riêng trong Settings.
+- Khi AI personalization DISABLED, User Preference không được đưa vào AI context.
+- Các module deterministic như Exercise Ranking, Workout Builder và Meal Planner vẫn có thể dùng preference do user khai báo nếu không gọi AI.
 
 ---
 
-## 9. Luồng Chatbot bán hàng
+## 8. Luồng AI Consent và Privacy
 
-Chatbot bán hàng hỗ trợ user chọn sản phẩm phù hợp với mục tiêu tập luyện, nhu cầu và ngân sách trong quá trình mua sắm.
+AI personalization chỉ được sử dụng khi user chủ động bật consent.
 
 ```text
-User đang ở Shop hoặc chi tiết sản phẩm
+User vào Settings / AI
   ↓
-User hỏi chatbot bán hàng
+Xem trạng thái AI Personalization
+  ↓
+Bật / Tắt
+  ↓
+Backend lưu AiConsentSetting
+  ├── enabled
+  ├── consent_version
+  ├── accepted_at
+  └── updated_at
+```
+
+Khi ENABLE:
+
+```text
+AI Request
+  ↓
+Authorization
+  ↓
+Consent Check = ENABLED
+  ↓
+Context Builder
+  ↓
+Personalized AI Flow
+```
+
+Khi DISABLE:
+
+```text
+AI Request
+  ↓
+Authorization
+  ↓
+Consent Check = DISABLED
+  ↓
+General Knowledge Mode
+  ↓
+Không đưa Health / Workout / Nutrition / Weight / Preference vào AI request / AI Service
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Settings[User vào AI Settings] --> Toggle{Bật AI Personalization?}
+    Toggle --> SaveConsent[Lưu AiConsentSetting]
+    SaveConsent --> Request[User gửi AI request]
+
+    Request --> Check{Consent ENABLED?}
+    Check -- Không --> General[General Knowledge Mode]
+    Check -- Có --> Context[Personalized Context Builder]
+
+    Context --> AIFlow[AI Decision Pipeline]
+    General --> Response[Trả response]
+    AIFlow --> Response
+```
+
+Kết quả:
+
+- User kiểm soát việc sử dụng dữ liệu cá nhân cho AI.
+- Consent được kiểm tra trước Context Builder.
+- Khi OFF, AI không tạo Daily Recommendation cá nhân hóa.
+- AI không được truy cập dữ liệu user khác.
+
+Business rules:
+
+- `AiConsentSetting` phải thuộc chính user.
+- Consent phải có version và timestamp.
+- AI Consent chỉ kiểm soát việc đưa personal context vào AI request / AI Service.
+- Khi DISABLED, Backend không đưa personal context vào AI Service.
+- Khi DISABLED, Dashboard, Exercise Ranking, Workout Builder và Meal Planner vẫn có thể dùng dữ liệu user theo logic deterministic nếu không gọi AI.
+- User có thể bật/tắt personalization bất kỳ lúc nào.
+- Consent history có thể lưu previous mode, new mode, version, changed_at và source.
+
+---
+
+## 9. Luồng AI Coach
+
+AI Coach hỗ trợ user bằng tiếng Việt về luyện tập, dinh dưỡng, kỹ thuật tập và giải thích dữ liệu theo context được phép.
+
+```text
+User gửi câu hỏi cho AI Coach
   ↓
 Backend xác thực user
   ↓
-Backend lấy context mua sắm phù hợp
-  ├── Mục tiêu tập luyện
-  ├── Nhu cầu sản phẩm
-  ├── Ngân sách nếu user cung cấp
-  └── Danh sách sản phẩm active / còn hàng
-  ↓
-AI tư vấn, so sánh hoặc gợi ý sản phẩm
-  ↓
-App hiển thị câu trả lời
-  ↓
-User xem chi tiết sản phẩm hoặc thêm vào giỏ
+Kiểm tra AI Consent
+  ├── DISABLED
+  │     └── General Knowledge Mode
+  └── ENABLED
+        ↓
+      Xác định tác vụ / intent
+        ↓
+      Context Builder
+        ├── Health nếu liên quan
+        ├── Health Metrics nếu liên quan
+        ├── Workout nếu liên quan
+        ├── Nutrition nếu liên quan
+        ├── Weight nếu liên quan
+        ├── Preference nếu liên quan
+        └── Conversation summary + recent messages nếu cần
+        ↓
+      Rule Engine tạo signals nếu cần
+        ↓
+      Prompt Builder
+        ↓
+      FastAPI AI Service
+        ↓
+      AI Provider
+        ↓
+      Output Parser
+        ↓
+      Schema / Business / Safety Validation
+        ↓
+      Backend trả phản hồi về Mobile
+        ↓
+      Lưu Conversation
 ```
 
 Sơ đồ trực quan:
@@ -737,95 +966,280 @@ Sơ đồ trực quan:
 sequenceDiagram
     participant U as User
     participant App as Mobile App
-    participant BE as Backend
-    participant AI as AI Service
-    participant Shop as Product Catalog
+    participant BE as Spring Boot Backend
+    participant Rule as Rule Engine
+    participant AI as FastAPI AI Service
+    participant Provider as AI Provider
 
-    U->>App: Hỏi chatbot bán hàng
-    App->>BE: Gửi câu hỏi + JWT
-    BE->>BE: Xác thực user
-    BE->>Shop: Lấy sản phẩm active / còn hàng
-    Shop-->>BE: Danh sách sản phẩm phù hợp
-    BE->>BE: Gom mục tiêu, nhu cầu, ngân sách nếu có
-    BE->>AI: Gửi context mua sắm đã lọc
-    AI-->>BE: Trả tư vấn / so sánh / gợi ý
-    BE-->>App: Trả câu trả lời + sản phẩm liên quan
-    App-->>U: Hiển thị tư vấn và CTA xem chi tiết / thêm giỏ
+    U->>App: Gửi câu hỏi AI Coach
+    App->>BE: POST câu hỏi + JWT
+    BE->>BE: Authorization + Ownership
+    BE->>BE: Consent Check
+
+    alt Consent OFF
+        BE->>BE: General Knowledge Mode
+        BE-->>App: Trả câu trả lời kiến thức chung
+    else Consent ON
+        BE->>BE: Xác định intent
+        BE->>BE: Context Builder
+        BE->>Rule: Tạo signals nếu cần
+        Rule-->>BE: Rule signals
+        BE->>BE: Prompt Builder
+        BE->>AI: Context + prompt + output schema
+        AI->>Provider: Gọi AI Provider
+        Provider-->>AI: Trả response
+        AI-->>BE: AI response
+        BE->>BE: Parse + Schema Validation
+        BE->>BE: Business Validation
+        BE->>BE: Safety Validation
+        BE-->>App: Trả câu trả lời
+    end
+
+    App-->>U: Hiển thị tư vấn
+    BE->>BE: Lưu conversation
 ```
 
 Kết quả:
 
-- User được hỗ trợ chọn sản phẩm phù hợp hơn.
-- Shop có thể điều hướng user từ hội thoại sang chi tiết sản phẩm hoặc giỏ hàng.
+- User nhận được tư vấn bằng tiếng Việt.
+- Personalized AI chỉ sử dụng context phù hợp với câu hỏi và consent.
+- AI Service không tự truy cập database.
+- AI response không được bypass validation.
 
 Guardrails:
 
-- Chatbot chỉ gợi ý sản phẩm đang active và còn hàng nếu có quản lý tồn kho.
-- Chatbot không được đưa ra cam kết y tế hoặc điều trị bệnh.
-- Với thực phẩm bổ sung, chatbot phải khuyến nghị user đọc kỹ hướng dẫn sử dụng và tham khảo chuyên gia nếu có bệnh lý.
-- Chatbot chỉ dùng context mua sắm cần thiết, không gửi dữ liệu nhạy cảm không liên quan.
+- AI không thay thế tư vấn y tế chuyên môn.
+- Không chẩn đoán bệnh hoặc kê thuốc.
+- Không khuyến nghị giảm cân cực đoan.
+- Không yêu cầu password, API key hoặc token.
+- Không tiết lộ system prompt, internal context hoặc dữ liệu user khác.
+- User input, conversation history và dữ liệu import được xem là untrusted input.
+- Prompt Builder phải phân vùng system instruction, context, user message, rule signals và output schema.
 
 ---
 
-## 10. Luồng Notification
+## 10. Luồng AI Daily Recommendation
 
-Notification là luồng hỗ trợ giúp user duy trì thói quen tập luyện, dinh dưỡng, theo dõi cơ thể và cập nhật đơn hàng.
+Daily Recommendation là luồng AI personalization chính của MVP, tạo 1–3 recommendation/ngày dựa trên các tín hiệu được Backend xác định.
 
 ```text
-Hệ thống phát sinh sự kiện cần nhắc user
-  ├── Sắp đến giờ tập
-  ├── Chưa nhập meal plan
-  ├── Đến kỳ cập nhật cân nặng
-  ├── Đơn hàng đổi trạng thái
-  └── Có gợi ý AI phù hợp
+Daily trigger / User mở Dashboard
   ↓
-Kiểm tra user đã bật notification hay chưa
-  ↓
-Kiểm tra loại thông báo được phép gửi
-  ↓
-Tính thời điểm gửi theo múi giờ phù hợp
-  ↓
-Gửi notification đến thiết bị của user
+Backend kiểm tra AI Consent
+  ├── DISABLED
+  │     └── Không tạo personalized recommendation
+  └── ENABLED
+        ↓
+      Backend tạo candidate signals
+        ├── calories remaining
+        ├── nutrition_protein_gap
+        ├── workout_today
+        ├── adherence_issue
+        ├── weight_trend_off_goal
+        ├── meal_logging_drop
+        └── preference_conflict
+        ↓
+      Rule Engine xác định WHAT
+        ↓
+      Context Builder tạo context tối thiểu
+        ↓
+      AI quyết định HOW
+        ↓
+      Tạo 1–3 recommendation
+        ↓
+      Output Parser
+        ↓
+      Schema Validation
+        ↓
+      Business Validation
+        ↓
+      Safety Validation
+        ↓
+      Lưu AiRecommendation = PENDING
+        ↓
+      Dashboard hiển thị recommendation
 ```
 
 Sơ đồ trực quan:
 
 ```mermaid
 flowchart TD
-    Event[Sự kiện hệ thống] --> Type{Loại sự kiện}
-    Type --> Workout[Sắp đến giờ tập]
-    Type --> Meal[Chưa nhập meal plan]
-    Type --> Weight[Đến kỳ cập nhật cân nặng]
-    Type --> Order[Đơn hàng đổi trạng thái]
-    Type --> AI[Có gợi ý AI phù hợp]
+    Trigger[Daily Trigger / User mở Dashboard] --> Consent{AI Consent ENABLED?}
+    Consent -- Không --> NoRecommendation[Không tạo personalized recommendation]
 
-    Workout --> Permission{User bật notification?}
-    Meal --> Permission
-    Weight --> Permission
-    Order --> Permission
-    AI --> Permission
+    Consent -- Có --> Signals[Backend tạo candidate signals]
+    Signals --> Rule[Rule Engine]
+    Rule --> Context[Context Builder]
+    Context --> Prompt[Prompt Builder]
+    Prompt --> AI[FastAPI AI Service]
+    AI --> Provider[AI Provider]
+    Provider --> Output[AI Output]
 
-    Permission -- Không --> Skip[Không gửi]
-    Permission -- Có --> Category{Loại thông báo được phép?}
-    Category -- Không --> Skip
-    Category -- Có --> Timezone[Tính thời điểm theo múi giờ]
-    Timezone --> Send[Gửi notification]
-    Send --> App[Mobile App nhận thông báo]
+    Output --> Parse[Output Parser]
+    Parse --> Schema{Schema hợp lệ?}
+    Schema -- Không --> Fallback[Fallback / Regenerate / Safe Response]
+    Schema -- Có --> Business{Business hợp lệ?}
+    Business -- Không --> Fallback
+    Business -- Có --> Safety{Safety hợp lệ?}
+    Safety -- Không --> Fallback
+    Safety -- Có --> Recommendation[Lưu 1–3 AiRecommendation = PENDING]
+
+    Recommendation --> Dashboard[Hiển thị trên Dashboard]
+```
+
+Recommendation có:
+
+- `type`.
+- `title`.
+- `content`.
+- `reason`.
+- `priority`.
+- `status`.
+- `source_metrics`.
+- `created_at`.
+- `expires_at`.
+- `safety_level`.
+
+Nguyên tắc:
+
+> **Rule Engine quyết định WHAT. AI quyết định HOW.**
+
+Business rules:
+
+- Chỉ tạo personalized recommendation khi consent ENABLED.
+- Recommendation phải thuộc user hiện tại.
+- Recommendation phải qua schema, business và safety validation.
+- Recommendation mặc định có trạng thái `PENDING`.
+- AI không được tự mutation database.
+- Recommendation ưu tiên hành động nhỏ, có thể thực hiện ngay.
+- Preference về dị ứng/ràng buộc được ưu tiên hơn recommendation tối ưu macro.
+
+---
+
+## 11. Luồng Apply / Dismiss Recommendation
+
+Recommendation chỉ được thay đổi trạng thái khi user quyết định.
+
+### 11.1. APPLY
+
+```text
+User xem recommendation
+  ↓
+Recommendation = PENDING
+  ↓
+User chọn APPLY
+  ↓
+Backend kiểm tra Authorization
+  ↓
+Kiểm tra Ownership
+  ↓
+Kiểm tra Recommendation còn PENDING
+  ↓
+Kiểm tra Allowed Action Contract
+  ↓
+Business Validation
+  ↓
+Safety Validation
+  ↓
+Backend thực hiện Database Mutation nếu hợp lệ
+  ↓
+Ghi Audit Log
+  ↓
+Recommendation = APPLIED
+  ↓
+Dashboard cập nhật
+```
+
+### 11.2. DISMISS
+
+```text
+User xem recommendation
+  ↓
+Recommendation = PENDING
+  ↓
+User chọn DISMISS
+  ↓
+Backend kiểm tra Ownership
+  ↓
+Lưu feedback nếu có
+  ↓
+Recommendation = DISMISSED
+  ↓
+Không mutation business data
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Recommendation[Recommendation = PENDING] --> Decision{User quyết định}
+    Decision -- APPLY --> Auth[Authorization]
+    Auth --> Owner[Ownership Check]
+    Owner --> Pending{Còn PENDING?}
+    Pending -- Không --> Error[Reject]
+    Pending -- Có --> Action[Allowed Action Validation]
+    Action --> Business[Business Validation]
+    Business --> Safety[Safety Validation]
+    Safety --> Mutation[Backend Mutation]
+    Mutation --> Audit[Audit Log]
+    Audit --> Applied[Recommendation = APPLIED]
+    Applied --> Dashboard[Đồng bộ Dashboard]
+
+    Decision -- DISMISS --> DismissOwner[Ownership Check]
+    DismissOwner --> Feedback[Lưu feedback nếu có]
+    Feedback --> Dismissed[Recommendation = DISMISSED]
+```
+
+State machine:
+
+```text
+PENDING
+  ├── APPLY hợp lệ → APPLIED
+  ├── DISMISS → DISMISSED
+  └── hết hạn → EXPIRED
+```
+
+Sơ đồ trạng thái:
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Tạo recommendation
+    PENDING --> APPLIED: APPLY hợp lệ
+    PENDING --> DISMISSED: DISMISS
+    PENDING --> EXPIRED: Hết hạn
+    APPLIED --> [*]
+    DISMISSED --> [*]
+    EXPIRED --> [*]
+```
+
+Allowed Action Contract:
+
+```text
+NONE
+ADD_MEAL_ENTRY_PROPOSAL
+CREATE_WORKOUT_SCHEDULE_PROPOSAL
+UPDATE_USER_PREFERENCE_PROPOSAL
+REVIEW_NUTRITION_TARGET_PROPOSAL
+LOG_REMINDER_ONLY
 ```
 
 Business rules:
 
-- Notification chỉ gửi khi user bật quyền thông báo.
-- User có thể bật/tắt từng nhóm thông báo nếu hệ thống hỗ trợ cấu hình chi tiết.
-- Notification phải phù hợp múi giờ của user.
-- Không gửi thông báo marketing nếu user chưa đồng ý.
-- Nhắc lịch tập chỉ gửi với lịch chưa hoàn thành hoặc chưa bị hủy.
+- Chỉ recommendation `PENDING` mới được APPLY/DISMISS.
+- User chỉ APPLY/DISMISS recommendation thuộc chính mình.
+- AI không được tự gọi mutation endpoint.
+- AI chỉ đề xuất action; Backend chỉ mutation sau khi User APPLY và validate thành công.
+- APPLY chỉ thực hiện mutation sau khi Backend validation thành công.
+- DISMISS không làm thay đổi business data.
+- Action của AI phải nằm trong Allowed Action Contract whitelist.
+- Action ngoài whitelist bị reject.
+- Payload action không được chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
 
 ---
 
-## 11. Luồng Admin
+## 12. Luồng Admin
 
-Admin quản trị dữ liệu dùng chung, đơn hàng, nội dung AI và các chỉ số vận hành của hệ thống.
+Admin baseline là phạm vi P0 cho các dữ liệu cần phục vụ demo và vận hành tối thiểu: quản lý bài tập, món ăn Việt Nam và audit log. User Management, Admin Dashboard, Import CSV/Excel, AI Rule và Prompt Version là P1, chỉ triển khai sau khi P0 ổn định.
 
 ```text
 Admin đăng nhập
@@ -833,13 +1247,14 @@ Admin đăng nhập
 Backend xác thực JWT và role ADMIN
   ↓
 Admin truy cập màn quản trị
-  ├── Dashboard admin
-  ├── Quản lý người dùng
-  ├── Quản lý bài tập
-  ├── Quản lý món ăn Việt Nam
-  ├── Quản lý sản phẩm và tồn kho
-  ├── Quản lý đơn hàng
-  └── Quản lý prompt / rule AI
+  ├── Quản lý người dùng            [P1]
+  ├── Quản lý bài tập               [P0]
+  ├── Quản lý món ăn Việt Nam       [P0]
+  ├── Audit Log                     [P0]
+  ├── Dashboard admin               [P1]
+  ├── Import CSV/Excel              [P1]
+  ├── Quản lý AI Rule               [P1]
+  └── Quản lý Prompt Version        [P1]
   ↓
 Admin thực hiện thao tác quản trị
   ↓
@@ -859,19 +1274,20 @@ flowchart TD
     Role -- Không --> Deny[Từ chối truy cập]
     Role -- Có --> Panel[Màn quản trị]
 
-    Panel --> Dashboard[Dashboard admin]
-    Panel --> Users[Quản lý người dùng]
-    Panel --> Exercises[Quản lý bài tập]
-    Panel --> Foods[Quản lý món ăn Việt Nam]
-    Panel --> Products[Quản lý sản phẩm / tồn kho]
-    Panel --> Orders[Quản lý đơn hàng]
-    Panel --> AIRules[Quản lý prompt / rule AI]
+    Panel --> Users[Quản lý người dùng P1]
+    Panel --> Exercises[Quản lý bài tập P0]
+    Panel --> Foods[Quản lý món ăn Việt Nam P0]
+    Panel --> AuditBase[Audit Log P0]
+    Panel --> Dashboard[Dashboard admin P1]
+    Panel --> Import[Import CSV / Excel P1]
+    Panel --> AIRules[Quản lý AI Rule / Prompt P1]
 
     Users --> Validate[Validate quyền và dữ liệu]
     Exercises --> Validate
     Foods --> Validate
-    Products --> Validate
-    Orders --> Validate
+    AuditBase --> Validate
+    Import --> Preview[Preview / Validation]
+    Preview --> Validate
     AIRules --> Validate
 
     Validate --> Update[Cập nhật dữ liệu hệ thống]
@@ -883,19 +1299,56 @@ flowchart TD
 
 Kết quả:
 
-- Dữ liệu bài tập, món ăn, sản phẩm và đơn hàng được quản trị tập trung.
-- Dashboard admin có số liệu về user, bài tập, món ăn, sản phẩm, đơn hàng, doanh thu và top item nếu có dữ liệu.
+- Dữ liệu bài tập và món ăn được quản trị tập trung.
+- Admin có thể quản lý AI Rule/Prompt ở phạm vi P1.
+- Các thao tác quan trọng có audit log.
 
 Business rules:
 
-- Admin không được xem mật khẩu hoặc refresh token của user.
-- Các thao tác quan trọng nên được ghi audit log.
-- Xóa dữ liệu chính nên dùng soft delete để tránh mất dữ liệu trong quá trình demo và vận hành.
-- Admin quản lý dữ liệu dùng chung, nhưng dữ liệu cá nhân của user vẫn cần kiểm soát truy cập phù hợp.
+- Admin baseline P0 gồm quản lý bài tập, món ăn và audit log; User Management và các phần mở rộng còn lại là P1.
+- Admin không được xem mật khẩu, refresh token hoặc API key.
+- Import CSV/Excel phải có preview và validation trước khi lưu.
+- Xóa dữ liệu chính nên dùng soft delete.
+- Audit log không chứa password, token, API key hoặc raw personal context thừa.
+- Admin vẫn phải tuân thủ phân quyền đối với dữ liệu cá nhân.
+
+### 12.1. Luồng Media / Storage baseline
+
+Media/Storage baseline (P0) phục vụ hiển thị video/ảnh cho Exercise và Food.
+
+```text
+Admin upload video / ảnh cho Exercise hoặc Food
+  ↓
+Backend validate MIME type / extension / size
+  ↓
+Lưu file vào Object Storage hoặc dùng demo URL / asset hợp lệ
+  ↓
+Lưu metadata / object key
+  ↓
+Exercise / Food tham chiếu media qua metadata
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Upload[Admin upload media] --> Validate{MIME / extension / size hợp lệ?}
+    Validate -- Không --> Reject[Từ chối upload]
+    Validate -- Có --> Store[Lưu Object Storage / demo URL]
+    Store --> Meta[Lưu metadata / object key]
+    Meta --> Reference[Exercise / Food tham chiếu media]
+```
+
+Business rules:
+
+- Không lưu binary trực tiếp trong database nghiệp vụ; chỉ lưu metadata/object key.
+- P0 chỉ cần baseline media cho demo Exercise/Food; có thể dùng demo URL/asset hợp lệ.
+- Upload media phải validate MIME type, kích thước và extension.
+- Cleanup file orphan, CDN nâng cao và lifecycle policy là P2/Future.
 
 ---
 
-## 12. Luồng bảo mật và phân quyền
+## 13. Luồng bảo mật và phân quyền
 
 Luồng bảo mật áp dụng cho toàn bộ API riêng tư của hệ thống.
 
@@ -910,7 +1363,7 @@ Kiểm tra quyền truy cập tài nguyên
   ├── USER
   │     └── Chỉ truy cập dữ liệu thuộc chính mình
   └── ADMIN
-        └── Truy cập API quản trị theo quyền admin
+        └── Truy cập API quản trị theo role
   ↓
 Nếu hợp lệ
   └── Xử lý nghiệp vụ
@@ -946,24 +1399,296 @@ flowchart TD
 
 Business rules:
 
-- API riêng tư bắt buộc có JWT hợp lệ.
+- API private bắt buộc có JWT hợp lệ.
 - Backend phải kiểm tra authorization, không chỉ ẩn nút hoặc màn hình ở frontend.
-- User không được xem `HealthProfile`, `MealPlan`, `WorkoutLog`, `WeightLog` hoặc `Order` của user khác.
-- AI Provider API key, JWT secret và payment secret chỉ lưu server-side.
+- User không được xem `HealthProfile`, `MealPlan`, `WorkoutLog`, `WeightLog` hoặc dữ liệu cá nhân của user khác.
+- AI Provider API key, JWT secret và credential chỉ lưu server-side.
+- AI Service không có quyền truy cập PostgreSQL trực tiếp.
 - Upload media cần validate MIME type, kích thước và extension.
 
 ---
 
-## 13. Checklist đối chiếu MVP
+## 14. Luồng AI Architecture tổng quát
+
+Đây là luồng kiến trúc dùng chung cho AI Coach và Daily Recommendation.
+
+```text
+Flutter Mobile App
+  ↓
+Spring Boot Backend
+  ↓
+Authorization
+  ↓
+AI Consent Check
+  ↓
+Context Builder
+  ↓
+Rule Engine nếu tác vụ cần signals
+  ↓
+Prompt Builder
+  ↓
+FastAPI AI Service
+  ↓
+AI Provider
+  ↓
+Output Parser
+  ↓
+Schema Validation
+  ↓
+Business Validation
+  ↓
+Safety Validation
+  ↓
+Spring Boot Backend
+  ↓
+Flutter Mobile App
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Mobile[Flutter Mobile App] --> Backend[Spring Boot Backend]
+    Backend --> Auth[Authorization]
+    Auth --> Consent[Consent Check]
+    Consent --> Context[Context Builder]
+    Context --> Rule[Rule Engine]
+    Rule --> Prompt[Prompt Builder]
+    Prompt --> AI[FastAPI AI Service]
+    AI --> Provider[AI Provider]
+    Provider --> Parser[Output Parser]
+    Parser --> Schema[Schema Validation]
+    Schema --> Business[Business Validation]
+    Business --> Safety[Safety Validation]
+    Safety --> BackendResponse[Spring Boot Backend]
+    BackendResponse --> MobileResponse[Flutter Mobile App]
+```
+
+Nguyên tắc:
+
+- AI Service là stateless decision-support component.
+- AI Service không phải business authority.
+- AI Service không phải authorization layer.
+- AI Service không sở hữu database.
+- Business logic không phụ thuộc trực tiếp vào SDK/provider cụ thể.
+- Provider credential chỉ nằm server-side.
+- Context phải áp dụng data minimization.
+- Conversation history sử dụng summary + recent messages thay vì gửi toàn bộ lịch sử trong mọi request.
+
+---
+
+## 15. Luồng MVP End-to-End
+
+Luồng này dùng làm flow chính cho demo đồ án.
+
+```text
+Guest
+  ↓
+Register / Login
+  ↓
+Health Profile
+  ↓
+BMI / BMR / TDEE / Calories / Macro
+  ↓
+Equipment Preference
+  ↓
+Dashboard
+  ├── Exercise Library
+  │     ↓
+  │   Workout Builder
+  │     ↓
+  │   Workout Schedule
+  │     ↓
+  │   Workout Log
+  │
+  ├── Food Database
+  │     ↓
+  │   Meal Planner
+  │
+  ├── Weight Tracking
+  │
+  └── AI Consent
+        ↓
+      AI Coach
+        ↓
+      Daily Recommendation
+        ↓
+      PENDING
+       ├── APPLY
+       │     ↓
+       │   Backend Validation
+       │     ↓
+       │   Mutation
+       │     ↓
+       │   Audit
+       │
+       └── DISMISS
+             ↓
+           Feedback
+  ↓
+Dashboard cập nhật
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Guest[Guest] --> Auth[Register / Login]
+    Auth --> Health[Health Profile]
+    Health --> Metrics[Health Calculation]
+    Metrics --> Equipment[Equipment Preference]
+    Equipment --> Dashboard[Dashboard]
+
+    Dashboard --> Workout[Workout]
+    Workout --> Exercise[Exercise Library]
+    Exercise --> Builder[Workout Builder]
+    Builder --> Schedule[Workout Schedule]
+    Schedule --> Log[Workout Log]
+
+    Dashboard --> Nutrition[Nutrition]
+    Nutrition --> Food[Food Database]
+    Food --> Meal[Meal Planner]
+
+    Dashboard --> Weight[Weight Tracking]
+
+    Dashboard --> Consent[AI Consent]
+    Consent --> Coach[AI Coach]
+    Consent --> Daily[Daily Recommendation]
+    Daily --> Pending[PENDING]
+    Pending --> Apply[APPLY]
+    Pending --> Dismiss[DISMISS]
+
+    Apply --> Validation[Authorization / Business / Safety Validation]
+    Validation --> Mutation[Backend Mutation]
+    Mutation --> Audit[Audit Log]
+    Audit --> Dashboard
+
+    Dismiss --> Feedback[Feedback]
+    Feedback --> Dashboard
+
+    Log --> Dashboard
+    Meal --> Dashboard
+    Weight --> Dashboard
+```
+
+---
+
+### 15.1. Traceability matrix MVP
+
+Bảng này dùng để đối chiếu luồng nghiệp vụ với SRS, feature breakdown, screen breakdown và subsystem owner.
+
+| Luồng nghiệp vụ | SRS Use Case | Feature IDs | Screens | Subsystem owner | Priority |
+|---|---|---|---|---|---|
+| Register / OTP | UC-01 | FT-ID-001 / 006 / 008 | MH05 / MH06 | Identity & Auth | P0 |
+| Health Profile | UC-02 / UC-03 | FT-HP-001..004 | MH09 / MH42 | Health Profile & Body Tracking | P0 |
+| Dashboard | UC-11 | FT-DB-001..005 / 007 | MH03 | Dashboard | P0 |
+| Workout Library / Program / Schedule / Session / Log | UC-04..07 | FT-WO-001..011 | MH11..19 | Workout | P0 |
+| Meal Planner | UC-08 / UC-09 | FT-MP-001..006, FT-MP-009 | MH20..25 | Nutrition / Meal | P0 |
+| Weight Tracking | UC-10 | FT-HP-005..007 | MH43 | Health Profile & Body Tracking | P0 |
+| AI Consent / Coach | UC-12 / UC-17 | FT-AI-001..007 / 014 | MH28 / MH29 / MH55 | AI Coach | P0 |
+| Daily Recommendation + Apply / Dismiss | UC-13 / UC-14 | FT-AI-008..010 | MH30 / MH31 | AI Coach | P0 |
+| Admin baseline + Audit | UC-19 | FT-AD-003 / 004 / 008 | MH45 / MH46 / MH47 / MH51 | Admin & Audit | P0 baseline |
+| Media / Storage baseline | UC-21 | FT-MD-001..003 | Admin Exercise/Food media fields | Media / Storage | P0 baseline |
+| AI Weekly Review / Plan Adjustment | UC-15 / UC-16 | FT-AI-011 / 012 | MH32 | AI Coach | P1 |
+| Admin mở rộng: User / Import / AI Rule / Prompt | UC-20 | FT-AD-002 / 005 / 006 / 007 | MH48 / MH49 / MH50 | Admin & Audit | P1 |
+
+---
+
+## 16. Checklist đối chiếu MVP
 
 Tài liệu này bao phủ các luồng MVP chính:
 
 - Đăng ký/đăng nhập.
-- Hoàn thiện hồ sơ sức khỏe.
-- Tính BMI, BMR, TDEE, calories và macro mục tiêu.
-- Xem Dashboard cá nhân.
-- Xem thư viện bài tập và tạo lịch tập cơ bản.
-- Ghi nhận workout log.
-- Tìm kiếm món ăn Việt Nam và lập meal plan trong ngày.
-- Chat với AI Coach dựa trên hồ sơ, mục tiêu và dữ liệu user.
-- Xem sản phẩm, thêm vào giỏ hàng và tạo đơn hàng cơ bản.
+- Register + OTP verification.
+- Google Login, refresh token và OTP ở phạm vi Authentication.
+- Hoàn thiện Health Profile.
+- Cập nhật Health Profile và tính lại BMI/BMR/TDEE/calories/macro ở Backend.
+- Tính BMI, BMR, TDEE, calories và macro mục tiêu ở Backend.
+- Chọn và chỉnh sửa Equipment Preference.
+- Xem Exercise Library và video hướng dẫn.
+- Tạo Workout Program.
+- Tạo Workout Schedule.
+- Ghi nhận Workout Log.
+- Workout Session lifecycle (Start/Pause/Resume/Finish).
+- Tính volume, completion rate và PR.
+- Tìm kiếm món ăn Việt Nam.
+- Lập Meal Plan theo ngày.
+- Tính calories/macro theo serving multiplier.
+- Theo dõi cân nặng và trend.
+- Dashboard tổng hợp nutrition, workout, body và AI recommendation.
+- Quản lý User Preference.
+- Bật/tắt AI Personalization bằng AI Consent.
+- AI Coach ở General Knowledge Mode và Personalized Mode.
+- AI Context Layer do Backend xây dựng.
+- Rule Engine tạo signals.
+- AI Daily Recommendation 1–3 recommendation/ngày.
+- Schema / Business / Safety Validation.
+- Recommendation Apply/Dismiss.
+- Backend mới được mutation sau khi User APPLY.
+- Ownership và Security baseline.
+- Media/Storage baseline cho Exercise/Food.
+- Admin baseline P0 quản lý bài tập, món ăn và Audit Log.
+- User Management, Admin Dashboard, Import CSV/Excel và AI Rule/Prompt ở phạm vi P1.
+
+Các chức năng sau **không thuộc MVP** và không được đưa vào core business flow:
+
+- Shop/Marketplace.
+- Cart/Order/Payment.
+- Wearable integration.
+- Apple Health/Google Fit.
+- Food image recognition.
+- Pose estimation / Computer Vision.
+- ML prediction.
+- AI tự động thay đổi kế hoạch không cần User approval.
+
+## 17. Future / Optional Flow
+
+Các chức năng có thể phát triển sau khi P0 ổn định:
+
+```text
+P1
+ ├── AI Weekly Review
+ ├── User Preference Memory
+ ├── Admin Import / AI Rule nâng cao
+ └── AI Plan Adjustment Proposal
+
+P1
+ └── Notification local/in-app reminder (nếu còn thời gian)
+
+P2
+ ├── Notification nâng cao (push / automation)
+ ├── Offline queue nâng cao
+ └── Plan Adjustment mở rộng
+
+Future
+ ├── Wearable Integration
+ ├── Computer Vision
+ ├── ML Prediction
+ └── Marketplace / Supplement ecosystem
+```
+
+Sơ đồ trực quan:
+
+```mermaid
+flowchart TD
+    Stable[P0 ổn định] --> P1[P1]
+    Stable --> P2[P2]
+    Stable --> Future[Future]
+
+    P1 --> Weekly[AI Weekly Review]
+    P1 --> Memory[User Preference Memory]
+    P1 --> AdminImport[Admin Import / AI Rule nâng cao]
+    P1 --> AdjustmentProposal[AI Plan Adjustment Proposal]
+    P1 --> LocalReminder[Notification local / in-app reminder]
+
+    P2 --> Notification[Notification nâng cao / push / automation]
+    P2 --> Offline[Offline queue nâng cao]
+    P2 --> Adjustment[Plan Adjustment mở rộng]
+
+    Future --> Wearable[Wearable Integration]
+    Future --> Vision[Computer Vision]
+    Future --> Prediction[ML Prediction]
+    Future --> Marketplace[Marketplace / Supplement ecosystem]
+```
+
+Các flow Future không được xem là điều kiện bắt buộc để hoàn thành MVP.

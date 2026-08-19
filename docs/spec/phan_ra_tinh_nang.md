@@ -1,2141 +1,656 @@
-# TÀI LIỆU PHÂN RÃ TÍNH NĂNG HỆ THỐNG
+# Phân Rã Tính Năng Hệ Thống — VieGym
 
-## Dự án: VieGym – Nền tảng hỗ trợ luyện tập và dinh dưỡng tích hợp AI
+> **Phiên bản:** 3.0
+> **Ngày cập nhật:** 2026-08-19
+> **Trạng thái:** Baseline triển khai MVP
 
-Phiên bản: 1.0
+## 1. Mục đích và nguồn tham chiếu
 
----
-
-# 1. Giới thiệu
-
-## 1.1 Mục đích
-
-Tài liệu Phân rã tính năng (Feature Breakdown Specification) mô tả chi tiết toàn bộ các tính năng của hệ thống VieGym dựa trên tài liệu Đặc tả yêu cầu phần mềm (SRS) và tài liệu Phân rã phân hệ hệ thống.
-
-Mục tiêu của tài liệu bao gồm:
-
-- Xác định đầy đủ các tính năng của từng phân hệ.
-- Làm cơ sở cho việc thiết kế Database.
-- Làm cơ sở xây dựng API.
-- Hỗ trợ lập kế hoạch phát triển theo Sprint.
-- Hỗ trợ kiểm thử và nghiệm thu hệ thống.
-
----
-
-## 1.2 Phạm vi
-
-Tài liệu mô tả toàn bộ tính năng của các phân hệ:
-
-- Identity & Authentication
-- User Profile
-- Health Profile
-- Dashboard
-- Workout
-- Meal Planner
-- AI Coach
-- Shop
-- Notification
-- Media
-- Admin CMS
-
----
-
-## 1.3 Quy tắc phân rã
-
-Mỗi phân hệ sẽ được phân tích theo cấu trúc thống nhất:
-
-- Mục tiêu
-- Danh sách Feature
-- Mô tả Feature
-- Chức năng chi tiết
-- Business Rule
-- Input
-- Output
-- Phụ thuộc
-- MVP Scope
-- Future Scope
-
----
-
-# 2. Identity & Authentication
-
-## 2.1 Mục tiêu
-
-Phân hệ Identity & Authentication chịu trách nhiệm quản lý định danh người dùng, xác thực, phân quyền và duy trì phiên đăng nhập an toàn.
-
----
-
-## 2.2 Danh sách Feature
-
-| ID        | Feature                 | Priority |
-| --------- | ----------------------- | -------- |
-| FT-ID-001 | Đăng ký tài khoản       | High     |
-| FT-ID-002 | Đăng nhập               | High     |
-| FT-ID-003 | Đăng xuất               | High     |
-| FT-ID-004 | Quên mật khẩu           | High     |
-| FT-ID-005 | Đổi mật khẩu            | High     |
-| FT-ID-006 | Refresh Token           | High     |
-| FT-ID-007 | Quản lý phiên đăng nhập | Medium   |
-| FT-ID-008 | Phân quyền người dùng   | High     |
-
----
-
-## FT-ID-001 Đăng ký tài khoản
-
-### Mục đích
-
-Cho phép người dùng tạo tài khoản mới.
-
-### Chức năng
-
-- Nhập Email
-- Nhập Password
-- Xác nhận Password
-- Kiểm tra Email tồn tại
-- Tạo User mới
-- Gửi Email xác thực (Future)
-
-### Input
-
-- Email
-- Password
-
-### Output
-
-Tài khoản được tạo thành công.
-
-### Business Rule
-
-- Email phải duy nhất.
-- Password tối thiểu 8 ký tự.
-- Password phải được mã hóa trước khi lưu.
-
-### Dependency
-
-- User
-- JWT Service
-
-### MVP
-
-Có
-
----
-
-## FT-ID-002 Đăng nhập
-
-### Mục đích
-
-Cho phép người dùng truy cập hệ thống.
-
-### Chức năng
-
-- Email Login
-- Password Verification
-- JWT Generation
-- Refresh Token
-
-### Business Rule
-
-- Sai quá 5 lần khóa tài khoản tạm thời.
-- JWT có thời hạn.
-- Refresh Token được lưu riêng.
-
----
-
-## FT-ID-003 Đăng xuất
-
-### Chức năng
-
-- Thu hồi Refresh Token
-- Xóa Session
-
----
-
-## FT-ID-004 Quên mật khẩu
-
-### Chức năng
-
-- Gửi OTP
-- Xác minh OTP
-- Đặt lại Password
-
-Future Scope:
-
-- Email Link
-- SMS OTP
-
----
-
-## FT-ID-005 Đổi mật khẩu
-
-### Chức năng
-
-- Kiểm tra mật khẩu cũ
-- Nhập mật khẩu mới
-- Xác nhận mật khẩu
-
----
-
-## FT-ID-006 Refresh Token
-
-### Chức năng
-
-- Gia hạn Access Token
-- Kiểm tra Refresh Token
-
----
-
-## FT-ID-007 Quản lý phiên đăng nhập
-
-### Chức năng
-
-- Danh sách thiết bị
-- Đăng xuất thiết bị khác
-
-Future Scope
-
----
-
-## FT-ID-008 Phân quyền
-
-### Chức năng
-
-- User
-- Admin
-
-Business Rule
-
-- User không được truy cập Admin API.
-
----
-
-# 3. User Profile
-
-## 3.1 Mục tiêu
-
-Quản lý thông tin cá nhân của người dùng phục vụ cá nhân hóa trải nghiệm.
-
----
-
-## 3.2 Danh sách Feature
-
-| ID        | Feature            |
-| --------- | ------------------ |
-| FT-UP-001 | Xem hồ sơ          |
-| FT-UP-002 | Chỉnh sửa hồ sơ    |
-| FT-UP-003 | Avatar             |
-| FT-UP-004 | Mục tiêu tập luyện |
-| FT-UP-005 | Thiết lập ứng dụng |
-
----
-
-## FT-UP-001 Hồ sơ cá nhân
-
-### Chức năng
-
-- Họ tên
-- Ngày sinh
-- Giới tính
-- Số điện thoại
-- Avatar
-
----
-
-## FT-UP-002 Chỉnh sửa hồ sơ
-
-### Chức năng
-
-- Cập nhật thông tin
-- Upload Avatar
-- Thay đổi ảnh đại diện
-
-Business Rule
-
-- Chỉ chủ tài khoản được chỉnh sửa.
-
----
-
-## FT-UP-003 Avatar
-
-### Chức năng
-
-- Upload
-- Crop
-- Replace
-- Delete
-
-Future Scope
-
-- AI Avatar
-
----
-
-## FT-UP-004 Mục tiêu luyện tập
-
-### Chức năng
-
-- Giảm cân
-- Tăng cân
-- Giữ cân
-- Tăng cơ
-
-Output
-
-- Đồng bộ với AI Coach
-- Đồng bộ Meal Planner
-
----
-
-## FT-UP-005 Thiết lập
-
-### Chức năng
-
-- Ngôn ngữ
-- Theme
-- Notification
-- Đơn vị đo
-
----
-
-# 4. Health Profile
-
-## 4.1 Mục tiêu
-
-Lưu trữ các thông số sức khỏe phục vụ tính toán BMI, TDEE và cá nhân hóa hệ thống.
-
----
-
-## 4.2 Danh sách Feature
-
-| ID        | Feature           |
-| --------- | ----------------- |
-| FT-HP-001 | Hồ sơ sức khỏe    |
-| FT-HP-002 | BMI               |
-| FT-HP-003 | TDEE              |
-| FT-HP-004 | Mục tiêu Calories |
-| FT-HP-005 | Lịch sử cân nặng  |
-
----
-
-## FT-HP-001 Hồ sơ sức khỏe
-
-### Thông tin
-
-- Chiều cao
-- Cân nặng
-- Tuổi
-- Giới tính
-- Activity Level
-- Goal
-
-Business Rule
-
-- Chiều cao > 0
-- Cân nặng > 0
-
----
-
-## FT-HP-002 BMI
-
-### Chức năng
-
-- Tính BMI
-- Phân loại BMI
-- Hiển thị kết quả
-
-Output
-
-- BMI Value
-- BMI Category
-
----
-
-## FT-HP-003 TDEE
-
-### Chức năng
-
-- Tính BMR
-- Tính TDEE
-- Calories Target
-
----
-
-## FT-HP-004 Calories Target
-
-### Chức năng
-
-- Calories mỗi ngày
-- Protein
-- Carb
-- Fat
-
-Output
-
-Được Meal Planner sử dụng.
-
----
-
-## FT-HP-005 Lịch sử cân nặng
-
-### Chức năng
-
-- Ghi nhận cân nặng
-- Biểu đồ tiến trình
-- So sánh theo tuần
-- So sánh theo tháng
-
-Future Scope
-
-- Body Fat
-- Muscle Mass
-- Body Water
-- Smart Scale Integration
-
-# 5. Dashboard
-
-## 5.1 Mục tiêu
-
-Dashboard là màn hình trung tâm của hệ thống VieGym, giúp người dùng theo dõi tổng quan tình trạng sức khỏe, tiến độ luyện tập, dinh dưỡng và các mục tiêu cá nhân.
-
-Dashboard không lưu trữ dữ liệu riêng mà tổng hợp dữ liệu từ nhiều phân hệ khác như Health Profile, Workout, Meal Planner và AI Coach.
-
----
-
-## 5.2 Danh sách Feature
-
-| ID        | Feature            | Priority |
-| --------- | ------------------ | -------- |
-| FT-DB-001 | Dashboard Overview | High     |
-| FT-DB-002 | Daily Progress     | High     |
-| FT-DB-003 | Weekly Statistics  | High     |
-| FT-DB-004 | Monthly Statistics | Medium   |
-| FT-DB-005 | Goal Progress      | High     |
-| FT-DB-006 | AI Suggestion      | Medium   |
-| FT-DB-007 | Quick Actions      | Medium   |
-
----
-
-## FT-DB-001 Dashboard Overview
-
-### Mục đích
-
-Hiển thị tổng quan toàn bộ dữ liệu quan trọng của người dùng khi đăng nhập.
-
-### Chức năng
-
-- Chào mừng người dùng
-- Hiển thị Avatar
-- Hiển thị Goal hiện tại
-- Hiển thị BMI
-- Hiển thị TDEE
-- Hiển thị Calories còn lại
-- Hiển thị Workout hôm nay
-- Hiển thị Meal Plan hôm nay
-
-### Input
-
-- User Profile
-- Health Profile
-- Workout
-- Meal Planner
-
-### Output
-
-Dashboard tổng quan.
-
-### Business Rule
-
-- Chỉ hiển thị dữ liệu của ngày hiện tại.
-- Nếu chưa có dữ liệu thì hiển thị trạng thái Empty.
-
----
-
-## FT-DB-002 Daily Progress
-
-### Chức năng
-
-- Calories đã nạp
-- Calories đã tiêu hao
-- Protein
-- Carb
-- Fat
-- Nước uống
-- Workout Completion
-
-### Output
-
-Thanh tiến trình theo ngày.
-
----
-
-## FT-DB-003 Weekly Statistics
-
-### Chức năng
-
-- Tổng số buổi tập
-- Tổng Calories
-- Cân nặng
-- Thời gian luyện tập
-
----
-
-## FT-DB-004 Monthly Statistics
-
-### Chức năng
-
-- Biểu đồ cân nặng
-- Biểu đồ Calories
-- Workout Frequency
-- Meal Compliance
-
-Future Scope
-
----
-
-## FT-DB-005 Goal Progress
-
-### Chức năng
-
-- Tiến độ giảm cân
-- Tiến độ tăng cơ
-- Tiến độ tăng cân
-
-Output
-
-Progress %
-
----
-
-## FT-DB-006 AI Suggestion
-
-### Chức năng
-
-Hiển thị gợi ý từ AI dựa trên:
-
-- Workout
-- Meal
-- Health
-- Goal
-
----
-
-## FT-DB-007 Quick Actions
-
-### Chức năng
-
-- Add Meal
-- Start Workout
-- Chat AI
-- Scan Food (Future)
-
----
-
-# 6. Workout Module
-
-## 6.1 Mục tiêu
-
-Workout Module hỗ trợ người dùng xây dựng kế hoạch luyện tập, thực hiện các buổi tập và theo dõi tiến trình trong suốt quá trình sử dụng hệ thống.
-
-Đây là phân hệ cốt lõi của VieGym.
-
----
-
-## 6.2 Danh sách Feature
-
-| ID        | Feature            | Priority |
-| --------- | ------------------ | -------- |
-| FT-WO-001 | Exercise Library   | High     |
-| FT-WO-002 | Exercise Detail    | High     |
-| FT-WO-003 | Favorite Exercise  | Medium   |
-| FT-WO-004 | Workout Builder    | High     |
-| FT-WO-005 | Workout Schedule   | High     |
-| FT-WO-006 | Workout Session    | High     |
-| FT-WO-007 | Workout Tracking   | High     |
-| FT-WO-008 | Workout History    | High     |
-| FT-WO-009 | Workout Statistics | Medium   |
-| FT-WO-010 | Personal Record    | Medium   |
-
----
-
-## FT-WO-001 Exercise Library
-
-### Mục đích
-
-Hiển thị toàn bộ thư viện bài tập.
-
-### Chức năng
-
-- Danh sách bài tập
-- Search
-- Filter
-- Sort
-- Pagination
-
-### Filter
-
-- Muscle Group
-- Difficulty
-- Equipment
-- Category
-
-### Output
-
-Danh sách bài tập.
-
----
-
-## FT-WO-002 Exercise Detail
-
-### Chức năng
-
-- Hình ảnh
-- Video
-- GIF
-- Mô tả
-- Hướng dẫn
-- Nhóm cơ
-- Thiết bị
-- Calories Estimate
-
-Business Rule
-
-- Video phải hợp lệ.
-- Chỉ hiển thị Exercise Active.
-
----
-
-## FT-WO-003 Favorite Exercise
-
-### Chức năng
-
-- Add Favorite
-- Remove Favorite
-- Favorite List
-
----
-
-## FT-WO-004 Workout Builder
-
-### Mục đích
-
-Cho phép người dùng tạo chương trình tập luyện.
-
-### Chức năng
-
-- Create Program
-- Edit Program
-- Delete Program
-- Duplicate Program
-- Activate Program
-
-Input
-
-- Exercise
-- Sets
-- Reps
-- Weight
-- Rest Time
-
----
-
-## FT-WO-005 Workout Schedule
-
-### Chức năng
-
-- Calendar
-- Weekly Schedule
-- Monthly Schedule
-- Reminder
-
-Business Rule
-
-Một ngày có thể có nhiều Workout.
-
----
-
-## FT-WO-006 Workout Session
-
-### Chức năng
-
-- Start Workout
-- Pause
-- Resume
-- Finish
-- Cancel
-
-Output
-
-Workout Session
-
----
-
-## FT-WO-007 Workout Tracking
-
-### Chức năng
-
-Trong mỗi bài tập:
-
-- Weight
-- Set
-- Rep
-- Duration
-- Rest Timer
-- Note
-
-Output
-
-Workout Log
-
----
-
-## FT-WO-008 Workout History
-
-### Chức năng
-
-- Theo ngày
-- Theo tuần
-- Theo tháng
-- Theo chương trình
-
----
-
-## FT-WO-009 Workout Statistics
-
-### Chức năng
-
-- Total Workout
-- Total Time
-- Calories Burned
-- Workout Frequency
-- Streak
-
-Output
-
-Chart
-
----
-
-## FT-WO-010 Personal Record
-
-### Chức năng
-
-Theo dõi:
-
-- Bench Press PR
-- Squat PR
-- Deadlift PR
-- Running Record
-
-Future Scope
-
----
-
-# 7. Exercise Library
-
-## 7.1 Mục tiêu
-
-Exercise Library là kho dữ liệu bài tập chuẩn phục vụ Workout Builder và AI Coach.
-
----
-
-## 7.2 Danh sách Feature
-
-| ID        | Feature                 |
-| --------- | ----------------------- |
-| FT-EL-001 | Exercise Management     |
-| FT-EL-002 | Muscle Group            |
-| FT-EL-003 | Equipment               |
-| FT-EL-004 | Difficulty              |
-| FT-EL-005 | Video Resource          |
-| FT-EL-006 | Exercise Recommendation |
-
----
-
-## FT-EL-001 Exercise Management
-
-### Chức năng
-
-- Create Exercise
-- Update Exercise
-- Delete Exercise
-- Archive Exercise
-
-(Admin)
-
----
-
-## FT-EL-002 Muscle Group
-
-### Chức năng
-
-Phân loại theo:
-
-- Chest
-- Back
-- Shoulder
-- Biceps
-- Triceps
-- Forearm
-- Core
-- Glutes
-- Quadriceps
-- Hamstrings
-- Calves
-- Full Body
-
----
-
-## FT-EL-003 Equipment
-
-### Chức năng
-
-- Dumbbell
-- Barbell
-- Machine
-- Resistance Band
-- Bodyweight
-- Kettlebell
-- Cable
-
----
-
-## FT-EL-004 Difficulty
-
-### Chức năng
-
-- Beginner
-- Intermediate
-- Advanced
-
----
-
-## FT-EL-005 Video Resource
-
-### Chức năng
-
-- GIF
-- MP4
-- Thumbnail
-- YouTube Link (Future)
-
----
-
-## FT-EL-006 Exercise Recommendation
-
-### Chức năng
-
-Đề xuất bài tập theo:
-
-- Goal
-- Muscle Group
-- Difficulty
-- Equipment
-- AI Coach
-
-Output
-
-Suggested Exercise List
-
-Dependency
-
-- AI Coach
-- Health Profile
-
-# 8. Meal Planner
-
-## 8.1 Mục tiêu
-
-Meal Planner là phân hệ hỗ trợ người dùng xây dựng chế độ dinh dưỡng hằng ngày dựa trên mục tiêu luyện tập, tình trạng sức khỏe và nhu cầu năng lượng được tính toán từ Health Profile.
-
-Hệ thống cho phép người dùng tìm kiếm món ăn, xây dựng thực đơn, theo dõi lượng Calories và các chất dinh dưỡng (Protein, Carbohydrate, Fat) đã tiêu thụ, đồng thời nhận gợi ý từ AI Coach.
-
----
-
-## 8.2 Danh sách Feature
-
-| ID        | Feature                | Priority |
-| --------- | ---------------------- | -------- |
-| FT-MP-001 | Food Library           | High     |
-| FT-MP-002 | Food Search            | High     |
-| FT-MP-003 | Food Detail            | High     |
-| FT-MP-004 | Meal Planner           | High     |
-| FT-MP-005 | Meal Entry             | High     |
-| FT-MP-006 | Nutrition Summary      | High     |
-| FT-MP-007 | Macro Distribution     | High     |
-| FT-MP-008 | Favorite Food          | Medium   |
-| FT-MP-009 | Recent Food            | Medium   |
-| FT-MP-010 | Meal History           | Medium   |
-| FT-MP-011 | Water Tracker          | Medium   |
-| FT-MP-012 | AI Meal Recommendation | Medium   |
-
----
-
-# FT-MP-001 Food Library
-
-## Mục đích
-
-Quản lý cơ sở dữ liệu thực phẩm phục vụ Meal Planner.
-
-## Chức năng
-
-- Danh sách món ăn
-- Danh sách nguyên liệu
-- Danh mục thực phẩm
-- Thông tin dinh dưỡng
-- Khẩu phần tiêu chuẩn
-
-## Output
-
-Danh sách thực phẩm.
-
-## Business Rule
-
-- Mỗi thực phẩm có mã định danh duy nhất.
-- Calories được tính theo 100g hoặc khẩu phần chuẩn.
-- Chỉ hiển thị dữ liệu đang hoạt động.
-
----
-
-# FT-MP-002 Food Search
-
-## Chức năng
-
-Người dùng có thể tìm kiếm thực phẩm theo:
-
-- Tên món ăn
-- Danh mục
-- Calories
-- Protein
-- Carbohydrate
-- Fat
-- Giá trị năng lượng
-- Món ăn phổ biến
-
-## Bộ lọc
-
-- Healthy
-- High Protein
-- Low Carb
-- Low Fat
-- Vegetarian
-- Vegan (Future)
-
-## Output
-
-Danh sách món ăn phù hợp.
-
----
-
-# FT-MP-003 Food Detail
-
-## Chức năng
-
-Hiển thị:
-
-- Tên món ăn
-- Hình ảnh
-- Thành phần
-- Calories
-- Protein
-- Carb
-- Fat
-- Chất xơ
-- Đường
-- Natri
-- Khẩu phần
-- Nguồn dữ liệu
-
-## Business Rule
-
-Thông tin dinh dưỡng chỉ mang tính tham khảo.
-
----
-
-# FT-MP-004 Meal Planner
-
-## Mục đích
-
-Xây dựng thực đơn trong ngày.
-
-## Chức năng
-
-- Breakfast
-- Lunch
-- Dinner
-- Snack
-
-Mỗi bữa ăn có thể chứa nhiều món.
-
-## Output
-
-Meal Plan trong ngày.
-
----
-
-# FT-MP-005 Meal Entry
-
-## Chức năng
-
-- Thêm món ăn
-- Xóa món ăn
-- Chỉnh sửa khẩu phần
-- Sao chép sang ngày khác
-
-Input
-
-- Food
-- Portion
-
-Output
-
-Meal Entry
-
-Business Rule
-
-Calories được tính lại ngay sau khi thay đổi khẩu phần.
-
----
-
-# FT-MP-006 Nutrition Summary
-
-## Chức năng
-
-Tổng hợp:
-
-- Calories
-- Protein
-- Carb
-- Fat
-
-So sánh với mục tiêu trong ngày.
-
-Output
-
-Nutrition Summary
-
----
-
-# FT-MP-007 Macro Distribution
-
-## Chức năng
-
-Hiển thị tỷ lệ
-
-- Protein
-- Carbohydrate
-- Fat
-
-Biểu đồ:
-
-- Pie Chart
-- Progress Bar
-
----
-
-# FT-MP-008 Favorite Food
-
-## Chức năng
-
-- Thêm yêu thích
-- Xóa yêu thích
-- Danh sách yêu thích
-
-Output
-
-Favorite List
-
----
-
-# FT-MP-009 Recent Food
-
-## Chức năng
-
-Hiển thị
-
-- Hôm nay
-- 7 ngày gần nhất
-- 30 ngày gần nhất
-
-Cho phép
-
-Add Again
-
----
-
-# FT-MP-010 Meal History
-
-## Chức năng
-
-Tra cứu lịch sử:
-
-- Theo ngày
-- Theo tuần
-- Theo tháng
-
-Hiển thị
-
-- Calories
-- Macro
-- Meal Plan
-
----
-
-# FT-MP-011 Water Tracker
-
-## Mục đích
-
-Theo dõi lượng nước uống.
-
-## Chức năng
-
-- Thêm nước
-- Chỉnh sửa
-- Xóa
-
-Hiển thị
-
-- Đã uống
-- Mục tiêu
-- Tiến độ
-
-Future
-
-- Nhắc uống nước.
-
----
-
-# FT-MP-012 AI Meal Recommendation
-
-## Chức năng
-
-AI đề xuất
-
-- Món ăn
-- Thực đơn
-- Khẩu phần
-- Calories
-
-Dựa trên
-
-- Goal
-- BMI
-- TDEE
-- Workout
-- Meal History
-
-Dependency
-
-- AI Coach
-
----
-
-# 9. Food Library
-
-## 9.1 Mục tiêu
-
-Food Library là kho dữ liệu thực phẩm và món ăn phục vụ Meal Planner, AI Coach và Dashboard.
-
-Nguồn dữ liệu ưu tiên sử dụng Bộ dữ liệu dinh dưỡng Việt Nam, đồng thời có khả năng mở rộng tích hợp các nguồn dữ liệu khác trong tương lai.
-
----
-
-## 9.2 Danh sách Feature
-
-| ID        | Feature               |
-| --------- | --------------------- |
-| FT-FD-001 | Food Management       |
-| FT-FD-002 | Food Category         |
-| FT-FD-003 | Nutrition Information |
-| FT-FD-004 | Portion Management    |
-| FT-FD-005 | Dataset Import        |
-| FT-FD-006 | Food Recommendation   |
-
----
-
-# FT-FD-001 Food Management
-
-## Chức năng
-
-(Admin)
-
-- Thêm món ăn
-- Cập nhật
-- Xóa
-- Khóa
-- Khôi phục
-
----
-
-# FT-FD-002 Food Category
-
-## Danh mục
-
-- Cơm
-- Phở
-- Bún
-- Mì
-- Cháo
-- Thịt
-- Cá
-- Hải sản
-- Rau
-- Trái cây
-- Đồ uống
-- Đồ ăn nhanh
-- Bánh kẹo
-
-Future
-
-Cho phép tạo danh mục động.
-
----
-
-# FT-FD-003 Nutrition Information
-
-## Thông tin
-
-- Calories
-- Protein
-- Carb
-- Fat
-- Fiber
-- Sugar
-- Sodium
-- Cholesterol
-
-Đơn vị
-
-100g
-
-hoặc
-
-1 Serving.
-
----
-
-# FT-FD-004 Portion Management
-
-## Chức năng
-
-- Gram
-- Serving
-- Piece
-- Bowl
-- Cup
-
-Business Rule
-
-Hệ thống tự quy đổi về gram để tính Calories.
-
----
-
-# FT-FD-005 Dataset Import
+Tài liệu phân rã yêu cầu VieGym thành các feature có thể thiết kế, triển khai và kiểm thử. Nguồn tham chiếu, theo thứ tự ưu tiên khi có xung đột:
 
-## Chức năng
+1. `specs.md` v3.0 — Source of Truth về yêu cầu và phạm vi.
+2. `bussiness_mainflow.md` v3.0 — luồng nghiệp vụ end-to-end.
+3. `phan_ra_phan_he_he_thong.md` v3.0 — subsystem owner và boundary.
+4. Tài liệu này — feature breakdown phục vụ triển khai.
 
-Admin có thể
+Nguyên tắc xuyên suốt:
 
-- Import CSV
-- Import Excel
-- Đồng bộ Dataset
+> **Backend calculates. AI interprets and recommends. User decides. Backend executes.**
 
-Nguồn dữ liệu
+- Spring Boot Backend là business authority và source of truth.
+- Mobile không tự tính metric authoritative và không gọi trực tiếp AI Service.
+- AI Service không truy cập database và không tự mutation dữ liệu nghiệp vụ.
+- Mỗi feature có một subsystem owner; subsystem khác chỉ là consumer.
+- Private resource phải kiểm tra authentication, authorization và ownership tại Backend.
 
-- Bộ dữ liệu dinh dưỡng Việt Nam
-- Dataset mở (Future)
+### 1.1. Mức ưu tiên
 
-Business Rule
+| Priority | Ý nghĩa |
+|---|---|
+| P0 | Bắt buộc để hoàn thiện và demo MVP |
+| P1 | Chỉ triển khai sau khi P0 ổn định |
+| P2 | Mở rộng, không bắt buộc cho MVP |
+| Future | Ngoài phạm vi đồ án hiện tại |
 
-Không tạo dữ liệu trùng lặp.
+### 1.2. Cấu trúc feature
 
----
-
-# FT-FD-006 Food Recommendation
-
-## Chức năng
-
-Đề xuất món ăn theo
-
-- Goal
-- Calories
-- Protein
-- Carb
-- Fat
-- Meal Time
-
-Dependency
-
-- AI Coach
-- Meal Planner
-
-# 10. AI Coach
-
-## 10.1 Mục tiêu
-
-AI Coach là phân hệ trí tuệ nhân tạo của VieGym, hỗ trợ người dùng trong quá trình luyện tập, xây dựng chế độ dinh dưỡng và giải đáp các câu hỏi liên quan đến sức khỏe.
-
-AI Coach sử dụng dữ liệu từ các phân hệ khác để tạo ngữ cảnh (Context) trước khi gửi yêu cầu đến mô hình AI, từ đó đưa ra câu trả lời mang tính cá nhân hóa thay vì trả lời chung chung.
-
----
-
-## 10.2 Danh sách Feature
-
-| ID        | Feature              | Priority |
-| --------- | -------------------- | -------- |
-| FT-AI-001 | AI Conversation      | High     |
-| FT-AI-002 | Context Builder      | High     |
-| FT-AI-003 | Prompt Builder       | High     |
-| FT-AI-004 | Workout Advisor      | High     |
-| FT-AI-005 | Nutrition Advisor    | High     |
-| FT-AI-006 | Product Advisor      | Medium   |
-| FT-AI-007 | Conversation History | Medium   |
-| FT-AI-008 | AI Memory            | Medium   |
-| FT-AI-009 | Response Validation  | High     |
-| FT-AI-010 | AI Feedback          | Medium   |
-
----
-
-# FT-AI-001 AI Conversation
-
-## Mục đích
-
-Cho phép người dùng trao đổi trực tiếp với AI thông qua giao diện Chat.
-
-## Chức năng
-
-- Gửi tin nhắn
-- Nhận phản hồi
-- Hiển thị trạng thái đang xử lý
-- Hỗ trợ Markdown
-- Hiển thị lịch sử hội thoại
-
-## Business Rule
-
-- Chỉ người dùng đã đăng nhập mới được sử dụng AI Coach.
-- Tin nhắn phải được lưu vào lịch sử hội thoại.
-
----
-
-# FT-AI-002 Context Builder
-
-## Mục đích
-
-Tổng hợp dữ liệu người dùng để tạo ngữ cảnh trước khi gửi yêu cầu đến AI.
-
-## Dữ liệu sử dụng
-
-- Hồ sơ cá nhân
-- BMI
-- TDEE
-- Mục tiêu luyện tập
-- Lịch sử tập luyện
-- Meal Planner
-- Lịch sử cân nặng
-
-## Output
-
-AI Context
-
-## Dependency
-
-- User Profile
-- Health Profile
-- Workout
-- Meal Planner
-
----
-
-# FT-AI-003 Prompt Builder
-
-## Chức năng
-
-Xây dựng Prompt gửi tới mô hình AI.
-
-Prompt bao gồm
-
-- System Prompt
-- User Prompt
-- Context
-- Conversation History
-
-## Business Rule
-
-Không gửi dữ liệu nhạy cảm của người dùng ngoài phạm vi cần thiết.
-
----
-
-# FT-AI-004 Workout Advisor
-
-## Chức năng
-
-AI hỗ trợ
-
-- Gợi ý lịch tập
-- Điều chỉnh bài tập
-- Đề xuất nhóm cơ
-- Phân tích tiến độ
-- Giải thích kỹ thuật
-
-Output
-
-Workout Recommendation
-
----
-
-# FT-AI-005 Nutrition Advisor
-
-## Chức năng
-
-AI hỗ trợ
-
-- Gợi ý thực đơn
-- Điều chỉnh Calories
-- Phân tích Macro
-- Đề xuất khẩu phần
-- Gợi ý thay thế món ăn
-
-Dependency
-
-Meal Planner
-
----
-
-# FT-AI-006 Product Advisor
-
-## Chức năng
-
-AI gợi ý sản phẩm phù hợp dựa trên
-
-- Goal
-- Workout
-- Meal Plan
-
-Ví dụ
-
-- Whey Protein
-- Creatine
-- Vitamin
-- Bình nước
-- Dụng cụ tập
-
-Business Rule
-
-Không bắt buộc người dùng mua sản phẩm.
-
----
-
-# FT-AI-007 Conversation History
-
-## Chức năng
-
-- Lưu lịch sử hội thoại
-- Xem lại
-- Xóa hội thoại
-- Tìm kiếm hội thoại
-
----
-
-# FT-AI-008 AI Memory
-
-## Chức năng
-
-AI ghi nhớ
-
-- Goal
-- Thói quen tập luyện
-- Thực đơn
-- Sản phẩm thường dùng
-
-Future Scope
-
-Cho phép người dùng bật hoặc tắt AI Memory.
-
----
-
-# FT-AI-009 Response Validation
-
-## Chức năng
-
-Kiểm tra phản hồi AI trước khi hiển thị.
-
-Bao gồm
-
-- Lọc nội dung không phù hợp
-- Kiểm tra định dạng
-- Kiểm tra độ dài
-- Xử lý lỗi phản hồi
-
-Business Rule
-
-Nếu AI không phản hồi, hệ thống trả về thông báo thân thiện với người dùng.
-
----
-
-# FT-AI-010 AI Feedback
-
-## Chức năng
-
-Người dùng có thể
-
-- Thích câu trả lời
-- Không thích câu trả lời
-- Báo cáo phản hồi không chính xác
-
-Output
-
-Feedback phục vụ cải thiện hệ thống.
-
----
-
-# 11. Notification
-
-## 11.1 Mục tiêu
-
-Notification chịu trách nhiệm gửi thông báo đến người dùng nhằm nhắc nhở luyện tập, ăn uống và cập nhật trạng thái hệ thống.
-
----
-
-## 11.2 Danh sách Feature
-
-| ID        | Feature             |
-| --------- | ------------------- |
-| FT-NT-001 | In-App Notification |
-| FT-NT-002 | Push Notification   |
-| FT-NT-003 | Workout Reminder    |
-| FT-NT-004 | Meal Reminder       |
-| FT-NT-005 | Water Reminder      |
-| FT-NT-006 | Order Notification  |
-
----
-
-# FT-NT-001 In-App Notification
-
-## Chức năng
-
-- Danh sách thông báo
-- Đánh dấu đã đọc
-- Xóa thông báo
-
----
-
-# FT-NT-002 Push Notification
-
-## Chức năng
-
-Gửi thông báo đến thiết bị thông qua Firebase Cloud Messaging (FCM).
-
----
-
-# FT-NT-003 Workout Reminder
-
-## Chức năng
-
-Nhắc người dùng
-
-- Đến giờ tập
-- Chưa hoàn thành buổi tập
-- Hoàn thành mục tiêu tuần
-
----
-
-# FT-NT-004 Meal Reminder
-
-## Chức năng
+Mỗi feature cần xác định chức năng, actor/trigger, input/output, luồng chính, business rule, dependency, priority và acceptance criteria. State machine hoặc error flow được nêu riêng khi ảnh hưởng trực tiếp đến nghiệp vụ.
 
-Nhắc
+### 1.3. Phạm vi
 
-- Ăn sáng
-- Ăn trưa
-- Ăn tối
-- Ăn nhẹ
+Tài liệu gồm 10 phân hệ: Identity & Auth; User Profile & Preference; Health Profile & Body Tracking; Workout; Nutrition & Meal Planner; Dashboard; AI Coach; Admin & Audit; Media & Storage; Notification.
 
----
-
-# FT-NT-005 Water Reminder
-
-## Chức năng
-
-Nhắc uống nước theo khoảng thời gian người dùng thiết lập.
-
----
-
-# FT-NT-006 Order Notification
-
-## Chức năng
-
-Thông báo
-
-- Đặt hàng thành công
-- Đang giao
-- Đã giao
-- Hủy đơn
-
-Dependency
-
-Shop Module
-
----
-
-# 12. Media
-
-## 12.1 Mục tiêu
-
-Media Module quản lý toàn bộ tài nguyên hình ảnh và video được sử dụng trong hệ thống.
-
----
-
-## 12.2 Danh sách Feature
-
-| ID        | Feature           |
-| --------- | ----------------- |
-| FT-MD-001 | Image Upload      |
-| FT-MD-002 | Video Upload      |
-| FT-MD-003 | Media Storage     |
-| FT-MD-004 | Image Compression |
-| FT-MD-005 | Media Management  |
-
----
-
-# FT-MD-001 Image Upload
-
-## Chức năng
-
-- Upload Avatar
-- Upload Product
-- Upload Exercise
-- Upload Food
-
-Business Rule
-
-Chỉ chấp nhận
-
-- JPG
-- PNG
-- WEBP
-
----
-
-# FT-MD-002 Video Upload
-
-## Chức năng
-
-Lưu video hướng dẫn bài tập.
-
-Future
-
-Streaming Video
-
----
-
-# FT-MD-003 Media Storage
-
-## Chức năng
-
-Lưu trữ
-
-- Hình ảnh
-- Video
-- Thumbnail
-
-Đề xuất sử dụng
-
-- MinIO
-- AWS S3 (Future)
-
----
-
-# FT-MD-004 Image Compression
-
-## Chức năng
-
-- Resize
-- Compress
-- Tạo Thumbnail
-
-Business Rule
-
-Không làm giảm chất lượng ảnh quá mức.
-
----
-
-# FT-MD-005 Media Management
-
-(Admin)
-
-## Chức năng
-
-- Danh sách Media
-- Xóa
-- Khôi phục
-- Thống kê dung lượng
-- Kiểm tra Media không sử dụng
-
-# 13. Shop
-
-## 13.1 Mục tiêu
-
-Shop Module cung cấp nền tảng thương mại điện tử trong hệ thống VieGym, cho phép người dùng tìm kiếm, mua sắm các sản phẩm hỗ trợ luyện tập và dinh dưỡng như Whey Protein, Creatine, Vitamin, dụng cụ tập luyện và phụ kiện.
-
-Module được thiết kế theo hướng mở để có thể tích hợp nhiều phương thức thanh toán và mở rộng trong tương lai.
-
----
-
-## 13.2 Danh sách Feature
-
-| ID        | Feature          | Priority |
-| --------- | ---------------- | -------- |
-| FT-SP-001 | Product Catalog  | High     |
-| FT-SP-002 | Product Detail   | High     |
-| FT-SP-003 | Product Search   | High     |
-| FT-SP-004 | Shopping Cart    | High     |
-| FT-SP-005 | Checkout         | High     |
-| FT-SP-006 | Order Management | High     |
-| FT-SP-007 | Payment          | High     |
-| FT-SP-008 | Order History    | Medium   |
-| FT-SP-009 | Product Review   | Future   |
-| FT-SP-010 | Wishlist         | Future   |
+Shop/Marketplace, Cart/Order/Payment, wearable, Apple Health/Google Fit, food image recognition, pose estimation/computer vision, ML prediction và AI tự thay đổi kế hoạch không cần user xác nhận đều ngoài MVP.
 
 ---
 
-# FT-SP-001 Product Catalog
+## 2. PH1 — Identity & Auth
 
-## Chức năng
+### 2.1. Mục tiêu và feature
 
-- Danh sách sản phẩm
-- Phân trang
-- Sắp xếp
-- Lọc theo danh mục
-- Hiển thị sản phẩm nổi bật
+Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản. PH1 cung cấp identity nhưng không sở hữu dữ liệu nghiệp vụ khác.
 
----
-
-# FT-SP-002 Product Detail
-
-## Chức năng
-
-Hiển thị
-
-- Hình ảnh
-- Mô tả
-- Giá
-- Thương hiệu
-- Tồn kho
-- Thành phần
-- Hướng dẫn sử dụng
-
----
-
-# FT-SP-003 Product Search
-
-## Chức năng
-
-Tìm kiếm theo
-
-- Tên
-- Danh mục
-- Giá
-- Thương hiệu
-
-Bộ lọc
-
-- Giá thấp → cao
-- Giá cao → thấp
-- Mới nhất
-- Bán chạy
-
----
-
-# FT-SP-004 Shopping Cart
-
-## Chức năng
-
-- Thêm sản phẩm
-- Xóa sản phẩm
-- Cập nhật số lượng
-- Tính tổng tiền
-
-Business Rule
-
-Không vượt quá số lượng tồn kho.
-
----
-
-# FT-SP-005 Checkout
-
-## Chức năng
-
-- Chọn địa chỉ
-- Chọn phương thức giao hàng
-- Chọn phương thức thanh toán
-- Xác nhận đơn hàng
-
----
-
-# FT-SP-006 Order Management
-
-## Chức năng
-
-Theo dõi trạng thái
-
-- Pending
-- Confirmed
-- Shipping
-- Completed
-- Cancelled
-
----
-
-# FT-SP-007 Payment
-
-## Chức năng
-
-MVP
-
-- Thanh toán khi nhận hàng (COD)
-
-Future Scope
-
-- VNPay
-- MoMo
-- ZaloPay
-- Stripe
-
----
-
-# FT-SP-008 Order History
-
-## Chức năng
-
-- Danh sách đơn hàng
-- Chi tiết đơn hàng
-- Mua lại
+| ID | Feature | Priority |
+|---|---|---|
+| FT-ID-001 | Đăng ký local và kích hoạt bằng OTP | P0 |
+| FT-ID-002 | Đăng nhập email/password | P0 |
+| FT-ID-003 | Google Login server-side | P0 |
+| FT-ID-004 | Đăng xuất và revoke token | P0 |
+| FT-ID-005 | Refresh token | P0 |
+| FT-ID-006 | Quên/đặt lại mật khẩu bằng OTP | P0 |
+| FT-ID-007 | Đổi mật khẩu khi đã đăng nhập | P0 |
+| FT-ID-008 | OTP lifecycle và rate limit | P0 |
+| FT-ID-009 | Biometric unlock local | P0 |
+| FT-ID-010 | Role, account status và authorization baseline | P0 |
+| FT-ID-011 | Danh sách thiết bị/remote logout | P1 |
 
----
+### 2.2. Chi tiết
 
-# FT-SP-009 Product Review (Future)
+#### FT-ID-001 — Đăng ký và OTP
 
-## Chức năng
+- **Actor:** Guest.
+- **Input:** Email, password và thông tin cơ bản được API cho phép.
+- **Luồng:** Validate → tạo account `PENDING` → gửi OTP → verify → kích hoạt → cấp access/refresh token → Health onboarding.
+- **Rules:** Email duy nhất; password được hash; account chưa verify không nhận token nghiệp vụ; lỗi không làm lộ email đã tồn tại.
+- **AC:** OTP hợp lệ kích hoạt account; OTP sai, hết hạn hoặc vượt giới hạn không kích hoạt.
 
-- Đánh giá sao
-- Bình luận
-- Hình ảnh
+#### FT-ID-002/003 — Đăng nhập local và Google
 
----
+- Backend kiểm tra credential và account status trước khi cấp token.
+- Account pending, locked hoặc disabled bị từ chối bằng lỗi chuẩn.
+- Google credential phải được verify server-side trước khi liên kết/tạo account.
+- Số lần đăng nhập sai và cooldown là cấu hình bảo mật, không hard-code trong feature.
 
-# FT-SP-010 Wishlist (Future)
+#### FT-ID-004/005 — Logout và refresh
 
-## Chức năng
+- Logout revoke refresh token/session tương ứng.
+- Refresh chỉ chấp nhận token còn hạn, chưa revoke và đúng account; rotation được khuyến nghị.
+- Password, OTP, access token và refresh token không được ghi log plaintext.
 
-- Thêm yêu thích
-- Xóa yêu thích
+#### FT-ID-006/007/008 — Password và OTP lifecycle
 
----
+- OTP tách theo purpose `REGISTER`, `PASSWORD_RESET`, `LOGIN_VERIFY` khi áp dụng.
+- OTP có expiry, resend cooldown, attempts/rate limit và không dùng chéo purpose.
+- Đổi mật khẩu cần phiên hợp lệ; local account xác minh mật khẩu hiện tại.
+- Reset password thu hồi credential/session theo chính sách bảo mật triển khai.
 
-# 14. Admin CMS
+#### FT-ID-009/010/011 — Local unlock, authorization và session
 
-## 14.1 Mục tiêu
+- Biometric chỉ mở token/session trong secure storage; không gửi dữ liệu sinh trắc lên Backend.
+- Role tối thiểu: `USER`, `ADMIN`; private API kiểm tra JWT, role và ownership.
+- Xem thiết bị/remote logout là P1.
 
-Admin CMS cho phép quản trị viên quản lý toàn bộ dữ liệu của hệ thống.
+**Dependencies:** Không phụ thuộc domain khác. **Consumers:** PH2–PH10.
 
 ---
 
-## 14.2 Danh sách Feature
-
-| ID        | Feature              |
-| --------- | -------------------- |
-| FT-AD-001 | Dashboard            |
-| FT-AD-002 | User Management      |
-| FT-AD-003 | Exercise Management  |
-| FT-AD-004 | Food Management      |
-| FT-AD-005 | Product Management   |
-| FT-AD-006 | Order Management     |
-| FT-AD-007 | AI Prompt Management |
-| FT-AD-008 | Dataset Import       |
-| FT-AD-009 | Audit Log            |
-| FT-AD-010 | System Configuration |
+## 3. PH2 — User Profile & Preference
 
----
+### 3.1. Mục tiêu và feature
 
-# FT-AD-001 Dashboard
+Sở hữu hồ sơ cơ bản, equipment, food/training preference và constraints do user khai báo.
 
-Hiển thị
+| ID | Feature | Priority |
+|---|---|---|
+| FT-UP-001 | Xem/cập nhật hồ sơ cơ bản | P0 |
+| FT-UP-002 | Avatar/profile media | P0 baseline |
+| FT-UP-003 | User Preference và constraints | P0 |
+| FT-UP-004 | Equipment Preference | P0 |
+| FT-UP-005 | Ghi nhận Apply/Dismiss feedback | P0 |
+| FT-UP-006 | Preference Memory nâng cao | P1 |
+| FT-UP-007 | Ngôn ngữ/theme/đơn vị hiển thị | P1 |
 
-- Tổng người dùng
-- Tổng đơn hàng
-- Tổng doanh thu
-- Người dùng mới
-- Workout nhiều nhất
-- Món ăn phổ biến
+### 3.2. Chi tiết
 
----
+#### FT-UP-001/002 — Hồ sơ cơ bản
 
-# FT-AD-002 User Management
+- User xem/sửa field profile nằm trong whitelist và chỉ sửa resource của mình.
+- Avatar dùng PH9; P0 chỉ cần media baseline nếu màn hình profile triển khai.
+- Ngày sinh, giới tính, chiều cao, cân nặng, activity và fitness goal thuộc PH3 khi dùng cho health calculation.
 
-## Chức năng
+#### FT-UP-003 — Preference và constraints
 
-- Xem User
-- Khóa User
-- Mở khóa
-- Phân quyền
+- Lưu món không thích, dị ứng/ràng buộc tự khai báo, meal preference, thời gian tập và lịch ưu tiên.
+- Dị ứng/constraints ưu tiên hơn đề xuất tối ưu calories hoặc macro.
+- Preference vẫn được lưu khi consent OFF; chỉ việc đưa vào AI context mới phụ thuộc consent.
 
----
+#### FT-UP-004 — Equipment Preference
 
-# FT-AD-003 Exercise Management
+- User chọn khi onboarding/lần đầu cần tập và chỉnh sửa/reset trong Settings.
+- Equipment tối thiểu: `BODYWEIGHT`, `DUMBBELL`, `BARBELL`, `BENCH`, `CABLE_MACHINE`, `MACHINE`, `RESISTANCE_BAND`, `KETTLEBELL`, `PULL_UP_BAR`, `TREADMILL`.
+- Không chọn lại mỗi buổi; thay đổi không sửa WorkoutLog cũ.
+- Nếu chưa chọn, Workout ưu tiên `BODYWEIGHT` và bài không cần thiết bị đặc thù.
 
-## Chức năng
+#### FT-UP-005/006 — Feedback và Memory
 
-CRUD
+- P0 lưu Apply/Dismiss status và feedback nếu user cung cấp.
+- Dismiss không tự mutation preference hoặc domain data.
+- Suy luận/cập nhật preference tự động là P1; proposal thay đổi cần user xác nhận và Backend validate.
 
-- Exercise
-- Muscle Group
-- Equipment
+**Dependencies:** PH1; PH9 cho avatar. **Consumers:** PH4, PH5, PH7.
 
 ---
-
-# FT-AD-004 Food Management
-
-## Chức năng
 
-CRUD
+## 4. PH3 — Health Profile & Body Tracking
 
-- Food
-- Category
-- Nutrition
+### 4.1. Mục tiêu và feature
 
----
-
-# FT-AD-005 Product Management
+Sở hữu Health Profile, Nutrition Target, Weight Log và toàn bộ phép tính authoritative.
 
-## Chức năng
+| ID | Feature | Priority |
+|---|---|---|
+| FT-HP-001 | Onboarding/xem/sửa Health Profile | P0 |
+| FT-HP-002 | BMI | P0 |
+| FT-HP-003 | BMR và TDEE | P0 |
+| FT-HP-004 | Calories và Macro Target | P0 |
+| FT-HP-005 | Weight Log và History | P0 |
+| FT-HP-006 | Weight trend/summary 7–30 ngày | P0 |
+| FT-HP-007 | Dữ liệu biểu đồ và progress | P0 |
 
-CRUD
+### 4.2. Chi tiết
 
-- Product
-- Brand
-- Category
-- Inventory
+#### FT-HP-001 — Health Profile lifecycle
 
----
+- **Input:** Tuổi/ngày sinh, giới tính, chiều cao, cân nặng, activity level, fitness goal, training experience.
+- **Create:** Validate → tính metric → lưu `HealthProfile`, `NutritionTarget`, `WeightLog` ban đầu trong transaction.
+- **Update:** Validate → cập nhật → tính lại BMI/BMR/TDEE/target nếu field nền thay đổi.
+- Thiếu dữ liệu bắt buộc thì không tính TDEE và yêu cầu hoàn thiện profile.
 
-# FT-AD-006 Order Management
+#### FT-HP-002/003 — BMI, BMR và TDEE
 
-## Chức năng
+- `BMI = weightKg / heightM²`.
+- BMR dùng Mifflin–St Jeor theo SRS.
+- `TDEE = BMR × activityFactor`; factor do Backend quản lý.
+- Mobile và AI không tự tính lại metric authoritative.
 
-- Xác nhận
-- Giao hàng
-- Hủy
-- Hoàn tiền (Future)
+#### FT-HP-004 — Calories và Macro Target
 
----
+- Backend tính từ TDEE, fitness goal và rule an toàn trong SRS.
+- Protein/fat/carb dùng công thức authoritative; kết quả bất hợp lệ như carb âm phải reject hoặc điều chỉnh bằng rule xác định.
+- `REVIEW_NUTRITION_TARGET_PROPOSAL` chỉ mở review, không trực tiếp sửa target.
 
-# FT-AD-007 AI Prompt Management
+#### FT-HP-005/006/007 — Weight Tracking
 
-## Chức năng
+- User thêm/xem/cập nhật WeightLog của mình; API quyết định upsert hợp lệ theo ngày.
+- Backend tạo trend/summary 7–30 ngày và dữ liệu chart/progress.
+- WeightLog hằng ngày không tự thay đổi `NutritionTarget`.
 
-- System Prompt
-- Prompt Template
-- Version
+**Dependencies:** PH1. **Consumers:** PH5, PH6, PH7.
 
 ---
 
-# FT-AD-008 Dataset Import
+## 5. PH4 — Workout
 
-## Chức năng
+### 5.1. Mục tiêu và feature
 
-Import
+Quản lý Exercise Library, Program, Schedule, Session và Log từ lúc chọn bài đến khi hoàn thành.
 
-- CSV
-- Excel
+| ID | Feature | Priority |
+|---|---|---|
+| FT-WO-001 | Exercise Library: list/search/filter | P0 |
+| FT-WO-002 | Exercise Detail và safety/media | P0 |
+| FT-WO-003 | Equipment matching và bài thay thế | P0 |
+| FT-WO-004 | Workout Program/Builder | P0 |
+| FT-WO-005 | Workout Schedule | P0 |
+| FT-WO-006 | Workout Session lifecycle | P0 |
+| FT-WO-007 | Workout Log theo bài/set | P0 |
+| FT-WO-008 | Volume và completion rate | P0 |
+| FT-WO-009 | Workout History/progress | P0 |
+| FT-WO-010 | Favorite Exercise | P1 |
+| FT-WO-011 | Personal Record | P0 |
 
-Nguồn dữ liệu
+`FT-WO-003` tiêu thụ `FT-UP-004`, không sở hữu hoặc lưu Equipment Preference.
 
-- Bộ dữ liệu dinh dưỡng Việt Nam
+### 5.2. Chi tiết
 
----
-
-# FT-AD-009 Audit Log
-
-## Chức năng
-
-Theo dõi
+#### FT-WO-001/002/003 — Exercise discovery
 
-- Login
-- CRUD
-- Import
-- Export
+- List/search/filter theo tên, muscle group, equipment và difficulty.
+- Detail gồm muscles, equipment, difficulty, mô tả, steps, common mistakes, safety notes và media.
+- Ưu tiên bài phù hợp equipment; giảm ưu tiên bài không phù hợp và gợi ý bài thay thế cùng nhóm cơ.
+- Exercise hidden giữ log cũ nhưng không được thêm vào program mới.
 
----
-
-# FT-AD-010 System Configuration
+#### FT-WO-004 — Workout Program/Builder
 
-## Chức năng
-
-- Banner
-- Notification
-- AI Setting
-- Upload Limit
-
----
+- Tạo/chỉnh sửa/xóa/archive program thuộc user với PPL, Upper/Lower, Full Body hoặc Custom.
+- Program chứa WorkoutDay/WorkoutExercise với sets, reps, rest, order và note.
+- Một user nên có tối đa một program `ACTIVE` tại một thời điểm.
 
-# 15. Feature Dependency
+#### FT-WO-005 — Workout Schedule
 
-Các phân hệ của VieGym có mối quan hệ phụ thuộc như sau:
+- Tạo thủ công hoặc sinh từ Program; xem theo khoảng ngày.
 
 ```text
-Identity
-        │
-        ▼
-User Profile
-        │
-        ▼
-Health Profile
-        │
- ┌──────┼───────────┐
- ▼      ▼           ▼
-Workout MealPlanner Dashboard
-   │        │          │
-   └────────┼──────────┘
-            ▼
-         AI Coach
-            │
-            ▼
-           Shop
-
-Notification nhận sự kiện từ:
-- Workout
-- Meal Planner
-- Shop
-- AI Coach
+PLANNED
+  ├── hoàn thành session → COMPLETED
+  ├── quá hạn không hoàn thành → MISSED
+  └── user hủy hợp lệ → CANCELLED
 ```
 
----
+- Chỉ schedule thuộc user mới được sửa/hủy; program thay đổi không viết lại log cũ.
 
-# 16. MVP Scope
+#### FT-WO-006/007 — Session và Log
 
-Các tính năng được triển khai trong phiên bản đầu tiên.
+```text
+STARTED ↔ PAUSED
+   ├── FINISH → tạo WorkoutLog → schedule COMPLETED
+   └── DISCARD → không tạo completed log
+```
 
-## Identity
+- Start từ schedule hợp lệ; Backend ngăn active session trùng theo rule triển khai.
+- Pause/Resume chỉ hợp lệ theo trạng thái hiện tại.
+- Finish validate set/reps/weight/duration, lưu log và cập nhật schedule trong transaction.
+- Discard không tạo achievement hoặc completion giả.
 
-- Register
-- Login
-- JWT
+#### FT-WO-008/009/011 — Calculation và progress
 
-## User Profile
+- `setVolume = reps × weightKg`; workout volume là tổng volume hợp lệ.
+- Completion rate = completed/scheduled, loại `CANCELLED` khỏi mẫu số.
+- Backend xác định PR theo weight/reps/volume; Mobile chỉ hiển thị.
+- History hỗ trợ xem log/progress theo khoảng thời gian.
 
-- Hồ sơ
-- Avatar
-- Goal
-
-## Health Profile
-
-- BMI
-- TDEE
-- Calories
-
-## Workout
-
-- Exercise Library
-- Workout Builder
-- Workout Tracking
-
-## Meal Planner
-
-- Food Library
-- Meal Planner
-- Nutrition Summary
-
-## AI Coach
-
-- Chat AI
-- Workout Advisor
-- Meal Advisor
-
-## Shop
-
-- Product
-- Cart
-- Order
-- COD
-
-## Notification
-
-- Workout Reminder
-- Meal Reminder
-
-## Admin
-
-- CRUD User
-- CRUD Exercise
-- CRUD Food
-- CRUD Product
+**Dependencies:** PH1, PH2 Equipment Preference, PH9. **Consumers:** PH6, PH7, PH8.
 
 ---
 
-# 17. Future Scope
+## 6. PH5 — Nutrition & Meal Planner
 
-Các tính năng dự kiến phát triển trong các phiên bản tiếp theo.
+### 6.1. Mục tiêu và feature
 
-## Workout
+Quản lý Food Database món Việt, Meal Plan/Entry và tổng dinh dưỡng theo ngày.
 
-- Wearable Integration
-- Apple Health
-- Google Fit
-- Smart Watch
+| ID | Feature | Priority |
+|---|---|---|
+| FT-MP-001 | Food Library: list/search/filter | P0 |
+| FT-MP-002 | Food Detail và serving | P0 |
+| FT-MP-003 | Meal Plan theo ngày | P0 |
+| FT-MP-004 | Meal Entry và serving multiplier | P0 |
+| FT-MP-005 | Daily calories/macro summary | P0 |
+| FT-MP-006 | Macro progress/distribution | P0 |
+| FT-MP-007 | Favorite Food | P1 |
+| FT-MP-008 | Recent Food | P1 |
+| FT-MP-009 | Meal History/template | P0 |
+| FT-MP-010 | Water Tracker | P1 |
+| FT-MP-011 | AI Meal Proposal integration | P0 |
 
----
+### 6.2. Chi tiết
 
-## Meal Planner
+#### FT-MP-001/002 — Food Database
 
-- Barcode Scanner
-- OCR Food Recognition
-- AI Food Image Recognition
-- Meal Template Marketplace
+- Food có tên, category, serving size/unit, calories, protein, carbohydrate, fat, source/note và media nếu có.
+- Tìm/lọc Food public/active; dữ liệu demo ưu tiên món Việt và không phụ thuộc hoàn toàn API ngoài.
+- Food hidden giữ history nhưng không được chọn cho Meal Entry mới.
 
----
+#### FT-MP-003/004 — Meal Plan và Entry
 
-## AI Coach
+- User xem/tạo plan theo ngày với `BREAKFAST`, `LUNCH`, `DINNER`, `SNACK`.
+- Thêm/sửa/xóa entry; hỗ trợ gram, tô/chén/phần, quả/ly/miếng và multiplier hợp lệ.
+- `entryNutrition = nutritionPerServing × servingMultiplier` sau chuẩn hóa đơn vị.
+- Backend validate serving/multiplier dương và ownership trước mutation.
 
-- Voice Chat
-- AI Memory
-- AI Vision
-- AI Personal Trainer
+#### FT-MP-005/006/009 — Summary và History
 
----
+- Backend tổng calories/protein/carbs/fat và remaining so với Nutrition Target.
+- Mobile hiển thị progress/chart, không tự tính authoritative summary.
+- User xem ngày trước và lưu/copy meal template; Backend validate target date và ownership.
 
-## Shop
+#### FT-MP-011 — AI Meal Proposal
 
-- Online Payment
-- Wishlist
-- Voucher
-- Flash Sale
-- Product Review
-- Affiliate
+- Khi consent ON, AI có thể tạo `ADD_MEAL_ENTRY_PROPOSAL` dựa trên macro gap và preference.
+- Chỉ mutation sau khi user APPLY và PH5 validate food, serving, constraints và ownership.
 
----
-
-## Notification
-
-- Email Notification
-- SMS Notification
-- Push Notification nâng cao
-
----
-
-## Dashboard
-
-- Achievement
-- XP
-- Level
-- Badge
-- Social Ranking
+**Dependencies:** PH1, PH2, PH3, PH9. **Consumers:** PH6, PH7, PH8.
 
 ---
 
-## Admin
+## 7. PH6 — Dashboard
 
-- Analytics Dashboard
-- Revenue Report
-- BI Dashboard
-- AI Statistics
+### 7.1. Mục tiêu và feature
+
+Cung cấp aggregate endpoint tổng hợp trạng thái ngày/tuần từ các domain owner.
+
+| ID | Feature | Priority |
+|---|---|---|
+| FT-DB-001 | Daily Nutrition Summary | P0 |
+| FT-DB-002 | Workout Today và Next | P0 |
+| FT-DB-003 | Weekly Completion | P0 |
+| FT-DB-004 | Current Weight/BMI/Progress | P0 |
+| FT-DB-005 | Daily Recommendation/short insight | P0 |
+| FT-DB-006 | Quick Actions | P1 |
+| FT-DB-007 | Loading/error/empty states | P0 |
+
+### 7.2. Business rules
+
+- Backend aggregate theo user và ngày/timezone yêu cầu.
+- Nutrition hiển thị target, consumed, remaining và macro.
+- Workout hiển thị today, next và completion loại CANCELLED.
+- Body dùng metric/trend do PH3 cung cấp.
+- Chỉ hiển thị recommendation hợp lệ thuộc user; consent OFF không có personalized recommendation.
+- Thiếu profile, target, meal, schedule hoặc recommendation phải có empty state phù hợp, không dùng dữ liệu giả.
+
+**Dependencies:** PH1, PH3, PH4, PH5, PH7.
 
 ---
+
+## 8. PH7 — AI Coach
+
+### 8.1. Mục tiêu và feature
+
+Cung cấp chat và recommendation an toàn từ context tối thiểu được Backend cho phép.
+
+| ID | Feature | Priority |
+|---|---|---|
+| FT-AI-001 | AI Consent và consent history | P0 |
+| FT-AI-002 | General Knowledge Mode | P0 |
+| FT-AI-003 | Context Builder/whitelist/budget | P0 |
+| FT-AI-004 | Rule Engine và signals | P0 |
+| FT-AI-005 | AI Coach Chat | P0 |
+| FT-AI-006 | Workout advice | P0 |
+| FT-AI-007 | Nutrition advice | P0 |
+| FT-AI-008 | Daily Recommendation | P0 |
+| FT-AI-009 | Apply/Dismiss workflow | P0 |
+| FT-AI-010 | Schema/business/safety validation | P0 |
+| FT-AI-011 | Weekly Review | P1 |
+| FT-AI-012 | Plan Adjustment Proposal | P1 |
+| FT-AI-013 | Preference Memory | P1 |
+| FT-AI-014 | Conversation History | P0 |
+| FT-AI-015 | Conversation Summary/feedback nâng cao | P1 |
+
+### 8.2. Consent, context và rules
+
+#### FT-AI-001/002 — Consent modes
+
+- Lưu `enabled`, `consent_version`, `accepted_at`, `updated_at` và lịch sử thay đổi cần thiết.
+- Kiểm tra consent trước Context Builder.
+- Khi OFF: không gửi Health/Workout/Nutrition/Weight/Preference cá nhân; chỉ General Knowledge Mode; không tạo Daily Recommendation cá nhân hóa.
+- Khi ON: chỉ dùng context cần thiết cho tác vụ và nằm trong whitelist.
+
+#### FT-AI-003/004 — Context và Rule Engine
+
+- Backend tạo context theo `CHAT`, `DAILY_RECOMMENDATION`, `WEEKLY_REVIEW`, `PLAN_ADJUSTMENT`.
+- Context áp dụng ownership, whitelist, data minimization, budget/version và không chứa credential.
+- Rule Engine tạo signal deterministic: protein gap, calories over target, adherence issue, weight trend off goal, meal logging drop, preference conflict.
+- Rule Engine quyết định WHAT; AI quyết định HOW.
+
+### 8.3. Coach và recommendation
+
+#### FT-AI-005/006/007/014 — AI Coach
+
+- Backend nhận message → consent → context/signals → AI Service → validation → lưu conversation/message.
+- Recent history được dùng theo budget; automatic summary là P1.
+- User message, history, imported data và food/exercise text là untrusted input.
+- AI không chẩn đoán, kê thuốc, cam kết điều trị hoặc khuyến nghị cực đoan; tình huống rủi ro trả safe response.
+
+#### FT-AI-008 — Daily Recommendation
+
+- Trigger hợp lệ → signals → context → AI → validation → lưu 1–3 recommendation `PENDING` khi đủ dữ liệu.
+- Recommendation gồm type, title, content, reason, priority, source metrics, safety level, timestamps/expiry và optional action.
+- Chỉ `PENDING` mới Apply/Dismiss; hết hạn chuyển `EXPIRED`.
+
+#### FT-AI-009/010 — Apply/Dismiss và validation
+
+```text
+APPLY: authorization → ownership → status/expiry → action whitelist
+       → schema/business/safety validation → domain mutation → audit → APPLIED
+
+DISMISS: authorization → ownership → status validation
+         → lưu status/feedback → DISMISSED (không domain mutation)
+```
+
+- APPLY lỗi không được mutation một phần.
+- Output sai schema/business/safety bị fallback, regenerate hoặc block; không trở thành action hợp lệ.
+
+### 8.4. Allowed Action Contract
+
+| Action | Domain thực thi | Điều kiện APPLY | Kết quả |
+|---|---|---|---|
+| `NONE` | Không có | Không mutation | Chỉ hiển thị insight |
+| `ADD_MEAL_ENTRY_PROPOSAL` | PH5 | Food/serving/constraint hợp lệ | Tạo Meal Entry |
+| `CREATE_WORKOUT_SCHEDULE_PROPOSAL` | PH4 | Program/date/exercise hợp lệ | Tạo Schedule |
+| `UPDATE_USER_PREFERENCE_PROPOSAL` | PH2 | Field whitelist, user xác nhận | Cập nhật preference |
+| `REVIEW_NUTRITION_TARGET_PROPOSAL` | PH3 | Chỉ tạo review flow | Không tự sửa target |
+| `LOG_REMINDER_ONLY` | PH10/client | Không domain mutation | Reminder nếu scope cho phép |
+
+Payload không chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
+
+### 8.5. P1
+
+- Weekly Review dùng aggregate metrics do Backend tính.
+- Plan Adjustment luôn là proposal PENDING.
+- Preference Memory và conversation summary chỉ làm sau P0; vẫn tuân thủ consent và user confirmation khi thay đổi nghiệp vụ.
+
+**Dependencies:** PH1–PH6. **Consumers:** PH6, PH8, PH10.
+
+---
+
+## 9. PH8 — Admin & Audit
+
+### 9.1. Mục tiêu và feature
+
+Quản trị catalog và truy vết thao tác nhạy cảm.
+
+| ID | Feature | Priority |
+|---|---|---|
+| FT-AD-001 | Admin Dashboard | P1 |
+| FT-AD-002 | User Management | P1 |
+| FT-AD-003 | Exercise Management | P0 baseline |
+| FT-AD-004 | Food Management | P0 baseline |
+| FT-AD-005 | Import CSV/Excel preview/validation | P1 |
+| FT-AD-006 | AI Rule Management | P1 |
+| FT-AD-007 | Prompt Template/version Management | P1 |
+| FT-AD-008 | Audit Log | P0 baseline |
+| FT-AD-009 | AI Recommendation Metrics | P1 |
+
+### 9.2. Business rules
+
+- P0: CRUD/hide Exercise và Food đủ cho seed/demo; audit tối thiểu cho admin action và recommendation APPLY.
+- P1: User Management, dashboard, import, AI Rule/Prompt và metrics.
+- Import phải preview/validate trước commit và báo lỗi theo dòng.
+- Exercise/Food đã có history nên ưu tiên hide/soft-delete.
+- Audit ghi actor, action, target, time, result và metadata tối thiểu; không chứa credential hoặc raw personal context thừa.
+
+UC-19 là P1 ở cấp use case hoàn chỉnh; Exercise/Food/Audit vẫn là P0 baseline theo MVP Priority và business flow, không có nghĩa toàn bộ Admin CMS là P0.
+
+**Dependencies:** PH1, PH4, PH5, PH7, PH9.
+
+---
+
+## 10. PH9 — Media & Storage
+
+### 10.1. Mục tiêu và feature
+
+Quản lý media Exercise/Food/profile; không lưu binary trong PostgreSQL.
+
+| ID | Feature | Priority |
+|---|---|---|
+| FT-MD-001 | Exercise image/video media | P0 baseline |
+| FT-MD-002 | Food image media | P0 baseline |
+| FT-MD-003 | Media metadata/access | P0 baseline |
+| FT-MD-004 | Thumbnail/resize/compress | P1 |
+| FT-MD-005 | Orphan cleanup | P2 |
+
+- P0 chấp nhận URL/object storage/CDN hoặc asset demo hợp lệ; không yêu cầu streaming nâng cao.
+- Upload validate MIME, size, role/ownership và entity link.
+- Metadata gồm object key/URL, content type, size, uploader, target và timestamps cần thiết.
+- Quyền upload Food/Exercise thuộc admin baseline; user upload cần requirement riêng.
+- Xóa/thay media không làm hỏng history; cleanup tự động là P2.
+
+**Dependencies:** PH1. **Consumers:** PH2, PH4, PH5, PH8.
+
+---
+
+## 11. PH10 — Notification
+
+### 11.1. Mục tiêu và feature
+
+Notification không thuộc P0. Local/in-app reminder làm sau core; push/automation là mở rộng.
+
+| ID | Feature | Priority |
+|---|---|---|
+| FT-NT-001 | Local/in-app notification | P1 |
+| FT-NT-002 | Workout reminder | P1 |
+| FT-NT-003 | Meal/weight reminder | P1 |
+| FT-NT-004 | Reminder preference và read state | P1 |
+| FT-NT-005 | Push/automated AI notification | P2 |
+
+- User bật/tắt loại reminder được hỗ trợ.
+- `LOG_REMINDER_ONLY` không mutation Workout/Meal/Health.
+- Notification lỗi không làm thất bại transaction chính; retry có giới hạn.
+
+**Dependencies:** PH1; nhận event từ PH3, PH4, PH5, PH7 khi triển khai.
+
+---
+
+## 12. Quan hệ phụ thuộc
+
+```text
+PH1 Identity & Auth
+  ├──→ PH2 User Profile & Preference
+  ├──→ PH3 Health & Body
+  └──→ PH8/PH9 authorization
+
+PH2 Equipment/Constraints ──→ PH4 Workout / PH5 Nutrition
+PH3 Metrics/Targets ────────→ PH5 Nutrition
+
+PH3 Health ─┐
+PH4 Workout ├──→ PH6 Dashboard
+PH5 Meal ───┤
+PH7 AI ─────┘
+
+PH2–PH5 authorized data ──→ PH7 Context/Rule/Recommendation
+PH7 approved action ──────→ PH2/PH3/PH4/PH5 domain owner
+PH7/domain mutation ──────→ PH8 Audit
+PH9 Media ────────────────→ PH2/PH4/PH5
+PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P1+)
+```
+
+- Không module nào bypass owner để sửa trực tiếp dữ liệu domain.
+- Dashboard chỉ aggregate/read, không sở hữu metric nguồn.
+- AI context chỉ được Backend tạo sau consent/ownership check.
+- Apply do Backend điều phối nhưng mutation nằm tại service domain tương ứng.
+- Notification/audit là side effect có kiểm soát, không phải business authority.
+
+---
+
+## 13. Traceability MVP
+
+| Business flow | SRS Use Case | Feature IDs | Owner | Priority |
+|---|---|---|---|---|
+| Register/Login/OTP | UC-01 | FT-ID-001..010 | PH1 | P0 |
+| Health onboarding/recalculation | UC-02/03 | FT-HP-001..004 | PH3 | P0 |
+| Equipment/User Preference | UC-04/18 | FT-UP-003..005, FT-WO-003 | PH2; PH4 consumer | P0 |
+| Exercise Library | UC-04 | FT-WO-001..003 | PH4 | P0 |
+| Program/Schedule | UC-05/06 | FT-WO-004/005 | PH4 | P0 |
+| Session/Log/Progress | UC-07 | FT-WO-006..009/011 | PH4 | P0 |
+| Food Database/Meal Planner | UC-08/09 | FT-MP-001..006/009 | PH5 | P0 |
+| AI Meal Proposal | UC-09/13/14 | FT-MP-011, FT-AI-008..010 | PH5/PH7 | P0 |
+| Weight Tracking | UC-10 | FT-HP-005..007 | PH3 | P0 |
+| Dashboard | UC-11 | FT-DB-001..005/007 | PH6 | P0 |
+| AI Consent/Coach | UC-12/17 | FT-AI-001..007/014 | PH7 | P0 |
+| Recommendation/Apply/Dismiss | UC-13/14 | FT-AI-008..010 | PH7 + domain | P0 |
+| Admin Exercise/Food/Audit | UC-19 | FT-AD-003/004/008 | PH8 | P0 baseline |
+| Exercise/Food media | UC-21 | FT-MD-001..003 | PH9 | P0 baseline |
+| Weekly Review/Plan Adjustment | UC-15/16 | FT-AI-011/012 | PH7 | P1 |
+| Admin mở rộng | UC-20 | FT-AD-001/002/005..007/009 | PH8 | P1 |
+| Local/in-app reminder | Optional flow | FT-NT-001..004 | PH10 | P1 |
+
+### 13.1. Migration mã feature từ bản 2.0
+
+- Equipment Preference chuẩn là `FT-UP-004`; `FT-WO-003` chỉ là matching/consumer logic.
+- Fitness goal thuộc `FT-HP-001`, không còn là feature do PH2 sở hữu.
+- AI history là `FT-AI-014` P0; summary/feedback nâng cao là `FT-AI-015` P1.
+- Admin User Management chuẩn hóa về P1; P0 chỉ giữ Exercise/Food/Audit baseline.
+- Tài liệu màn hình/luồng còn dùng mã cũ cần tham chiếu bảng migration này khi cập nhật.
+
+---
+
+## 14. Acceptance Criteria cấp MVP
+
+| ID | Acceptance Criteria |
+|---|---|
+| AC-01 | User đăng ký/verify OTP/đăng nhập được; private API yêu cầu JWT hợp lệ |
+| AC-02 | User chỉ truy cập Health/Meal/Workout/AI resource của mình |
+| AC-03 | Health Profile hợp lệ tạo BMI/BMR/TDEE/calorie/macro target tại Backend |
+| AC-04 | Sửa field nền Health Profile tính lại metric/target nhất quán |
+| AC-05 | Equipment Preference ảnh hưởng ranking nhưng không sửa log cũ |
+| AC-06 | Session chỉ chuyển trạng thái hợp lệ; Finish tạo log, Discard không tạo thành tích giả |
+| AC-07 | CANCELLED bị loại khỏi mẫu số completion rate |
+| AC-08 | Meal summary được Backend tính đúng theo serving/multiplier và target |
+| AC-09 | WeightLog tạo history/trend nhưng không tự sửa Nutrition Target |
+| AC-10 | Dashboard aggregate đúng nguồn và có empty/error state |
+| AC-11 | Consent OFF không gửi personal context hoặc tạo recommendation cá nhân hóa |
+| AC-12 | AI Service không truy cập database; context tuân thủ whitelist/minimization |
+| AC-13 | AI output sai schema/business/safety không thành action hợp lệ |
+| AC-14 | Daily Recommendation tạo 1–3 item PENDING khi đủ điều kiện |
+| AC-15 | APPLY chỉ chạy với recommendation đúng user, còn PENDING/chưa hết hạn và action hợp lệ |
+| AC-16 | DISMISS chỉ đổi status/feedback, không mutation domain data |
+| AC-17 | Mutation sau APPLY do domain owner thực hiện và có audit |
+| AC-18 | Media P0 hiển thị asset hợp lệ và enforce quyền/validation |
+| AC-19 | Audit không chứa password, token, OTP, API key hoặc personal context thừa |
+
+---
+
+## 15. Phạm vi triển khai
+
+### P0 — Bắt buộc
+
+- PH1 Identity & Auth baseline.
+- PH2 profile, preference, constraints và equipment.
+- PH3 Health calculation và Weight Tracking.
+- PH4 Exercise, Program, Schedule, Session, Log và progress.
+- PH5 Food Database, Meal Planner và nutrition summary.
+- PH6 Dashboard.
+- PH7 Consent, Context, Rule Engine, Coach, Daily Recommendation, Apply/Dismiss và validation.
+- PH8 Exercise/Food/Audit baseline.
+- PH9 Exercise/Food media baseline.
+
+### P1 — Sau khi P0 ổn định
+
+- Preference Memory, Weekly Review, Plan Adjustment, conversation summary/feedback.
+- Favorite/recent food, favorite exercise, Water Tracker và app settings.
+- Admin dashboard/user/import/AI Rule/Prompt/metrics.
+- Local/in-app reminder.
+
+### P2/Future
+
+- Push automation, media cleanup và offline queue nâng cao.
+- Shop/Marketplace, Cart/Order/Payment.
+- Wearable/health platform integration.
+- Food recognition, pose estimation/computer vision và ML prediction.
+- AI automatic mutation không cần user approval luôn ngoài phạm vi.
+
+---
+
+## 16. Definition of Done của tài liệu
+
+Tài liệu hoàn thiện khi:
+
+- Mọi P0 trong SRS có feature, owner, priority và acceptance criteria truy vết được.
+- Mỗi dữ liệu/feature có một subsystem owner; consumer được ghi rõ.
+- Priority thống nhất với business flow và phân hệ.
+- Luồng stateful có state/transition và điều kiện lỗi chính.
+- AI Consent, trust boundary, validation và Apply/Dismiss không cho AI tự mutation.
+- Không biến gợi ý triển khai thành business rule nếu SRS chưa chốt.
+- Dependency graph, traceability và mã feature không mâu thuẫn nội bộ.
+- Out-of-scope không xuất hiện trong core MVP feature list.
+- Markdown không có heading, table hoặc code block bị lỗi.

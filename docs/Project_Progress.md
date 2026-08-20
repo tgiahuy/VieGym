@@ -54,7 +54,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 - [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
 - [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
-- [ ] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 0/22
+- [ ] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 3/22
 - [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 0/27
 - [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
 - [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/27
@@ -63,7 +63,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M7 — Admin, Media và Audit** — Tuần 20–21 — Tiến độ: 0/19
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 22–24 — Tiến độ: 0/28
 
-**Tiến độ tổng:** 27/218 công việc — 12,4%
+**Tiến độ tổng:** 30/218 công việc — 13,8%
 **Milestone hiện tại:** M1
 **Cập nhật gần nhất:** 2026-08-20
 **Ghi chú tổng:** M0 và gate M0R hoàn thành. P0 không bị thu hẹp; contract đã được hòa giải trước khi bootstrap M1.
@@ -141,13 +141,13 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Phụ thuộc:** M0  
 **Mục tiêu:** tạo hệ thống tối thiểu có thể build, test và chạy lặp lại trên môi trường sạch.  
 **Trạng thái:** Đang thực hiện
-**Tiến độ:** 2/22
+**Tiến độ:** 3/22
 
 ### Cấu trúc repository và môi trường
 
 - [x] **M1-01** — Khởi tạo Flutter project trong `mobile/` và pin Flutter SDK.
 - [x] **M1-02** — Khởi tạo Spring Boot project trong `backend/` với Maven Wrapper và Java 21.
-- [ ] **M1-03** — Khởi tạo FastAPI project trong `ai-service/` với Python lockfile.
+- [x] **M1-03** — Khởi tạo FastAPI project trong `ai-service/` với Python lockfile.
 - [ ] **M1-04** — Tạo `.gitignore`, `.editorconfig` và quy tắc format/lint cho ba project.
 - [ ] **M1-05** — Tạo `.env.example`; xác nhận không có secret thật trong repository.
 - [ ] **M1-06** — Tạo Dockerfile cho Backend và AI Service với version được pin.

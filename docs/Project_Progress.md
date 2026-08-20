@@ -140,12 +140,12 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Thời gian:** Tuần 2–3  
 **Phụ thuộc:** M0  
 **Mục tiêu:** tạo hệ thống tối thiểu có thể build, test và chạy lặp lại trên môi trường sạch.  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/22
+**Trạng thái:** Đang thực hiện
+**Tiến độ:** 1/22
 
 ### Cấu trúc repository và môi trường
 
-- [ ] **M1-01** — Khởi tạo Flutter project trong `mobile/` và pin Flutter SDK.
+- [x] **M1-01** — Khởi tạo Flutter project trong `mobile/` và pin Flutter SDK.
 - [ ] **M1-02** — Khởi tạo Spring Boot project trong `backend/` với Maven Wrapper và Java 21.
 - [ ] **M1-03** — Khởi tạo FastAPI project trong `ai-service/` với Python lockfile.
 - [ ] **M1-04** — Tạo `.gitignore`, `.editorconfig` và quy tắc format/lint cho ba project.
@@ -675,11 +675,11 @@ Một công việc/vertical slice chỉ được đánh dấu `[x]` khi:
 > Thêm một dòng cho mỗi vấn đề. Khi đã xử lý, đổi `[ ]` thành `[x]` và ghi ngày đóng.
 
 - [x] **ISSUE-001** — Không có vấn đề mở tại thời điểm đóng M0.
-  **Mức độ:**  
-  **Milestone liên quan:**  
-  **Người xử lý:**  
-  **Hạn xử lý:**  
-  **Ghi chú/giải pháp:**
+      **Mức độ:**  
+      **Milestone liên quan:**  
+      **Người xử lý:**  
+      **Hạn xử lý:**  
+      **Ghi chú/giải pháp:**
 
 ## 19. Nhật ký quyết định và thay đổi phạm vi
 

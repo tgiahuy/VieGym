@@ -1,0 +1,7 @@
+generatorName: dart-dio
+inputSpec: http://localhost:8080/v3/api-docs
+outputDir: ../mobile/lib/api/generated
+additionalProperties:
+  pubName: viegym_api
+  pubVersion: 0.1.0
+  serializationLibrary: json_serializable

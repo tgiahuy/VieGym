@@ -1,0 +1,11 @@
+package com.viegym.common.api;
+
+public final class Pagination {
+
+    public static final int DEFAULT_PAGE = 0;
+    public static final int DEFAULT_SIZE = 20;
+    public static final int MAX_SIZE = 100;
+    public static final String DEFAULT_SORT = "createdAt,desc";
+
+    private Pagination() {}
+}

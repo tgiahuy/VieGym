@@ -54,7 +54,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 - [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
 - [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
-- [ ] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 8/22
+- [ ] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 14/22
 - [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 0/27
 - [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
 - [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/27
@@ -63,7 +63,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M7 — Admin, Media và Audit** — Tuần 20–21 — Tiến độ: 0/19
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 22–24 — Tiến độ: 0/28
 
-**Tiến độ tổng:** 35/218 công việc — 16,1%
+**Tiến độ tổng:** 41/218 công việc — 18,8%
 **Milestone hiện tại:** M1
 **Cập nhật gần nhất:** 2026-08-20
 **Ghi chú tổng:** M0 và gate M0R hoàn thành. P0 không bị thu hẹp; contract đã được hòa giải trước khi bootstrap M1.
@@ -141,7 +141,7 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Phụ thuộc:** M0  
 **Mục tiêu:** tạo hệ thống tối thiểu có thể build, test và chạy lặp lại trên môi trường sạch.  
 **Trạng thái:** Đang thực hiện
-**Tiến độ:** 7/22
+**Tiến độ:** 14/22
 
 ### Cấu trúc repository và môi trường
 
@@ -156,13 +156,13 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 ### Backend và database foundation
 
-- [ ] **M1-09** — Kết nối Spring Boot với PostgreSQL bằng cấu hình environment.
-- [ ] **M1-10** — Thiết lập Flyway và migration baseline đầu tiên.
-- [ ] **M1-11** — Tạo response envelope, pagination và error response dùng chung theo API Spec.
-- [ ] **M1-12** — Tạo exception handler và validation error mapping.
-- [ ] **M1-13** — Tạo correlation/request ID và JSON logging; che dữ liệu nhạy cảm.
-- [ ] **M1-14** — Tạo liveness/readiness endpoint cho Backend.
-- [ ] **M1-15** — Thiết lập OpenAPI/Swagger và pin OpenAPI Generator `dart-dio`.
+- [x] **M1-09** — Kết nối Spring Boot với PostgreSQL bằng cấu hình environment.
+- [x] **M1-10** — Thiết lập Flyway và migration baseline đầu tiên.
+- [x] **M1-11** — Tạo response envelope, pagination và error response dùng chung theo API Spec.
+- [x] **M1-12** — Tạo exception handler và validation error mapping.
+- [x] **M1-13** — Tạo correlation/request ID và JSON logging; che dữ liệu nhạy cảm.
+- [x] **M1-14** — Tạo liveness/readiness endpoint cho Backend.
+- [x] **M1-15** — Thiết lập OpenAPI/Swagger và pin OpenAPI Generator `dart-dio`.
 
 ### Mobile và AI foundation
 

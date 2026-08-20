@@ -51,9 +51,10 @@ services:
         - curl
         - --silent
         - --show-error
+        - --fail
         - --output
         - /dev/null
-        - http://localhost:8080/
+        - http://localhost:8080/actuator/health/liveness
       interval: 10s
       timeout: 5s
       retries: 10

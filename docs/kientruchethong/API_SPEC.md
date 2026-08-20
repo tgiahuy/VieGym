@@ -134,6 +134,7 @@ top-level hoặc mảng trần thay cho cấu trúc này.
 | `415` | MIME/extension không hỗ trợ |
 | `422` | Request đúng cú pháp nhưng vi phạm business/safety rule |
 | `429` | Rate limit/OTP cooldown; có `Retry-After` khi xác định được |
+| `500` | Lỗi nội bộ không dự kiến; response không làm lộ chi tiết triển khai |
 | `502` | AI/storage/email provider trả lỗi không hợp lệ |
 | `503` | Dependency tạm thời không sẵn sàng |
 
@@ -154,6 +155,7 @@ top-level hoặc mảng trần thay cho cấu trúc này.
 | `MEDIA_TYPE_NOT_SUPPORTED`, `MEDIA_MIME_MISMATCH` | 415 | Media type/MIME không hợp lệ |
 | `UPLOAD_NOT_COMPLETED` | 409 | Upload chưa hoàn tất |
 | `UPLOAD_EXPIRED` | 410 | Upload URL/TTL hết hạn |
+| `INTERNAL_ERROR` | 500 | Lỗi nội bộ không dự kiến; dùng correlation ID để tra cứu |
 
 Một error code chỉ ánh xạ tới một HTTP status trên toàn hệ thống. UI map hành vi theo `code`,
 không parse `message`. Output safety `BLOCKED` không tạo recommendation nên không có

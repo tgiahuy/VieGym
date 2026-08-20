@@ -1,0 +1,127 @@
+name: viegym
+
+services:
+  backend:
+    image: viegym/backend:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_started
+      ai-service:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-viegym}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-viegym_app}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-PT15M}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-P7D}
+      OTP_TTL: ${OTP_TTL:-PT10M}
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
+      OTP_RESEND_COOLDOWN: ${OTP_RESEND_COOLDOWN:-PT1M}
+      SCHEDULE_MISSED_GRACE: ${SCHEDULE_MISSED_GRACE:-PT1H}
+      AI_SERVICE_BASE_URL: http://ai-service:8000
+      AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?Set AI_SERVICE_TOKEN in .env}
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:9000}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-viegym-media}
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+      STORAGE_PATH_STYLE_ACCESS: "true"
+      STORAGE_UPLOAD_TTL: ${STORAGE_UPLOAD_TTL:-PT5M}
+      STORAGE_ACCESS_TTL: ${STORAGE_ACCESS_TTL:-PT5M}
+      APP_DEFAULT_TIMEZONE: ${APP_DEFAULT_TIMEZONE:-Asia/Ho_Chi_Minh}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  ai-service:
+    image: viegym/ai-service:local
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      INTERNAL_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?Set AI_SERVICE_TOKEN in .env}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_MODEL: ${AI_MODEL:-mock}
+      AI_PROVIDER_API_KEY: ${AI_PROVIDER_API_KEY:-}
+      AI_CONNECT_TIMEOUT_SECONDS: ${AI_CONNECT_TIMEOUT_SECONDS:-3}
+      AI_READ_TIMEOUT_SECONDS: ${AI_READ_TIMEOUT_SECONDS:-20}
+      AI_MAX_ATTEMPTS: ${AI_MAX_ATTEMPTS:-2}
+      AI_MAX_CONTEXT_BYTES: ${AI_MAX_CONTEXT_BYTES:-32768}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-1024}
+      LOG_LEVEL: ${AI_LOG_LEVEL:-INFO}
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16.14-bookworm@sha256:64154d0babcb1741988719e703419af0382b19953706149f9872fbd0f438efa8
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-viegym}
+      POSTGRES_USER: ${POSTGRES_USER:-viegym_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      TZ: UTC
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      STORAGE_BUCKET: ${STORAGE_BUCKET:-viegym-media}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
+          sleep 2
+        done
+        mc mb --ignore-existing "local/$${STORAGE_BUCKET}"
+        mc anonymous set none "local/$${STORAGE_BUCKET}"
+    restart: "no"
+
+volumes:
+  postgres-data:
+  minio-data:

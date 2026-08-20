@@ -186,21 +186,21 @@ WorkoutSchedule:
 PLANNED ──► COMPLETED | MISSED | CANCELLED
 
 WorkoutSession:
-PLANNED ──► IN_PROGRESS ──► PAUSED ──► IN_PROGRESS
-                         └────────────► COMPLETED
-IN_PROGRESS | PAUSED ─────────────────► DISCARDED/CANCELLED
+IN_PROGRESS ──► PAUSED ──► IN_PROGRESS
+          └──────────────► COMPLETED
+IN_PROGRESS | PAUSED ────► DISCARDED
 
 AiRecommendation:
 PENDING ──► APPLIED | DISMISSED | EXPIRED
 ```
 
-- Mỗi schedule có tối đa một active session.
+- Mỗi user có tối đa một active session; một schedule không được start lại.
 - Finish session validate log, tính metric và cập nhật schedule trong cùng
   transaction.
 - Recommendation chỉ được Apply/Dismiss khi `PENDING`, thuộc đúng user và
   chưa hết hạn.
-- Apply là idempotent; Discarded session không tạo PR; `CANCELLED` hợp lệ
-  không tính vào mẫu số completion rate.
+- Apply là idempotent; `DISCARDED` session không tạo PR; `CANCELLED` schedule
+  hợp lệ không tính vào mẫu số completion rate.
 
 ### 3.6. Transaction Boundary
 
@@ -470,7 +470,7 @@ Context được chọn theo tác vụ, không gửi toàn bộ hồ sơ:
 | Context type | Dữ liệu chính |
 |---|---|
 | `CHAT` | Tin nhắn gần đây, conversation summary và dữ liệu liên quan câu hỏi |
-| `DAILY_RECOMMENDATION` | Rule signals, nutrition hôm nay, workout hôm nay/tiếp theo, trend và preference cần thiết |
+| `DAILY_RECOMMENDATION` | Rule signals, nutrition hôm nay, workout hôm nay/tiếp theo, trend, preference và candidate shortlist tối thiểu |
 | `WEEKLY_REVIEW` | Chỉ aggregated weekly metrics — P1 |
 | `PLAN_ADJUSTMENT` | Plan summary, target, trend và constraint — P1 |
 
@@ -502,6 +502,10 @@ AI Provider chỉ diễn giải signal và tạo nội dung/proposal đúng sche
 logic không phụ thuộc trực tiếp SDK provider; AI Service cung cấp hai khả năng
 trừu tượng `generateResponse` và `generateStructuredResponse`.
 
+Spring Boot sở hữu Rule Engine, versioned Prompt Builder và render prompt cuối
+cùng. FastAPI chỉ nhận request nội bộ đã render + schema/candidates, gọi provider
+qua adapter và parse structured output; không tự bổ sung business rule.
+
 ### 6.5. Allowed Action Contract
 
 AI chỉ được trả proposal thuộc whitelist:
@@ -512,8 +516,12 @@ ADD_MEAL_ENTRY_PROPOSAL
 CREATE_WORKOUT_SCHEDULE_PROPOSAL
 UPDATE_USER_PREFERENCE_PROPOSAL
 REVIEW_NUTRITION_TARGET_PROPOSAL
-LOG_REMINDER_ONLY
 ```
+
+`LOG_REMINDER_ONLY` dành cho notification P1, không xuất hiện trong P0.
+Proposal tạo meal/schedule bắt buộc có `targetDate` trong cửa sổ cho phép và chỉ
+tham chiếu ID nằm trong candidate shortlist. Preference payload chỉ nhận key và
+value trong whitelist đã version hóa.
 
 ```text
 APPLY
@@ -548,6 +556,8 @@ whitelist. AI không tự gọi mutation endpoint.
   request treo vô hạn.
 - Prompt template có version; provider secret chỉ tồn tại server-side qua
   environment/secret manager.
+- Output `BLOCKED` chỉ tạo validation/telemetry đã redact và safe response; không
+  persist thành `AiRecommendation`.
 
 ---
 
@@ -632,6 +642,8 @@ Redis mất dữ liệu không được làm mất session/business record autho
 - Private endpoint yêu cầu JWT hợp lệ; Backend kiểm tra role và ownership.
 - Request/response dùng JSON, trừ luồng upload trực tiếp tới presigned URL.
 - OpenAPI/Swagger được sinh bằng `springdoc-openapi` cho demo và contract review.
+- Flutter client được generate bằng OpenAPI Generator `dart-dio`, pin cùng một
+  version trong local/CI; CI fail nếu generate lại tạo diff chưa commit.
 - Pagination, response envelope, validation error và business error phải thống
   nhất trong `API_SPEC.md` trước khi implementation.
 
@@ -739,8 +751,11 @@ manager. Log và audit chỉ giữ dữ liệu tối thiểu phục vụ vận h
 
 ### 10.1. Mục tiêu
 
-- P95 cho read API phổ biến dưới 500 ms trong môi trường MVP, không tính thời
-  gian AI Provider.
+- P95 cho Health Metrics, Exercise list, Food list, Weight Trend và Dashboard
+  dưới 500 ms, error rate dưới 1%, không tính thời gian AI Provider. Benchmark
+  chuẩn dùng Docker Compose 4 vCPU/8 GB, 100 user, 40 Exercise, 80 Food, 90 ngày
+  dữ liệu cho user đo, 10 virtual users, warm-up 2 phút và đo 5 phút; báo cáo
+  phải lưu P50/P95/error rate, commit, máy và dataset.
 - AI timeout/failure phải trả fallback an toàn, không làm hỏng dữ liệu domain.
 - Database constraint và transaction bảo vệ các invariant quan trọng.
 - Core business vẫn hoạt động khi Redis không được triển khai hoặc cache bị mất.
@@ -751,6 +766,8 @@ manager. Log và audit chỉ giữ dữ liệu tối thiểu phục vụ vận h
   ngày/trạng thái theo query thực tế.
 - Dùng pagination cho Exercise, Food, Workout Log, Weight Log, Conversation và
   Audit Log.
+- Dashboard và GET Daily Recommendation chỉ đọc dữ liệu đã commit, tuyệt đối
+  không gọi provider hoặc tạo bản ghi. Generation chỉ chạy qua POST command.
 - Dashboard aggregate theo user và khoảng thời gian; chỉ thêm cache/materialized
   read model khi profiling chứng minh cần thiết.
 - Tránh N+1 query qua query projection/entity graph phù hợp; không serialize
@@ -781,7 +798,7 @@ bổ sung theo phạm vi triển khai:
 | Job | Mục đích | Phạm vi |
 |---|---|---|
 | Expire recommendation | Chuyển `PENDING` quá `expires_at` thành `EXPIRED` | P0 hoặc lazy-on-read/apply |
-| Mark missed schedule | Chuyển schedule quá hạn phù hợp thành `MISSED` | P0 hoặc lazy evaluation |
+| Mark missed schedule | Lazy materialize sau cutoff + grace theo profile timezone; bỏ qua session active | P0 authoritative |
 | Orphan media cleanup | Xóa object upload dở dang/không còn reference | P0 hardening |
 | Conversation summary | Giới hạn context budget | P0/P1 theo dung lượng chat |
 | Notification scheduler | Reminder workout/meal/weight | P1 |
@@ -1070,22 +1087,22 @@ trúc P0 đã chốt. Chỉ thêm bằng ADR khi có yêu cầu vận hành và 
 
 ---
 
-## 16. Các quyết định cần khóa khi bootstrap
+## 16. Các quyết định bootstrap đã khóa
 
-Những điểm sau chưa được tài liệu nguồn chốt thành một implementation duy nhất
-và cần ADR trước khi phát triển:
+Các quyết định chặn M1/M2 đã được chấp nhận ngày 2026-08-19:
 
-1. State-management package duy nhất cho Flutter.
-2. AI Provider mặc định và SDK/version tương ứng.
-3. Object storage cụ thể cho local và production.
-4. Cơ chế lưu/truyền refresh token giữa mobile và Backend.
-5. Response envelope, pagination, error code và idempotency contract trong
+1. `flutter_riverpod` — ADR-001.
+2. OpenAI Responses API và `gpt-5.6-luna` — ADR-002.
+3. MinIO local/demo và Amazon S3 production — ADR-003.
+4. Refresh token trong secure storage, access token trong memory — ADR-004.
+5. Resend/fake adapter và policy OTP/PostgreSQL counter — ADR-005.
+6. Media allowlist Exercise/Food — ADR-006.
+7. Lazy-on-read/lazy-on-command cho recommendation/schedule expiry — ADR-007.
+8. Response envelope, pagination, error code và idempotency đã được khóa tại
    `API_SPEC.md`.
-6. Có dùng Redis ở MVP hay chỉ dùng PostgreSQL cho cache/rate-limit baseline.
-7. Scheduled job chạy eager hay lazy-on-read cho recommendation/schedule expiry.
 
-Mỗi ADR phải ghi context, lựa chọn, phương án bị loại, hệ quả, owner và ngày áp
-dụng. Việc chưa khóa các quyết định này không làm thay đổi các boundary cốt lõi:
+Mỗi ADR ghi context, lựa chọn, phương án bị loại, hệ quả, owner và ngày áp
+dụng. Các quyết định này không làm thay đổi các boundary cốt lõi:
 Backend là business authority, PostgreSQL là source of truth, AI không mutation
 và user là người quyết định cuối cùng.
 

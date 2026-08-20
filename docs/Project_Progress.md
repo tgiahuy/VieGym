@@ -1,11 +1,11 @@
 # Kế hoạch và theo dõi tiến độ triển khai VieGym
 
-> **Phiên bản:** 2.0  
-> **Ngày cập nhật:** 2026-08-19  
-> **Loại dự án:** Đồ án 1  
+> **Phiên bản:** 2.1
+> **Ngày cập nhật:** 2026-08-20
+> **Loại dự án:** Đồ án tốt nghiệp
 > **Phạm vi:** MVP P0 theo SRS v3.0  
 > **Thời gian kế hoạch:** 24 tuần  
-> **Trạng thái tổng thể:** Chưa bắt đầu
+> **Trạng thái tổng thể:** M0R đã hoàn thành; sẵn sàng thực hiện M1
 
 ## 1. Cách sử dụng tài liệu
 
@@ -34,7 +34,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - Spring Boot Backend cung cấp REST API `/api/v1`.
 - PostgreSQL là nguồn dữ liệu authoritative và được quản lý bằng Flyway.
 - FastAPI AI Service stateless, chỉ nhận context do Backend cung cấp.
-- Media baseline cho Exercise, Food và Profile.
+- Media baseline cho Exercise và Food; avatar Profile thuộc P1.
 - Docker Compose, CI, seed data, APK và tài liệu demo.
 - 19 Acceptance Criteria cấp MVP và 7 luồng E2E bắt buộc.
 
@@ -52,7 +52,8 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 > Cập nhật phần này khi hoàn thành một milestone. Số công việc được tính theo các checkbox có mã trong từng milestone.
 
-- [ ] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 0/15
+- [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
+- [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
 - [ ] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 0/22
 - [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 0/27
 - [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
@@ -62,10 +63,10 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M7 — Admin, Media và Audit** — Tuần 20–21 — Tiến độ: 0/19
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 22–24 — Tiến độ: 0/28
 
-**Tiến độ tổng:** 0/206 công việc — 0%  
-**Milestone hiện tại:** M0  
-**Cập nhật gần nhất:** 2026-08-19  
-**Ghi chú tổng:** Chưa bắt đầu triển khai source code.
+**Tiến độ tổng:** 27/218 công việc — 12,4%
+**Milestone hiện tại:** M1
+**Cập nhật gần nhất:** 2026-08-20
+**Ghi chú tổng:** M0 và gate M0R hoàn thành. P0 không bị thu hẹp; contract đã được hòa giải trước khi bootstrap M1.
 
 ---
 
@@ -74,38 +75,63 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 **Thời gian:** Tuần 1  
 **Phụ thuộc:** Bộ đặc tả hiện tại  
 **Mục tiêu:** tạo backlog có thể triển khai và đóng các quyết định kỹ thuật đang chặn bootstrap.  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/15
+**Trạng thái:** Hoàn thành
+**Tiến độ:** 15/15
 
 ### Công việc
 
-- [ ] **M0-01** — Đọc và xác nhận SRS v3.0 là source of truth về yêu cầu và phạm vi.
-- [ ] **M0-02** — Kiểm tra tính nhất quán giữa SRS, business flow, feature breakdown và screen breakdown.
-- [ ] **M0-03** — Lập danh sách P0 chính thức; xác nhận không có Shop, Payment, Wearable hoặc tính năng P1.
-- [ ] **M0-04** — Chọn một state-management package cho Flutter và tạo ADR.
-- [ ] **M0-05** — Chọn AI Provider, model mặc định, SDK và tạo ADR.
-- [ ] **M0-06** — Chọn object storage local/demo và phương án media production, tạo ADR.
-- [ ] **M0-07** — Chốt cơ chế lưu refresh token trên Mobile và tạo ADR.
-- [ ] **M0-08** — Chọn OTP email provider; chốt TTL, số lần thử, cooldown và rate limit.
-- [ ] **M0-09** — Chốt MIME, extension và kích thước tối đa cho từng loại media P0.
-- [ ] **M0-10** — Chốt cơ chế hết hạn Recommendation/Schedule: scheduler hoặc lazy-on-read.
-- [ ] **M0-11** — Pin Flutter/Dart, Java/Spring Boot, Python/FastAPI và PostgreSQL version.
-- [ ] **M0-12** — Chọn Maven và một Python package manager; xác định lockfile bắt buộc.
-- [ ] **M0-13** — Chia P0 thành epic/story và gắn UC, FT, MH, API, DB, test cho từng story.
-- [ ] **M0-14** — Chốt Git workflow, quy tắc đặt branch/commit/PR và coding convention.
-- [ ] **M0-15** — Kiểm tra toàn bộ ticket của M1 và M2 đạt Definition of Ready.
+- [x] **M0-01** — Đọc và xác nhận SRS v3.0 là source of truth về yêu cầu và phạm vi.
+- [x] **M0-02** — Kiểm tra tính nhất quán giữa SRS, business flow, feature breakdown và screen breakdown.
+- [x] **M0-03** — Lập danh sách P0 chính thức; xác nhận không có Shop, Payment, Wearable hoặc tính năng P1.
+- [x] **M0-04** — Chọn một state-management package cho Flutter và tạo ADR.
+- [x] **M0-05** — Chọn AI Provider, model mặc định, SDK và tạo ADR.
+- [x] **M0-06** — Chọn object storage local/demo và phương án media production, tạo ADR.
+- [x] **M0-07** — Chốt cơ chế lưu refresh token trên Mobile và tạo ADR.
+- [x] **M0-08** — Chọn OTP email provider; chốt TTL, số lần thử, cooldown và rate limit.
+- [x] **M0-09** — Chốt MIME, extension và kích thước tối đa cho từng loại media P0.
+- [x] **M0-10** — Chốt cơ chế hết hạn Recommendation/Schedule: scheduler hoặc lazy-on-read.
+- [x] **M0-11** — Pin Flutter/Dart, Java/Spring Boot, Python/FastAPI và PostgreSQL version.
+- [x] **M0-12** — Chọn Maven và một Python package manager; xác định lockfile bắt buộc.
+- [x] **M0-13** — Chia P0 thành epic/story và gắn UC, FT, MH, API, DB, test cho từng story.
+- [x] **M0-14** — Chốt Git workflow, quy tắc đặt branch/commit/PR và coding convention.
+- [x] **M0-15** — Kiểm tra toàn bộ ticket của M1 và M2 đạt Definition of Ready.
 
 ### Cổng nghiệm thu M0
 
-- [ ] Tất cả ADR chặn triển khai đã ở trạng thái `ACCEPTED`.
-- [ ] Backlog P0 có priority, dependency và acceptance criteria rõ ràng.
-- [ ] Không còn quyết định OPEN nào chặn M1 hoặc M2.
-- [ ] Milestone M0 đã được demo/review với giảng viên hướng dẫn hoặc người phụ trách nếu cần.
+- [x] Tất cả ADR chặn triển khai đã ở trạng thái `ACCEPTED`.
+- [x] Backlog P0 có priority, dependency và acceptance criteria rõ ràng.
+- [x] Không còn quyết định OPEN nào chặn M1 hoặc M2.
+- [x] Milestone M0 đã được review kỹ thuật; review với giảng viên sẽ thực hiện riêng nếu được yêu cầu.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M0:**
+**Ngày bắt đầu thực tế:** 2026-08-19
+**Ngày hoàn thành thực tế:** 2026-08-19
+**Minh chứng:** [`M0-01_SRS_REVIEW.md`](../checkM0/M0-01_SRS_REVIEW.md), [`M0-02_SPEC_CONSISTENCY_REVIEW.md`](../checkM0/M0-02_SPEC_CONSISTENCY_REVIEW.md), [`M0-03_P0_SCOPE_BASELINE.md`](../checkM0/M0-03_P0_SCOPE_BASELINE.md), [`ADR-001`](../checkM0/ADR-001_FLUTTER_STATE_MANAGEMENT.md) đến [`ADR-007`](../checkM0/ADR-007_EXPIRY_POLICY.md), [`M0-11_12_VERSION_BUILD_BASELINE.md`](../checkM0/M0-11_12_VERSION_BUILD_BASELINE.md), [`M0-13_P0_BACKLOG_TRACEABILITY.md`](../checkM0/M0-13_P0_BACKLOG_TRACEABILITY.md), [`M0-14_GIT_AND_CODING_CONVENTIONS.md`](../checkM0/M0-14_GIT_AND_CODING_CONVENTIONS.md), [`M0-15_DEFINITION_OF_READY_REVIEW.md`](../checkM0/M0-15_DEFINITION_OF_READY_REVIEW.md)
+**Ghi chú M0:** Hoàn thành 15/15. P0 frozen; 7 ADR ACCEPTED; runtime/build pin; 20 story có traceability; 49/49 ticket M1/M2 READY.
+
+---
+
+## 5A. M0R — Remediation sau independent review
+
+**Phụ thuộc:** M0 và ba báo cáo review ngày 2026-08-20
+**Mục tiêu:** hòa giải contract trước khi sinh migration/OpenAPI/source code mà không tự ý giảm P0.
+**Trạng thái:** Hoàn thành
+**Tiến độ:** 12/12
+
+- [x] **M0R-01** — Khóa profile IANA timezone là nguồn authoritative cho ngày nghiệp vụ.
+- [x] **M0R-02** — Khóa health-v1: calculation sex, age, decimal/HALF_UP và golden test.
+- [x] **M0R-03** — Chốt WeightLog natural-key upsert và rule đồng bộ latest weight/metrics, không đổi target.
+- [x] **M0R-04** — Chốt completion-rate, cutoff/grace và lazy `MISSED` theo ADR-007.
+- [x] **M0R-05** — Chốt stable Program child ID, hidden-reference và một active Session/user.
+- [x] **M0R-06** — Chốt Food gram conversion, normalized search và Meal target/input snapshot.
+- [x] **M0R-07** — Tách read-only Dashboard/GET Recommendation khỏi POST generation command.
+- [x] **M0R-08** — Chốt `rules-v1`, candidate shortlist, targetDate/preference whitelist và BLOCKED non-persistence.
+- [x] **M0R-09** — Bổ sung recommendation generation batch/idempotency và PR read model.
+- [x] **M0R-10** — Chốt resource-first Media lifecycle với owner/role/sort bắt buộc.
+- [x] **M0R-11** — Chốt error-code/HTTP matrix, pagination và OpenAPI `dart-dio` no-diff CI gate.
+- [x] **M0R-12** — Đồng bộ SRS, flow, feature, screen, subsystem, API, DB, SA, server, tech stack và backlog.
+
+**Quyết định phạm vi:** giữ nguyên P0 frozen. `LOG_REMINDER_ONLY`, Login OTP/MFA,
+conversation archive và account auto-lock không được lén đưa vào P0; chúng vẫn là P1.
 
 ---
 
@@ -136,19 +162,19 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M1-12** — Tạo exception handler và validation error mapping.
 - [ ] **M1-13** — Tạo correlation/request ID và JSON logging; che dữ liệu nhạy cảm.
 - [ ] **M1-14** — Tạo liveness/readiness endpoint cho Backend.
-- [ ] **M1-15** — Thiết lập OpenAPI/Swagger cho local environment.
+- [ ] **M1-15** — Thiết lập OpenAPI/Swagger và pin OpenAPI Generator `dart-dio`.
 
 ### Mobile và AI foundation
 
 - [ ] **M1-16** — Thiết lập Flutter theme, router, state-management root và environment config.
-- [ ] **M1-17** — Thiết lập Dio client, timeout, interceptor và API error mapping.
+- [ ] **M1-17** — Tích hợp generated `dart-dio` client, timeout, refresh interceptor và API error mapping.
 - [ ] **M1-18** — Tạo component/state dùng chung cho loading, empty, error, offline và retry.
 - [ ] **M1-19** — Tạo FastAPI health endpoint và internal service-token guard.
 - [ ] **M1-20** — Tạo Pydantic request/response contract và mock AI Provider.
 
 ### CI và tài liệu
 
-- [ ] **M1-21** — Tạo CI chạy format, lint, unit test, migration test và build ba project.
+- [ ] **M1-21** — Tạo CI chạy format, lint, test, migration, OpenAPI regenerate no-diff và build ba project.
 - [ ] **M1-22** — Viết README hướng dẫn clean setup, run, test và cấu hình emulator/device.
 
 ### Cổng nghiệm thu M1
@@ -177,7 +203,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 ### Database và Backend Identity
 
-- [ ] **M2-01** — Tạo migration cho users, refresh_tokens, otp_codes và profile liên quan.
+- [ ] **M2-01** — Tạo migration cho users, refresh_tokens, otp_codes, security rate-limit events và profile liên quan.
 - [ ] **M2-02** — Tạo enum role/account status/OTP purpose nhất quán với API và database.
 - [ ] **M2-03** — Triển khai đăng ký local, chuẩn hóa email và BCrypt password hashing.
 - [ ] **M2-04** — Triển khai tạo/gửi OTP qua provider adapter; có fake provider cho local/test.
@@ -197,9 +223,9 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M2-15** — Tạo migration User Profile, User Preference và Equipment Preference.
 - [ ] **M2-16** — Tạo migration Health Profile, Nutrition Target và Weight Log ban đầu.
 - [ ] **M2-17** — Triển khai xem/cập nhật User Profile theo whitelist field.
-- [ ] **M2-18** — Triển khai lưu User Preference và Equipment Preference.
+- [ ] **M2-18** — Triển khai User/Equipment Preference và `equipmentOnboardingCompletedAt` kể cả danh sách rỗng.
 - [ ] **M2-19** — Triển khai validate Health Profile và range cho từng field.
-- [ ] **M2-20** — Triển khai công thức BMI, BMR Mifflin–St Jeor và TDEE tại Backend.
+- [ ] **M2-20** — Triển khai `health-v1`: tuổi theo timezone, decimal/HALF_UP, BMI/BMR/TDEE và golden fixtures.
 - [ ] **M2-21** — Triển khai calories/macro target và rule xử lý kết quả bất hợp lệ.
 - [ ] **M2-22** — Lưu Health Profile, metric, target và Weight Log ban đầu trong transaction.
 
@@ -238,19 +264,19 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 ### Health và Weight Backend
 
-- [ ] **M3-01** — Triển khai GET/PUT Health Profile với ownership guard.
+- [ ] **M3-01** — Triển khai GET/PUT Health Profile theo whitelist; cân nặng sau onboarding chỉ đổi qua WeightLog.
 - [ ] **M3-02** — Recalculate BMI/BMR/TDEE/target khi field nền thay đổi.
 - [ ] **M3-03** — Đảm bảo update profile và recalculation là một transaction.
-- [ ] **M3-04** — Triển khai thêm Weight Log theo user và local date.
-- [ ] **M3-05** — Triển khai xem danh sách và sửa Weight Log của chính user.
-- [ ] **M3-06** — Chống dữ liệu Weight Log trùng hoặc không hợp lệ theo contract.
+- [ ] **M3-04** — Triển khai `PUT /weight-logs/{loggedDate}` natural-key upsert theo profile timezone.
+- [ ] **M3-05** — Triển khai list Weight Log; log mới nhất sync current weight + BMI/BMR/TDEE.
+- [ ] **M3-06** — Chống dữ liệu Weight Log trùng/không hợp lệ và xử lý tie theo `updatedAt`.
 - [ ] **M3-07** — Triển khai trend/summary 7–30 ngày tại Backend.
 - [ ] **M3-08** — Xác nhận Weight Log không tự thay đổi Nutrition Target.
 
 ### Dashboard
 
 - [ ] **M3-09** — Thiết kế Dashboard read model không sở hữu mutation.
-- [ ] **M3-10** — Tổng hợp Health, Weight, Workout, Nutrition và AI theo API contract.
+- [ ] **M3-10** — Tổng hợp Health, Weight, Workout, Nutrition và AI theo API contract; GET không sinh AI dữ liệu.
 - [ ] **M3-11** — Trả section-level empty/incomplete/error thay vì làm hỏng toàn Dashboard.
 - [ ] **M3-12** — Thêm query/index cần thiết và kiểm tra thời gian phản hồi baseline.
 
@@ -298,22 +324,22 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 ### Program và Schedule
 
 - [ ] **M4-07** — Tạo migration Workout Program, Day, Exercise và Schedule.
-- [ ] **M4-08** — Triển khai Program list/detail/create/update/delete theo ownership.
-- [ ] **M4-09** — Triển khai Workout Builder thêm/sửa/xóa/reorder day và exercise.
+- [ ] **M4-08** — Triển khai Program list/detail/create/update/archive theo ownership và hidden-reference rule.
+- [ ] **M4-09** — Triển khai Workout Builder bằng stable child ID/diff; chặn xóa day đang được lịch nonterminal tham chiếu.
 - [ ] **M4-10** — Enforce rule active program theo contract.
 - [ ] **M4-11** — Triển khai Schedule CRUD và validate timezone/date.
-- [ ] **M4-12** — Triển khai Schedule state machine và transition guard.
+- [ ] **M4-12** — Triển khai Schedule state machine, cancel cutoff, grace và lazy `MISSED` theo profile timezone.
 
 ### Session, Log và Progress
 
 - [ ] **M4-13** — Tạo migration Workout Session/Log/Exercise Log/Set Log.
-- [ ] **M4-14** — Triển khai Start Session với ownership, state và idempotency.
+- [ ] **M4-14** — Triển khai Start Session với ownership, idempotency và unique một active session/user.
 - [ ] **M4-15** — Triển khai Pause và Resume theo state machine.
 - [ ] **M4-16** — Triển khai nhập set/reps/weight và validate dữ liệu.
 - [ ] **M4-17** — Triển khai Finish Session atomic với log và schedule update.
 - [ ] **M4-18** — Triển khai Discard; không tạo volume, completion hoặc PR giả.
-- [ ] **M4-19** — Tính volume và completion rate tại Backend.
-- [ ] **M4-20** — Tính và lưu/đọc Personal Record đúng rule.
+- [ ] **M4-19** — Tính volume và completion rate theo eligible counts/cutoff; 0/0 trả null.
+- [ ] **M4-20** — Tính và atomically upsert Personal Record `MAX_WEIGHT/MAX_REPS/MAX_VOLUME`.
 - [ ] **M4-21** — Triển khai Workout History và detail snapshot.
 - [ ] **M4-22** — Xử lý conflict khi hai request start/finish đồng thời.
 
@@ -351,15 +377,15 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 ### Food và Meal Backend
 
-- [ ] **M5-01** — Tạo migration Food, Meal Plan, Meal, Meal Entry và Template.
+- [ ] **M5-01** — Tạo migration Food (`searchName`, `gramsPerServing`), Meal Plan/Entry snapshot và Template.
 - [ ] **M5-02** — Tạo seed Food món Việt với serving và nutrition data hợp lệ.
 - [ ] **M5-03** — Triển khai Food list/search/filter/pagination.
 - [ ] **M5-04** — Triển khai Food detail và serving-unit contract.
-- [ ] **M5-05** — Enforce visibility/ownership cho public/private/hidden Food.
-- [ ] **M5-06** — Triển khai get-or-create Meal Plan theo user và local date.
+- [ ] **M5-05** — Enforce PUBLIC/HIDDEN; hidden chỉ dùng để bảo toàn lịch sử, không có private Food P0.
+- [ ] **M5-06** — Triển khai GET Meal Plan không ghi DB; tạo plan + immutable target snapshot tại mutation đầu.
 - [ ] **M5-07** — Tạo unique constraint chống Meal Plan trùng user/date.
-- [ ] **M5-08** — Triển khai add Meal Entry với serving/quantity dương.
-- [ ] **M5-09** — Lưu nutrition snapshot khi tạo Meal Entry.
+- [ ] **M5-08** — Triển khai add Meal Entry; nhập gram chỉ khi có `gramsPerServing`.
+- [ ] **M5-09** — Lưu input amount/unit và nutrition snapshot khi tạo Meal Entry.
 - [ ] **M5-10** — Triển khai update/delete Meal Entry theo ownership.
 - [ ] **M5-11** — Tính calories/macro daily summary và remaining tại Backend.
 - [ ] **M5-12** — Xử lý concurrent mutation không làm mất entry hoặc sai tổng.
@@ -406,7 +432,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M6-02** — Triển khai GET/PUT consent với ownership và audit.
 - [ ] **M6-03** — Chặn personal context tại Backend khi consent OFF.
 - [ ] **M6-04** — Triển khai General Knowledge Mode không dùng dữ liệu cá nhân.
-- [ ] **M6-05** — Xây Context Builder theo task whitelist và field minimization.
+- [ ] **M6-05** — Xây Context Builder theo task whitelist, candidate shortlist và field minimization.
 - [ ] **M6-06** — Áp dụng context/token budget và không gửi secret/credential.
 - [ ] **M6-07** — Lưu context snapshot tối thiểu theo retention policy.
 
@@ -414,7 +440,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 - [ ] **M6-08** — Triển khai internal `/internal/v1/ai/generate` contract.
 - [ ] **M6-09** — Triển khai provider adapter cho provider đã chọn.
-- [ ] **M6-10** — Version hóa prompt và model metadata.
+- [ ] **M6-10** — Version hóa `rules-v1`, prompt/model metadata; Spring Boot render prompt, FastAPI chỉ execute/parse.
 - [ ] **M6-11** — Thiết lập connect/read timeout, retry hữu hạn và correlation ID.
 - [ ] **M6-12** — Parse output thành Pydantic structured response.
 - [ ] **M6-13** — Trả fallback an toàn khi provider timeout/error/invalid output.
@@ -422,11 +448,11 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 ### Conversation và Recommendation
 
-- [ ] **M6-15** — Tạo migration Conversation, Message, Request, Validation Log và Recommendation.
+- [ ] **M6-15** — Tạo migration Conversation/Message effective mode, Request/Validation, Generation batch và Recommendation.
 - [ ] **M6-16** — Triển khai create/list/detail Conversation theo ownership.
 - [ ] **M6-17** — Triển khai gửi message cho General và Personalized mode.
-- [ ] **M6-18** — Validate schema, safety và business rule tại Backend sau AI output.
-- [ ] **M6-19** — Triển khai Daily Recommendation tạo 1–3 item khi đủ điều kiện.
+- [ ] **M6-18** — Validate schema/safety/business, targetDate/candidate/preference whitelist; BLOCKED không persist.
+- [ ] **M6-19** — Triển khai read-only GET và POST generation idempotent, atomically tạo 1–3 item.
 - [ ] **M6-20** — Enforce state `PENDING/APPLIED/DISMISSED/EXPIRED`.
 - [ ] **M6-21** — Triển khai preview Allowed Action theo domain owner.
 - [ ] **M6-22** — Triển khai Apply idempotent qua domain owner và ghi audit.
@@ -484,7 +510,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M7-13** — Triển khai upload-complete với HEAD/object verification.
 - [ ] **M7-14** — Triển khai access-url theo visibility và ownership.
 - [ ] **M7-15** — Triển khai delete/hide metadata và xử lý object theo policy.
-- [ ] **M7-16** — Tích hợp media cho Exercise, Food và Profile P0.
+- [ ] **M7-16** — Tích hợp media cho Exercise và Food P0.
 
 ### Flutter và kiểm thử
 
@@ -648,7 +674,7 @@ Một công việc/vertical slice chỉ được đánh dấu `[x]` khi:
 
 > Thêm một dòng cho mỗi vấn đề. Khi đã xử lý, đổi `[ ]` thành `[x]` và ghi ngày đóng.
 
-- [ ] **ISSUE-001** — Chưa có.  
+- [x] **ISSUE-001** — Không có vấn đề mở tại thời điểm đóng M0.
   **Mức độ:**  
   **Milestone liên quan:**  
   **Người xử lý:**  
@@ -661,6 +687,9 @@ Một công việc/vertical slice chỉ được đánh dấu `[x]` khi:
 
 - **2026-08-19 — PLAN-001:** Tạo kế hoạch triển khai MVP P0 trong 24 tuần.
 - **2026-08-19 — PLAN-002:** Chuyển kế hoạch thành master checklist theo milestone để theo dõi tiến độ đồ án.
+- **2026-08-19 — PLAN-003:** Xử lý 8 phát hiện M0-01; khóa calculation sex, health-v1, mandatory rules, benchmark, seed baseline và demo-data retention.
+- **2026-08-19 — PLAN-004:** Frozen P0 gồm 62 feature, 47 UI, 19 AC và 7 E2E.
+- **2026-08-19 — PLAN-005:** Chấp nhận ADR-001..ADR-007; pin runtime/build tool; tạo 20 story và xác nhận 49/49 ticket M1/M2 READY.
 
 ## 20. Nhật ký triển khai
 
@@ -682,11 +711,11 @@ Minh chứng: commit/PR/test/screenshot/link
 ### 2026-08-19
 
 - **Milestone:** M0
-- **Đã hoàn thành:** Tạo file kế hoạch và checklist theo dõi.
-- **Đang thực hiện:** Chưa bắt đầu triển khai source code.
+- **Đã hoàn thành:** M0-01..M0-15; khóa scope, 7 ADR, runtime/build tool, P0 backlog, convention và DoR M1/M2.
+- **Đang thực hiện:** Chưa bắt đầu M1; milestone kế tiếp là M1-01.
 - **Vấn đề/BLOCKED:** Không có.
-- **Kế hoạch tiếp theo:** Thực hiện M0-01 đến M0-03, sau đó chốt các ADR M0-04 đến M0-10.
-- **Minh chứng:** `docs/IMPLEMENTATION_PLAN.md`.
+- **Kế hoạch tiếp theo:** Thực hiện M1-01 theo version baseline, sau đó M1-02..M1-22 theo dependency.
+- **Minh chứng:** `docs/Project_Progress.md` và toàn bộ baseline/ADR trong `checkM0/` (`M0-01..03`, `ADR-001..007`, `M0-11_12`, `M0-13..15`).
 
 ## 21. Điều kiện bắt đầu P1
 
@@ -697,5 +726,4 @@ P1 chỉ được đưa vào kế hoạch khi tất cả điều kiện sau đã
 - [ ] 7/7 E2E đạt.
 - [ ] Không còn Blocker/Critical.
 - [ ] Backup/restore và clean installation đã được rehearsal.
-- [ ] Sản phẩm MVP đã được nghiệm thu cho Đồ án 1.
-
+- [ ] Sản phẩm MVP đã được nghiệm thu cho đồ án tốt nghiệp.

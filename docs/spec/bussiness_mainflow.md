@@ -42,9 +42,9 @@ Guest
 
 Admin
   └── Quản trị dữ liệu hệ thống
-        ├── User / bài tập / món ăn
-        ├── AI Rule / Prompt
-        └── Audit Log
+        ├── Bài tập / món ăn / Audit Log [P0]
+        ├── User Management [P1]
+        └── AI Rule / Prompt [P1]
 ```
 
 Sơ đồ trực quan:
@@ -81,9 +81,10 @@ flowchart TD
     Settings --> Preference[User Preference]
 
     Admin[Admin] --> AdminPanel[Quản trị dữ liệu hệ thống]
-    AdminPanel --> AdminData[User / bài tập / món ăn]
-    AdminPanel --> AdminAI[AI Rule / Prompt]
-    AdminPanel --> Audit[Audit Log]
+    AdminPanel --> AdminData[Bài tập / món ăn P0]
+    AdminPanel --> Audit[Audit Log P0]
+    AdminPanel --> AdminUser[User Management P1]
+    AdminPanel --> AdminAI[AI Rule / Prompt P1]
 ```
 
 Nguyên tắc tổng quát:
@@ -146,7 +147,7 @@ Tính BMI, BMR, TDEE
   ↓
 Tính calories và macro mục tiêu
   ↓
-Lưu HealthProfile / WeightLog / NutritionTarget
+Lưu HealthProfile / WeightLog và NutritionTarget khi calculation COMPLETE
   ↓
 Chuyển sang Equipment Preference
   ↓
@@ -176,7 +177,7 @@ flowchart TD
 
     Profile -- Không --> Onboarding[Onboarding hồ sơ sức khỏe]
     Onboarding --> Calculate[Tính BMI / BMR / TDEE / calories / macro]
-    Calculate --> SaveProfile[Lưu HealthProfile / WeightLog / NutritionTarget]
+    Calculate --> SaveProfile[Lưu HealthProfile / WeightLog; NutritionTarget nếu COMPLETE]
     SaveProfile --> Equipment[Thiết lập Equipment Preference]
     Equipment --> Dashboard[Dashboard cá nhân]
 
@@ -359,6 +360,8 @@ Business rules:
 - Nếu thiếu `HealthProfile`, Dashboard phải hiển thị yêu cầu hoàn thiện hồ sơ.
 - Nếu chưa có meal plan, lịch tập hoặc weight log, app hiển thị empty state dễ hiểu thay vì dữ liệu giả.
 - AI recommendation chỉ hiển thị khi recommendation còn hiệu lực và thuộc user hiện tại.
+- Dashboard là read model thuần: không gọi FastAPI/AI Provider, không tạo hoặc regenerate recommendation.
+- Ngày Dashboard do Backend diễn giải theo timezone IANA trong UserProfile; client có thể gửi ngày tường minh để browse.
 
 ---
 
@@ -454,7 +457,7 @@ Backend lưu WorkoutProgram
 Business rules:
 
 - User có thể có nhiều `WorkoutProgram`.
-- Chỉ nên có một giáo án active tại một thời điểm.
+- Mỗi user chỉ được có tối đa một giáo án `ACTIVE` tại một thời điểm.
 - User có thể chỉnh sửa giáo án sau khi tạo.
 - Nếu bài tập không phù hợp equipment, hệ thống giảm ưu tiên và có thể gợi ý bài thay thế cùng nhóm cơ.
 - Việc thay đổi giáo án mới không làm thay đổi WorkoutLog lịch sử.
@@ -483,8 +486,10 @@ Trạng thái `WorkoutSchedule`:
 Business rules:
 
 - User chỉ xem và chỉnh sửa lịch tập của chính mình.
-- Một user nên có tối đa một `WorkoutProgram` active tại một thời điểm.
+- Mỗi user chỉ được có tối đa một `WorkoutProgram` `ACTIVE` tại một thời điểm.
 - `CANCELLED` không tính vào mẫu số `completionRate` nếu user hủy hợp lệ.
+- Lịch tương lai không vào mẫu số; cửa sổ mặc định là Thứ Hai đến ngày nghiệp vụ hiện tại.
+- Khi không có schedule eligible, `completionRate = null`. Schedule quá cutoff không được cancel để rút khỏi mẫu số.
 - Notification nâng cao không thuộc core P0; nếu triển khai chỉ hoạt động khi user cho phép.
 
 ### 4.5. Ghi nhận buổi tập
@@ -589,11 +594,11 @@ Dashboard cập nhật tiến độ
 Trạng thái session:
 
 ```text
-PLANNED / READY
-  └── Start → IN_PROGRESS
+READY là UI state, chưa có Session persisted
+  └── Start → tạo Session IN_PROGRESS
         ├── Pause → PAUSED → Resume → IN_PROGRESS
         ├── Finish → COMPLETED
-        └── Exit giữa chừng → lưu nháp hoặc CANCELLED
+        └── Discard → DISCARDED
 ```
 
 Sơ đồ trạng thái:
@@ -605,17 +610,17 @@ stateDiagram-v2
     IN_PROGRESS --> PAUSED: Pause
     PAUSED --> IN_PROGRESS: Resume
     IN_PROGRESS --> COMPLETED: Finish (lưu WorkoutLog)
-    IN_PROGRESS --> CANCELLED: Exit / hủy hợp lệ
-    PAUSED --> CANCELLED: Exit / hủy hợp lệ
+    IN_PROGRESS --> DISCARDED: Discard / hủy buổi đang tập
+    PAUSED --> DISCARDED: Discard / hủy buổi đang tập
     COMPLETED --> [*]
-    CANCELLED --> [*]
+    DISCARDED --> [*]
 ```
 
 Business rules:
 
 - `WorkoutSchedule` chỉ chuyển sang `COMPLETED` khi session finish hợp lệ và WorkoutLog được lưu.
-- Khi user thoát giữa chừng, app cho chọn tiếp tục, lưu nháp hoặc thoát.
-- `CANCELLED` hợp lệ không tính vào mẫu số completion rate.
+- Khi user thoát giữa chừng, app cho chọn tiếp tục hoặc xác nhận Discard; P0 không có draft session độc lập.
+- Session `DISCARDED` không tạo WorkoutLog/PR. Schedule `CANCELLED` hợp lệ không tính vào mẫu số completion rate.
 - Rest timer và Pause/Resume là hỗ trợ thao tác, không thay đổi cách Backend tính volume/PR.
 
 ---
@@ -729,7 +734,7 @@ Backend kiểm tra WeightLog cùng ngày
   ↓
 Cập nhật cân nặng hiện tại
   ↓
-Backend tính BMI / trend / summary
+Nếu đây là log mới nhất: Backend tính lại BMI / BMR / TDEE; luôn tính trend / summary
   ↓
 Dashboard hiển thị cân nặng, biểu đồ và mức thay đổi
   ↓
@@ -748,7 +753,7 @@ flowchart TD
 
     Update --> Current[Cập nhật cân nặng hiện tại]
     Create --> Current
-    Current --> Calculate[Backend tính BMI / trend / summary]
+    Current --> Calculate[Log mới nhất: tính BMI / BMR / TDEE; luôn tính trend / summary]
     Calculate --> Review{Có cần review target?}
     Review -- Có --> Suggest[Đề xuất review NutritionTarget]
     Review -- Không --> Chart[Cập nhật biểu đồ]
@@ -769,8 +774,10 @@ Business rules:
 
 - Một ngày chỉ có một bản ghi cân nặng chính.
 - Nếu user nhập lại cùng ngày thì cập nhật bản ghi hiện có.
+- API dùng ngày log làm natural key; create/update cùng ngày là một upsert idempotent.
 - Backend tính trend/summary trước khi gửi context cho AI.
-- Cân nặng thay đổi không tự động mutation NutritionTarget.
+- Nếu log vừa thêm/sửa là log mới nhất, Backend đồng bộ `HealthProfile.currentWeightKg` và tính lại BMI/BMR/TDEE trong cùng transaction. Sửa log cũ không được làm lệch nguồn cân nặng hiện tại.
+- Cân nặng thay đổi không tự động mutation NutritionTarget; AC-09 chỉ cấm đổi target, không cấm cập nhật metric phụ thuộc trực tiếp vào cân nặng.
 - Nếu cần review target, hệ thống/AI chỉ tạo proposal dạng `REVIEW_NUTRITION_TARGET_PROPOSAL`, không tự thay đổi target.
 - NutritionTarget chỉ được cập nhật sau khi User approval và Backend validation thành công.
 - User chỉ xem và chỉnh sửa `WeightLog` của chính mình.
@@ -1020,26 +1027,29 @@ Guardrails:
 
 ## 10. Luồng AI Daily Recommendation
 
-Daily Recommendation là luồng AI personalization chính của MVP, tạo 1–3 recommendation/ngày dựa trên các tín hiệu được Backend xác định.
+Daily Recommendation là luồng AI personalization chính của MVP. Mỗi generation tạo 1–3 item;
+P0 cho lần đầu và tối đa hai refresh/ngày. Generation mới thành công làm item `PENDING` của
+generation cũ cùng ngày hết hiệu lực nhưng giữ lịch sử `APPLIED`/`DISMISSED`.
 
 ```text
-Daily trigger / User mở Dashboard
+Client chủ động gọi command Generate Daily Recommendation
   ↓
 Backend kiểm tra AI Consent
   ├── DISABLED
   │     └── Không tạo personalized recommendation
   └── ENABLED
         ↓
-      Backend tạo candidate signals
+      Backend tạo candidate signals theo rules-v1
         ├── calories remaining
         ├── nutrition_protein_gap
         ├── workout_today
         ├── adherence_issue
         ├── weight_trend_off_goal
         ├── meal_logging_drop
-        └── preference_conflict
         ↓
       Rule Engine xác định WHAT
+        ↓
+      Backend dựng candidate shortlist đã lọc ownership/allergy/visibility
         ↓
       Context Builder tạo context tối thiểu
         ↓
@@ -1054,6 +1064,8 @@ Backend kiểm tra AI Consent
       Business Validation
         ↓
       Safety Validation
+        ├── BLOCKED → chỉ lưu validation log, không lưu recommendation
+        └── NORMAL/CAUTION
         ↓
       Lưu AiRecommendation = PENDING
         ↓
@@ -1064,12 +1076,13 @@ Sơ đồ trực quan:
 
 ```mermaid
 flowchart TD
-    Trigger[Daily Trigger / User mở Dashboard] --> Consent{AI Consent ENABLED?}
+    Trigger[POST command Generate Daily Recommendation] --> Consent{AI Consent ENABLED?}
     Consent -- Không --> NoRecommendation[Không tạo personalized recommendation]
 
     Consent -- Có --> Signals[Backend tạo candidate signals]
-    Signals --> Rule[Rule Engine]
-    Rule --> Context[Context Builder]
+    Signals --> Rule[Rule Engine rules-v1]
+    Rule --> Shortlist[Candidate shortlist hợp lệ]
+    Shortlist --> Context[Context Builder]
     Context --> Prompt[Prompt Builder]
     Prompt --> AI[FastAPI AI Service]
     AI --> Provider[AI Provider]
@@ -1081,8 +1094,8 @@ flowchart TD
     Schema -- Có --> Business{Business hợp lệ?}
     Business -- Không --> Fallback
     Business -- Có --> Safety{Safety hợp lệ?}
-    Safety -- Không --> Fallback
-    Safety -- Có --> Recommendation[Lưu 1–3 AiRecommendation = PENDING]
+    Safety -- BLOCKED --> ValidationOnly[Chỉ lưu validation log]
+    Safety -- NORMAL/CAUTION --> Recommendation[Lưu 1–3 AiRecommendation = PENDING]
 
     Recommendation --> Dashboard[Hiển thị trên Dashboard]
 ```
@@ -1110,6 +1123,9 @@ Business rules:
 - Recommendation phải thuộc user hiện tại.
 - Recommendation phải qua schema, business và safety validation.
 - Recommendation mặc định có trạng thái `PENDING`.
+- Endpoint đọc Daily Recommendation và Dashboard không gọi provider. Command generate chống gọi trùng bằng generation/batch key theo user + ngày nghiệp vụ.
+- AI chỉ được tham chiếu Food/WorkoutDay trong candidate shortlist; ID ngoài shortlist bị reject.
+- Recommendation `BLOCKED` không được persist; chỉ output `NORMAL`/`CAUTION` mới có thể thành PENDING.
 - AI không được tự mutation database.
 - Recommendation ưu tiên hành động nhỏ, có thể thực hiện ngay.
 - Preference về dị ứng/ràng buộc được ưu tiên hơn recommendation tối ưu macro.
@@ -1223,6 +1239,8 @@ REVIEW_NUTRITION_TARGET_PROPOSAL
 LOG_REMINDER_ONLY
 ```
 
+`LOG_REMINDER_ONLY` là reserved cho P1 và không được gửi trong allowed-actions P0.
+
 Business rules:
 
 - Chỉ recommendation `PENDING` mới được APPLY/DISMISS.
@@ -1234,6 +1252,8 @@ Business rules:
 - Action của AI phải nằm trong Allowed Action Contract whitelist.
 - Action ngoài whitelist bị reject.
 - Payload action không được chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
+- Meal/Schedule proposal bắt buộc có `targetDate` và chỉ tham chiếu candidate ID do Backend cung cấp.
+- Preference proposal không được chứa `allergies` hoặc `dietary_constraints`.
 
 ---
 
@@ -1344,7 +1364,8 @@ Business rules:
 - Không lưu binary trực tiếp trong database nghiệp vụ; chỉ lưu metadata/object key.
 - P0 chỉ cần baseline media cho demo Exercise/Food; có thể dùng demo URL/asset hợp lệ.
 - Upload media phải validate MIME type, kích thước và extension.
-- Cleanup file orphan, CDN nâng cao và lifecycle policy là P2/Future.
+- P0 phải đánh dấu/xóa idempotent upload orphan tối thiểu theo TTL và không xóa object còn được
+  tham chiếu. Đối soát quy mô lớn, CDN và lifecycle policy nâng cao là P2/Future.
 
 ---
 

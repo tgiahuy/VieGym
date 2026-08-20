@@ -38,7 +38,7 @@ hoặc cấu hình triển khai chi tiết đã có tài liệu chuyên trách.
 - Dashboard tổng hợp dữ liệu authoritative.
 - AI Consent, Context, Coach Chat, Daily Recommendation và Apply/Dismiss.
 - Admin quản lý Exercise/Food và Audit Log ở mức P0 baseline.
-- Media cho Exercise, Food và Profile ở mức P0 baseline.
+- Media cho Exercise và Food ở mức P0 baseline; avatar Profile là P1.
 - Notification, Weekly Review và các phần mở rộng được đánh dấu P1/P2.
 
 ### 1.2. Ngoài phạm vi
@@ -230,7 +230,8 @@ hoặc external dependency.
 ### 5.4. FastAPI AI Service
 
 - Nhận context tối thiểu do Backend cung cấp.
-- Chọn prompt/provider adapter, gọi model và parse structured output.
+- Nhận prompt/schema đã được Spring Boot version/render, chọn provider adapter,
+  gọi model và parse structured output.
 - Trả về output hoặc failure chuẩn cho Backend.
 - Stateless đối với dữ liệu nghiệp vụ; không authorization User và không mutation.
 
@@ -278,8 +279,8 @@ mobile/lib/
     └── media/
 ```
 
-Mỗi feature chỉ tách `data`, `domain`, `presentation` khi cần thiết. State
-management package là quyết định mở và phải được khóa bằng ADR trước bootstrap.
+Mỗi feature chỉ tách `data`, `domain`, `presentation` khi cần thiết. Mobile dùng
+`flutter_riverpod` thống nhất theo [ADR-001](../checkM0/ADR-001_FLUTTER_STATE_MANAGEMENT.md).
 
 ### 6.2. Spring Boot theo business capability
 
@@ -378,7 +379,7 @@ FT-DB-001..005 và FT-DB-007; MH03, MH42 và MH43.
 ```text
 User cập nhật Health Profile hoặc thêm Weight Log
   → Backend kiểm tra ownership và dữ liệu đầu vào
-  → Health module tính BMI/BMR/TDEE/calories/macro target
+  → Health module tính metric; chỉ profile-domain change phù hợp mới đổi target
   → lưu profile/log và snapshot/target cần thiết
   → Dashboard query tổng hợp health + nutrition + workout + AI
   → Mobile render dữ liệu cùng trạng thái thời gian và đơn vị
@@ -388,7 +389,8 @@ Quy tắc:
 
 - Công thức và rounding canonical nằm ở Health domain.
 - Client có thể preview nhưng phải ghi rõ ước lượng và thay bằng kết quả Backend.
-- Sửa/xóa Weight Log chỉ áp dụng cho resource của chính User.
+- Weight Log upsert theo `(user, loggedDate)`; chỉ log mới nhất sync current
+  weight và BMI/BMR/TDEE, tuyệt đối không tự đổi Nutrition Target.
 - Dashboard không ghi ngược vào Health, Workout, Nutrition hoặc AI.
 - Thiếu một nguồn dữ liệu không làm toàn bộ Dashboard thất bại; section trả
   trạng thái phù hợp theo API contract.
@@ -420,6 +422,7 @@ Quy tắc:
 
 - Exercise catalog có thể public theo ứng dụng nhưng mutation catalog là Admin.
 - Program, Schedule, Session và Log luôn kiểm tra ownership.
+- Một User chỉ có một Session active; program update dùng stable child ID/diff.
 - Exercise hidden/inactive không được chọn mới; lịch sử cũ vẫn đọc được.
 - Session transition tuân theo state machine canonical trong API/database.
 - Finish session validate set log, cập nhật schedule và thống kê trong transaction.
@@ -445,7 +448,7 @@ MH20..MH25 và MH54.
 ```text
 User chọn ngày và bữa
   → tìm Food và chọn serving/quantity
-  → Backend tạo hoặc lấy Meal Plan của ngày
+  → GET chỉ đọc; mutation đầu tiên mới tạo Meal Plan + target snapshot
   → tạo Meal Entry với nutrition snapshot
   → tính daily calories/macro summary
   → Dashboard và Nutrition UI đọc summary mới
@@ -456,12 +459,14 @@ Quy tắc:
 - Mỗi User có tối đa một Meal Plan canonical cho một local date.
 - Entry lưu snapshot dinh dưỡng để lịch sử không đổi khi Food catalog bị sửa.
 - Serving multiplier và tổng calories/macro được Backend tính.
-- Food private chỉ owner được dùng; Food public/hidden theo visibility contract.
+- Nhập gram chỉ hợp lệ khi Food có `gramsPerServing`; lưu cả input unit/amount.
+- Food P0 chỉ `PUBLIC/HIDDEN`; hidden không được chọn mới nhưng lịch sử vẫn đọc.
 - Meal template/history sao chép thành entry mới, không liên kết mutable history.
 
 Transaction và concurrency:
 
-- Get-or-create Meal Plan phải chống tạo trùng theo User và date.
+- Lazy-create Meal Plan tại mutation đầu phải chống tạo trùng theo User/date;
+  target snapshot bất biến sau khi tạo.
 - Thêm/sửa/xóa entry và cập nhật summary liên quan phải nhất quán.
 - Request đồng thời không được làm mất entry hoặc tạo tổng sai.
 
@@ -511,10 +516,10 @@ FT-AI-008..010; MH30 và MH31.
 ```text
 Trigger daily recommendation
   → Backend kiểm tra consent và thu thập signal authoritative
-  → Rule Engine xác định nhu cầu/priority
-  → Context Builder tạo context tối thiểu
+  → Rule Engine `rules-v1` xác định nhu cầu/priority
+  → Context Builder tạo context + candidate shortlist tối thiểu
   → FastAPI/Provider tạo explanation + allowed action proposal
-  → Backend validate và lưu Recommendation PENDING
+  → Backend validate toàn batch và atomically lưu 1–3 Recommendation PENDING
   → User xem Recommendation
   ├── Dismiss → PENDING → DISMISSED + feedback/audit
   └── Apply
@@ -528,6 +533,10 @@ Quy tắc:
 
 - Recommendation không phải business command đã được phê duyệt.
 - Chỉ action type/field nằm trong Allowed Action Contract được cân nhắc Apply.
+- Dashboard và GET Recommendation chỉ đọc; POST generation command mới gọi
+  provider. Output `BLOCKED` không được persist thành Recommendation.
+- Proposal mutation phải có `targetDate`, ID thuộc shortlist và preference key
+  thuộc whitelist; Apply validate lại theo dữ liệu hiện tại.
 - Backend tính lại hoặc kiểm tra precondition tại thời điểm Apply; không tin snapshot
   cũ nếu business state đã thay đổi.
 - Một recommendation chỉ có một terminal transition hợp lệ.
@@ -549,7 +558,8 @@ FT-MD-001..003; MH45, MH46, MH47 và MH51.
 ```text
 Admin tạo/sửa Exercise hoặc Food
   → Backend kiểm tra role ADMIN
-  → nếu có media: init upload và cấp presigned contract
+  → tạo resource `HIDDEN` trước
+  → nếu có media: init upload theo owner + role + sort và cấp presigned contract
   → client upload binary trực tiếp vào Object Storage
   → complete upload để Backend verify metadata/state
   → liên kết media với catalog entity
@@ -569,7 +579,7 @@ Failure flow:
 - Upload chưa complete không được dùng như media active.
 - Complete với object thiếu hoặc metadata sai bị từ chối.
 - Catalog mutation rollback không được để metadata active trỏ tới object không hợp lệ.
-- Orphan cleanup là P2 và không nằm trên đường găng P0.
+- Orphan cleanup tối thiểu là P0 hardening; transcoding/cleanup nâng cao là P2.
 
 ---
 
@@ -663,7 +673,7 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 - Transaction đặt quanh một business invariant, không quanh remote AI call dài.
 - External call không được giữ database lock nếu có thể tách phase an toàn.
-- Unique constraint bảo vệ get-or-create Meal Plan và các natural invariant.
+- Unique constraint bảo vệ lazy-create Meal Plan tại mutation đầu tiên và các natural invariant; GET không ghi database.
 - State transition dùng conditional update/version để chống double submit.
 - Idempotency áp dụng cho operation có khả năng retry gây duplicate side effect.
 
@@ -701,7 +711,9 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 - Thu thập và gửi AI context theo data minimization.
 - Consent history được lưu theo policy; tắt consent có hiệu lực với request mới.
-- Retention, purge/account deletion và backup retention cần ADR/policy trước production.
+- Đồ án tốt nghiệp chỉ dùng synthetic/demo data và purge môi trường theo runbook trước
+  bàn giao hoặc trong vòng 30 ngày sau chấm; legal retention, self-service
+  account deletion và backup expiry cần ADR trước dữ liệu thật/production.
 - Presigned URL có TTL và scope phù hợp; bucket không public mặc định.
 
 ---
@@ -712,7 +724,7 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 - Public API version `/api/v1`; internal AI API có boundary riêng.
 - Request/response DTO ổn định và độc lập với JPA entity.
-- OpenAPI sinh hoặc kiểm tra từ contract đã chốt.
+- OpenAPI sinh hoặc kiểm tra từ contract đã chốt; Flutter client dùng generator `dart-dio` được pin và CI no-diff.
 - Pagination, filter, status và error dùng convention chung.
 - Breaking change cần versioning/migration plan, không sửa âm thầm contract P0.
 
@@ -728,7 +740,7 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 - Flyway migration chạy trên PostgreSQL sạch trong CI.
 - Migration đã áp dụng là immutable; thay đổi dùng migration mới.
-- Seed P0 idempotent và đủ cho Exercise, equipment, muscle group và Food Việt Nam.
+- Seed P0 idempotent, tối thiểu 40 Exercise/80 Food theo SRS và đủ media cho demo.
 - Không seed password, OTP, token hoặc provider secret thật.
 
 ---
@@ -787,7 +799,7 @@ Chi tiết container, proxy, backup, rollback và production hardening thuộc
 - Auth/OTP/session lifecycle và rate limit.
 - Ownership cho toàn bộ private resource.
 - Unique constraint, transaction rollback và concurrent state transition.
-- Meal Plan get-or-create và nutrition snapshot.
+- Meal Plan GET read-only; mutation đầu lazy-create plan với immutable target snapshot và input-unit snapshot.
 - Workout finish không tạo duplicate log.
 - AI internal contract, timeout, invalid schema và safety rejection.
 - Media init/complete và metadata verification.
@@ -817,19 +829,19 @@ Mỗi E2E cần có ít nhất một failure branch quan trọng, không chỉ h
 
 ## 13. Quyết định mở và ADR
 
-Các quyết định dưới đây chưa được coi là implementation canonical cho đến khi
-có ADR hoặc tài liệu owner cập nhật:
+Các quyết định chặn M1/M2 đã được khóa:
 
-1. State-management package duy nhất cho Flutter.
-2. AI Provider/model mặc định và SDK/version.
-3. Object storage cho local và production; region/CDN nếu có.
-4. Cơ chế lưu và truyền refresh token trên Mobile.
-5. Có bật Redis trong P0 hay dùng PostgreSQL/in-memory rate limit baseline.
-6. OTP email provider, TTL, attempt, cooldown và production rate limit chính xác.
-7. MIME/extension/size allowlist cho từng media owner type.
-8. Recommendation/schedule expiry chạy scheduler hay lazy-on-read.
-9. Production hosting, ingress/WAF, secret manager và observability vendor.
-10. Backup retention, RPO/RTO, privacy retention và account purge.
+1. [ADR-001](../checkM0/ADR-001_FLUTTER_STATE_MANAGEMENT.md): `flutter_riverpod`.
+2. [ADR-002](../checkM0/ADR-002_AI_PROVIDER.md): OpenAI Responses API, `gpt-5.6-luna`.
+3. [ADR-003](../checkM0/ADR-003_OBJECT_STORAGE.md): MinIO local/demo, Amazon S3 production.
+4. [ADR-004](../checkM0/ADR-004_MOBILE_REFRESH_TOKEN.md): refresh token trong secure storage, access token trong memory.
+5. [ADR-005](../checkM0/ADR-005_OTP_EMAIL_POLICY.md): Resend/fake adapter và policy OTP chính xác; PostgreSQL là baseline counter P0.
+6. [ADR-006](../checkM0/ADR-006_MEDIA_ALLOWLIST.md): allowlist media Exercise/Food P0.
+7. [ADR-007](../checkM0/ADR-007_EXPIRY_POLICY.md): lazy-on-read/lazy-on-command authoritative.
+
+Các quyết định không chặn môi trường local và M1/M2, nhưng phải khóa trước khi
+dùng dữ liệu thật hoặc production: hosting/ingress/WAF, secret manager,
+observability vendor, backup retention, RPO/RTO, privacy retention và account purge.
 
 Mỗi ADR phải có:
 

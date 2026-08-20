@@ -280,8 +280,9 @@ Bucket `viegym-media` phải được một bootstrap job/script idempotent tạ
 | `JWT_ACCESS_TTL` | Backend | Có | Mặc định contract `PT15M` |
 | `JWT_REFRESH_TTL` | Backend | Có | Mặc định contract `P7D` |
 | `GOOGLE_CLIENT_ID` | Backend | Khi bật Google Login | Audience dùng verify token |
-| `OTP_TTL`, `OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN` | Backend | Có | Policy OTP; client không hard-code |
-| `MAIL_PROVIDER_*` | Backend | Khi gửi OTP email | Credential server-side |
+| `OTP_TTL`, `OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN` | Backend | Có | ADR-005: `PT10M`, 5 attempts, `PT1M`; client không hard-code |
+| `SCHEDULE_MISSED_GRACE` | Backend | Có | Grace sau cuối ngày local trước khi materialize `MISSED`; pin cùng ADR-007 |
+| `MAIL_PROVIDER_*` | Backend | Khi gửi OTP email | Resend production/demo online; fake inbox local/test |
 | `AI_SERVICE_BASE_URL` | Backend | Có khi bật AI | Internal URL |
 | `AI_SERVICE_TOKEN` | Backend/FastAPI | Có | Internal service authentication |
 | `AI_PROVIDER`, `AI_MODEL` | FastAPI | Có khi bật AI | Một provider mặc định cho MVP |
@@ -291,12 +292,12 @@ Bucket `viegym-media` phải được một bootstrap job/script idempotent tạ
 | `STORAGE_BUCKET` | Backend | Khi bật upload | Bucket private |
 | `STORAGE_ACCESS_KEY/SECRET_KEY` | Backend | Khi bật upload | Storage credential |
 | `STORAGE_UPLOAD_TTL/ACCESS_TTL` | Backend | Có | TTL ngắn, đề xuất `PT5M` baseline |
-| `MEDIA_MAX_*_BYTES` | Backend | Có | Limit riêng ảnh/video/GIF sau khi product policy chốt |
+| `MEDIA_MAX_*_BYTES` | Backend | Có | ADR-006: image 5 MiB, Exercise video 50 MiB; không GIF P0 |
 | `CORS_ALLOWED_ORIGINS` | Backend/storage | Khi có browser client | Allowlist cụ thể, không wildcard với credential |
 | `REDIS_URL` | Backend | Không | Chỉ khi profile Redis được bật |
 | `LOG_LEVEL` | Cả hai | Có | Không bật debug payload ở production |
 
-OTP/email provider, exact media size/MIME allowlist, storage provider production và AI provider mặc định là deployment decision; phải được khóa bằng ADR/config trước release, không hard-code trong Mobile.
+Các giá trị này tuân theo ADR-002..ADR-006 và vẫn phải cấu hình server-side; Mobile không hard-code policy.
 
 ### 4.2. Spring Boot `application.yml`
 
@@ -564,7 +565,8 @@ Migration phá vỡ backward compatibility cần expand/migrate/contract qua nhi
 | Verify OTP | Consume OTP, activate account và session metadata atomically |
 | Health update | Profile, calculation và NutritionTarget cùng transaction |
 | Finish workout | Lock session/schedule, persist log/snapshot, metric/PR và state atomically |
-| Meal entry | Validate owner/Food, calculate snapshot và persist atomically |
+| Weight log | Upsert theo user/ngày; log mới nhất sync Health metrics nhưng không tự đổi target |
+| Meal entry | Lazily tạo plan + target snapshot ở mutation đầu; validate Food, calculate snapshot và persist atomically |
 | Consent change | Current setting và history cùng transaction |
 | Apply recommendation | Ownership/state/expiry/version lock, domain mutation, log/audit và `APPLIED` cùng transaction |
 
@@ -599,7 +601,8 @@ viegym-media/
 ### 8.3. Upload lifecycle
 
 ```text
-upload-init
+resource create/update (HIDDEN với Admin catalog mới)
+  → upload-init
   → authorize owner/type + validate declared size/MIME/extension
   → MediaObject(PENDING_UPLOAD) + presigned PUT TTL ngắn
   → client PUT trực tiếp
@@ -631,7 +634,7 @@ Spring Boot
   → authentication/ownership
   → consent check
   → context whitelist/budget
-  → rule/prompt builder
+  → rule engine + candidate shortlist + render versioned prompt
   → POST FastAPI internal API + schemaVersion + correlationId
 FastAPI
   → provider adapter
@@ -640,6 +643,11 @@ Spring Boot
   → business/safety validation
   → response hoặc PENDING proposal
 ```
+
+GET Dashboard/Recommendation không đi qua pipeline này. Chỉ POST generation/chat
+command mới được gọi provider. Daily generation dùng idempotency key + batch
+record; toàn bộ 1–3 item phải pass validation trước khi persist. Output `BLOCKED`
+chỉ ghi telemetry đã redact, không tạo recommendation.
 
 - Internal request contract theo phần `Internal AI Service Contract` trong `API_SPEC.md`.
 - FastAPI không tự authorize user, không đọc database và không mutation Health/Workout/Nutrition.
@@ -696,7 +704,7 @@ Core P0 không phụ thuộc message broker hoặc worker riêng. Job có thể 
 | Job | Cách P0 | Khi chạy nền | Tính chất |
 |---|---|---|---|
 | Expire recommendation | Lazy khi read/apply hoặc scheduler | Theo interval cấu hình | Idempotent `PENDING → EXPIRED` |
-| Mark missed schedule | Lazy/query hoặc scheduler | Sau ngày/giờ cutoff theo timezone | Không đổi `CANCELLED/COMPLETED` |
+| Mark missed schedule | Lazy authoritative; scheduler chỉ materialize sớm | Sau cuối ngày + grace theo profile timezone | Bỏ qua session active; không đổi `CANCELLED/COMPLETED` |
 | Orphan media cleanup | Scheduler hardening | Theo retention/TTL | Xóa idempotent, bảo toàn reference |
 | Conversation summary | Khi context vượt budget | Sau message/async nội bộ | Không là source of truth domain |
 | Notification scheduler | Không P0 | P1 | Lỗi không rollback domain |
@@ -782,7 +790,10 @@ Audit không thay thế application log và không trở thành kho raw PII/cont
 - Backup được mã hóa, tách credential/quyền khỏi runtime app và lưu khác failure domain.
 - Chụp backup/snapshot trước migration rủi ro.
 - Không coi backup thành công nếu chưa có restore test định kỳ.
-- RPO/RTO, retention và purge privacy phải được product/operations khóa trước production; tài liệu nguồn chưa ấn định con số.
+- Môi trường đồ án tốt nghiệp chỉ dùng dữ liệu synthetic/demo và phải có runbook reset
+  database/object storage trước bàn giao hoặc trong vòng 30 ngày sau khi kết
+  thúc chấm. RPO/RTO, legal retention, self-service account deletion và backup
+  expiry phải được khóa riêng trước khi dùng dữ liệu thật/production.
 
 ### 13.2. Object storage
 
@@ -811,6 +822,8 @@ Audit không thay thế application log và không trở thành kho raw PII/cont
 Lint / Format
       ↓
 Unit Test: Flutter + Backend + AI Service
+      ↓
+Generate OpenAPI `dart-dio` client + fail on uncommitted diff
       ↓
 Integration Test: PostgreSQL + Object Storage
       ↓
@@ -874,7 +887,11 @@ Một máy dev/demo khoảng 4 vCPU, 8 GB RAM và disk đủ media thường thu
 
 ### 15.3. Performance target
 
-- P95 read API phổ biến dưới `500 ms` trong môi trường MVP, không tính AI Provider.
+- P95 của Health Metrics, Exercise list, Food list, Weight Trend và Dashboard
+  dưới `500 ms`, error rate dưới `1%`, không tính AI Provider. Chạy với Docker
+  Compose 4 vCPU/8 GB, 100 user, 40 Exercise, 80 Food, 90 ngày dữ liệu cho user
+  đo, 10 virtual users, warm-up 2 phút và đo 5 phút; lưu cấu hình, commit,
+  dataset, P50/P95 và error rate trong báo cáo.
 - List endpoint pagination mặc định 20, tối đa 100 theo API Spec.
 - Dashboard chỉ cache/materialize sau khi profiling chứng minh cần.
 - AI timeout/failure trả fallback an toàn và không làm hỏng domain transaction.
@@ -928,14 +945,12 @@ Một máy dev/demo khoảng 4 vCPU, 8 GB RAM và disk đủ media thường thu
 
 Các điểm dưới đây chưa có một lựa chọn implementation duy nhất trong tài liệu nguồn:
 
-1. Object storage cụ thể cho local và production; CDN/provider region.
-2. AI provider/model mặc định và Python SDK/version.
-3. OTP email provider, TTL/attempt/cooldown/rate-limit production.
-4. Exact MIME/extension/size allowlist theo `IMAGE/VIDEO/GIF` và owner type.
-5. Có bật Redis ở P0 hay dùng PostgreSQL rate-limit baseline.
-6. Recommendation/schedule expiry chạy scheduler hay lazy-on-read.
-7. Production hosting platform, secret manager, ingress/WAF và observability vendor.
-8. Backup retention, RPO/RTO, privacy retention và account deletion/purge process.
+1. Production hosting platform, secret manager, ingress/WAF và observability vendor.
+2. Backup retention, RPO/RTO, privacy retention và account deletion/purge process.
+
+Các quyết định storage, AI, OTP, Redis P0, media allowlist và expiry đã được khóa
+tại `checkM0/ADR-002` đến `ADR-007`. Redis không thuộc dependency bắt buộc P0;
+PostgreSQL giữ counter OTP/rate-limit baseline.
 
 ADR phải ghi context, lựa chọn, phương án loại, hệ quả, owner và ngày áp dụng. Không quyết định nào được phá các invariant: Backend là business authority, PostgreSQL là source of truth, FastAPI không có DB access và AI không tự mutation.
 

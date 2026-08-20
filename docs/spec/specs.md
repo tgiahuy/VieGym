@@ -72,6 +72,8 @@ VieGym kết hợp ba nhóm chức năng:
 | AI Coach Chat | Chat cá nhân hóa |
 | AI Daily Recommendation | 1–3 recommendation/ngày |
 | Recommendation Apply/Dismiss | User quyết định trước khi thay đổi dữ liệu |
+| Admin & Audit baseline | Admin quản lý/hide Exercise, Food và xem Audit Log tối thiểu |
+| Media baseline | Ảnh/video Exercise và ảnh Food qua URL/asset hoặc object storage hợp lệ |
 
 ## 2.2. MVP mở rộng nếu còn thời gian
 
@@ -121,7 +123,7 @@ VieGym kết hợp ba nhóm chức năng:
 |---|---|---|
 | Người mới tập giảm cân | Giảm mỡ an toàn | Health Profile → calorie target → meal suggestion → daily recommendation |
 | Người tập tăng cơ | Tăng cơ và theo dõi tiến bộ | Workout Log → volume/PR → protein gap → AI advice |
-| Người duy trì sức khỏe | Duy trì cân nặng | Meal Planner món Việt → Dashboard → Weekly Review |
+| Người duy trì sức khỏe | Duy trì cân nặng | Meal Planner món Việt → Dashboard → Daily Recommendation |
 
 Persona phục vụ thiết kế, seed data và demo; hệ thống không hard-code logic theo persona.
 
@@ -146,15 +148,18 @@ Persona phục vụ thiết kế, seed data và demo; hệ thống không hard-c
 ### Account/Auth
 - `UserRole`: USER, ADMIN
 - `AuthProvider`: LOCAL, GOOGLE
-- `OtpPurpose`: REGISTER, PASSWORD_RESET, LOGIN_VERIFY
+- `OtpPurpose`: REGISTER, PASSWORD_RESET; `LOGIN_VERIFY` reserved P1/MFA
 - `TokenStatus`: ACTIVE, REVOKED, EXPIRED
 
 ### Health/Nutrition
 - `Gender`: MALE, FEMALE, OTHER, UNSPECIFIED
+- `CalculationSex`: MALE, FEMALE, UNSPECIFIED
+- `HealthCalculationStatus`: COMPLETE, INCOMPLETE
+- `HealthIncompleteReason`: CALCULATION_SEX_REQUIRED, UNSUPPORTED_AGE, CALORIES_BELOW_SAFETY_THRESHOLD, INVALID_MACRO_RESULT
 - `ActivityLevel`: SEDENTARY, LIGHT, MODERATE, ACTIVE, VERY_ACTIVE
 - `FitnessGoal`: LOSE_WEIGHT, MAINTAIN_WEIGHT, GAIN_WEIGHT, GAIN_MUSCLE
 - `MealType`: BREAKFAST, LUNCH, DINNER, SNACK
-- `FoodVisibility`: PUBLIC, PRIVATE, HIDDEN
+- `FoodVisibility`: PUBLIC, HIDDEN
 
 ### Workout
 - `WorkoutProgramStatus`: ACTIVE, INACTIVE, ARCHIVED
@@ -204,7 +209,7 @@ CANCELLED không tính vào mẫu số completionRate nếu user hủy hợp l�
 - Google Login được xử lý server-side qua Backend.
 - Password không được lưu plaintext.
 - OTP phải có expiry, resend cooldown và giới hạn attempts/rate limit.
-- Refresh token phải có expiry và revoke; rotation được khuyến nghị.
+- Refresh token phải có expiry, rotation theo mỗi lần refresh và revoke. Reuse token đã rotate phải làm vô hiệu token family theo policy bảo mật.
 - Private API yêu cầu JWT hợp lệ.
 - User chỉ truy cập resource thuộc chính mình.
 
@@ -214,6 +219,7 @@ User có thể quản lý:
 
 - tuổi/ngày sinh.
 - giới tính.
+- calculation sex dùng riêng cho công thức BMR; có thể để UNSPECIFIED.
 - chiều cao.
 - cân nặng.
 - activity level.
@@ -232,7 +238,7 @@ AI không thay thế các phép tính deterministic này.
 
 ## 5.3. Exercise Library
 
-Mỗi Exercise nên có:
+Mỗi Exercise P0 phải có:
 
 - tên.
 - nhóm cơ chính/phụ.
@@ -268,7 +274,7 @@ Rules:
 - Settings cho phép thêm/xóa/sửa/reset thiết bị.
 - Thay đổi preference không làm thay đổi WorkoutLog cũ.
 - Nếu chưa chọn thiết bị, ưu tiên BODYWEIGHT và bài không yêu cầu thiết bị đặc thù.
-- “Full gym” có thể được xem là có các equipment phổ biến trong seed data.
+- Preset `Full Gym` tương ứng toàn bộ Equipment có `is_active=true` trong seed data tại thời điểm user lưu lựa chọn. Backend lưu tập ID cụ thể; việc Admin thêm Equipment mới sau đó không âm thầm thay đổi preference đã lưu.
 
 Equipment tối thiểu:
 
@@ -296,7 +302,7 @@ Nếu user không có thiết bị cần thiết:
 - User tạo/chọn chương trình.
 - Có thể sinh lịch tập từ chương trình.
 - Lịch có trạng thái PLANNED/COMPLETED/MISSED/CANCELLED.
-- Một user nên có tối đa một Workout Program active tại một thời điểm.
+- Một user chỉ được có tối đa một Workout Program `ACTIVE` tại một thời điểm.
 
 ## 5.7. Workout Log
 
@@ -315,7 +321,14 @@ Backend tính:
 - completion rate.
 - PR.
 
-Exercise bị ẩn vẫn giữ được lịch sử log nhưng không nên cho thêm vào program mới.
+Định nghĩa PR P0:
+
+- `MAX_WEIGHT`: `weightKg` lớn nhất của một set `completed=true`.
+- `MAX_REPS`: `reps` lớn nhất của một set `completed=true`.
+- `MAX_VOLUME`: `reps × weightKg` lớn nhất của một set `completed=true`.
+- Chỉ tính set thuộc Workout Session `COMPLETED`; nếu bằng record hiện tại thì giữ record cũ và `achievedAt` cũ.
+
+Exercise bị ẩn vẫn giữ được lịch sử log nhưng không được thêm vào program mới.
 
 ## 5.8. Food Database
 
@@ -353,6 +366,11 @@ Meal Planner hỗ trợ khẩu phần:
 - đơn vị phổ biến như quả, ly, miếng.
 - gram.
 - multiplier như 0.5, 1, 1.5, 2 phần.
+
+Quy đổi gram chỉ khả dụng khi Food có `gramsPerServing`. Khi user nhập gram, Backend quy đổi
+`servingMultiplier = inputGrams / gramsPerServing` và lưu snapshot cả giá trị user nhập
+(`inputAmount`, `inputUnit`) lẫn serving/macro đã tính. Food không có quy đổi gram chỉ cho nhập
+theo serving chuẩn; Mobile không tự ước lượng khối lượng một tô/chén/phần.
 
 ## 5.10. Weight Tracking
 
@@ -433,6 +451,16 @@ Nam: BMR = 10 * weightKg + 6.25 * heightCm - 5 * age + 5
 Nữ:  BMR = 10 * weightKg + 6.25 * heightCm - 5 * age - 161
 ```
 
+Mifflin–St Jeor là phép ước lượng theo biến số sex `MALE/FEMALE`. Trong P0:
+
+- `calculationSex=MALE` dùng công thức Nam và `calculationSex=FEMALE` dùng công thức Nữ; field này tách biệt với `gender` dùng cho hồ sơ.
+- `calculationSex=UNSPECIFIED` không bị Backend tự ánh xạ sang một công thức.
+- Khi calculation sex chưa được cung cấp hoặc User dưới 18 tuổi, Backend vẫn tính BMI nhưng trả `BMR/TDEE/NutritionTarget = INCOMPLETE` với reason tương ứng.
+- Mobile phải giải thích dữ liệu còn thiếu; không tự tính hoặc tự chọn công thức thay Backend.
+- Công thức là giá trị ước lượng cho người trưởng thành và không thay thế đánh giá y khoa.
+
+Tham chiếu công thức: [Mifflin et al., 1990](https://pubmed.ncbi.nlm.nih.gov/2305711/). Phạm vi sử dụng và cảnh báo sức khỏe tham chiếu [NIDDK Body Weight Planner](https://www.niddk.nih.gov/bwp).
+
 ## 6.3. TDEE
 
 ```text
@@ -449,12 +477,14 @@ TDEE = BMR * activityFactor
 
 ## 6.4. Calories Target
 
-| Goal | Quy tắc đề xuất |
+| Goal | Offset P0 mặc định |
 |---|---|
-| LOSE_WEIGHT | TDEE - 300 đến 500 kcal |
-| MAINTAIN_WEIGHT | Gần bằng TDEE |
-| GAIN_WEIGHT | TDEE + 300 đến 500 kcal |
-| GAIN_MUSCLE | TDEE + 200 đến 400 kcal |
+| LOSE_WEIGHT | TDEE - 400 kcal |
+| MAINTAIN_WEIGHT | TDEE |
+| GAIN_WEIGHT | TDEE + 400 kcal |
+| GAIN_MUSCLE | TDEE + 300 kcal |
+
+Đây là baseline deterministic phục vụ MVP, không phải chỉ định điều trị. Backend không công bố Nutrition Target khi input chưa đủ, calories target dưới 1.200 kcal/ngày, hoặc kết quả calculation không hữu hạn/dương. Trường hợp bị chặn trả trạng thái `INCOMPLETE` hoặc validation/safety error thay vì tự clamp âm thầm. Ngưỡng cảnh báo tham chiếu [NIDDK Diabetes Prevention guidance](https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-type-2-diabetes/game-plan).
 
 ## 6.5. Macro Target
 
@@ -465,14 +495,17 @@ carbTargetGram =
   (caloriesTarget - proteinTargetGram * 4 - fatTargetGram * 9) / 4
 ```
 
-| Goal | Protein factor | Fat ratio |
+| Goal | Protein factor P0 | Fat ratio P0 |
 |---|---:|---:|
-| LOSE_WEIGHT | 1.6–2.2 g/kg | 20–30% |
-| GAIN_MUSCLE | 1.6–2.2 g/kg | 20–30% |
-| GAIN_WEIGHT | 1.4–2.0 g/kg | 20–30% |
-| MAINTAIN_WEIGHT | 1.2–1.8 g/kg | 20–30% |
+| LOSE_WEIGHT | 2.0 g/kg | 25% |
+| GAIN_MUSCLE | 2.0 g/kg | 25% |
+| GAIN_WEIGHT | 1.6 g/kg | 25% |
+| MAINTAIN_WEIGHT | 1.4 g/kg | 25% |
 
-Nếu carb target âm hoặc cấu hình không hợp lệ, Backend phải reject hoặc điều chỉnh theo rule an toàn trước khi lưu.
+Backend tính bằng decimal, lưu calories và macro với tối đa hai chữ số thập phân; Mobile mặc định hiển thị calories làm tròn đến kcal và macro làm tròn đến gram. Nếu carb target âm hoặc cấu hình không hợp lệ, Backend phải trả validation/safety error và không lưu target; không tự điều chỉnh âm thầm.
+
+Mọi phép tính Health dùng decimal và chỉ làm tròn `HALF_UP` đến hai chữ số thập phân ở bước cuối.
+Tuổi là số năm tròn theo ngày sinh nhật, tính tại ngày nghiệp vụ trong timezone IANA của user.
 
 ## 6.6. Workout Calculation
 
@@ -481,10 +514,17 @@ setVolume = reps * weightKg
 exerciseVolume = sum(setVolume)
 workoutVolume = sum(exerciseVolume)
 completionRate =
-  completedScheduledWorkoutCount / scheduledWorkoutCount
+  completedEligible / scheduledEligible
 ```
 
-CANCELLED không tính vào mẫu số nếu user hủy hợp lệ.
+`scheduledEligible` gồm schedule của user trong cửa sổ báo cáo đã `COMPLETED` hoặc đã qua cuối
+ngày + grace period theo profile timezone sau effective-state evaluation. `CANCELLED`, schedule
+tương lai/chưa qua cutoff+grace và schedule có session active không thuộc mẫu số.
+
+`completedEligible` là tập con có trạng thái `COMPLETED`. Dashboard mặc định dùng tuần hiện tại
+từ Thứ Hai đến ngày nghiệp vụ. Khi `scheduledEligible = 0`, API trả `completionRate = null`.
+Schedule chỉ được chuyển `CANCELLED` trước khi quá cutoff; lịch quá hạn phải trở thành `MISSED`
+và không được cancel để thay đổi completion rate.
 
 ## 6.7. Meal Calculation
 
@@ -607,7 +647,7 @@ AI Service là **stateless decision-support component**, không phải business 
 | Context Type | Context chính |
 |---|---|
 | CHAT | Recent messages, summary và dữ liệu liên quan câu hỏi |
-| DAILY_RECOMMENDATION | Rule signals, nutrition hôm nay, workout hôm nay/tiếp theo, weight trend, preference cần thiết |
+| DAILY_RECOMMENDATION | Rule signals, nutrition ngày đích, workout ngày đích/tiếp theo, weight trend, preference cần thiết và candidate shortlist do Backend chọn |
 | WEEKLY_REVIEW | Aggregated weekly metrics |
 | PLAN_ADJUSTMENT | Current plan summary, targets, trends, constraints/preference |
 
@@ -617,6 +657,14 @@ Không gửi:
 - dữ liệu user khác.
 - password/token/API key.
 - mutation command trực tiếp.
+
+### 8.4.1. Candidate shortlist
+
+Structured action chỉ được tham chiếu ID nằm trong candidate shortlist do Backend dựng sau khi
+đã kiểm tra ownership, visibility, allergy, dietary constraint và trạng thái hiện hành. Food
+shortlist chứa tối đa 10 món; WorkoutDay shortlist chứa tối đa 7 ngày tập thuộc program ACTIVE.
+AI trả ID ngoài shortlist phải bị Business Validation reject và không được persist thành
+recommendation.
 
 ## 8.5. Context Budget
 
@@ -659,17 +707,21 @@ PI là lớp nghiệp vụ cá nhân hóa, không nhất thiết là một model
 - Recommendation nên ưu tiên hành động nhỏ, có thể thực hiện ngay.
 - Không ưu tiên bán hàng/supplement trong MVP.
 
-## 9.3. Signals tối thiểu
+## 9.3. Signals tối thiểu — `rules-v1`
 
-| Signal | Ví dụ điều kiện | Gợi ý |
-|---|---|---|
-| nutrition_protein_gap | Protein còn thiếu | Gợi ý món Việt giàu protein |
-| calories_over_target | Calories vượt target | Gợi ý cân bằng phần còn lại |
-| workout_today | Có lịch tập hôm nay | Nhắc chuẩn bị buổi tập |
-| adherence_issue | Completion thấp | Gợi ý buổi ngắn/điều chỉnh lịch |
-| weight_trend_off_goal | Trend lệch mục tiêu | Đề xuất review target/lịch |
-| meal_logging_drop | Nhiều ngày không log | Nhắc nhập nhanh/template |
-| preference_conflict | Gợi ý vi phạm preference | Loại bỏ recommendation |
+| Signal | Điều kiện định lượng P0 | Priority | Cooldown |
+|---|---|---|---|
+| `nutrition_protein_gap` | Có target/meal data; giờ local ≥ 15:00; remaining protein > 30% target | MEDIUM | 1/ngày |
+| `calories_over_target` | Có target/meal data; consumed calories > 110% target | MEDIUM | 1/ngày |
+| `workout_today` | Có schedule `PLANNED` trong ngày nghiệp vụ | LOW | 1/ngày |
+| `adherence_issue` | Cửa sổ 7 ngày có `scheduledEligible ≥ 2` và completionRate < 0.5 | HIGH | 1/3 ngày |
+| `weight_trend_off_goal` | Có ≥ 2 điểm/14 ngày và thay đổi ngược goal ít nhất 0.5 kg | HIGH | 1/7 ngày |
+| `meal_logging_drop` | User đã từng log meal và 3 ngày nghiệp vụ liên tiếp gần nhất không có MealEntry | LOW | 1/3 ngày |
+
+`preference_conflict` là Business/Safety Validation sau AI output, không phải candidate signal.
+Khi có trên ba signal, sắp theo priority `HIGH > MEDIUM > LOW`, sau đó theo signal code để kết
+quả deterministic, và lấy tối đa ba. Có ít nhất một signal hợp lệ nghĩa là “đủ dữ liệu” cho
+AC-14. Các ngưỡng thuộc `rules-v1`; thay đổi số phải tạo rule version mới và test vector mới.
 
 Nguyên tắc:
 
@@ -732,6 +784,10 @@ Backend tạo candidate signals từ:
 - preference.
 
 AI tạo 1–3 recommendation.
+
+P0 cho tối đa ba generation/ngày (lần đầu + hai refresh chủ động). Mỗi generation có 1–3 item;
+khi generation mới thành công, item `PENDING` của generation cũ cùng ngày chuyển `EXPIRED`, còn
+item đã `APPLIED`/`DISMISSED` được giữ làm lịch sử.
 
 Recommendation có:
 
@@ -798,6 +854,17 @@ Mọi action phải:
 3. Được Backend validate lại.
 4. Chỉ mutation sau khi User APPLY.
 
+Trong P0, `LOG_REMINDER_ONLY` là giá trị reserved và không được gửi trong `allowedActions` vì
+Notification thuộc P1. Hai action `ADD_MEAL_ENTRY_PROPOSAL` và
+`CREATE_WORKOUT_SCHEDULE_PROPOSAL` bắt buộc có `targetDate`; Apply phải validate ngày đích chưa
+qua và resource liên quan vẫn hợp lệ. P0 khóa cửa sổ: Meal Entry chỉ cho đúng
+`recommendationDate`; Workout Schedule cho khoảng từ `recommendationDate` đến tối đa 14 ngày
+sau đó, tính theo profile timezone.
+
+`UPDATE_USER_PREFERENCE_PROPOSAL` chỉ được sửa `disliked_foods`, `meal_preferences`,
+`training_preferences` và `preferred_training_time`. AI không bao giờ được đề xuất sửa
+`allergies` hoặc `dietary_constraints`; output như vậy bị reject trước UI và ghi validation log.
+
 Không được chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
 
 ---
@@ -816,6 +883,10 @@ AI phải:
 - không tiết lộ dữ liệu user khác.
 - không yêu cầu password/API key/token.
 - không tự thay đổi dữ liệu nghiệp vụ.
+
+Output bị Safety Validation đánh giá `BLOCKED` không được persist thành `AiRecommendation`; chỉ
+lưu kết quả validation đã sanitize để audit/quan sát. Recommendation đã persist chỉ có
+`NORMAL` hoặc `CAUTION`.
 
 Tình huống y tế/chấn thương phải chuyển sang safe response và khuyến nghị tìm chuyên gia phù hợp.
 
@@ -947,9 +1018,18 @@ Backend validate proposal trước khi apply.
 | NFR-PRIV-003 | User có thể tắt personalization | P0 |
 | NFR-PRIV-004 | Ownership được kiểm tra ở mọi private resource | P0 |
 
+Baseline riêng cho môi trường đồ án tốt nghiệp:
+
+- Chỉ sử dụng tài khoản và dữ liệu synthetic/demo; không mời người dùng thật nhập dữ liệu sức khỏe cá nhân.
+- Reset/purge toàn bộ database và object-storage demo phải có runbook và được thực hiện trước khi bàn giao môi trường hoặc trong vòng 30 ngày sau khi kết thúc chấm đồ án.
+- Self-service account deletion, legal retention và production account purge không thuộc P0.
+- Trước khi chuyển sang pilot/production hoặc thu thập dữ liệu người dùng thật, bắt buộc có ADR/policy riêng cho retention, account deletion, backup expiry và quyền riêng tư.
+
 ## 15.3. Performance/Reliability
 
-- P95 read API phổ biến < 500ms trong môi trường MVP, không tính AI provider.
+- P95 của các read API P0 phổ biến phải dưới 500 ms và error rate dưới 1% trong benchmark MVP; không tính thời gian AI Provider.
+- Profile benchmark chuẩn: Docker Compose local được cấp 4 vCPU/8 GB RAM; PostgreSQL có 100 user, 40 Exercise, 80 Food và 90 ngày dữ liệu Workout/Meal/Weight cho user đo; 10 virtual users, warm-up 2 phút, đo liên tục 5 phút.
+- Endpoint đo tối thiểu: Health Metrics, Exercise list, Food list, Weight Trend và Dashboard. Kết quả phải ghi commit, cấu hình máy, dataset, kịch bản và P50/P95/error rate để tái lập.
 - AI provider timeout/failure phải có retry giới hạn và fallback an toàn.
 - Docker Compose đủ cho môi trường demo.
 - PostgreSQL là source of truth.
@@ -1009,7 +1089,8 @@ Backend validate proposal trước khi apply.
 3. Backend tính Health Metrics.
 4. Dashboard hiển thị kết quả.
 
-**Hậu điều kiện:** HealthProfile, WeightLog ban đầu và NutritionTarget được lưu theo user.
+**Hậu điều kiện:** HealthProfile và WeightLog ban đầu được lưu theo user; NutritionTarget chỉ
+được lưu khi `calculationStatus=COMPLETE`.
 
 ### UC-03 — Health Metrics
 
@@ -1081,6 +1162,10 @@ Food bị hidden vẫn giữ history nhưng không được chọn cho Meal Entr
 
 WeightLog hằng ngày không tự thay đổi NutritionTarget.
 
+WeightLog của ngày mới nhất là nguồn cân nặng hiện tại: Backend đồng bộ
+`HealthProfile.currentWeightKg` và tính lại BMI/BMR/TDEE trong cùng transaction, nhưng không tự
+đổi NutritionTarget. Sửa log cũ không làm thay đổi metric hiện tại.
+
 ### UC-11 — Dashboard
 
 Mobile gọi dashboard endpoint; Backend tổng hợp nutrition, workout, body và AI recommendation. Mobile không tự tính lại metric authoritative.
@@ -1100,8 +1185,8 @@ Mobile gọi dashboard endpoint; Backend tổng hợp nutrition, workout, body v
 
 ### UC-13 — Daily Recommendation
 
-1. Backend tạo candidate signals.
-2. AI tạo 1–3 recommendation.
+1. Backend tạo candidate signals và candidate shortlist hợp lệ.
+2. Client gọi command generate; AI tạo 1–3 recommendation. Dashboard và endpoint đọc không gọi provider.
 3. Validation kiểm tra schema/business/safety.
 4. Dashboard hiển thị PENDING.
 
@@ -1353,7 +1438,10 @@ Spring Boot
 Yêu cầu demo:
 
 - Có seed/demo users.
-- Food và Exercise có đủ dữ liệu để chạy end-to-end.
+- Có tối thiểu 40 Exercise, bao phủ chest/back/shoulders/arms/legs/core và ít nhất 6 nhóm equipment; mỗi record có muscle group, difficulty, instruction và safety note.
+- Có tối thiểu 80 Food món Việt, bao phủ 4 meal type và ít nhất 8 category; mỗi record có serving, calories, protein, carbohydrate, fat và source/note.
+- Tất cả code/slug hoặc normalized name dùng cho seed là duy nhất; seed chạy lại không tạo bản ghi trùng.
+- Mọi Exercise/Food xuất hiện trong demo flow có URL/asset media hợp lệ; tối thiểu 20 Exercise và 20 Food có media để kiểm tra catalog.
 - Seed có thể chạy lại ổn định.
 - Swagger/OpenAPI cho Backend.
 - Có thể chạy toàn bộ stack trong môi trường demo.
@@ -1375,6 +1463,8 @@ Production hardening nằm ngoài MVP.
 - Food image recognition.
 - ML prediction.
 - Automatic plan mutation.
+- Thu thập dữ liệu sức khỏe của người dùng thật trong môi trường đồ án.
+- Self-service account deletion và legal-retention workflow cho production.
 
 ## Future Scope
 

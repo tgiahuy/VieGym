@@ -84,12 +84,12 @@ Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản
 #### FT-ID-004/005 — Logout và refresh
 
 - Logout revoke refresh token/session tương ứng.
-- Refresh chỉ chấp nhận token còn hạn, chưa revoke và đúng account; rotation được khuyến nghị.
+- Refresh chỉ chấp nhận token còn hạn, chưa revoke và đúng account; mỗi lần refresh bắt buộc rotation. Reuse token cũ phải revoke token family theo policy.
 - Password, OTP, access token và refresh token không được ghi log plaintext.
 
 #### FT-ID-006/007/008 — Password và OTP lifecycle
 
-- OTP tách theo purpose `REGISTER`, `PASSWORD_RESET`, `LOGIN_VERIFY` khi áp dụng.
+- OTP P0 tách theo purpose `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` chỉ áp dụng khi triển khai MFA P1.
 - OTP có expiry, resend cooldown, attempts/rate limit và không dùng chéo purpose.
 - Đổi mật khẩu cần phiên hợp lệ; local account xác minh mật khẩu hiện tại.
 - Reset password thu hồi credential/session theo chính sách bảo mật triển khai.
@@ -113,7 +113,7 @@ Sở hữu hồ sơ cơ bản, equipment, food/training preference và constrain
 | ID | Feature | Priority |
 |---|---|---|
 | FT-UP-001 | Xem/cập nhật hồ sơ cơ bản | P0 |
-| FT-UP-002 | Avatar/profile media | P0 baseline |
+| FT-UP-002 | Avatar/profile media | P1 |
 | FT-UP-003 | User Preference và constraints | P0 |
 | FT-UP-004 | Equipment Preference | P0 |
 | FT-UP-005 | Ghi nhận Apply/Dismiss feedback | P0 |
@@ -125,7 +125,7 @@ Sở hữu hồ sơ cơ bản, equipment, food/training preference và constrain
 #### FT-UP-001/002 — Hồ sơ cơ bản
 
 - User xem/sửa field profile nằm trong whitelist và chỉ sửa resource của mình.
-- Avatar dùng PH9; P0 chỉ cần media baseline nếu màn hình profile triển khai.
+- Avatar upload dùng PH9 ở P1; P0 dùng placeholder/initial và không phụ thuộc profile media.
 - Ngày sinh, giới tính, chiều cao, cân nặng, activity và fitness goal thuộc PH3 khi dùng cho health calculation.
 
 #### FT-UP-003 — Preference và constraints
@@ -171,8 +171,8 @@ Sở hữu Health Profile, Nutrition Target, Weight Log và toàn bộ phép tí
 
 #### FT-HP-001 — Health Profile lifecycle
 
-- **Input:** Tuổi/ngày sinh, giới tính, chiều cao, cân nặng, activity level, fitness goal, training experience.
-- **Create:** Validate → tính metric → lưu `HealthProfile`, `NutritionTarget`, `WeightLog` ban đầu trong transaction.
+- **Input:** Tuổi/ngày sinh, gender hồ sơ, calculation sex tùy chọn, chiều cao, cân nặng, activity level, fitness goal, training experience.
+- **Create:** Validate → tính metric → lưu `HealthProfile`, `WeightLog` và chỉ lưu `NutritionTarget` khi calculation `COMPLETE`, trong cùng transaction.
 - **Update:** Validate → cập nhật → tính lại BMI/BMR/TDEE/target nếu field nền thay đổi.
 - Thiếu dữ liệu bắt buộc thì không tính TDEE và yêu cầu hoàn thiện profile.
 
@@ -186,7 +186,9 @@ Sở hữu Health Profile, Nutrition Target, Weight Log và toàn bộ phép tí
 #### FT-HP-004 — Calories và Macro Target
 
 - Backend tính từ TDEE, fitness goal và rule an toàn trong SRS.
-- Protein/fat/carb dùng công thức authoritative; kết quả bất hợp lệ như carb âm phải reject hoặc điều chỉnh bằng rule xác định.
+- P0 dùng calories offset, protein factor và fat ratio deterministic trong SRS; không tự chọn một giá trị khác trong khoảng.
+- `calculationSex=UNSPECIFIED` hoặc age dưới 18 trả calculation incomplete; Backend không suy ra calculation sex từ gender.
+- Kết quả bất hợp lệ như calories dưới 1.200, carb âm hoặc không hữu hạn phải reject/để incomplete; không tự điều chỉnh âm thầm.
 - `REVIEW_NUTRITION_TARGET_PROPOSAL` chỉ mở review, không trực tiếp sửa target.
 
 #### FT-HP-005/006/007 — Weight Tracking
@@ -234,7 +236,7 @@ Quản lý Exercise Library, Program, Schedule, Session và Log từ lúc chọn
 
 - Tạo/chỉnh sửa/xóa/archive program thuộc user với PPL, Upper/Lower, Full Body hoặc Custom.
 - Program chứa WorkoutDay/WorkoutExercise với sets, reps, rest, order và note.
-- Một user nên có tối đa một program `ACTIVE` tại một thời điểm.
+- Mỗi user chỉ được có tối đa một program `ACTIVE` tại một thời điểm.
 
 #### FT-WO-005 — Workout Schedule
 
@@ -403,9 +405,11 @@ Cung cấp chat và recommendation an toàn từ context tối thiểu được 
 
 #### FT-AI-008 — Daily Recommendation
 
-- Trigger hợp lệ → signals → context → AI → validation → lưu 1–3 recommendation `PENDING` khi đủ dữ liệu.
+- Client gọi command generate → signals `rules-v1` → candidate shortlist → context → AI → validation → lưu 1–3 recommendation `PENDING` khi đủ dữ liệu.
+- Dashboard và endpoint đọc Daily Recommendation không gọi AI Provider hoặc tạo dữ liệu.
 - Recommendation gồm type, title, content, reason, priority, source metrics, safety level, timestamps/expiry và optional action.
 - Chỉ `PENDING` mới Apply/Dismiss; hết hạn chuyển `EXPIRED`.
+- Output safety `BLOCKED` chỉ ghi validation log và không trở thành recommendation.
 
 #### FT-AI-009/010 — Apply/Dismiss và validation
 
@@ -425,13 +429,14 @@ DISMISS: authorization → ownership → status validation
 | Action | Domain thực thi | Điều kiện APPLY | Kết quả |
 |---|---|---|---|
 | `NONE` | Không có | Không mutation | Chỉ hiển thị insight |
-| `ADD_MEAL_ENTRY_PROPOSAL` | PH5 | Food/serving/constraint hợp lệ | Tạo Meal Entry |
-| `CREATE_WORKOUT_SCHEDULE_PROPOSAL` | PH4 | Program/date/exercise hợp lệ | Tạo Schedule |
-| `UPDATE_USER_PREFERENCE_PROPOSAL` | PH2 | Field whitelist, user xác nhận | Cập nhật preference |
+| `ADD_MEAL_ENTRY_PROPOSAL` | PH5 | Food thuộc shortlist; serving/constraint/`targetDate` hợp lệ | Tạo Meal Entry |
+| `CREATE_WORKOUT_SCHEDULE_PROPOSAL` | PH4 | WorkoutDay thuộc shortlist; `targetDate` hợp lệ | Tạo Schedule |
+| `UPDATE_USER_PREFERENCE_PROPOSAL` | PH2 | Field ∈ `disliked_foods`, `meal_preferences`, `training_preferences`, `preferred_training_time`; user xác nhận | Cập nhật preference |
 | `REVIEW_NUTRITION_TARGET_PROPOSAL` | PH3 | Chỉ tạo review flow | Không tự sửa target |
-| `LOG_REMINDER_ONLY` | PH10/client | Không domain mutation | Reminder nếu scope cho phép |
+| `LOG_REMINDER_ONLY` | PH10/client | Reserved P1; không nằm trong `allowedActions` P0 | Reminder khi Notification được bật |
 
 Payload không chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
+`allergies` và `dietary_constraints` chỉ do user tự sửa, không bao giờ qua AI proposal.
 
 ### 8.5. P1
 
@@ -469,7 +474,8 @@ Quản trị catalog và truy vết thao tác nhạy cảm.
 - Exercise/Food đã có history nên ưu tiên hide/soft-delete.
 - Audit ghi actor, action, target, time, result và metadata tối thiểu; không chứa credential hoặc raw personal context thừa.
 
-UC-19 là P1 ở cấp use case hoàn chỉnh; Exercise/Food/Audit vẫn là P0 baseline theo MVP Priority và business flow, không có nghĩa toàn bộ Admin CMS là P0.
+UC-19 là P0 baseline đúng theo SRS: Admin quản lý Exercise/Food và xem Audit Log tối thiểu.
+User Management, Admin Dashboard, Import và AI Rule/Prompt thuộc UC-20/P1 và không được gộp vào UC-19.
 
 **Dependencies:** PH1, PH4, PH5, PH7, PH9.
 

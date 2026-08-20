@@ -30,6 +30,12 @@ Production:  https://api.viegym.example.com/api/v1
 - Khối lượng: `kg`; chiều cao: `cm`; thời lượng: giây; năng lượng: `kcal`; macro: gram.
 - Decimal được truyền dưới dạng JSON number. Backend dùng decimal chính xác, không dùng giá trị client tính làm source of truth.
 
+**Ngày nghiệp vụ và timezone:** `user_profiles.timezone` (IANA) là nguồn authoritative cho
+“hôm nay”, cutoff, expiry và background/lazy evaluation; fallback là `Asia/Ho_Chi_Minh`. Client
+gửi `date`/`loggedDate`/`scheduledDate`/`targetDate` tường minh khi browse hoặc mutation. Device
+timezone chỉ dùng hiển thị và không tự thay đổi nghĩa dữ liệu server. Đổi timezone profile chỉ
+ảnh hưởng boundary tương lai, không viết lại local date đã lưu.
+
 ### 1.3. Authentication, session và authorization
 
 - Endpoint private nhận `Authorization: Bearer <accessToken>`.
@@ -62,6 +68,9 @@ Mọi JSON endpoint trả envelope thống nhất.
   "data": {}
 }
 ```
+
+Mọi response echo `X-Correlation-Id` header. Header là nguồn correlation canonical; body chỉ lặp
+`correlationId` trong error để hỗ trợ báo lỗi. Success không thêm timestamp/correlation trùng lặp.
 
 **Pagination (page zero-based):**
 
@@ -96,6 +105,8 @@ Mọi JSON endpoint trả envelope thống nhất.
 ```
 
 Không trả stack trace, SQL, provider credential hoặc chi tiết nội bộ trong error.
+Mọi list phân trang luôn nằm trong `data.content` cùng metadata; không endpoint nào trả page ở
+top-level hoặc mảng trần thay cho cấu trúc này.
 
 ### 1.6. Pagination, sorting và filter
 
@@ -118,6 +129,7 @@ Không trả stack trace, SQL, provider credential hoặc chi tiết nội bộ 
 | `403` | Không đủ role/quyền; AI consent không cho phép tác vụ |
 | `404` | Resource không tồn tại hoặc không được tiết lộ do ownership |
 | `409` | Duplicate, stale state, active session hoặc idempotency conflict |
+| `410` | Resource/token upload đã hết hạn và không còn dùng được |
 | `413` | Media vượt giới hạn cấu hình |
 | `415` | MIME/extension không hỗ trợ |
 | `422` | Request đúng cú pháp nhưng vi phạm business/safety rule |
@@ -125,26 +137,27 @@ Không trả stack trace, SQL, provider credential hoặc chi tiết nội bộ 
 | `502` | AI/storage/email provider trả lỗi không hợp lệ |
 | `503` | Dependency tạm thời không sẵn sàng |
 
-### 1.8. Error codes dùng chung
+### 1.8. Error codes và HTTP status
 
-| Code | Ý nghĩa |
-|---|---|
-| `VALIDATION_ERROR` | Field/query không hợp lệ |
-| `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `TOKEN_REVOKED` | Lỗi session |
-| `ACCESS_DENIED`, `RESOURCE_NOT_FOUND` | Role/ownership/not found |
-| `EMAIL_ALREADY_EXISTS`, `INVALID_CREDENTIALS` | Identity |
-| `ACCOUNT_PENDING`, `ACCOUNT_LOCKED`, `ACCOUNT_DISABLED` | Trạng thái account |
-| `OTP_INVALID`, `OTP_EXPIRED`, `OTP_ATTEMPTS_EXCEEDED`, `OTP_COOLDOWN` | OTP lifecycle |
-| `HEALTH_PROFILE_REQUIRED`, `HEALTH_CALCULATION_UNAVAILABLE` | Thiếu profile/policy chưa cho tính metric |
-| `DUPLICATE_DAILY_WEIGHT_LOG` | Đã có bản ghi cân nặng trong ngày |
-| `EXERCISE_NOT_FOUND`, `FOOD_NOT_FOUND`, `RESOURCE_HIDDEN` | Master data |
-| `ACTIVE_PROGRAM_EXISTS`, `ACTIVE_SESSION_EXISTS` | Invariant Workout |
-| `INVALID_STATE_TRANSITION`, `SESSION_LOG_INVALID` | State/log không hợp lệ |
-| `AI_CONSENT_REQUIRED`, `AI_PROVIDER_UNAVAILABLE`, `AI_OUTPUT_INVALID` | AI pipeline |
-| `RECOMMENDATION_NOT_PENDING`, `RECOMMENDATION_EXPIRED`, `RECOMMENDATION_BLOCKED` | Recommendation |
-| `MEDIA_TYPE_NOT_SUPPORTED`, `MEDIA_SIZE_EXCEEDED`, `MEDIA_MIME_MISMATCH` | Media validation |
-| `UPLOAD_NOT_COMPLETED`, `UPLOAD_EXPIRED` | Presigned upload |
-| `IDEMPOTENCY_CONFLICT` | Cùng key nhưng payload/action khác |
+| Code | HTTP | Ý nghĩa |
+|---|---:|---|
+| `VALIDATION_ERROR` | 400 | Field/query không hợp lệ |
+| `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS` | 401 | Credential/session không hợp lệ |
+| `ACCESS_DENIED`, `ACCOUNT_PENDING`, `ACCOUNT_LOCKED`, `ACCOUNT_DISABLED`, `AI_CONSENT_REQUIRED` | 403 | Không đủ quyền/trạng thái không cho phép |
+| `RESOURCE_NOT_FOUND`, `EXERCISE_NOT_FOUND`, `FOOD_NOT_FOUND`, `RESOURCE_HIDDEN` | 404 | Không tồn tại hoặc không tiết lộ |
+| `EMAIL_ALREADY_EXISTS`, `ACTIVE_PROGRAM_EXISTS`, `ACTIVE_SESSION_EXISTS`, `INVALID_STATE_TRANSITION`, `SCHEDULE_NO_LONGER_PLANNED`, `DAY_HAS_PLANNED_SCHEDULES`, `RECOMMENDATION_NOT_PENDING`, `RECOMMENDATION_EXPIRED`, `IDEMPOTENCY_CONFLICT` | 409 | Duplicate/stale/conflict |
+| `OTP_INVALID`, `OTP_EXPIRED` | 400 | OTP sai/hết hạn |
+| `OTP_ATTEMPTS_EXCEEDED`, `OTP_COOLDOWN`, `RATE_LIMITED`, `DAILY_GENERATION_LIMIT_REACHED` | 429 | Vượt ngưỡng/cooldown; có `Retry-After` |
+| `PASSWORD_CHANGE_NOT_SUPPORTED`, `HEALTH_PROFILE_REQUIRED`, `HEALTH_CALCULATION_UNAVAILABLE`, `SESSION_LOG_INVALID`, `FOOD_NOT_SELECTABLE`, `MEAL_TEMPLATE_ITEM_UNAVAILABLE`, `PROPOSAL_TARGET_INVALID` | 422 | Business/safety precondition |
+| `AI_PROVIDER_UNAVAILABLE`, `AI_OUTPUT_INVALID` | 502 | AI/provider output không dùng được |
+| `MEDIA_SIZE_EXCEEDED` | 413 | Media quá kích thước |
+| `MEDIA_TYPE_NOT_SUPPORTED`, `MEDIA_MIME_MISMATCH` | 415 | Media type/MIME không hợp lệ |
+| `UPLOAD_NOT_COMPLETED` | 409 | Upload chưa hoàn tất |
+| `UPLOAD_EXPIRED` | 410 | Upload URL/TTL hết hạn |
+
+Một error code chỉ ánh xạ tới một HTTP status trên toàn hệ thống. UI map hành vi theo `code`,
+không parse `message`. Output safety `BLOCKED` không tạo recommendation nên không có
+`RECOMMENDATION_BLOCKED` trong luồng P0.
 
 ### 1.9. Shared enums
 
@@ -153,22 +166,26 @@ Không trả stack trace, SQL, provider credential hoặc chi tiết nội bộ 
 | `UserRole` | `USER`, `ADMIN` |
 | `AccountStatus` | `PENDING`, `ACTIVE`, `LOCKED`, `DISABLED` |
 | `AuthProvider` | `LOCAL`, `GOOGLE` |
-| `OtpPurpose` | `REGISTER`, `PASSWORD_RESET`, `LOGIN_VERIFY` |
+| `OtpPurpose` | `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` reserved ngoài P0 |
 | `Gender` | `MALE`, `FEMALE`, `OTHER`, `UNSPECIFIED` |
+| `CalculationSex` | `MALE`, `FEMALE`, `UNSPECIFIED` |
+| `HealthCalculationStatus` | `COMPLETE`, `INCOMPLETE` |
+| `HealthIncompleteReason` | `CALCULATION_SEX_REQUIRED`, `UNSUPPORTED_AGE`, `CALORIES_BELOW_SAFETY_THRESHOLD`, `INVALID_MACRO_RESULT` |
 | `ActivityLevel` | `SEDENTARY`, `LIGHT`, `MODERATE`, `ACTIVE`, `VERY_ACTIVE` |
 | `FitnessGoal` | `LOSE_WEIGHT`, `MAINTAIN_WEIGHT`, `GAIN_WEIGHT`, `GAIN_MUSCLE` |
 | `TrainingExperience` | `BEGINNER`, `INTERMEDIATE`, `ADVANCED` |
 | `ProgramStatus` | `ACTIVE`, `INACTIVE`, `ARCHIVED` |
 | `ScheduleStatus` | `PLANNED`, `COMPLETED`, `MISSED`, `CANCELLED` |
-| `SessionStatus` | `PLANNED`, `IN_PROGRESS`, `PAUSED`, `COMPLETED`, `DISCARDED`, `CANCELLED` |
+| `SessionStatus` | `IN_PROGRESS`, `PAUSED`, `COMPLETED`, `DISCARDED` |
 | `Difficulty` | `BEGINNER`, `INTERMEDIATE`, `ADVANCED` |
 | `MealType` | `BREAKFAST`, `LUNCH`, `DINNER`, `SNACK` |
+| `FoodVisibility` | `PUBLIC`, `HIDDEN` |
 | `ConsentMode` | `ENABLED`, `DISABLED` |
 | `RecommendationType` | `NUTRITION`, `WORKOUT`, `RECOVERY`, `HABIT`, `PLAN` |
 | `RecommendationStatus` | `PENDING`, `APPLIED`, `DISMISSED`, `EXPIRED` |
 | `AiPriority` | `LOW`, `MEDIUM`, `HIGH` |
-| `AiSafetyLevel` | `NORMAL`, `CAUTION`, `BLOCKED` |
-| `AllowedAction` | `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`, `LOG_REMINDER_ONLY` |
+| `AiSafetyLevel` | Provider/validation: `NORMAL`, `CAUTION`, `BLOCKED`; persisted recommendation: `NORMAL`, `CAUTION` |
+| `AllowedAction` | P0: `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`; `LOG_REMINDER_ONLY` reserved P1 |
 
 ---
 
@@ -408,12 +425,13 @@ Trả input profile và metric authoritative. `404 HEALTH_PROFILE_REQUIRED` nế
 
 ### `POST /health/profile` 🔒
 
-Tạo lần đầu HealthProfile, WeightLog ban đầu và NutritionTarget trong một transaction.
+Tạo lần đầu HealthProfile, WeightLog ban đầu và, khi calculation đủ điều kiện, NutritionTarget trong một transaction.
 
 ```json
 {
   "dateOfBirth": "1998-05-20",
   "gender": "MALE",
+  "calculationSex": "MALE",
   "heightCm": 172.5,
   "currentWeightKg": 70.2,
   "activityLevel": "MODERATE",
@@ -431,6 +449,7 @@ Tạo lần đầu HealthProfile, WeightLog ban đầu và NutritionTarget trong
     "profile": {
       "dateOfBirth": "1998-05-20",
       "gender": "MALE",
+      "calculationSex": "MALE",
       "heightCm": 172.5,
       "currentWeightKg": 70.2,
       "activityLevel": "MODERATE",
@@ -439,37 +458,44 @@ Tạo lần đầu HealthProfile, WeightLog ban đầu và NutritionTarget trong
       "calculationVersion": "health-v1",
       "calculatedAt": "2026-08-19T08:30:00Z"
     },
+    "calculationStatus": "COMPLETE",
     "metrics": { "bmi": 23.59, "bmrKcal": 1645.13, "tdeeKcal": 2549.95 },
     "nutritionTarget": { "caloriesKcal": 2849.95, "proteinG": 140.4, "carbsG": 393.96, "fatG": 79.17 }
   }
 }
 ```
 
-Với `OTHER/UNSPECIFIED`, `bmrKcal`, `tdeeKcal` và target có thể `null` cho tới khi policy được chốt; Backend không tự ánh xạ giới tính.
+Với `calculationSex=UNSPECIFIED`, Backend trả `calculationStatus=INCOMPLETE`, vẫn trả BMI nếu đủ chiều cao/cân nặng, trả `bmrKcal/tdeeKcal/nutritionTarget=null` và `incompleteReason=CALCULATION_SEX_REQUIRED`. Với User dưới 18 tuổi dùng `UNSUPPORTED_AGE`; calories dưới ngưỡng dùng `CALORIES_BELOW_SAFETY_THRESHOLD`; macro âm/không hữu hạn dùng `INVALID_MACRO_RESULT`. Backend không suy ra calculation sex từ `gender`; Mobile phải hiển thị trạng thái cần bổ sung/không hỗ trợ.
 
 ### `PUT /health/profile` 🔒
 
-Nhận cùng editable fields như POST. Backend không nhận `bmi`, `bmrKcal`, `tdeeKcal` hoặc macro target từ client; mọi metric/target được tính lại atomically.
+Nhận các editable field như POST ngoại trừ `currentWeightKg`; sau onboarding cân nặng chỉ đổi qua
+WeightLog. Backend không nhận `bmi`, `bmrKcal`, `tdeeKcal` hoặc macro target từ client; mọi
+metric/target được tính lại atomically.
 
 ### `GET /health/metrics` 🔒
 
-Trả `bmi`, `bmrKcal`, `tdeeKcal`, `nutritionTarget`, `calculationVersion`, `calculatedAt`. Mobile và AI không tự tính để thay thế kết quả.
+Trả `calculationStatus`, `bmi`, `bmrKcal`, `tdeeKcal`, `nutritionTarget`, `calculationVersion`, `calculatedAt` và `incompleteReason` khi phù hợp. Mobile và AI không tự tính để thay thế kết quả.
 
 ### `GET /weight-logs` 🔒
 
 Query: `from`, `to`, `page`, `size`, `sort=loggedDate,desc`.
 
-### `POST /weight-logs` 🔒
+### `PUT /weight-logs/{loggedDate}` 🔒
 
 ```json
-{ "loggedDate": "2026-08-19", "weightKg": 70.2, "note": "Buổi sáng" }
+{ "weightKg": 70.2, "note": "Buổi sáng" }
 ```
 
-**201.** Một record chính/user/ngày. Nếu đã tồn tại, trả `409 DUPLICATE_DAILY_WEIGHT_LOG`; client dùng PUT để cập nhật. Thêm log không tự đổi HealthProfile/NutritionTarget.
+Natural-key upsert theo `(user, loggedDate)`: chưa có trả `201`, đã có trả `200`. Retry cùng
+payload là idempotent. Không cho đổi ngày của record; muốn ghi ngày khác dùng path ngày khác.
 
-### `PUT /weight-logs/{id}` 🔒
+Nếu `loggedDate` là ngày mới nhất sau mutation, Backend cập nhật
+`HealthProfile.currentWeightKg` và tính lại BMI/BMR/TDEE trong cùng transaction. Sửa log cũ
+không làm thay đổi metric hiện tại. NutritionTarget không tự đổi ở luồng này.
 
-Nhận `loggedDate`, `weightKg`, `note`; chỉ owner được sửa.
+Response trả `weightLog`, `metricsUpdated`, `metrics` khi cập nhật và
+`nutritionTargetChanged=false`.
 
 ### `GET /weight-logs/trend` 🔒
 
@@ -486,14 +512,27 @@ Query `days=7|14|30` (mặc định `30`).
     "currentWeightKg": 70.2,
     "changeKg": -1.3,
     "direction": "DOWN",
+    "sufficientData": true,
     "points": [{ "date": "2026-08-19", "weightKg": 70.2 }]
   }
 }
 ```
 
+Khi có dưới hai điểm: `sufficientData=false`, `changeKg=null`, `direction=null`; Mobile hiển thị
+“chưa đủ dữ liệu” thay vì suy trend.
+
 ---
 
 ## 4. Exercise Catalog & Workout
+
+### `GET /muscle-groups` 🔒
+
+Trả catalog active gồm `id`, `code`, `name`; không phân trang vì danh mục nhỏ.
+
+### `GET /equipment` 🔒
+
+Trả catalog active gồm `id`, `code`, `name`. Đây là catalog thuần; trạng thái selected của user
+thuộc `GET /preferences/equipment`.
 
 ### `GET /exercises` 🔒
 
@@ -521,6 +560,11 @@ Chỉ trả Exercise `PUBLIC`/chưa xóa. `compatibleWithMyEquipment=true` ưu t
   }
 }
 ```
+
+### `GET /exercises/{id}/alternatives` 🔒
+
+Query `limit` mặc định 5, tối đa 20. Trả Exercise `PUBLIC` cùng primary muscle group, ưu tiên
+khớp equipment preference và loại exercise nguồn. Dùng cho hidden/missing-equipment warning.
 
 ### Workout program CRUD 🔒
 
@@ -560,7 +604,14 @@ Chỉ trả Exercise `PUBLIC`/chưa xóa. `compatibleWithMyEquipment=true` ưu t
 }
 ```
 
-Tối đa một program `ACTIVE`/user. Exercise hidden không được thêm mới. `targetRepsMin <= targetRepsMax`; bài theo reps hoặc duration phải có target phù hợp.
+Tối đa một program `ACTIVE`/user. Với PUT, `dayId` và `workoutExerciseId` hiện có được gửi để
+Backend diff-update thay vì xóa/tạo lại toàn bộ child. Exercise hidden chỉ bị reject khi được
+thêm mới; reference hidden đã tồn tại được giữ với `hidden=true` + warning để user còn sửa phần
+khác. `targetRepsMin <= targetRepsMax`; bài theo reps hoặc duration phải có target phù hợp.
+
+Xóa WorkoutDay có schedule `PLANNED` hoặc có active session tham chiếu trả
+`409 DAY_HAS_PLANNED_SCHEDULES`. Với schedule terminal, service giữ snapshot và có thể set
+`workoutDayId=null`; không cascade history.
 
 ### Workout schedule CRUD 🔒
 
@@ -582,11 +633,16 @@ Tối đa một program `ACTIVE`/user. Exercise hidden không được thêm m�
 }
 ```
 
-DELETE nhận query tùy chọn `cancelReason`; server lưu reason và loại `CANCELLED` khỏi mẫu số completion rate.
+DELETE nhận query tùy chọn `cancelReason`; chỉ schedule chưa qua effective cutoff mới được
+`CANCELLED`. Schedule quá hạn trả `409 INVALID_STATE_TRANSITION` và được materialize `MISSED`;
+`CANCELLED` bị loại khỏi mẫu số completion rate.
 
 ### `POST /workout-sessions/{scheduleId}/start` 🔒
 
-Tạo/start session của schedule `PLANNED`. **201:** trả session `IN_PROGRESS`, snapshot bài dự kiến và `startedAt`. Cùng schedule chỉ có tối đa một active session; retry cùng idempotency key trả resource cũ.
+Tạo/start session của schedule `PLANNED`. **201:** trả session `IN_PROGRESS`, snapshot bài dự
+kiến và `startedAt`. Mỗi user chỉ có tối đa một session `IN_PROGRESS/PAUSED`; nếu đã có ở
+schedule khác trả `409 ACTIVE_SESSION_EXISTS` kèm `activeSessionId`. Retry cùng idempotency key
+trả resource cũ.
 
 ### `POST /workout-sessions/{id}/pause` 🔒
 
@@ -627,7 +683,19 @@ Chuyển active session sang `DISCARDED`; không tạo WorkoutLog/PR.
 
 ### `GET /workout-logs` 🔒
 
-Query: `from`, `to`, `exerciseId`, `page`, `size`, `sort=completedAt,desc`. Item trả duration, total volume, completion và PR summary; detail có thể dùng `GET /workout-logs/{id}` trong cùng owner boundary.
+Query: `from`, `to`, `exerciseId`, `page`, `size`, `sort=completedAt,desc`. Item trả duration,
+total volume, completion và PR summary.
+
+### `GET /workout-logs/{id}` 🔒
+
+Trả detail exercise/set snapshots, duration, volume và PR đạt trong buổi; bắt buộc ownership.
+
+### `GET /personal-records` 🔒
+
+Query `exerciseId`, `type`, `page`, `size`. Mỗi record trả `MAX_WEIGHT`, `MAX_REPS` hoặc
+`MAX_VOLUME`, `value`, `achievedAt`, `workoutLogId`, `previousValue`. `MAX_VOLUME` là
+`reps × weightKg` của một set completed; chỉ session `COMPLETED` được tính, bằng record cũ thì
+không thay `achievedAt`.
 
 ---
 
@@ -635,7 +703,8 @@ Query: `from`, `to`, `exerciseId`, `page`, `size`, `sort=completedAt,desc`. Item
 
 ### `GET /foods` 🔒
 
-Query: `q`, `category`, `page`, `size`, `sort=name,asc`. Trả Food `PUBLIC` và Food `PRIVATE` của chính user; không trả `HIDDEN`.
+Query: `q`, `category`, `page`, `size`, `sort=name,asc`. P0 chỉ trả Food `PUBLIC`; không trả
+`HIDDEN`. Food riêng của user ngoài phạm vi P0.
 
 ### `GET /foods/{id}` 🔒
 
@@ -646,7 +715,7 @@ Query: `q`, `category`, `page`, `size`, `sort=name,asc`. Trả Food `PUBLIC` và
     "id": 201,
     "name": "Phở bò",
     "category": "Món nước",
-    "serving": { "amount": 1, "unit": "tô" },
+    "serving": { "amount": 1, "unit": "tô", "gramsPerServing": 350 },
     "nutritionPerServing": { "caloriesKcal": 450, "proteinG": 25, "carbsG": 55, "fatG": 14 },
     "dataSource": "Seed dataset",
     "sourceNote": null,
@@ -660,7 +729,8 @@ Giá trị có `estimated=true` phải được UI trình bày là tham khảo.
 
 ### `GET /meal-plans?date=2026-08-19` 🔒
 
-Get-or-create plan ngày của user (một plan/user/date) và trả aggregate authoritative.
+Trả plan ngày của user và aggregate authoritative. GET không ghi database. Nếu chưa có plan,
+trả `id=null`, bốn meal section rỗng và target hiện hành với `targetSource=CURRENT`.
 
 ```json
 {
@@ -668,6 +738,7 @@ Get-or-create plan ngày của user (một plan/user/date) và trả aggregate a
   "data": {
     "id": 301,
     "planDate": "2026-08-19",
+    "targetSource": "SNAPSHOT",
     "target": { "caloriesKcal": 2200, "proteinG": 130, "carbsG": 270, "fatG": 65 },
     "consumed": { "caloriesKcal": 450, "proteinG": 25, "carbsG": 55, "fatG": 14 },
     "remaining": { "caloriesKcal": 1750, "proteinG": 105, "carbsG": 215, "fatG": 51 },
@@ -684,7 +755,11 @@ Get-or-create plan ngày của user (một plan/user/date) và trả aggregate a
 }
 ```
 
-### `POST /meal-plans/{id}/entries` 🔒
+Plan được tạo trong mutation entry đầu tiên; `nutritionTargetSnapshot` được chụp lúc đó và giữ
+bất biến để lịch sử deterministic. Khi chưa có plan, `targetSource=CURRENT`; khi đã có plan,
+Dashboard và Meal UI cùng ngày dùng snapshot và trả `targetSource=SNAPSHOT`.
+
+### `POST /meal-plans/{planDate}/entries` 🔒
 
 ```json
 {
@@ -692,13 +767,17 @@ Get-or-create plan ngày của user (một plan/user/date) và trả aggregate a
   "mealSortOrder": 1,
   "foodId": 201,
   "servingMultiplier": 1.5,
+  "inputAmount": null,
+  "inputUnit": null,
   "note": null
 }
 ```
 
-**201:** trả entry có food/serving/nutrition snapshot và plan totals mới. Backend tính mọi snapshot từ Food × multiplier.
+**201:** Backend get-or-create plan/meal trong transaction, trả entry có input/serving/nutrition
+snapshot và plan totals mới. Khi `inputUnit=GRAM`, Food phải có `gramsPerServing`; Backend tự
+tính multiplier. Nếu không nhập gram, `inputAmount/inputUnit=null` và dùng multiplier.
 
-### `PUT /meal-plans/{id}/entries/{entryId}` 🔒
+### `PUT /meal-plans/{planDate}/entries/{entryId}` 🔒
 
 ```json
 { "mealType": "LUNCH", "mealSortOrder": 1, "servingMultiplier": 1, "note": "Ít nước dùng" }
@@ -706,7 +785,7 @@ Get-or-create plan ngày của user (một plan/user/date) và trả aggregate a
 
 Chỉ cho sửa entry thuộc plan/owner; Backend tính lại snapshot và aggregate.
 
-### `DELETE /meal-plans/{id}/entries/{entryId}` 🔒
+### `DELETE /meal-plans/{planDate}/entries/{entryId}` 🔒
 
 **204.** Không xóa Food nguồn; plan total được tính lại.
 
@@ -739,7 +818,17 @@ Query tùy chọn `date` (mặc định hôm nay theo user timezone). Đây là 
   "data": {
     "date": "2026-08-19",
     "nutrition": { "target": {}, "consumed": {}, "remaining": {}, "hasMealPlan": true },
-    "workout": { "today": [], "next": null, "completionRate": 0.75 },
+    "workout": {
+      "today": [],
+      "next": null,
+      "completion": {
+        "windowFrom": "2026-08-17",
+        "windowTo": "2026-08-19",
+        "scheduledEligible": 3,
+        "completedEligible": 2,
+        "rate": 0.67
+      }
+    },
     "body": { "currentWeightKg": 70.2, "bmi": 23.59, "trend": "DOWN" },
     "recommendations": [],
     "missingData": [],
@@ -749,6 +838,10 @@ Query tùy chọn `date` (mặc định hôm nay theo user timezone). Đây là 
 ```
 
 Thiếu dữ liệu trả `null`/empty state và mã trong `missingData` (`HEALTH_PROFILE`, `MEAL_PLAN`, `WORKOUT_SCHEDULE`), không dùng dữ liệu giả.
+Endpoint này không gọi AI Provider và không tạo/regenerate recommendation.
+`scheduledEligible` chỉ gồm lịch đã completed hoặc đã đến hạn sau cutoff+grace; loại
+`CANCELLED`, lịch tương lai/chưa đến hạn và lịch có session active. Nếu mẫu số bằng 0,
+`rate=null`.
 
 ---
 
@@ -795,7 +888,9 @@ Setting và consent history được ghi cùng transaction. `ENABLED` yêu cầu
 
 ### `GET /ai/conversations` 🔒
 
-Query `status=ACTIVE|ARCHIVED`, `page`, `size`, `sort=lastMessageAt,desc`. Chỉ trả conversation của actor, preview message tối thiểu; không trả raw context.
+Query `page`, `size`, `sort=lastMessageAt,desc`. P0 chỉ có conversation `ACTIVE`; `ARCHIVED` là
+reserved và không xuất hiện trong filter khi chưa có archive endpoint. Chỉ trả conversation của
+actor, preview message tối thiểu; không trả raw context.
 
 ### `GET /ai/conversations/{id}` 🔒
 
@@ -827,11 +922,17 @@ Contract phục vụ màn history/detail. Query `messagePage`, `messageSize`; tr
 }
 ```
 
+Effective mode được xác định cho từng message theo consent tại thời điểm gửi. Conversation tạo
+lúc `PERSONALIZED` nhưng consent hiện đã OFF vẫn nhận message ở `GENERAL_KNOWLEDGE`, không dùng
+personal context; response trả `mode=GENERAL_KNOWLEDGE` để UI hiển thị banner đổi mode.
+
 Nội dung có giới hạn kích thước. Không trả full prompt/context snapshot/provider credential. Provider lỗi dùng fallback an toàn và error đã sanitize.
 
 ### `GET /ai/recommendations/daily` 🔒
 
-Query `date` (mặc định hôm nay). Consent OFF trả danh sách rỗng kèm `personalizationEnabled=false`, không tạo recommendation.
+Query `date` (mặc định ngày nghiệp vụ theo profile timezone). Đây là read endpoint thuần, không
+gọi provider hoặc tạo dữ liệu. Consent OFF trả danh sách rỗng kèm
+`personalizationEnabled=false`.
 
 ```json
 {
@@ -851,15 +952,38 @@ Query `date` (mặc định hôm nay). Consent OFF trả danh sách rỗng kèm 
         "sourceMetrics": { "remainingProteinG": 42 },
         "safetyLevel": "NORMAL",
         "allowedAction": "ADD_MEAL_ENTRY_PROPOSAL",
-        "actionPreview": { "foodId": 205, "mealType": "DINNER", "servingMultiplier": 1 },
-        "expiresAt": "2026-08-20T00:00:00Z"
+        "actionPreview": { "foodId": 205, "mealType": "DINNER", "servingMultiplier": 1, "targetDate": "2026-08-19" },
+        "expiresAt": "2026-08-19T17:00:00Z"
       }
     ]
   }
 }
 ```
 
-Tối đa 1–3 recommendation/user/ngày; chỉ trả resource thuộc user và còn phù hợp với query.
+Trả tối đa 1–3 recommendation active của generation mới nhất/user/ngày; chỉ trả resource thuộc
+user và còn phù hợp với query.
+
+### `POST /ai/recommendations/daily/generations` 🔒
+
+Command sinh recommendation cho `targetDate` (mặc định ngày nghiệp vụ hiện tại). Header
+`Idempotency-Key` bắt buộc. Backend tạo generation/batch row unique theo
+`(userId, targetDate, generationNo)`, dựng `rules-v1` + candidate shortlist rồi gọi AI ngoài DB
+transaction. Request trùng trả batch hiện có; batch đang chạy trả `202` với status `STARTED`; hoàn tất trả
+`201` với 1–3 items. P0 cho generation đầu tiên và tối đa hai refresh chủ động/ngày; refresh tạo
+generation mới, không ghi đè item đã APPLIED/DISMISSED. Trong transaction persist batch mới,
+các item `PENDING` của generation trước trong cùng ngày chuyển `EXPIRED`; vì vậy chỉ generation
+mới nhất có tối đa 1–3 item active.
+
+Response `202` dùng `data.status=STARTED` (không tạo enum `GENERATING` riêng). Vượt ba
+generation/ngày trả `429 DAILY_GENERATION_LIMIT_REACHED`.
+
+Structured action chỉ được tham chiếu ID trong shortlist. Meal/Schedule action bắt buộc
+`targetDate`; preference action chỉ được chứa field whitelist và không được sửa
+`allergies/dietaryConstraints`. `ADD_MEAL_ENTRY_PROPOSAL.targetDate` phải bằng
+`recommendationDate`; `CREATE_WORKOUT_SCHEDULE_PROPOSAL.targetDate` nằm trong
+`[recommendationDate, recommendationDate + 14 ngày]`, đều theo profile timezone. Preference
+whitelist P0 là `dislikedFoods`, `mealPreferences`, `trainingPreferences`,
+`preferredTrainingTime`.
 
 ### `POST /ai/recommendations/{id}/apply` 🔒
 
@@ -884,7 +1008,8 @@ Backend lock recommendation, kiểm tra owner + `PENDING` + expiry + safety, val
 }
 ```
 
-Retry cùng key/payload trả cùng kết quả. `BLOCKED`, expired hoặc non-PENDING không được apply.
+Retry cùng key/payload trả cùng kết quả. Expired hoặc non-PENDING không được apply. Output
+`BLOCKED` không tồn tại dưới dạng recommendation persisted.
 
 ### `POST /ai/recommendations/{id}/dismiss` 🔒
 
@@ -900,23 +1025,27 @@ Chuyển `PENDING → DISMISSED`, lưu feedback tối thiểu; tuyệt đối kh
 
 ### Media policy
 
-- Owner type: `EXERCISE`, `FOOD`, `USER_PROFILE`; media type: `IMAGE`, `VIDEO`, `GIF`.
+- Owner/media P0 theo ADR-006: `EXERCISE` nhận `IMAGE`/`VIDEO`, `FOOD` chỉ nhận `IMAGE`. `USER_PROFILE` và `GIF` là P1.
 - Status: `PENDING_UPLOAD`, `READY`, `FAILED`, `ORPHANED`, `DELETED`.
 - Backend sinh `objectKey`; filename chỉ dùng để hiển thị sau sanitize.
-- Allowlist MIME/extension và giới hạn size là cấu hình theo owner/media type; API trả constraint để client không hard-code.
+- Allowlist P0: ảnh `.jpg/.jpeg/.png/.webp` với `image/jpeg`, `image/png`, `image/webp`, tối đa 5 MiB; Exercise video `.mp4/.webm` với `video/mp4`, `video/webm`, tối đa 50 MiB. Backend đối chiếu extension, MIME khai báo và MIME từ nội dung; API trả constraint để client không hard-code.
 - Access/upload URL có TTL ngắn và chỉ cấp sau role/ownership/visibility check.
+- Admin create Exercise/Food trước ở `HIDDEN`, nhận owner ID, sau đó upload/attach và mới publish.
+  P0 không tạo unattached media với `ownerId=null`.
 
 ### `POST /media/upload-init` 🔒
 
 ```json
 {
-  "ownerType": "USER_PROFILE",
-  "ownerId": 12,
+  "ownerType": "EXERCISE",
+  "ownerId": 101,
   "mediaType": "IMAGE",
-  "originalFileName": "avatar.jpg",
+  "role": "THUMBNAIL",
+  "sortOrder": 1,
+  "originalFileName": "back-squat.jpg",
   "declaredMimeType": "image/jpeg",
   "fileSizeBytes": 245010,
-  "visibility": "PRIVATE"
+  "visibility": "PUBLIC"
 }
 ```
 
@@ -932,12 +1061,14 @@ Chuyển `PENDING → DISMISSED`, lưu feedback tối thiểu; tuyệt đối kh
     "method": "PUT",
     "requiredHeaders": { "Content-Type": "image/jpeg" },
     "expiresAt": "2026-08-19T08:40:00Z",
-    "constraints": { "maxSizeBytes": 10485760, "allowedMimeTypes": ["image/jpeg", "image/png"] }
+    "constraints": { "maxSizeBytes": 5242880, "allowedMimeTypes": ["image/jpeg", "image/png", "image/webp"] }
   }
 }
 ```
 
-Admin mới được gắn media vào Exercise/Food dùng chung; user chỉ gắn avatar của mình.
+P0 chỉ Admin được gắn media vào Exercise/Food dùng chung. Avatar user thuộc P1.
+`role` nhận `THUMBNAIL`, `PRIMARY_VIDEO`, `GALLERY`; `sortOrder` dương và unique trong
+`(ownerType, ownerId, role, sortOrder)` theo policy hiển thị.
 
 ### `POST /media/{id}/upload-complete` 🔒
 
@@ -973,7 +1104,7 @@ Tất cả endpoint trong phần này yêu cầu role `ADMIN`. Mutation ghi audi
 | `PUT` | `/admin/exercises/{id}` | Cập nhật |
 | `DELETE` | `/admin/exercises/{id}` | Soft delete/`HIDDEN` |
 
-Request dùng các field `name`, `slug`, `difficulty`, `description`, `instructionSteps`, `commonMistakes`, `safetyNotes`, `visibility`, `muscleGroups[{muscleGroupId,role}]`, `equipment[{equipmentId,required}]`, `mediaIds`. Slug unique; hide không phá lịch sử.
+Request dùng các field `name`, `slug`, `difficulty`, `description`, `instructionSteps`, `commonMistakes`, `safetyNotes`, `visibility`, `muscleGroups[{muscleGroupId,role}]`, `equipment[{equipmentId,required}]`. Slug unique; hide không phá lịch sử. Create có thể lưu `HIDDEN` chưa media, sau đó media được attach bằng owner ID; publish chỉ khi required content/media hợp lệ.
 
 ### Admin Food CRUD 👑
 
@@ -992,6 +1123,7 @@ Request dùng các field `name`, `slug`, `difficulty`, `description`, `instructi
   "category": "Cơm",
   "servingAmount": 1,
   "servingUnit": "phần",
+  "gramsPerServing": 420,
   "caloriesPerServing": 650,
   "proteinGPerServing": 30,
   "carbsGPerServing": 80,
@@ -999,8 +1131,7 @@ Request dùng các field `name`, `slug`, `difficulty`, `description`, `instructi
   "dataSource": "Nguồn dữ liệu",
   "sourceNote": "Giá trị trung bình",
   "estimated": true,
-  "visibility": "PUBLIC",
-  "mediaIds": []
+  "visibility": "PUBLIC"
 }
 ```
 
@@ -1076,10 +1207,15 @@ Internal API không public expose và chỉ nhận request từ Spring Boot qua 
   "correlationId": "2b651bb2-154f-4c90-8c70-cb182d741a27",
   "requestType": "CHAT",
   "promptVersion": "chat-v1",
+  "renderedPrompt": "<provider-neutral prompt rendered by Backend>",
   "context": {
     "contextVersion": "context-v1",
     "consentMode": "ENABLED",
     "data": {}
+  },
+  "candidates": {
+    "foods": [{ "id": 205, "name": "Ức gà luộc", "servingUnit": "phần", "caloriesKcal": 165, "proteinG": 31 }],
+    "workoutDays": []
   },
   "messages": [{ "role": "USER", "content": "..." }],
   "allowedActions": ["NONE", "CREATE_WORKOUT_SCHEDULE_PROPOSAL"]
@@ -1092,13 +1228,19 @@ Internal API không public expose và chỉ nhận request từ Spring Boot qua 
   "correlationId": "2b651bb2-154f-4c90-8c70-cb182d741a27",
   "content": "...",
   "safetyLevel": "NORMAL",
-  "proposal": {
-    "allowedAction": "NONE",
-    "actionPayload": null
-  },
+  "items": [],
   "providerMetadata": { "provider": "configured-adapter", "model": "configured-model", "latencyMs": 820 }
 }
 ```
+
+Với `requestType=CHAT`, response dùng `content` và `items=[]`. Với
+`requestType=DAILY_RECOMMENDATION`, response dùng `content=null` và `items` có 1–3 object, mỗi
+object gồm `type`, `title`, `content`, `reason`, `priority`, `safetyLevel`, `proposal`. Proposal
+chỉ được dùng candidate ID trong request. Backend validate toàn batch trước khi persist.
+
+Prompt template và Prompt Builder thuộc Spring Boot; FastAPI nhận prompt/provider request đã
+render và chỉ làm provider adapter + parse schema sơ bộ. Không duy trì template thứ hai trong
+FastAPI.
 
 Spring Boot vẫn phải parse và chạy schema/business/safety validation. FastAPI không kết nối trực tiếp PostgreSQL, không tự mutation domain và không quyết định authorization.
 
@@ -1122,7 +1264,7 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 - OTP sai purpose, expired, vượt attempts, resend cooldown và chống email enumeration.
 - Register/login/refresh/logout và Google token invalid.
 - Concurrent session start/finish; invalid state transition; discarded session không sinh PR.
-- Health input không cho ghi metric; `OTHER/UNSPECIFIED` không bị tự ánh xạ.
+- Health input không cho ghi metric; `calculationSex` không bị suy ra từ `gender`, và `UNSPECIFIED`/age dưới 18 phải trả calculation incomplete.
 - Meal totals bỏ qua giá trị client giả mạo.
 - Consent OFF không dựng personal context và không sinh daily recommendation.
 - Apply lặp cùng idempotency key, apply expired/blocked/non-owner recommendation.
@@ -1157,7 +1299,7 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 | [`../spec/bussiness_mainflow.md`](../spec/bussiness_mainflow.md) | Luồng register/onboarding/workout/meal/AI Apply-Dismiss/Admin |
 | [`../spec/phan_ra_phan_he_he_thong.md`](../spec/phan_ra_phan_he_he_thong.md) | API groups, ownership và subsystem business rules |
 | [`../spec/phan_ra_tinh_nang.md`](../spec/phan_ra_tinh_nang.md) | Feature priority và acceptance behavior |
-| [`../spec/phan_ra_man_hinh.md`](../spec/phan_ra_man_hinh.md) | Screen data/API, UI state và pending contract cần khóa |
+| [`../spec/phan_ra_man_hinh.md`](../spec/phan_ra_man_hinh.md) | Screen data/API, UI state và navigation contract |
 | [`../kientruchatang/DATABASE.md`](../kientruchatang/DATABASE.md) | Field, constraint, snapshot, lifecycle và transaction |
 | [`sa.md`](sa.md) | Public/internal boundary, security, validation và deployment architecture |
 | [`../kientruchatang/techstack.md`](../kientruchatang/techstack.md) | Spring Boot, JWT, springdoc-openapi, storage và FastAPI adapter |

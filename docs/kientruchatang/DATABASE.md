@@ -119,25 +119,26 @@ dễ mở rộng, thay vì PostgreSQL native enum:
 | `user_role` | `USER`, `ADMIN` |
 | `account_status` | `PENDING`, `ACTIVE`, `LOCKED`, `DISABLED` |
 | `auth_provider` | `LOCAL`, `GOOGLE` |
-| `otp_purpose` | `REGISTER`, `PASSWORD_RESET`, `LOGIN_VERIFY` |
+| `otp_purpose` | `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` dành cho P1 nếu bổ sung MFA |
 | `token_status` | `ACTIVE`, `REVOKED`, `EXPIRED` |
 | `gender` | `MALE`, `FEMALE`, `OTHER`, `UNSPECIFIED` |
+| `calculation_sex` | `MALE`, `FEMALE`, `UNSPECIFIED` |
 | `activity_level` | `SEDENTARY`, `LIGHT`, `MODERATE`, `ACTIVE`, `VERY_ACTIVE` |
 | `fitness_goal` | `LOSE_WEIGHT`, `MAINTAIN_WEIGHT`, `GAIN_WEIGHT`, `GAIN_MUSCLE` |
 | `program_status` | `ACTIVE`, `INACTIVE`, `ARCHIVED` |
 | `schedule_status` | `PLANNED`, `COMPLETED`, `MISSED`, `CANCELLED` |
-| `session_status` | `PLANNED`, `IN_PROGRESS`, `PAUSED`, `COMPLETED`, `DISCARDED`, `CANCELLED` |
+| `session_status` | `IN_PROGRESS`, `PAUSED`, `COMPLETED`, `DISCARDED` |
 | `difficulty` | `BEGINNER`, `INTERMEDIATE`, `ADVANCED` |
 | `exercise_visibility` | `PUBLIC`, `HIDDEN` |
 | `meal_type` | `BREAKFAST`, `LUNCH`, `DINNER`, `SNACK` |
-| `food_visibility` | `PUBLIC`, `PRIVATE`, `HIDDEN` |
+| `food_visibility` | `PUBLIC`, `HIDDEN` |
 | `consent_mode` | `ENABLED`, `DISABLED` |
 | `ai_context_type` | `CHAT`, `DAILY_RECOMMENDATION`, `WEEKLY_REVIEW`, `PLAN_ADJUSTMENT` |
 | `recommendation_type` | `NUTRITION`, `WORKOUT`, `RECOVERY`, `HABIT`, `PLAN` |
 | `recommendation_status` | `PENDING`, `APPLIED`, `DISMISSED`, `EXPIRED` |
 | `ai_priority` | `LOW`, `MEDIUM`, `HIGH` |
-| `ai_safety_level` | `NORMAL`, `CAUTION`, `BLOCKED` |
-| `allowed_action` | `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`, `LOG_REMINDER_ONLY` |
+| `ai_safety_level` | Provider validation: `NORMAL`, `CAUTION`, `BLOCKED`; recommendation đã persist: chỉ `NORMAL`, `CAUTION` |
+| `allowed_action` | P0: `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`; `LOG_REMINDER_ONLY` dành cho P1 |
 
 ### 3.3. Soft delete và retention
 
@@ -148,7 +149,7 @@ dễ mở rộng, thay vì PostgreSQL native enum:
 | `workout_programs` | Archive/soft delete; không xóa log đã hoàn thành. |
 | `media_objects` | Chuyển trạng thái/orphan trước khi xóa object vật lý. |
 | Token, OTP | Có thể hard-delete sau thời hạn retention bảo mật. |
-| Log nghiệp vụ, consent, recommendation, audit | Không soft delete; purge theo privacy/retention policy được phê duyệt. |
+| Log nghiệp vụ, consent, recommendation, audit | Không soft delete trong runtime demo; purge cùng reset môi trường theo runbook đồ án tốt nghiệp. |
 
 Không đặt `ON DELETE CASCADE` từ `users` vào dữ liệu sức khỏe, workout,
 nutrition, AI hoặc audit. Cascade chỉ phù hợp với thành phần cấu hình chưa tạo
@@ -204,7 +205,7 @@ Constraints/index chính:
 | `id` | BIGINT | PK, IDENTITY | OTP challenge |
 | `user_id` | BIGINT | FK → `users(id)`, NULLABLE | Có thể null trong một số flow chống enumeration |
 | `destination` | VARCHAR(255) | NOT NULL | Email đã normalize |
-| `purpose` | VARCHAR(30) | NOT NULL | REGISTER/PASSWORD_RESET/LOGIN_VERIFY |
+| `purpose` | VARCHAR(30) | NOT NULL | REGISTER/PASSWORD_RESET trong P0 |
 | `code_hash` | VARCHAR(255) | NOT NULL | Hash OTP |
 | `attempt_count` | SMALLINT | NOT NULL, DEFAULT 0, CHECK ≥ 0 | Số lần thử |
 | `max_attempts` | SMALLINT | NOT NULL, CHECK > 0 | Ngưỡng khóa challenge |
@@ -216,7 +217,22 @@ Constraints/index chính:
 Không log `code_hash`, OTP plaintext hoặc token. Rate-limit phân tán có thể
 dùng Redis, nhưng record authoritative của flow vẫn nằm ở PostgreSQL.
 
-### 4.4. `user_profiles`
+### 4.4. `security_rate_limit_events`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, IDENTITY | Security event |
+| `scope` | VARCHAR(30) | NOT NULL | `LOGIN`, `OTP_SEND`, `OTP_VERIFY` |
+| `subject_key_hash` | VARCHAR(128) | NOT NULL | Hash email/user key đã normalize |
+| `ip_address` | INET | NULLABLE | IP nguồn |
+| `succeeded` | BOOLEAN | NOT NULL | Kết quả attempt |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Thời điểm attempt |
+
+Bảng này hỗ trợ counter/cooldown bền vững khi Redis không sẵn sàng và chỉ giữ
+retention ngắn (mặc định 24 giờ). P0 trả `429` trong thời gian cooldown; không
+tự động đổi account sang `LOCKED`. `LOCKED` là thao tác quản trị/P1.
+
+### 4.5. `user_profiles`
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -228,7 +244,7 @@ dùng Redis, nhưng record authoritative của flow vẫn nằm ở PostgreSQL.
 | `locale` | VARCHAR(10) | NOT NULL, DEFAULT `vi-VN` | Ngôn ngữ/định dạng |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
-### 4.5. `user_preferences`
+### 4.6. `user_preferences`
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -240,12 +256,13 @@ dùng Redis, nhưng record authoritative của flow vẫn nằm ở PostgreSQL.
 | `meal_preferences` | JSONB | NOT NULL, DEFAULT `{}` | Cấu trúc/khẩu vị bữa ăn |
 | `training_preferences` | JSONB | NOT NULL, DEFAULT `{}` | Loại/lịch tập ưu tiên |
 | `preferred_training_time` | TIME | NULLABLE | Thời gian tập thường dùng |
+| `equipment_onboarding_completed_at` | TIMESTAMPTZ | NULLABLE | Phân biệt chưa hoàn tất với đã chọn danh sách rỗng |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
 JSON phải là array/object đúng loại bằng `CHECK (jsonb_typeof(...))`. Dị ứng và
 constraints được ưu tiên hơn recommendation tối ưu macro.
 
-### 4.6. `user_equipment_preferences`
+### 4.7. `user_equipment_preferences`
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -266,6 +283,7 @@ constraints được ưu tiên hơn recommendation tối ưu macro.
 | `user_id` | BIGINT | FK → `users(id)`, NOT NULL, UNIQUE | Quan hệ 1:1 |
 | `date_of_birth` | DATE | NOT NULL | Backend suy ra age tại thời điểm tính |
 | `gender` | VARCHAR(20) | NOT NULL | Gender enum |
+| `calculation_sex` | VARCHAR(20) | NOT NULL, DEFAULT `UNSPECIFIED` | Input riêng cho BMR; không suy ra từ gender |
 | `height_cm` | NUMERIC(5,2) | NOT NULL, CHECK > 0 | Chiều cao chuẩn hóa |
 | `current_weight_kg` | NUMERIC(6,2) | NOT NULL, CHECK > 0 | Cân nặng authoritative hiện tại |
 | `activity_level` | VARCHAR(20) | NOT NULL | Activity level |
@@ -280,9 +298,13 @@ constraints được ưu tiên hơn recommendation tối ưu macro.
 
 Không cho client ghi trực tiếp `bmi`, `bmr_kcal`, `tdee_kcal`. Cập nhật chiều
 cao, cân nặng profile, activity hoặc goal phải recalculation trong cùng
-transaction. SRS chỉ chốt công thức BMR cho `MALE` và `FEMALE`; với `OTHER` hoặc
-`UNSPECIFIED`, Backend không được tự ánh xạ giới tính. BMR/TDEE/target để null
-cho đến khi policy tính tương ứng được chốt hoặc user cung cấp lựa chọn hợp lệ.
+transaction. Khi `calculation_sex=UNSPECIFIED` hoặc age dưới 18, chỉ BMI được
+tính khi đủ dữ liệu; BMR/TDEE/target để null và API trả
+`calculationStatus=INCOMPLETE` với reason `CALCULATION_SEX_REQUIRED` hoặc
+`UNSUPPORTED_AGE`. Backend không được suy ra `calculation_sex` từ `gender`.
+Sau onboarding, `current_weight_kg` không có endpoint cập nhật độc lập: chỉ
+WeightLog mới nhất theo `(logged_date, updated_at)` được đồng bộ vào profile và
+kích hoạt tính lại BMI/BMR/TDEE. WeightLog cũ hơn chỉ sửa lịch sử/trend.
 
 ### 5.2. `nutrition_targets`
 
@@ -350,6 +372,7 @@ update. Trend 7–30 ngày được tính từ bảng này, không lưu như ngu
 |---|---|---|---|
 | `id` | BIGINT | PK, IDENTITY | Exercise |
 | `name` | VARCHAR(180) | NOT NULL | Tên bài tập |
+| `search_name` | VARCHAR(180) | NOT NULL | Tên đã normalize cố định để tìm kiếm |
 | `slug` | VARCHAR(200) | NOT NULL, UNIQUE | Khóa URL/tìm kiếm |
 | `difficulty` | VARCHAR(20) | NOT NULL | Difficulty enum |
 | `description` | TEXT | NOT NULL | Mô tả |
@@ -413,6 +436,12 @@ NULL` bảo đảm tối đa một active program/user.
 
 `UNIQUE (workout_program_id, day_number)`.
 
+ID của `workout_days` và `workout_exercises` phải ổn định qua update program.
+Backend áp dụng diff theo ID thay vì xóa rồi tạo lại. Không được xóa một
+`workout_day` đang được schedule `PLANNED`/session active tham chiếu; user phải
+hủy hoặc hoàn tất lịch trước. Khi xóa day sau đó, schedule terminal được phép
+set FK nullable về null nhưng bắt buộc giữ snapshot.
+
 #### `workout_exercises`
 
 | Column | Type | Constraints | Description |
@@ -460,17 +489,18 @@ Không unique tuyệt đối theo ngày vì user có thể có nhiều buổi/ng
 | `id` | BIGINT | PK, IDENTITY | Session lifecycle |
 | `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner trực tiếp |
 | `workout_schedule_id` | BIGINT | FK → `workout_schedules(id)`, NOT NULL | Lịch nguồn |
-| `status` | VARCHAR(20) | NOT NULL, DEFAULT `PLANNED` | Session state |
-| `started_at` | TIMESTAMPTZ | NULLABLE | Start |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT `IN_PROGRESS` | Session được tạo tại lệnh Start |
+| `started_at` | TIMESTAMPTZ | NOT NULL | Start |
 | `paused_at` | TIMESTAMPTZ | NULLABLE | Pause gần nhất |
 | `finished_at` | TIMESTAMPTZ | NULLABLE | Finish |
 | `discarded_at` | TIMESTAMPTZ | NULLABLE | Discard/cancel |
 | `total_paused_seconds` | INTEGER | NOT NULL, DEFAULT 0, CHECK ≥ 0 | Tổng pause |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
-Unique partial index trên `workout_schedule_id` với trạng thái `PLANNED`,
-`IN_PROGRESS`, `PAUSED` bảo đảm tối đa một active session/schedule. Transition
-phải dùng row lock/optimistic version để tránh Start/Finish đồng thời.
+Unique partial index trên `user_id` với trạng thái `IN_PROGRESS`, `PAUSED` bảo
+đảm một user chỉ có một session active trên toàn hệ thống. `workout_schedule_id`
+cũng unique để một lịch không bị start lại. Transition phải dùng row
+lock/optimistic version để tránh Start/Finish đồng thời.
 
 #### `workout_logs`
 
@@ -517,8 +547,24 @@ phải dùng row lock/optimistic version để tránh Start/Finish đồng thờ
 | `created_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
 `UNIQUE (workout_exercise_log_id, set_number)`. `set_volume = reps ×
-weight_kg`; PR được suy ra từ log hoàn tất. Session discarded/cancelled không
-tạo `workout_logs` và không tạo PR.
+weight_kg`. Session discarded/cancelled không tạo `workout_logs` và không tạo
+PR.
+
+#### `personal_records`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, IDENTITY | PR read model |
+| `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner |
+| `exercise_id` | BIGINT | FK → `exercises(id)`, NOT NULL | Exercise |
+| `record_type` | VARCHAR(20) | NOT NULL | `MAX_WEIGHT`, `MAX_REPS`, `MAX_VOLUME` |
+| `value` | NUMERIC(12,2) | NOT NULL, CHECK ≥ 0 | Giá trị kỷ lục |
+| `achieved_at` | TIMESTAMPTZ | NOT NULL | Thời điểm đạt |
+| `workout_log_id` | BIGINT | FK → `workout_logs(id)`, NOT NULL | Log chứng minh |
+| `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
+
+`UNIQUE (user_id, exercise_id, record_type)`. Đây là read model được cập nhật
+atomically khi Finish Session; nguồn chứng minh vẫn là completed workout log.
 
 Finish session phải atomically: validate set log → tạo `workout_log` và các
 log con → tính volume/PR → set session/schedule `COMPLETED`.
@@ -533,10 +579,12 @@ log con → tính volume/PR → set session/schedule `COMPLETED`.
 |---|---|---|---|
 | `id` | BIGINT | PK, IDENTITY | Food |
 | `name` | VARCHAR(180) | NOT NULL | Tên món Việt |
+| `search_name` | VARCHAR(180) | NOT NULL | Tên đã normalize cố định để tìm kiếm |
 | `slug` | VARCHAR(200) | NOT NULL, UNIQUE | Khóa URL/tìm kiếm |
 | `category` | VARCHAR(100) | NOT NULL | Nhóm món |
 | `serving_amount` | NUMERIC(8,2) | NOT NULL, CHECK > 0 | Lượng của một serving |
 | `serving_unit` | VARCHAR(30) | NOT NULL | g, tô, chén, phần, quả, ly, miếng... |
+| `grams_per_serving` | NUMERIC(8,2) | NULLABLE, CHECK > 0 | Quy đổi gram có kiểm chứng; null nếu không biết |
 | `calories_per_serving` | NUMERIC(8,2) | NOT NULL, CHECK ≥ 0 | kcal |
 | `protein_g_per_serving` | NUMERIC(7,2) | NOT NULL, CHECK ≥ 0 | Protein |
 | `carbs_g_per_serving` | NUMERIC(7,2) | NOT NULL, CHECK ≥ 0 | Carbohydrate |
@@ -544,8 +592,7 @@ log con → tính volume/PR → set session/schedule `COMPLETED`.
 | `data_source` | VARCHAR(255) | NULLABLE | Nguồn dữ liệu |
 | `source_note` | TEXT | NULLABLE | Ghi chú/độ chính xác |
 | `is_estimated` | BOOLEAN | NOT NULL, DEFAULT true | Hiển thị là tham khảo |
-| `visibility` | VARCHAR(20) | NOT NULL, DEFAULT `PUBLIC` | PUBLIC/PRIVATE/HIDDEN |
-| `owner_user_id` | BIGINT | FK → `users(id)`, NULLABLE | Bắt buộc với PRIVATE |
+| `visibility` | VARCHAR(20) | NOT NULL, DEFAULT `PUBLIC` | PUBLIC/HIDDEN |
 | `deleted_at` | TIMESTAMPTZ | NULLABLE | Soft delete |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
@@ -563,6 +610,10 @@ snapshot.
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
 `UNIQUE (user_id, plan_date)` bảo đảm một meal plan/user/ngày.
+`GET` chỉ dựng response: nếu chưa có plan thì trả target hiện tại với
+`targetSource=CURRENT` và không insert. Plan cùng
+`nutrition_target_snapshot` chỉ được tạo ở mutation đầu tiên trong ngày; snapshot
+sau đó bất biến (`targetSource=SNAPSHOT`).
 
 ### 7.3. `meals`
 
@@ -585,6 +636,8 @@ snapshot.
 | `meal_id` | BIGINT | FK → `meals(id)`, NOT NULL | Bữa cha |
 | `food_id` | BIGINT | FK → `foods(id)`, NOT NULL | Food nguồn |
 | `serving_multiplier` | NUMERIC(7,3) | NOT NULL, CHECK > 0 | 0.5, 1, 1.5, 2... |
+| `input_amount` | NUMERIC(8,2) | NULLABLE, CHECK > 0 | Lượng user nhập nếu nhập theo gram |
+| `input_unit` | VARCHAR(10) | NULLABLE | Chỉ `GRAM` trong P0 |
 | `food_name_snapshot` | VARCHAR(180) | NOT NULL | Tên lúc thêm |
 | `serving_amount_snapshot` | NUMERIC(8,2) | NOT NULL, CHECK > 0 | Serving gốc |
 | `serving_unit_snapshot` | VARCHAR(30) | NOT NULL | Đơn vị gốc |
@@ -595,14 +648,17 @@ snapshot.
 | `note` | VARCHAR(500) | NULLABLE | Ghi chú |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
-Các snapshot được Backend tính lại khi đổi multiplier. Daily total/remaining là
+`input_amount` và `input_unit` phải cùng null hoặc cùng có giá trị. Nhập gram chỉ
+hợp lệ khi Food có `grams_per_serving`; Backend quy đổi ra multiplier rồi lưu cả
+input gốc lẫn snapshot. Các snapshot được Backend tính lại khi đổi multiplier.
+Daily total/remaining là
 aggregate từ entry snapshot so với target snapshot/current target theo contract
 API; không tin giá trị total từ client.
 
 ### 7.5. Meal history và template
 
 Meal history đọc trực tiếp `meal_plans` theo ngày. Template là P0 theo
-`FT-MP-009`, nhưng endpoint/payload chi tiết vẫn phải được khóa trong API
+`FT-MP-009`; endpoint/payload canonical nằm tại mục Meal template trong API
 Specification.
 
 #### `meal_templates`
@@ -677,7 +733,7 @@ Context Builder đọc dữ liệu cá nhân.
 | `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner |
 | `title` | VARCHAR(200) | NULLABLE | Tên hiển thị |
 | `mode` | VARCHAR(30) | NOT NULL | GENERAL_KNOWLEDGE/PERSONALIZED |
-| `status` | VARCHAR(20) | NOT NULL, DEFAULT `ACTIVE` | ACTIVE/ARCHIVED |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT `ACTIVE` | Chỉ `ACTIVE` trong P0; `ARCHIVED` dành cho P1 |
 | `last_message_at` | TIMESTAMPTZ | NULLABLE | Sắp xếp history |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
@@ -687,7 +743,8 @@ Context Builder đọc dữ liệu cá nhân.
 |---|---|---|---|
 | `id` | BIGINT | PK, IDENTITY | Message |
 | `conversation_id` | BIGINT | FK → `ai_conversations(id)`, NOT NULL | Conversation |
-| `role` | VARCHAR(20) | NOT NULL | USER/ASSISTANT/SYSTEM |
+| `role` | VARCHAR(20) | NOT NULL | USER/ASSISTANT trong P0; không persist system prompt |
+| `effective_mode` | VARCHAR(30) | NOT NULL | Mode thực tế của request tại thời điểm message |
 | `content` | TEXT | NOT NULL | Nội dung đã qua giới hạn kích thước |
 | `safety_level` | VARCHAR(20) | NULLABLE | Kết quả safety cho response |
 | `ai_request_id` | BIGINT | FK → `ai_requests(id)`, NULLABLE | Request tạo assistant message |
@@ -761,12 +818,33 @@ Không lưu credential, full prompt hoặc raw personal context vào bảng tele
 
 ### 8.3. Recommendation
 
+#### `ai_recommendation_generations`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, IDENTITY | Một lần generate theo lệnh explicit |
+| `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner |
+| `target_date` | DATE | NOT NULL | Ngày theo profile timezone |
+| `generation_no` | SMALLINT | NOT NULL, CHECK > 0 | Lần generate trong ngày |
+| `status` | VARCHAR(20) | NOT NULL | STARTED/SUCCEEDED/FAILED |
+| `idempotency_key` | VARCHAR(100) | NOT NULL | Chống double-submit |
+| `ai_request_id` | BIGINT | FK → `ai_requests(id)`, NULLABLE | Provider trace |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Bắt đầu |
+| `completed_at` | TIMESTAMPTZ | NULLABLE | Kết thúc |
+
+`UNIQUE (user_id, target_date, generation_no)` và `UNIQUE (user_id,
+idempotency_key)`. Backend lock theo user/ngày khi cấp `generation_no`, giới hạn
+số lần theo contract và có thể retry một generation FAILED mà không tạo item
+trùng.
+
 #### `ai_recommendations`
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | BIGINT | PK, IDENTITY | Recommendation |
 | `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner |
+| `generation_id` | BIGINT | FK → `ai_recommendation_generations(id)`, NOT NULL | Batch sinh item |
+| `slot_number` | SMALLINT | NOT NULL, CHECK BETWEEN 1 AND 3 | Vị trí ổn định trong batch |
 | `ai_request_id` | BIGINT | FK → `ai_requests(id)`, NULLABLE | Request sinh đề xuất |
 | `recommendation_date` | DATE | NOT NULL | Ngày recommendation |
 | `type` | VARCHAR(20) | NOT NULL | NUTRITION/WORKOUT/... |
@@ -776,7 +854,7 @@ Không lưu credential, full prompt hoặc raw personal context vào bảng tele
 | `priority` | VARCHAR(10) | NOT NULL | LOW/MEDIUM/HIGH |
 | `status` | VARCHAR(20) | NOT NULL, DEFAULT `PENDING` | State machine |
 | `source_metrics` | JSONB | NOT NULL, DEFAULT `{}` | Metric/signal snapshot |
-| `safety_level` | VARCHAR(20) | NOT NULL | NORMAL/CAUTION/BLOCKED |
+| `safety_level` | VARCHAR(20) | NOT NULL, CHECK IN (`NORMAL`,`CAUTION`) | Chỉ persist output an toàn |
 | `allowed_action` | VARCHAR(60) | NOT NULL, DEFAULT `NONE` | Whitelist action |
 | `action_payload` | JSONB | NULLABLE | Proposal payload đã validate schema |
 | `expires_at` | TIMESTAMPTZ | NOT NULL | Hết hiệu lực |
@@ -784,11 +862,13 @@ Không lưu credential, full prompt hoặc raw personal context vào bảng tele
 | `version` | BIGINT | NOT NULL, DEFAULT 0 | Optimistic locking/idempotency |
 | `created_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
 
-Check constraint bảo đảm terminal timestamp phù hợp trạng thái. Recommendation
-`BLOCKED` không được APPLY. Action payload không được chứa SQL, endpoint command,
-token/API key hoặc field ngoài schema whitelist. Giới hạn 1–3 Daily
-Recommendation/user/ngày là rule ở service trong P0; nếu tạo theo batch, toàn
-bộ batch phải validate trước khi ghi.
+`UNIQUE (generation_id, slot_number)`. Check constraint bảo đảm terminal
+timestamp phù hợp trạng thái. Output `BLOCKED` chỉ ghi validation/request log,
+không persist thành recommendation. Action payload không được chứa SQL,
+endpoint command, token/API key hoặc field ngoài schema whitelist. Với action
+tạo lịch/meal, `targetDate` phải nằm trong cửa sổ contract và mọi ID phải thuộc
+candidate shortlist Backend đã gửi. Preference chỉ được chứa key/value whitelist.
+Toàn bộ 1–3 item trong generation phải validate trước khi ghi atomically.
 
 #### `ai_recommendation_logs`
 
@@ -831,6 +911,8 @@ chuyển `APPLIED` trong một transaction. DISMISS không mutation domain data.
 | `owner_type` | VARCHAR(30) | NOT NULL | EXERCISE/FOOD/USER_PROFILE |
 | `owner_id` | BIGINT | NOT NULL | ID owner polymorphic |
 | `media_type` | VARCHAR(20) | NOT NULL | IMAGE/VIDEO/GIF |
+| `role` | VARCHAR(30) | NOT NULL | P0: THUMBNAIL/PRIMARY_VIDEO/GALLERY; AVATAR dành P1 |
+| `sort_order` | SMALLINT | NOT NULL, DEFAULT 1, CHECK > 0 | Thứ tự theo owner/role |
 | `object_key` | VARCHAR(500) | NOT NULL, UNIQUE | Generated key, không dùng filename làm quyền |
 | `original_file_name` | VARCHAR(255) | NOT NULL | Tên đã sanitize |
 | `mime_type` | VARCHAR(100) | NOT NULL | MIME thực tế đã verify |
@@ -845,6 +927,7 @@ chuyển `APPLIED` trong một transaction. DISMISS không mutation domain data.
 
 Do owner polymorphic không tạo được FK chuẩn, service phải validate owner tồn
 tại và đúng loại trong transaction. Index `(owner_type, owner_id, status)`.
+`UNIQUE (owner_type, owner_id, role, sort_order)` bảo vệ layout media ổn định.
 Presigned access URL chỉ cấp sau access-policy check và có TTL ngắn. Orphan job
 không xóa object còn được lịch sử tham chiếu.
 
@@ -908,9 +991,9 @@ WorkoutSchedule:
 PLANNED ──► COMPLETED | MISSED | CANCELLED
 
 WorkoutSession:
-PLANNED ──► IN_PROGRESS ──► PAUSED ──► IN_PROGRESS
-                         └────────────► COMPLETED
-IN_PROGRESS | PAUSED ─────────────────► DISCARDED | CANCELLED
+IN_PROGRESS ──► PAUSED ──► IN_PROGRESS
+          └──────────────► COMPLETED
+IN_PROGRESS | PAUSED ────► DISCARDED
 
 AiRecommendation:
 PENDING ──► APPLIED | DISMISSED | EXPIRED
@@ -922,8 +1005,10 @@ READY/FAILED/ORPHANED ──► DELETED
 ```
 
 Database `CHECK` bảo vệ tập giá trị và hình dạng terminal state; domain service
-bảo vệ transition hợp lệ. Job expire/missed có thể chạy scheduled hoặc lazy khi
-read/apply nhưng phải idempotent.
+bảo vệ transition hợp lệ. `MISSED` được materialize idempotent bởi job hoặc lazy
+trước read sau khi qua cuối ngày + grace period theo profile timezone. Không
+đánh `MISSED` khi schedule có session active. Recommendation expiry cũng có thể
+scheduled/lazy nhưng phải cùng một rule authoritative.
 
 ### 10.2. Invariant quan trọng
 
@@ -934,12 +1019,13 @@ read/apply nhưng phải idempotent.
 | Một NutritionTarget hiện hành/User | `UNIQUE nutrition_targets(user_id)` |
 | Một WeightLog/User/Ngày | `UNIQUE (user_id, logged_date)` |
 | Tối đa một active WorkoutProgram/User | Unique partial index |
-| Tối đa một active Session/Schedule | Unique partial index |
+| Tối đa một active Session/User và một session/Schedule | Unique indexes |
 | Một WorkoutLog/Session | `UNIQUE workout_logs(workout_session_id)` |
 | Một MealPlan/User/Ngày | `UNIQUE (user_id, plan_date)` |
 | Một ConsentSetting/User | `UNIQUE ai_consent_settings(user_id)` |
 | Apply idempotent | State/version lock + unique idempotency key |
-| Private Food phải có owner | CHECK theo visibility |
+| Một PR/User/Exercise/Loại | `UNIQUE personal_records(user_id, exercise_id, record_type)` |
+| Một slot/Recommendation generation | `UNIQUE (generation_id, slot_number)` |
 | Giá trị weight/height/serving dương | CHECK constraints |
 
 Cross-owner invariant như `schedule.user_id = program.user_id` hoặc
@@ -964,8 +1050,11 @@ CREATE UNIQUE INDEX uq_workout_programs_one_active
   WHERE status = 'ACTIVE' AND deleted_at IS NULL;
 
 CREATE UNIQUE INDEX uq_workout_sessions_one_active
-  ON workout_sessions (workout_schedule_id)
-  WHERE status IN ('PLANNED', 'IN_PROGRESS', 'PAUSED');
+  ON workout_sessions (user_id)
+  WHERE status IN ('IN_PROGRESS', 'PAUSED');
+
+CREATE UNIQUE INDEX uq_workout_sessions_schedule
+  ON workout_sessions (workout_schedule_id);
 
 CREATE UNIQUE INDEX uq_recommendation_idempotency
   ON ai_recommendation_logs (recommendation_id, idempotency_key)
@@ -982,12 +1071,17 @@ CREATE INDEX idx_refresh_tokens_user_status
   ON refresh_tokens (user_id, status, expires_at);
 CREATE INDEX idx_otp_destination_purpose
   ON otp_codes (destination, purpose, created_at DESC);
+CREATE INDEX idx_security_rate_limit_subject
+  ON security_rate_limit_events (scope, subject_key_hash, created_at DESC);
 
 CREATE INDEX idx_weight_logs_user_date
   ON weight_logs (user_id, logged_date DESC);
 
 CREATE INDEX idx_exercises_visibility_difficulty
   ON exercises (visibility, difficulty);
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX idx_exercises_search_name_trgm
+  ON exercises USING gin (search_name gin_trgm_ops);
 CREATE INDEX idx_exercise_muscles_group_exercise
   ON exercise_muscle_groups (muscle_group_id, exercise_id);
 CREATE INDEX idx_exercise_equipment_equipment_exercise
@@ -999,9 +1093,13 @@ CREATE INDEX idx_workout_logs_user_completed
   ON workout_logs (user_id, completed_at DESC);
 CREATE INDEX idx_workout_exercise_logs_exercise
   ON workout_exercise_logs (exercise_id, created_at DESC);
+CREATE INDEX idx_personal_records_user_exercise
+  ON personal_records (user_id, exercise_id, record_type);
 
 CREATE INDEX idx_foods_visibility_category
   ON foods (visibility, category);
+CREATE INDEX idx_foods_search_name_trgm
+  ON foods USING gin (search_name gin_trgm_ops);
 CREATE INDEX idx_meal_plans_user_date
   ON meal_plans (user_id, plan_date DESC);
 CREATE INDEX idx_meal_entries_meal
@@ -1013,6 +1111,8 @@ CREATE INDEX idx_ai_messages_conversation_time
   ON ai_messages (conversation_id, created_at);
 CREATE INDEX idx_ai_recommendations_user_day_status
   ON ai_recommendations (user_id, recommendation_date DESC, status);
+CREATE INDEX idx_ai_generations_user_day
+  ON ai_recommendation_generations (user_id, target_date DESC, generation_no);
 CREATE INDEX idx_ai_recommendations_pending_expiry
   ON ai_recommendations (expires_at)
   WHERE status = 'PENDING';
@@ -1027,9 +1127,11 @@ CREATE INDEX idx_audit_target_time
   ON audit_logs (target_type, target_id, created_at DESC);
 ```
 
-Chỉ thêm GIN cho JSONB khi có query thực tế trên nội dung JSON. Tìm kiếm
-Exercise/Food P0 có thể dùng B-tree + `lower(name)`/trigram; nếu cần fuzzy
-search, migration có thể bật `pg_trgm` và tạo GIN trigram trên `name`/`slug`.
+`exercises.search_name` và `foods.search_name` được Backend sinh bằng một thuật
+toán normalize cố định
+(lowercase, trim, bỏ dấu) và backfill trong migration; không dùng expression
+index trực tiếp trên `unaccent()` vì volatility của extension. Chỉ thêm GIN cho
+JSONB khi có query thực tế trên nội dung JSON.
 Mọi list lớn (Exercise, Food, Workout Log, Weight Log, Conversation, Audit) phải
 phân trang.
 
@@ -1041,10 +1143,11 @@ phân trang.
 |---|---|
 | Verify register OTP | Consume OTP → activate account → tạo/cấp session metadata |
 | Update Health Profile | Validate input → update profile → tính BMI/BMR/TDEE → upsert NutritionTarget |
-| Add WeightLog | Upsert (`user_id`, `logged_date`) → update current weight/BMI summary nếu contract yêu cầu; không tự đổi target |
+| Add WeightLog | Upsert (`user_id`, `logged_date`) → nếu là log mới nhất thì sync current weight và tính lại BMI/BMR/TDEE; không tự đổi NutritionTarget |
 | Finish Workout Session | Lock session/schedule → validate logs → persist snapshots/set logs → calculate volume/PR → mark completed |
 | Update MealEntry | Validate owner/Food → calculate nutrition snapshots → save; totals được aggregate lại |
 | Change AI Consent | Update current setting → append consent history |
+| Generate Daily Recommendation | Tạo/lock generation ngắn → gọi provider ngoài transaction → validate batch → expire PENDING batch cũ cùng ngày + persist 1–3 items + mark SUCCEEDED atomically; FAILED không tạo item |
 | Apply Recommendation | Lock/version check → ownership/state/expiry/action validation → domain mutation → recommendation log/audit → APPLIED |
 | Dismiss Recommendation | Lock/version check → log feedback → DISMISSED; không mutation domain |
 
@@ -1067,7 +1170,15 @@ TDEE = BMR * activityFactor
 ```
 
 Backend lưu kết quả cùng `calculation_version`; công thức/rule thay đổi không
-được âm thầm viết lại lịch sử.
+được âm thầm viết lại lịch sử. Tuổi là số năm tròn tại ngày tính theo profile
+timezone. Mọi kết quả authoritative dùng decimal và round `HALF_UP` tới hai chữ
+số sau dấu phẩy; golden tests khóa input/output cho `health-v1`.
+
+Rule `health-v1` dùng offset calories theo goal `-400/0/+400/+300` lần lượt cho
+`LOSE_WEIGHT/MAINTAIN_WEIGHT/GAIN_WEIGHT/GAIN_MUSCLE`; protein factor
+`2.0/1.4/1.6/2.0 g/kg` theo cùng thứ tự và fat ratio `25%`. Không tạo/upsert
+`nutrition_targets` nếu calories dưới `1200`, carb âm hoặc kết quả không hữu
+hạn/dương. Lưu tối đa hai chữ số thập phân; rounding hiển thị thuộc Mobile.
 
 ### Workout
 
@@ -1078,9 +1189,14 @@ workoutVolume  = sum(exerciseVolume)
 completionRate = completedEligible / scheduledEligible
 ```
 
-`scheduledEligible` chỉ gồm lịch đến hạn trong khoảng báo cáo; schedule
-`CANCELLED` hợp lệ không thuộc mẫu số. Metric/PR chỉ dùng log từ session
-`COMPLETED`.
+`scheduledEligible` chỉ gồm schedule có ngày đến hạn trong khoảng báo cáo,
+không gồm `CANCELLED` và không gồm ngày hiện tại khi còn session active hoặc
+chưa qua cutoff + grace period. `completedEligible` là phần trong mẫu số có
+status `COMPLETED`; 0/0 trả `null` kèm counts, không trả 0%. Sau cutoff không
+cho cancel để né mẫu số. Metric/PR chỉ dùng log từ session `COMPLETED`.
+
+Seed `rules-v1` phải cố định code, threshold, priority và tie-break theo SRS;
+Rule Engine chọn tối đa ba signal khác loại theo `priority DESC, code ASC`.
 
 ### Nutrition
 
@@ -1108,8 +1224,10 @@ phải được API/UI trình bày là tham khảo.
 - Presigned URL không được lưu như durable credential; chỉ lưu `object_key`.
 - Audit denial/mutation nhạy cảm bằng `correlation_id`; không biến audit thành
   kho sao chép raw PII.
-- Backup, encryption at rest/in transit, migration credential và retention cụ
-  thể thuộc cấu hình vận hành; phải được khóa trước production.
+- Môi trường đồ án tốt nghiệp chỉ dùng dữ liệu synthetic/demo. Runbook phải reset/purge
+  database và object storage trước khi bàn giao hoặc trong vòng 30 ngày sau khi
+  kết thúc chấm. Legal retention, self-service deletion và backup expiry phải
+  được khóa bằng ADR trước khi dùng dữ liệu thật/production.
 
 ---
 
@@ -1132,8 +1250,10 @@ V10__seed_reference_data.sql
 
 Nguyên tắc:
 
-- Seed P0 gồm equipment tối thiểu, muscle group, Exercise demo và Food Việt Nam
-  đủ cho luồng E2E; seed phải idempotent bằng code/slug ổn định.
+- Seed P0 gồm ít nhất 40 Exercise bao phủ 6 nhóm cơ và 6 nhóm equipment, cùng ít
+  nhất 80 Food Việt Nam bao phủ 4 meal type và 8 category. Mọi record có field
+  bắt buộc/source-note; record dùng trong demo có media hợp lệ, tối thiểu 20
+  Exercise và 20 Food có media. Seed phải idempotent bằng code/slug ổn định.
 - Không seed password/token/OTP/provider secret thật.
 - Migration đã chạy không được sửa nội dung; tạo migration mới cho thay đổi.
 - CI chạy migration trên PostgreSQL sạch và chạy integration test constraint,

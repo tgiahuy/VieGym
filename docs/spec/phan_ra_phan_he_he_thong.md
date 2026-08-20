@@ -59,7 +59,7 @@ identity cho toàn hệ thống nhưng không sở hữu dữ liệu nghiệp v�
 | Entity | Mô tả |
 |---|---|
 | `User` | Email, password hash, provider, role và trạng thái |
-| `RefreshToken` | Phiên có expiry, revoke và rotation nếu áp dụng |
+| `RefreshToken` | Phiên có expiry, revoke và bắt buộc rotation khi refresh |
 | `OtpCode` | OTP theo purpose, expiry, attempts và cooldown |
 
 ### Chức năng chính
@@ -177,7 +177,8 @@ Weight Log và trend cho Nutrition, Dashboard và AI Context.
 |---|---|---|
 | GET/POST/PUT | `/api/v1/health/profile` | Tạo, xem, cập nhật profile |
 | GET | `/api/v1/health/metrics` | Metric authoritative hiện tại |
-| GET/POST/PUT | `/api/v1/weight-logs` | Lịch sử/cập nhật cân nặng |
+| GET | `/api/v1/weight-logs` | Lịch sử cân nặng |
+| PUT | `/api/v1/weight-logs/{loggedDate}` | Upsert theo ngày nghiệp vụ |
 | GET | `/api/v1/weight-logs/trend` | Trend do Backend tính |
 
 ### Sub-components
@@ -196,7 +197,7 @@ Health & Body
 - Mobile và AI không tự tính metric authoritative.
 - Sửa chiều cao, cân nặng trong profile, activity hoặc goal phải tính
   lại metric/target trong transaction hợp lệ.
-- Ghi WeightLog hằng ngày không tự thay đổi NutritionTarget.
+- WeightLog mới nhất đồng bộ current weight và tính lại BMI/BMR/TDEE trong transaction; không tự thay đổi NutritionTarget.
 - User chỉ truy cập Health resource của chính mình.
 
 ---
@@ -241,6 +242,9 @@ lúc chọn bài đến khi hoàn thành và tổng hợp tiến độ.
 |---|---|---|
 | GET | `/api/v1/exercises` | Danh sách/tìm/lọc Exercise |
 | GET | `/api/v1/exercises/{id}` | Chi tiết Exercise |
+| GET | `/api/v1/exercises/{id}/alternatives` | Bài thay thế cùng nhóm cơ |
+| GET | `/api/v1/muscle-groups` | Catalog nhóm cơ |
+| GET | `/api/v1/equipment` | Catalog thiết bị |
 | GET/POST/PUT/DELETE | `/api/v1/workout-programs` | Program thuộc user |
 | GET/POST/PUT/DELETE | `/api/v1/workout-schedules` | Lịch tập |
 | POST | `/api/v1/workout-sessions/{scheduleId}/start` | Bắt đầu session |
@@ -249,6 +253,8 @@ lúc chọn bài đến khi hoàn thành và tổng hợp tiến độ.
 | POST | `/api/v1/workout-sessions/{id}/finish` | Hoàn thành/tạo log |
 | POST | `/api/v1/workout-sessions/{id}/discard` | Hủy session |
 | GET | `/api/v1/workout-logs` | Lịch sử và tiến độ |
+| GET | `/api/v1/workout-logs/{id}` | Chi tiết log |
+| GET | `/api/v1/personal-records` | PR authoritative |
 
 ### Sub-components
 
@@ -269,18 +275,18 @@ Workout
 WorkoutSchedule: PLANNED → COMPLETED | MISSED | CANCELLED
 
 WorkoutSession:
-PLANNED → IN_PROGRESS
 IN_PROGRESS → PAUSED → IN_PROGRESS
 IN_PROGRESS → COMPLETED
-IN_PROGRESS/PAUSED → DISCARDED hoặc CANCELLED
+IN_PROGRESS/PAUSED → DISCARDED
 ```
 
-- Mỗi schedule có tối đa một active session.
+- Mỗi user có tối đa một active session; response conflict trả active session hiện hành.
 - Finish validate log, tính metric và cập nhật schedule trong cùng
   transaction.
-- `CANCELLED` hợp lệ không tính vào mẫu số completion rate.
-- Session discarded không tạo PR.
+- Schedule `CANCELLED` hợp lệ không tính vào mẫu số completion rate.
+- Session `DISCARDED` không tạo WorkoutLog hoặc PR.
 - Exercise hidden giữ lịch sử nhưng không thêm vào program mới.
+- Sửa program dùng stable child ID/diff; không xoá WorkoutDay còn schedule non-terminal tham chiếu.
 
 ---
 
@@ -316,12 +322,13 @@ calories/macros so với Nutrition Target.
 | GET | `/api/v1/foods` | Tìm/lọc Food active |
 | GET | `/api/v1/foods/{id}` | Nutrition/serving |
 | GET | `/api/v1/meal-plans?date=` | Meal Plan theo ngày |
-| POST | `/api/v1/meal-plans/{id}/entries` | Thêm entry |
-| PUT/DELETE | `/api/v1/meal-plans/{id}/entries/{entryId}` | Sửa/xóa entry |
+| POST | `/api/v1/meal-plans/{planDate}/entries` | Thêm entry/get-or-create plan |
+| PUT/DELETE | `/api/v1/meal-plans/{planDate}/entries/{entryId}` | Sửa/xóa entry |
 
 ### Business rules
 
 - `entryNutrition = nutritionPerServing × servingMultiplier`.
+- Nhập gram chỉ khi Food có `gramsPerServing`; Backend snapshot input amount/unit.
 - Total/remaining do Backend tính.
 - User chỉ truy cập Meal Plan/Entry của mình.
 - Food/imported text là untrusted input với AI.
@@ -344,6 +351,7 @@ Dashboard không sở hữu logic hay dữ liệu nghiệp vụ gốc.
 - Hiển thị 1–3 Daily Recommendation còn hiệu lực — P0.
 - Empty state/CTA khi thiếu profile, meal hoặc schedule — P0.
 - Admin Dashboard/analytics — P1.
+- Dashboard không gọi AI Provider và không sinh/regenerate recommendation.
 
 ### API Endpoints
 
@@ -417,6 +425,7 @@ Recommendation, validation và Apply/Dismiss có kiểm soát.
 | GET | `/api/v1/ai/conversations` | Conversation thuộc user |
 | POST | `/api/v1/ai/conversations/{id}/messages` | Chat qua Backend |
 | GET | `/api/v1/ai/recommendations/daily` | Recommendation trong ngày |
+| POST | `/api/v1/ai/recommendations/daily/generations` | Command sinh/refresh recommendation |
 | POST | `/api/v1/ai/recommendations/{id}/apply` | Xác nhận proposal |
 | POST | `/api/v1/ai/recommendations/{id}/dismiss` | Từ chối proposal |
 
@@ -445,6 +454,8 @@ AI chỉ trả proposal thuộc whitelist:
 - `REVIEW_NUTRITION_TARGET_PROPOSAL`
 - `LOG_REMINDER_ONLY`
 
+`LOG_REMINDER_ONLY` là reserved P1 và không được gửi trong P0.
+
 ```text
 APPLY: User Approval → Ownership → PENDING/Expiry Check
 → Schema/Business Validation → Domain Mutation → Audit
@@ -464,6 +475,9 @@ DISMISS: Ownership → PENDING Check → DISMISSED + optional feedback
   không cần thiết.
 - Chỉ recommendation `PENDING`, thuộc user, chưa hết hạn mới được
   Apply/Dismiss; Apply phải idempotent.
+- Daily generation dùng `rules-v1`, candidate shortlist và generation key; ID ngoài shortlist bị reject.
+- `BLOCKED` chỉ lưu validation log, không persist thành recommendation.
+- Preference proposal không được sửa allergy/dietary constraint; meal/schedule proposal bắt buộc có `targetDate`.
 - AI không chẩn đoán, kê thuốc, cam kết điều trị hoặc khuyến nghị cực đoan.
 - User input, Food/Exercise/imported text là untrusted input.
 - Provider credential chỉ server-side; có timeout, retry giới hạn và
@@ -476,8 +490,8 @@ DISMISS: Ownership → PENDING Check → DISMISSED + optional feedback
 ### Mô tả
 
 Quản trị dữ liệu dùng chung và audit thao tác quan trọng. Exercise/Food
-và audit tối thiểu là P0 demo baseline theo business flow; UC-19 mở rộng
-và UC-20 vẫn là P1 theo SRS.
+và audit tối thiểu là UC-19/P0 baseline theo business flow; UC-20 và các
+khả năng Admin mở rộng vẫn là P1 theo SRS.
 
 ### Entities
 

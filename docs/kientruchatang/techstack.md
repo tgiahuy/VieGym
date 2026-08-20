@@ -75,8 +75,8 @@ Môi trường demo: Docker Compose.
 
 | Công nghệ | Baseline đề xuất | Mô tả |
 |---|---:|---|
-| **Flutter** | Stable 3.x | UI framework đa nền tảng; MVP ưu tiên Android |
-| **Dart** | 3.x, theo Flutter SDK | Ngôn ngữ ứng dụng mobile |
+| **Flutter** | **3.44.4** | UI framework đa nền tảng; pin bằng `.fvmrc`, MVP ưu tiên Android |
+| **Dart** | **3.12.2** | Đi cùng Flutter 3.44.4; không nâng độc lập |
 | **Material 3** | Theo Flutter SDK | Design system và component nền |
 
 > Không tạo React/Web Admin riêng trong MVP. Admin P0 dùng shell/route riêng trong Flutter cho Manage Exercise, Manage Food và Audit Log. Chỉ tách Web Admin ở P1 khi có yêu cầu vận hành thực tế.
@@ -85,10 +85,11 @@ Môi trường demo: Docker Compose.
 
 | Thư viện | Trạng thái | Mục đích |
 |---|---|---|
-| **State management package** | **Chưa chốt** | Chọn một giải pháp duy nhất khi bootstrap và ghi ADR trước khi triển khai feature |
+| **flutter_riverpod** | **Đã chốt/P0 — ADR-001** | State bất đồng bộ, dependency injection và test override; không dùng package state khác song song |
 | **go_router** | **Đề xuất** | Declarative routing, auth redirect và route theo role |
 | **Dio** | **Đề xuất** | HTTP client, timeout, interceptor, refresh token và error mapping |
 | **Freezed** + **json_serializable** | **Đề xuất** | Immutable model, union state và JSON mapping sinh tự động |
+| **OpenAPI Generator `dart-dio`** | **Đã chốt/P0** | Sinh API client/models từ contract Backend, không viết DTO trùng tay |
 
 Các nguyên tắc bắt buộc:
 
@@ -96,12 +97,14 @@ Các nguyên tắc bắt buộc:
 - Backend guard là lớp bảo mật bắt buộc; route guard trên Flutter chỉ hỗ trợ UX.
 - Không tự tính BMI/BMR/TDEE, nutrition summary, workout volume hoặc PR như kết quả authoritative.
 - Mọi màn hình phải biểu diễn rõ loading, empty, error, offline và retry state.
+- Pin exact OpenAPI Generator version. CI chạy regenerate và fail nếu generated
+  client khác source đã commit.
 
 ### 3.3. Local storage và thiết bị
 
 | Thư viện | Trạng thái | Mục đích |
 |---|---|---|
-| **flutter_secure_storage** | **Đề xuất/P0** | Lưu refresh token hoặc session credential an toàn |
+| **flutter_secure_storage** | **Đã chốt/P0 — ADR-004** | Chỉ lưu refresh token opaque; access token giữ trong bộ nhớ |
 | **local_auth** | **Đề xuất/P0** | Biometric chỉ mở credential local; không gửi biometric lên server |
 | **shared_preferences** | **Đề xuất** | Preference không nhạy cảm như theme/onboarding flag |
 | **image_picker** / **file_picker** | **Đề xuất** | Chọn avatar/media theo contract PH9 |
@@ -149,8 +152,8 @@ Mỗi feature có thể tách `data/`, `domain/`, `presentation/` khi độ ph�
 
 | Công nghệ | Baseline đề xuất | Mô tả |
 |---|---:|---|
-| **Java** | 21 LTS trở lên | Runtime ổn định cho MVP; dùng cùng version ở local, CI và container |
-| **Spring Boot** | 3.x tương thích JDK | Framework API chính |
+| **Java** | **21 LTS** | Dùng cùng major ở local, CI và container |
+| **Spring Boot** | **3.5.16** | Framework API chính; pin parent/BOM exact |
 | **Spring Web MVC** | Theo Spring Boot BOM | REST API `/api/v1` |
 | **Spring Validation** | Theo Spring Boot BOM | Validate request DTO |
 | **Spring Data JPA** | Theo Spring Boot BOM | Data access và transaction |
@@ -247,14 +250,14 @@ backend/
 
 | Công nghệ | Baseline đề xuất | Mô tả |
 |---|---:|---|
-| **Python** | 3.12+ | Runtime AI Service |
-| **FastAPI** | Version stable pin trong lockfile | Internal HTTP API chỉ Spring Boot được gọi |
+| **Python** | **3.12 minor** | Runtime AI Service; image patch pin digest ở M1 |
+| **FastAPI** | **0.141.1** | Internal HTTP API chỉ Spring Boot được gọi; pin trong `uv.lock` |
 | **Pydantic v2** | Theo FastAPI compatibility | Validate input/output schema |
 | **HTTPX** | Version stable pin | Async HTTP client cho AI Provider |
 | **Uvicorn** | Version stable pin | ASGI server |
-| **OpenAI SDK hoặc Google Gen AI SDK** | Theo provider được chọn | Provider adapter; không để SDK lan ra business contract |
+| **OpenAI Python SDK** | **Đã chốt/P0 — ADR-002** | Responses API, Structured Outputs; model mặc định `gpt-5.6-luna` qua config |
 
-> MVP nên chọn **một provider mặc định** qua biến môi trường và giữ adapter cho provider còn lại. Không gọi đồng thời nhiều provider nếu chưa có use case fallback/cost routing rõ ràng.
+> MVP dùng **OpenAI** làm provider mặc định qua biến môi trường. Gemini chỉ là khả năng mở rộng adapter sau P0; không triển khai multi-provider/fallback routing trong MVP.
 
 ### 5.2. Trust boundary và contract
 
@@ -282,6 +285,8 @@ Các ràng buộc bắt buộc:
 - Output là câu trả lời hoặc proposal có schema, không phải lệnh mutation.
 - Timeout/retry phải hữu hạn; khi provider lỗi, trả fallback an toàn.
 - Secret của provider chỉ nằm server-side qua environment/secret manager.
+- Spring Boot sở hữu rule/prompt version và render prompt; FastAPI chỉ thực thi
+  request đã render qua provider adapter rồi parse structured output.
 
 ### 5.3. Cấu trúc source đề xuất
 
@@ -292,7 +297,7 @@ ai-service/
 │   ├── api/                     ← Internal endpoint
 │   ├── schemas/                 ← Input/output contract
 │   ├── providers/               ← OpenAI/Gemini adapter
-│   ├── prompts/                 ← Versioned templates
+│   ├── prompts/                 ← Provider formatting; business prompt do Backend render
 │   ├── validators/              ← Output/safety helpers
 │   └── core/                    ← Config, timeout, retry, logging
 ├── tests/
@@ -309,7 +314,7 @@ ai-service/
 
 | Công nghệ | Baseline đề xuất | Vai trò |
 |---|---:|---|
-| **PostgreSQL** | 16+; thống nhất một major trong Docker/CI/prod | Source of truth, transaction và relational integrity |
+| **PostgreSQL** | **16.14; major 16 thống nhất Docker/CI/prod** | Source of truth, transaction và relational integrity |
 | **Flyway** | Theo Backend | Schema migration, index, constraint và seed có kiểm soát |
 
 Lý do chọn PostgreSQL:
@@ -341,8 +346,8 @@ Redis không phải dependency bắt buộc của core MVP. Nếu chưa chứng 
 
 | Môi trường | Công nghệ | Vai trò |
 |---|---|---|
-| Local/demo | **S3-compatible object storage hoặc URL/asset demo** | Lưu/phục vụ ảnh và video theo phạm vi P0 |
-| Production | **S3-compatible managed storage/CDN** | Durable storage và delivery |
+| Local/demo | **MinIO — ADR-003** | Bucket private, presigned PUT/GET và integration test |
+| Production | **Amazon S3 — ADR-003** | Durable private storage; CDN chưa thuộc P0 |
 | Fallback demo | URL/asset hợp lệ | Được SRS cho phép nếu upload chưa hoàn thiện |
 
 Streaming/transcoding video nâng cao nằm ngoài MVP.
@@ -418,9 +423,9 @@ Flutter App chạy trên emulator/device và gọi endpoint Backend được c�
 | **Git** | **Đã chốt thực tế repo** | Version control |
 | **Docker + Docker Compose** | **Đã chốt cho demo** | Reproducible runtime |
 | **GitHub Actions** | **Đề xuất** | Lint, test, build image và kiểm tra migration |
-| **Maven Wrapper** | **Đề xuất** | Build Backend nhất quán |
+| **Maven Wrapper** | **Đã chốt/M0-12** | Build Backend duy nhất và nhất quán; không dùng Gradle |
 | **Flutter SDK pinning/FVM** | **Đề xuất** | Đồng nhất Flutter version |
-| **uv hoặc Poetry** | **Đề xuất, chọn một** | Python dependency lock |
+| **uv + `uv.lock`** | **Đã chốt/M0-12** | Python dependency manager duy nhất; `uv.lock` bắt buộc commit |
 
 Pipeline tối thiểu:
 
@@ -428,6 +433,8 @@ Pipeline tối thiểu:
 Lint/format
    ↓
 Unit test Mobile + Backend + AI Service
+   ↓
+OpenAPI generate `dart-dio` + no-diff contract check
    ↓
 Integration test với PostgreSQL/object-storage container nếu sử dụng
    ↓
@@ -450,13 +457,13 @@ Smoke test Docker Compose + OpenAPI endpoint
 
 | Component | Baseline | Quy tắc khóa version |
 |---|---:|---|
-| Flutter | Stable 3.x | Pin bằng FVM hoặc CI image |
-| Dart | Theo Flutter SDK | Không nâng độc lập khỏi Flutter |
-| Java | 21 LTS+ | Cùng toolchain ở Maven, CI và Docker |
-| Spring Boot | 3.x tương thích JDK | Dùng Spring Boot BOM, pin patch |
-| Python | 3.12+ | Pin minor trong Docker/CI |
-| FastAPI/Pydantic | Cặp version tương thích | Pin trong Python lockfile |
-| PostgreSQL | 16+ | Cùng major ở local, Testcontainers và production |
+| Flutter | 3.44.4 | Pin bằng `.fvmrc` và CI image |
+| Dart | 3.12.2 | Đi cùng Flutter 3.44.4 |
+| Java | 21 LTS | Cùng toolchain ở Maven, CI và Docker |
+| Spring Boot | 3.5.16 | Dùng Spring Boot BOM, pin exact |
+| Python | 3.12 minor | `.python-version`; Docker patch pin digest ở M1 |
+| FastAPI | 0.141.1 | Pin direct dependency và toàn bộ graph trong `uv.lock` |
+| PostgreSQL | 16.14 | Cùng major 16 ở local, Testcontainers và production |
 | Redis | 7+ | Chỉ bật nếu triển khai cache/rate limit |
 | Object storage/S3 client | Release tương thích API đã chọn | Pin container tag và SDK BOM |
 

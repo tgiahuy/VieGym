@@ -50,7 +50,7 @@ Bao gồm:
 - User Profile, Equipment và User Preference.
 - AI Consent, General Knowledge Mode, Personalized Chat, conversation history, Daily Recommendation và Apply/Dismiss.
 - Admin Exercise/Food/Audit baseline và các màn hình Admin P1.
-- Media hiển thị/upload ở nơi Exercise, Food hoặc Profile sử dụng.
+- Media Exercise/Food ở P0; Profile avatar chỉ hiển thị/upload khi FT-UP-002 P1 được bật.
 - Global states, security, privacy và accessibility.
 
 Không bao gồm trong core UI:
@@ -70,7 +70,7 @@ Các tài liệu nguồn hiện có một số tham chiếu lịch sử chưa đ
 - Equipment Onboarding là `MH10`, Equipment Settings là `MH37`; không sử dụng `MH39` cho Equipment.
 - `MH39` trước đây là một bản sao của AI Consent. Bản này chỉ có một route AI Consent là `MH28`; `MH39` được giữ như alias deprecated để tránh hiểu nhầm khi đọc tài liệu cũ.
 - Admin P0 baseline gồm Admin shell, Manage Exercise, Manage Food và Audit Log tối thiểu. Admin analytics Dashboard, User Management, Import và AI Rule/Prompt là P1 theo feature/subsystem breakdown mới nhất.
-- Business flow có chỗ gọi việc rời Workout Session là `CANCELLED`, trong khi feature/subsystem dùng hành động `DISCARD`. UI dùng nhãn hành động `Hủy buổi tập`; trạng thái lưu trữ cuối cùng phải theo API Specification, không tự tạo enum ở Mobile.
+- Workout Session dùng `DISCARDED` khi user hủy buổi đã bắt đầu; `CANCELLED` chỉ thuộc Workout Schedule. UI có thể dùng nhãn `Hủy buổi tập` nhưng phải gửi action `discard` và render enum Backend trả về.
 - Offline queue/cache nâng cao là P2. P0 chỉ hiển thị trạng thái mất kết nối và không giả lập mutation thành công.
 
 ---
@@ -322,8 +322,8 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH30 | Daily Recommendation List | USER | Screen | FT-AI-008 |
 | MH31 | Recommendation Detail | USER | Sheet/Screen | FT-AI-009, FT-AI-010, FT-MP-011 |
 | MH33 | Profile Tab | USER | Screen | PH2/PH3 entry |
-| MH34 | User Profile | USER | Screen | FT-UP-001, FT-UP-002 |
-| MH35 | Edit User Profile | USER | Screen | FT-UP-001, FT-UP-002 |
+| MH34 | User Profile | USER | Screen | FT-UP-001 |
+| MH35 | Edit User Profile | USER | Screen | FT-UP-001 |
 | MH36 | Settings | USER | Screen | PH1/PH2/PH7 entry |
 | MH37 | Equipment Preference | USER | Screen | FT-UP-004, FT-WO-003 |
 | MH38 | User Preference | USER | Screen | FT-UP-003, FT-UP-005 |
@@ -352,7 +352,6 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH32 | Weekly Review | USER | Screen | FT-AI-011 |
 | MH40 | App Settings | USER | Screen | FT-UP-007 |
 | MH41 | Notification Settings | USER | Screen | FT-NT-001, FT-NT-002, FT-NT-003, FT-NT-004 |
-| MH48 | Import Data | ADMIN | Screen | FT-AD-005 |
 | MH49 | Manage Users | ADMIN | Screen | FT-AD-002 |
 | MH50 | AI Rule / Prompt Management | ADMIN | Screen | FT-AD-006/007/009 |
 
@@ -539,7 +538,7 @@ Submit hợp lệ
 
 - `REGISTER`: verify account pending, sau đó cấp token và mở MH09.
 - `PASSWORD_RESET`: verify quyền reset, sau đó mở MH07 theo contract an toàn.
-- `LOGIN_VERIFY`: chỉ hiển thị nếu Backend bật purpose này.
+- `LOGIN_VERIFY`: reserved P1/MFA, không hiển thị trong P0.
 
 #### Components
 
@@ -668,7 +667,7 @@ OTP hoặc reset proof được truyền bằng flow state an toàn; không hi�
 - Chỉ local account dùng current password; Google-only account hiển thị hướng dẫn phù hợp với provider.
 - Session hợp lệ là bắt buộc.
 - Sau khi đổi, revoke/giữ phiên theo Backend security policy và thông báo kết quả rõ.
-- Endpoint/payload chi tiết là contract pending trong API Specification; Mobile không tự đặt URL.
+- Contract đã khóa tại `POST /api/v1/auth/password/change`; Mobile không tự đặt URL khác.
 
 #### P1 extension
 
@@ -713,17 +712,18 @@ Phiên hiện tại trên thiết bị này sẽ kết thúc.
 
 #### Mục tiêu
 
-Thu thập đủ dữ liệu để Backend tạo HealthProfile, WeightLog ban đầu, NutritionTarget và các metric authoritative.
+Thu thập dữ liệu để Backend tạo HealthProfile, WeightLog ban đầu và các metric authoritative; NutritionTarget chỉ được tạo khi calculation status là `COMPLETE`.
 
 #### Bước đề xuất
 
-1. **Thông tin cơ bản:** ngày sinh/tuổi, giới tính.
+1. **Thông tin cơ bản:** ngày sinh/tuổi, gender hồ sơ và calculation sex dùng riêng cho BMR.
 2. **Cơ thể:** chiều cao, cân nặng.
 3. **Mục tiêu:** activity level, fitness goal, training experience.
 
 Các enum phải dùng giá trị mà Backend hỗ trợ:
 
 - Gender: MALE, FEMALE, OTHER, UNSPECIFIED.
+- Calculation Sex: MALE, FEMALE, UNSPECIFIED; không được UI tự suy ra từ Gender.
 - Activity: SEDENTARY, LIGHT, MODERATE, ACTIVE, VERY_ACTIVE.
 - Goal: LOSE_WEIGHT, MAINTAIN_WEIGHT, GAIN_WEIGHT, GAIN_MUSCLE.
 
@@ -734,14 +734,15 @@ Các enum phải dùng giá trị mà Backend hỗ trợ:
 - Hiển thị đơn vị rõ; P0 lưu/submit theo contract chuẩn.
 - Không hiển thị metric giả trước khi Backend tính.
 - Field invalid được chỉ rõ; thiếu field bắt buộc không tính TDEE.
+- Mọi Gender đều hợp lệ. `calculationSex=UNSPECIFIED` hoặc age dưới 18 không đủ cho BMR/TDEE/target P0; UI hiển thị `INCOMPLETE` và reason do Backend trả.
 - Submit có loading và chống double submit.
 
 #### Success flow
 
 ```text
 Backend validate
-→ tính BMI/BMR/TDEE/calories/macro
-→ transaction lưu HealthProfile + WeightLog + NutritionTarget
+→ tính BMI và, khi đủ điều kiện, BMR/TDEE/calories/macro
+→ transaction lưu HealthProfile + WeightLog + NutritionTarget nếu COMPLETE
 → MH10 Equipment Onboarding
 ```
 
@@ -752,7 +753,7 @@ Backend validate
 
 #### Acceptance
 
-- Dữ liệu hợp lệ tạo đủ ba nhóm resource theo Backend response.
+- Dữ liệu đủ cho calculation tạo đủ ba nhóm resource; trạng thái `INCOMPLETE` vẫn lưu profile/weight nhưng không tạo target giả.
 - Dữ liệu lỗi không tạo trạng thái một phần trên UI.
 - User không sửa trực tiếp BMI/BMR/TDEE/targets.
 
@@ -783,6 +784,7 @@ Backend validate
 #### Data/API
 
 - `GET/PUT /api/v1/preferences/equipment`.
+- PUT thành công với cả `equipmentIds: []` vẫn đánh dấu onboarding equipment đã hoàn tất; guard đọc flag từ Backend, không suy ra bằng số row preference.
 
 ---
 
@@ -802,7 +804,7 @@ Cho user biết nhanh hôm nay đang ở đâu và hành động tiếp theo là
 
 #### Thứ tự nội dung
 
-1. Ngày hiện tại theo timezone của request/user.
+1. Ngày nghiệp vụ theo timezone IANA trong UserProfile; device chỉ định dạng hiển thị.
 2. Nutrition: target, consumed, remaining và macro.
 3. Workout hôm nay hoặc buổi tiếp theo; weekly completion.
 4. Body: current weight, BMI và progress/trend phù hợp.
@@ -831,6 +833,7 @@ Chỉ một CTA được nhấn mạnh nhất theo context; các action khác l�
 #### Business rules
 
 - Dashboard không sở hữu mutation hoặc metric gốc.
+- `GET /dashboard` không gọi AI Provider hoặc sinh recommendation.
 - Completion loại `CANCELLED` hợp lệ khỏi mẫu số theo dữ liệu Backend.
 - Recommendation phải đúng user, còn hiệu lực và đúng trạng thái hiển thị.
 - Notification bell chỉ xuất hiện khi notification P1 được triển khai; không có icon chết ở P0.
@@ -1258,7 +1261,7 @@ User chọn Finish
 
 #### Data/API
 
-- Dữ liệu progress/PR từ PH4; endpoint chi tiết là contract pending nếu chưa nằm trong `/api/v1/workout-logs`.
+- `GET /api/v1/personal-records` và `GET /api/v1/workout-logs/{id}`.
 
 ---
 
@@ -1383,7 +1386,7 @@ User chọn Finish
 #### Rules
 
 - Một MealPlan cho mỗi user/ngày theo business flow.
-- UI không phụ thuộc việc Backend lazy-create hay explicit-create plan.
+- GET ngày trống không tạo MealPlan trong database; UI render cấu trúc rỗng với `targetSource` từ Backend. Plan được tạo trong mutation entry đầu tiên.
 - Entry hidden Food vẫn hiển thị snapshot trong lịch sử nhưng không được thêm lại nếu hiện không active.
 - Mutation chỉ áp dụng resource thuộc user.
 
@@ -1418,13 +1421,14 @@ User chọn Finish
 - Date/context plan.
 - Meal type: BREAKFAST, LUNCH, DINNER, SNACK.
 - Food search/select.
-- Serving unit khả dụng: gram hoặc đơn vị món như tô/chén/phần/quả/ly/miếng.
+- Serving unit khả dụng: serving chuẩn của Food; thêm tùy chọn gram chỉ khi Backend trả `gramsPerServing`.
 - Serving amount/multiplier; quick options 0.5, 1, 1.5, 2 chỉ là shortcut.
 - Nutrition preview từ response/contract phù hợp.
 
 #### Validation và rules
 
 - Serving/multiplier phải dương và hợp lệ.
+- Khi nhập gram, gửi `inputAmount`/`inputUnit`; Mobile không tự ước lượng gram của tô/chén/phần.
 - Không thêm Food hidden/inactive.
 - Allergy/constraint phải được tôn trọng trong suggestion; khi user chủ động chọn món xung đột, cách cảnh báo/chặn theo Backend contract, không tự suy diễn y tế.
 - Không đóng sheet khi lỗi validation.
@@ -1439,8 +1443,8 @@ User chọn Finish
 
 #### Data/API
 
-- `POST /api/v1/meal-plans/{id}/entries`.
-- `PUT/DELETE /api/v1/meal-plans/{id}/entries/{entryId}`.
+- `POST /api/v1/meal-plans/{planDate}/entries`.
+- `PUT/DELETE /api/v1/meal-plans/{planDate}/entries/{entryId}`.
 
 ### MH25 — Nutrition Summary
 
@@ -1490,7 +1494,7 @@ User chọn Finish
 - Trước copy, hiển thị ngày đích, số bữa/entry và item không còn active.
 - Backend validate ownership, target date, Food availability và serving.
 - Nếu một Food bị hidden, UI phải báo item bị bỏ/chặn theo kết quả validation; không âm thầm thay món.
-- Endpoint/payload template là contract pending trong API Specification.
+- Endpoint/payload template đã khóa tại mục Meal template trong API Specification.
 
 #### States
 
@@ -1754,6 +1758,7 @@ User gửi message
 #### Data/API
 
 - `GET /api/v1/ai/recommendations/daily`.
+- `POST /api/v1/ai/recommendations/daily/generations` khi user chủ động yêu cầu sinh/refresh; GET chỉ đọc.
 
 ### MH31 — Recommendation Detail
 
@@ -1777,9 +1782,9 @@ User gửi message
 | `NONE` | Insight/reason; không có mutation preview | Không mutation; có thể chỉ Dismiss/Close |
 | `ADD_MEAL_ENTRY_PROPOSAL` | Food, meal type, date, serving, calories/macro và constraint warning | PH5 tạo Meal Entry sau validation |
 | `CREATE_WORKOUT_SCHEDULE_PROPOSAL` | Program/workout, date/time và exercise summary | PH4 tạo Schedule hợp lệ |
-| `UPDATE_USER_PREFERENCE_PROPOSAL` | Field whitelist và before/after | PH2 cập nhật field được user xác nhận |
+| `UPDATE_USER_PREFERENCE_PROPOSAL` | Field whitelist và before/after; proposal chạm allergy/constraint không bao giờ tới UI | PH2 cập nhật field được user xác nhận |
 | `REVIEW_NUTRITION_TARGET_PROPOSAL` | Lý do và metric; CTA mở review | Không tự sửa target; mở MH42/review flow |
-| `LOG_REMINDER_ONLY` | Nội dung/thời điểm reminder | Chỉ khả dụng khi PH10/client P1 đã triển khai; không mutation domain |
+| `LOG_REMINDER_ONLY` | Không xuất hiện ở P0 | Reserved; chỉ khả dụng khi PH10/client P1 đã triển khai |
 
 #### Apply flow
 
@@ -1812,6 +1817,7 @@ Feedback P0 có thể được lưu như tín hiệu; không tự biến thành 
 - Applying/Dismissing: khóa double submit.
 - Stale status/expired → disable action, refresh status.
 - Validation failed → hiển thị lý do có thể hành động, không mutation một phần.
+- Meal/Schedule proposal thiếu hoặc quá `targetDate`, hay tham chiếu ID ngoài candidate shortlist, bị Backend reject và không mutation.
 - Unknown result/timeout → fetch lại recommendation/domain result trước retry.
 - Applied success → hiển thị chính xác resource/result do Backend trả và CTA mở resource tương ứng.
 
@@ -1882,12 +1888,12 @@ P1 App/Notification settings chỉ hiển thị khi feature tương ứng bật.
 **Actor:** USER
 **Priority:** P0
 **Type:** Screen
-**Feature:** FT-UP-001, FT-UP-002
-**Owner:** PH2; identity email/provider từ PH1; avatar media từ PH9
+**Feature:** FT-UP-001
+**Owner:** PH2; identity email/provider từ PH1
 
 #### Nội dung
 
-- Avatar.
+- Avatar placeholder/initial ở P0; upload avatar là FT-UP-002 P1.
 - Display name/thông tin cơ bản nằm trong UserProfile whitelist.
 - Email và auth provider dạng read-only nếu không có feature đổi email.
 - Created/joined metadata chỉ khi API cung cấp và có giá trị UX.
@@ -1906,13 +1912,13 @@ Gender, date of birth/age, height, current weight, activity level, fitness goal 
 **Actor:** USER
 **Priority:** P0 baseline nếu Profile UI được triển khai
 **Type:** Screen
-**Feature:** FT-UP-001, FT-UP-002
-**Owner:** PH2; media PH9
+**Feature:** FT-UP-001
+**Owner:** PH2
 
 #### Fields
 
 - Display name và field profile nằm trong API whitelist.
-- Avatar select/upload/remove nếu baseline media hỗ trợ.
+- Avatar select/upload/remove chỉ hiển thị khi FT-UP-002 P1 được bật.
 - Không chứa Health calculation fields.
 - Số điện thoại chỉ xuất hiện nếu API requirement chính thức hỗ trợ; không tự thêm field.
 
@@ -2026,7 +2032,7 @@ Equipment được quản lý tại MH37, có thể liên kết từ đây nhưn
 - Date of birth/age.
 - Gender.
 - Height.
-- Current weight theo Health Profile contract.
+- Current weight hiển thị read-only sau onboarding; cập nhật hằng ngày đi qua MH43.
 - Activity level.
 - Fitness goal.
 - Training experience.
@@ -2054,7 +2060,7 @@ Edit inputs
 
 - Không cho sửa trực tiếp BMI/BMR/TDEE/target output.
 - Thay input không sửa WorkoutLog hoặc WeightLog lịch sử.
-- Daily weight update ưu tiên đi qua MH43; nếu Health Profile cho sửa current weight, UI tuân theo contract PH3 và không tự tạo WeightLog thứ hai.
+- Sau onboarding, mọi thay đổi current weight đi qua natural-key WeightLog tại MH43 để không tạo hai nguồn sự thật.
 - `REVIEW_NUTRITION_TARGET_PROPOSAL` chỉ mở review tại đây; không tự áp target từ AI.
 
 #### States
@@ -2099,6 +2105,7 @@ Edit inputs
 - Một WeightLog chính/user/ngày.
 - Backend tạo trend/summary trước khi AI sử dụng.
 - Thêm WeightLog không tự thay NutritionTarget.
+- Log của ngày mới nhất cập nhật current weight và khiến Backend tính lại BMI/BMR/TDEE; UI hiển thị `metricsUpdated` nhưng không diễn giải là target đã đổi.
 - Nếu cần review target, tạo/mở proposal review; user và Backend quyết định.
 - Mobile không fit trend line hoặc tính BMI authoritative để ghi đè response.
 
@@ -2107,11 +2114,11 @@ Edit inputs
 - No log → CTA thêm lần đầu.
 - Insufficient data for trend → nói rõ chưa đủ dữ liệu.
 - Chart loading/error độc lập nếu cần.
-- Save conflict cho cùng ngày → refresh và mở edit state.
+- Retry cùng ngày là upsert idempotent; nếu có conflict version thì refresh record của ngày đó và mở edit state.
 
 #### Data/API
 
-- `GET/POST/PUT /api/v1/weight-logs`.
+- `GET /api/v1/weight-logs`, `PUT /api/v1/weight-logs/{loggedDate}` và `GET /api/v1/weight-logs/trend`.
 - `GET /api/v1/weight-logs/trend`.
 
 ### MH40 — App Settings [P1]
@@ -2237,6 +2244,7 @@ Admin UI không nằm trong 5-tab USER shell.
 - Required field/enum theo API.
 - Không publish reference media chưa upload/verify thành công.
 - Hidden Exercise giữ WorkoutLog history và không được thêm vào Program mới.
+- Exercise hidden đã tồn tại trong program được giữ khi user sửa field khác; UI cảnh báo và cho chọn alternative. Chỉ việc thêm reference hidden mới bị chặn.
 - Preview trước publish là khuyến nghị UX; không thay Backend validation.
 - Destructive/hide action có confirmation nêu tác động.
 - Mọi mutation quan trọng được audit; không log raw media credential.
@@ -2419,7 +2427,7 @@ Chọn file
 → Backend khởi tạo upload
 → upload object
 → complete/verify metadata
-→ liên kết với Exercise/Food/Profile
+→ liên kết với Exercise/Food P0 hoặc Profile khi FT-UP-002 P1 được bật
 ```
 
 #### Rules
@@ -2703,7 +2711,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | FT-ID-010 Role/account/authorization | MH04 states, route guards, MH45 | P0 |
 | FT-ID-011 Device/session list | MH53 extension | P1 |
 | FT-UP-001 Basic Profile | MH34, MH35 | P0 |
-| FT-UP-002 Avatar/media | MH34, MH35 + PH9 media states | P0 baseline |
+| FT-UP-002 Avatar/media | MH34, MH35 + PH9 media states | P1 |
 | FT-UP-003 Preference/constraints | MH38 | P0 |
 | FT-UP-004 Equipment | MH10, MH37; consumed tại MH12/MH15 | P0 |
 | FT-UP-005 Apply/Dismiss feedback | MH31; preference view MH38 | P0 |
@@ -2821,6 +2829,25 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | Media baseline | UC-21 | MH13/22/46/47 + shared media states | PH9 | P0 baseline |
 | Weekly/Plan Adjustment | UC-15/16 | MH32/31 | PH7 | P1 |
 | Admin mở rộng | UC-20 | MH45/48/49/50 | PH8 | P1 |
+
+### 17.8. Acceptance Criteria cấp MVP
+
+| Acceptance | UI coverage chính | Ghi chú |
+|---|---|---|
+| AC-01 | MH01, MH04, MH05, MH06, MH44 | Auth/session/OTP; private API guard là Backend-only |
+| AC-02 | Global ownership rule + mọi private screen | Backend test là bằng chứng authoritative |
+| AC-03/AC-04 | MH09, MH42 | Metric/target từ Backend, có COMPLETE/INCOMPLETE |
+| AC-05 | MH10, MH12, MH15, MH37 | Equipment ranking không sửa history |
+| AC-06/AC-07 | MH16, MH17, MH18, MH19 | Schedule CANCELLED; Session DISCARDED |
+| AC-08 | MH23, MH24, MH25 | Serving, multiplier và summary authoritative |
+| AC-09 | MH43 | Weight trend không tự đổi target |
+| AC-10 | MH03 | Aggregate và section empty/error state |
+| AC-11/AC-12 | MH27, MH28, MH29, MH30 | Consent/context boundary; backend/AI tests bắt buộc |
+| AC-13 | MH29, MH31 | Invalid AI output không thành action |
+| AC-14 | MH30 | 1–3 recommendation PENDING khi đủ điều kiện |
+| AC-15/AC-16/AC-17 | MH31 | Apply/Dismiss state, ownership, mutation và audit |
+| AC-18 | MH13, MH22, MH46, MH47 | Exercise/Food media P0 |
+| AC-19 | MH51 | Audit read-only; redaction kiểm tra ở Backend |
 
 ---
 

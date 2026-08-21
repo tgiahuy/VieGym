@@ -67,7 +67,6 @@ class _$ApiErrorResponseCWProxyImpl implements _$ApiErrorResponseCWProxy {
   ApiErrorResponse timestamp(DateTime timestamp) => this(timestamp: timestamp);
 
   @override
-
   /// This function **does support** nullification of nullable fields. All `null` values passed to `non-nullable` fields will be ignored. You can also use `ApiErrorResponse(...).copyWith.fieldName(...)` to override fields one at a time with nullification support.
   ///
   /// Usage
@@ -121,3 +120,51 @@ extension $ApiErrorResponseCopyWith on ApiErrorResponse {
   // ignore: library_private_types_in_public_api
   _$ApiErrorResponseCWProxy get copyWith => _$ApiErrorResponseCWProxyImpl(this);
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+ApiErrorResponse _$ApiErrorResponseFromJson(Map<String, dynamic> json) =>
+    $checkedCreate('ApiErrorResponse', json, ($checkedConvert) {
+      $checkKeys(
+        json,
+        requiredKeys: const [
+          'success',
+          'code',
+          'message',
+          'errors',
+          'correlationId',
+          'timestamp',
+        ],
+      );
+      final val = ApiErrorResponse(
+        success: $checkedConvert('success', (v) => v as bool),
+        code: $checkedConvert('code', (v) => v as String),
+        message: $checkedConvert('message', (v) => v as String),
+        data: $checkedConvert('data', (v) => v),
+        errors: $checkedConvert(
+          'errors',
+          (v) => (v as List<dynamic>)
+              .map((e) => FieldViolation.fromJson(e as Map<String, dynamic>))
+              .toList(),
+        ),
+        correlationId: $checkedConvert('correlationId', (v) => v as String),
+        timestamp: $checkedConvert(
+          'timestamp',
+          (v) => DateTime.parse(v as String),
+        ),
+      );
+      return val;
+    });
+
+Map<String, dynamic> _$ApiErrorResponseToJson(ApiErrorResponse instance) =>
+    <String, dynamic>{
+      'success': instance.success,
+      'code': instance.code,
+      'message': instance.message,
+      'data': ?instance.data,
+      'errors': instance.errors.map((e) => e.toJson()).toList(),
+      'correlationId': instance.correlationId,
+      'timestamp': instance.timestamp.toIso8601String(),
+    };

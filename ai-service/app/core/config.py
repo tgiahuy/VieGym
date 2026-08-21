@@ -1,4 +1,5 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "VieGym AI Service"
@@ -6,7 +7,7 @@ class Settings(BaseSettings):
     INTERNAL_API_V1_STR: str = "/internal/v1"
     INTERNAL_SERVICE_TOKEN: str = "dev-secret-token"  # Should be overridden in prod via env vars
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
 
 settings = Settings()

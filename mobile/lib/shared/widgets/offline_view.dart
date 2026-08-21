@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Displays an error state with an optional retry action.
+/// Displayed when the device has no network connectivity.
 ///
-/// Used by [AsyncValueWidget] and can be used standalone for
-/// full-screen error states.
-class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+/// Wraps [connectivity_plus] detection — the parent widget is responsible for
+/// listening to [ConnectivityResult] and showing this widget when offline.
+/// See [AsyncValueWidget] for the integrated offline + error + loading pattern.
+class OfflineView extends StatelessWidget {
+  const OfflineView({super.key, this.onRetry});
 
-  final String message;
+  /// Callback invoked when the user taps the retry button.
+  /// Typically triggers a connectivity re-check and data reload.
   final VoidCallback? onRetry;
 
   @override
@@ -24,22 +22,22 @@ class ErrorView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.error_outline_rounded,
+              Icons.wifi_off_rounded,
               size: 72,
-              color: theme.colorScheme.error,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 20),
             Text(
-              'Có lỗi xảy ra',
+              'Không có kết nối mạng',
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              message,
+              'Kiểm tra kết nối Wi-Fi hoặc dữ liệu di động của bạn.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

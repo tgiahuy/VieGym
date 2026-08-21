@@ -4,7 +4,11 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
 void main() {
+  // Ensure Flutter bindings are initialised before any native channel calls.
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
+    // ProviderScope is the Riverpod DI root — must wrap the entire widget tree.
     const ProviderScope(
       child: VieGymApp(),
     ),
@@ -20,8 +24,10 @@ class VieGymApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'VieGym',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      // Follows the device setting; user preference (P1) overrides in M8.
       themeMode: ThemeMode.system,
       routerConfig: router,
     );

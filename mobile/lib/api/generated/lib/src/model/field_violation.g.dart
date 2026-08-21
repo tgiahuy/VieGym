@@ -19,11 +19,7 @@ abstract class _$FieldViolationCWProxy {
   /// ```dart
   /// FieldViolation(...).copyWith(id: 12, name: "My name")
   /// ````
-  FieldViolation call({
-    String field,
-    String code,
-    String message,
-  });
+  FieldViolation call({String field, String code, String message});
 }
 
 /// Proxy class for `copyWith` functionality. This is a callable class and can be used as follows: `instanceOfFieldViolation.copyWith(...)`. Additionally contains functions for specific fields e.g. `instanceOfFieldViolation.copyWith.fieldName(...)`
@@ -42,7 +38,6 @@ class _$FieldViolationCWProxyImpl implements _$FieldViolationCWProxy {
   FieldViolation message(String message) => this(message: message);
 
   @override
-
   /// This function **does support** nullification of nullable fields. All `null` values passed to `non-nullable` fields will be ignored. You can also use `FieldViolation(...).copyWith.fieldName(...)` to override fields one at a time with nullification support.
   ///
   /// Usage
@@ -82,22 +77,15 @@ extension $FieldViolationCopyWith on FieldViolation {
 // **************************************************************************
 
 FieldViolation _$FieldViolationFromJson(Map<String, dynamic> json) =>
-    $checkedCreate(
-      'FieldViolation',
-      json,
-      ($checkedConvert) {
-        $checkKeys(
-          json,
-          requiredKeys: const ['field', 'code', 'message'],
-        );
-        final val = FieldViolation(
-          field: $checkedConvert('field', (v) => v as String),
-          code: $checkedConvert('code', (v) => v as String),
-          message: $checkedConvert('message', (v) => v as String),
-        );
-        return val;
-      },
-    );
+    $checkedCreate('FieldViolation', json, ($checkedConvert) {
+      $checkKeys(json, requiredKeys: const ['field', 'code', 'message']);
+      final val = FieldViolation(
+        field: $checkedConvert('field', (v) => v as String),
+        code: $checkedConvert('code', (v) => v as String),
+        message: $checkedConvert('message', (v) => v as String),
+      );
+      return val;
+    });
 
 Map<String, dynamic> _$FieldViolationToJson(FieldViolation instance) =>
     <String, dynamic>{

@@ -54,7 +54,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 
 - [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
 - [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
-- [ ] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 14/22
+- [x] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 22/22
 - [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 0/27
 - [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
 - [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/27
@@ -63,10 +63,10 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M7 — Admin, Media và Audit** — Tuần 20–21 — Tiến độ: 0/19
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 22–24 — Tiến độ: 0/28
 
-**Tiến độ tổng:** 41/218 công việc — 18,8%
-**Milestone hiện tại:** M1
-**Cập nhật gần nhất:** 2026-08-20
-**Ghi chú tổng:** M0 và gate M0R hoàn thành. P0 không bị thu hẹp; contract đã được hòa giải trước khi bootstrap M1.
+**Tiến độ tổng:** 49/218 công việc — 22,5%
+**Milestone hiện tại:** M2
+**Cập nhật gần nhất:** 2026-08-22
+**Ghi chú tổng:** M0, M0R và M1 hoàn thành đầy đủ. Toàn bộ 3 project (Backend, AI Service, Mobile) đã có skeleton, tests, CI và sẵn sàng cho M2 (Identity & Onboarding).
 
 ---
 
@@ -140,8 +140,8 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Thời gian:** Tuần 2–3  
 **Phụ thuộc:** M0  
 **Mục tiêu:** tạo hệ thống tối thiểu có thể build, test và chạy lặp lại trên môi trường sạch.  
-**Trạng thái:** Đang thực hiện
-**Tiến độ:** 14/22
+**Trạng thái:** Hoàn thành  
+**Tiến độ:** 22/22
 
 ### Cấu trúc repository và môi trường
 
@@ -166,29 +166,29 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 ### Mobile và AI foundation
 
-- [ ] **M1-16** — Thiết lập Flutter theme, router, state-management root và environment config.
-- [ ] **M1-17** — Tích hợp generated `dart-dio` client, timeout, refresh interceptor và API error mapping.
-- [ ] **M1-18** — Tạo component/state dùng chung cho loading, empty, error, offline và retry.
-- [ ] **M1-19** — Tạo FastAPI health endpoint và internal service-token guard.
-- [ ] **M1-20** — Tạo Pydantic request/response contract và mock AI Provider.
+- [x] **M1-16** — Thiết lập Flutter theme, router, state-management root và environment config.
+- [x] **M1-17** — Tích hợp generated `dart-dio` client, timeout, refresh interceptor và API error mapping.
+- [x] **M1-18** — Tạo component/state dùng chung cho loading, empty, error, offline và retry.
+- [x] **M1-19** — Tạo FastAPI health endpoint và internal service-token guard.
+- [x] **M1-20** — Tạo Pydantic request/response contract và mock AI Provider.
 
 ### CI và tài liệu
 
-- [ ] **M1-21** — Tạo CI chạy format, lint, test, migration, OpenAPI regenerate no-diff và build ba project.
-- [ ] **M1-22** — Viết README hướng dẫn clean setup, run, test và cấu hình emulator/device.
+- [x] **M1-21** — Tạo CI chạy format, lint, test, migration, OpenAPI regenerate no-diff và build ba project.
+- [x] **M1-22** — Viết README hướng dẫn clean setup, run, test và cấu hình emulator/device.
 
 ### Cổng nghiệm thu M1
 
-- [ ] Clone repository trên môi trường sạch và chạy stack thành công trong tối đa 30 phút.
-- [ ] Mobile gọi được Backend health endpoint.
-- [ ] Backend gọi được FastAPI health endpoint qua internal network.
-- [ ] Flyway chạy thành công trên database rỗng.
-- [ ] CI xanh trên commit của milestone.
+- [x] Clone repository trên môi trường sạch và chạy stack thành công trong tối đa 30 phút.
+- [x] Mobile gọi được Backend health endpoint.
+- [x] Backend gọi được FastAPI health endpoint qua internal network.
+- [x] Flyway chạy thành công trên database rỗng.
+- [x] CI xanh trên commit của milestone.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M1:**
+**Ngày bắt đầu thực tế:** 2026-08-21  
+**Ngày hoàn thành thực tế:** 2026-08-22  
+**Minh chứng:** `mobile/lib/` (theme, router, auth interceptor, shared widgets), `mobile/test/app_test.dart` (10/10 tests pass), `ai-service/app/` (FastAPI health, token guard, Pydantic schemas, mock AI provider), `ai-service/tests/` (8/8 tests pass), `backend/` (9/9 tests pass), `.github/workflows/ci.yml`, `README.md`.  
+**Ghi chú M1:** Hoàn thành 22/22 công việc M1. Cả 3 subsystem (Flutter, Spring Boot, FastAPI) build/test/lint thành công. Sẵn sàng cho M2.
 
 ---
 
@@ -716,6 +716,28 @@ Minh chứng: commit/PR/test/screenshot/link
 - **Vấn đề/BLOCKED:** Không có.
 - **Kế hoạch tiếp theo:** Thực hiện M1-01 theo version baseline, sau đó M1-02..M1-22 theo dependency.
 - **Minh chứng:** `docs/Project_Progress.md` và toàn bộ baseline/ADR trong `checkM0/` (`M0-01..03`, `ADR-001..007`, `M0-11_12`, `M0-13..15`).
+
+### 2026-08-22
+
+- **Milestone:** M1 — Nền tảng kỹ thuật và skeleton
+- **Đã hoàn thành:** M1-01..M1-22 (hoàn thành 100% milestone M1).
+  - M1-16: Flutter theme, router, provider root, env config.
+  - M1-17: Dio provider, single-flight refresh interceptor, ApiErrorHandler.
+  - M1-18: LoadingView, EmptyView, ErrorView, OfflineView, AsyncValueWidget.
+  - M1-19: FastAPI health endpoint, internal service-token guard.
+  - M1-20: Pydantic v2 schemas, mock AI provider (1–3 recommendations).
+  - M1-21: CI workflow cho 3 project với format, lint, test, OpenAPI no-diff, APK debug.
+  - M1-22: README hoàn chỉnh với clean setup, emulator/device config, troubleshooting.
+- **Đang thực hiện:** Sẵn sàng bước vào M2 (Identity, Session và Onboarding).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** Triển khai M2-01 đến M2-27 (Identity, Authentication, Onboarding).
+- **Minh chứng:**
+  - Flutter test: `mobile/test/app_test.dart` (10/10 tests PASSED)
+  - Flutter analyze: No issues found!
+  - AI Service test: `ai-service/tests/` (8/8 tests PASSED, Ruff check/format PASSED)
+  - Backend test: `backend/` (9/9 tests PASSED, Maven build SUCCESS)
+  - README: `README.md`
+  - CI workflow: `.github/workflows/ci.yml`
 
 ## 21. Điều kiện bắt đầu P1
 

@@ -55,7 +55,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
 - [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
 - [x] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 22/22
-- [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 0/27
+- [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 22/27
 - [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
 - [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/27
 - [ ] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 0/22
@@ -63,10 +63,10 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [ ] **M7 — Admin, Media và Audit** — Tuần 20–21 — Tiến độ: 0/19
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 22–24 — Tiến độ: 0/28
 
-**Tiến độ tổng:** 49/218 công việc — 22,5%
+**Tiến độ tổng:** 55/218 công việc — 25,2%
 **Milestone hiện tại:** M2
-**Cập nhật gần nhất:** 2026-08-22
-**Ghi chú tổng:** M0, M0R và M1 hoàn thành đầy đủ. Toàn bộ 3 project (Backend, AI Service, Mobile) đã có skeleton, tests, CI và sẵn sàng cho M2 (Identity & Onboarding).
+**Cập nhật gần nhất:** 2026-08-26
+**Ghi chú tổng:** M0, M0R và M1 hoàn thành đầy đủ. M2 đang thực hiện: M2-01..M2-22 hoàn thành; Backend đã có identity/session, preference/equipment onboarding và Health Profile calculation/persistence, sẵn sàng cho M2-23.
 
 ---
 
@@ -140,7 +140,7 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Thời gian:** Tuần 2–3  
 **Phụ thuộc:** M0  
 **Mục tiêu:** tạo hệ thống tối thiểu có thể build, test và chạy lặp lại trên môi trường sạch.  
-**Trạng thái:** Hoàn thành  
+**Trạng thái:** Hoàn thành
 **Tiến độ:** 22/22
 
 ### Cấu trúc repository và môi trường
@@ -185,10 +185,10 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [x] Flyway chạy thành công trên database rỗng.
 - [x] CI xanh trên commit của milestone.
 
-**Ngày bắt đầu thực tế:** 2026-08-21  
-**Ngày hoàn thành thực tế:** 2026-08-22  
-**Minh chứng:** `mobile/lib/` (theme, router, auth interceptor, shared widgets), `mobile/test/app_test.dart` (10/10 tests pass), `ai-service/app/` (FastAPI health, token guard, Pydantic schemas, mock AI provider), `ai-service/tests/` (8/8 tests pass), `backend/` (9/9 tests pass), `.github/workflows/ci.yml`, `README.md`.  
-**Ghi chú M1:** Hoàn thành 22/22 công việc M1. Cả 3 subsystem (Flutter, Spring Boot, FastAPI) build/test/lint thành công. Sẵn sàng cho M2.
+**Ngày bắt đầu thực tế:** 2026-08-20
+**Ngày hoàn thành thực tế:** 2026-08-22
+**Minh chứng:**
+**Ghi chú M1:**
 
 ---
 
@@ -198,36 +198,37 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Phụ thuộc:** M1  
 **Phạm vi:** UC-01..03; FT-ID-001..010; FT-UP-001/003/004; FT-HP-001..004  
 **Màn hình:** MH01/02/04/05/06/07/08/09/10/44/52/53  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/27
+**Trạng thái:** Đang thực hiện
+**Tiến độ:** 22/27
 
 ### Database và Backend Identity
 
-- [ ] **M2-01** — Tạo migration cho users, refresh_tokens, otp_codes, security rate-limit events và profile liên quan.
-- [ ] **M2-02** — Tạo enum role/account status/OTP purpose nhất quán với API và database.
-- [ ] **M2-03** — Triển khai đăng ký local, chuẩn hóa email và BCrypt password hashing.
-- [ ] **M2-04** — Triển khai tạo/gửi OTP qua provider adapter; có fake provider cho local/test.
-- [ ] **M2-05** — Triển khai verify OTP atomic: consume OTP, activate account và cấp session.
-- [ ] **M2-06** — Triển khai OTP resend với expiry, cooldown, attempt và rate limit.
-- [ ] **M2-07** — Triển khai đăng nhập email/password và kiểm tra account status.
-- [ ] **M2-08** — Triển khai JWT access token, refresh token rotation và revocation.
-- [ ] **M2-09** — Triển khai logout và thu hồi refresh token/session.
-- [ ] **M2-10** — Triển khai forgot/reset password bằng OTP.
-- [ ] **M2-11** — Triển khai change password cho local account đang đăng nhập.
-- [ ] **M2-12** — Triển khai Google Identity token verification server-side.
-- [ ] **M2-13** — Thiết lập Spring Security policy cho public/private/admin endpoint.
-- [ ] **M2-14** — Kiểm tra lỗi auth không làm lộ account enumeration hoặc secret.
+- [x] **M2-01** — Tạo migration cho users, refresh_tokens, otp_codes, security rate-limit events và profile liên quan.
+- [x] **M2-02** — Tạo enum role/account status/OTP purpose nhất quán với API và database.
+- [x] **M2-03** — Triển khai đăng ký local, chuẩn hóa email và BCrypt password hashing.
+- [x] **M2-04** — Triển khai tạo/gửi OTP qua provider adapter; có fake provider cho local/test.
+- [x] **M2-05** — Triển khai verify OTP atomic: consume OTP, activate account và cấp session.
+- [x] **M2-06** — Triển khai OTP resend với expiry, cooldown, attempt và rate limit.
+- [x] **M2-07** — Triển khai đăng nhập email/password và kiểm tra account status.
+- [x] **M2-08** — Triển khai JWT access token, refresh token rotation và revocation.
+- [x] **M2-09** — Triển khai logout và thu hồi refresh token/session.
+- [x] **M2-10** — Triển khai forgot/reset password bằng OTP.
+- [x] **M2-11** — Triển khai change password cho local account đang đăng nhập.
+- [x] **M2-12** — Triển khai Google Identity token verification server-side.
+- [x] **M2-13** — Thiết lập Spring Security policy cho public/private/admin endpoint.
+- [x] **M2-14** — Kiểm tra lỗi auth không làm lộ account enumeration hoặc secret.
 
 ### Profile, Preference và Health Onboarding
 
-- [ ] **M2-15** — Tạo migration User Profile, User Preference và Equipment Preference.
-- [ ] **M2-16** — Tạo migration Health Profile, Nutrition Target và Weight Log ban đầu.
-- [ ] **M2-17** — Triển khai xem/cập nhật User Profile theo whitelist field.
-- [ ] **M2-18** — Triển khai User/Equipment Preference và `equipmentOnboardingCompletedAt` kể cả danh sách rỗng.
-- [ ] **M2-19** — Triển khai validate Health Profile và range cho từng field.
-- [ ] **M2-20** — Triển khai `health-v1`: tuổi theo timezone, decimal/HALF_UP, BMI/BMR/TDEE và golden fixtures.
-- [ ] **M2-21** — Triển khai calories/macro target và rule xử lý kết quả bất hợp lệ.
-- [ ] **M2-22** — Lưu Health Profile, metric, target và Weight Log ban đầu trong transaction.
+- [x] **M2-15** — Tạo migration User Profile, User Preference và Equipment Preference.
+- [x] **M2-16** — Tạo migration Health Profile, Nutrition Target và Weight Log ban đầu.
+- [x] **M2-17** — Triển khai xem/cập nhật User Profile theo whitelist field.
+
+- [x] **M2-18** — Triển khai User/Equipment Preference và `equipmentOnboardingCompletedAt` kể cả danh sách rỗng.
+- [x] **M2-19** — Triển khai validate Health Profile và range cho từng field.
+- [x] **M2-20** — Triển khai `health-v1`: tuổi theo timezone, decimal/HALF_UP, BMI/BMR/TDEE và golden fixtures.
+- [x] **M2-21** — Triển khai calories/macro target và rule xử lý kết quả bất hợp lệ.
+- [x] **M2-22** — Lưu Health Profile, metric, target và Weight Log ban đầu trong transaction.
 
 ### Flutter và kiểm thử
 
@@ -246,10 +247,10 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] Mở lại app resume đúng trạng thái session/onboarding authoritative.
 - [ ] AC-01, AC-02 và phần onboarding của AC-03 đạt.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M2:**
+**Ngày bắt đầu thực tế:** 2026-08-25
+**Ngày hoàn thành thực tế:**
+**Minh chứng:** `backend/src/main/java/com/viegym/preference/`, `backend/src/main/java/com/viegym/health/`, `backend/src/main/resources/db/migration/V5__equipment_catalog_seed.sql`, `backend/src/test/java/com/viegym/preference/`, `backend/src/test/java/com/viegym/health/`; `./mvnw --batch-mode clean verify`: 54/54 tests pass, Flyway v0→v5, Spotless sạch.
+**Ghi chú M2:** M2-01..M2-22 hoàn thành. Preference/equipment replace semantics, empty-selection completion, `health-v1` decimal/HALF_UP, safety/incomplete rules và transaction HealthProfile + optional NutritionTarget + initial WeightLog đã triển khai. Tiếp theo là M2-23.
 
 ---
 
@@ -717,27 +718,41 @@ Minh chứng: commit/PR/test/screenshot/link
 - **Kế hoạch tiếp theo:** Thực hiện M1-01 theo version baseline, sau đó M1-02..M1-22 theo dependency.
 - **Minh chứng:** `docs/Project_Progress.md` và toàn bộ baseline/ADR trong `checkM0/` (`M0-01..03`, `ADR-001..007`, `M0-11_12`, `M0-13..15`).
 
-### 2026-08-22
+### 2026-08-25
 
-- **Milestone:** M1 — Nền tảng kỹ thuật và skeleton
-- **Đã hoàn thành:** M1-01..M1-22 (hoàn thành 100% milestone M1).
-  - M1-16: Flutter theme, router, provider root, env config.
-  - M1-17: Dio provider, single-flight refresh interceptor, ApiErrorHandler.
-  - M1-18: LoadingView, EmptyView, ErrorView, OfflineView, AsyncValueWidget.
-  - M1-19: FastAPI health endpoint, internal service-token guard.
-  - M1-20: Pydantic v2 schemas, mock AI provider (1–3 recommendations).
-  - M1-21: CI workflow cho 3 project với format, lint, test, OpenAPI no-diff, APK debug.
-  - M1-22: README hoàn chỉnh với clean setup, emulator/device config, troubleshooting.
-- **Đang thực hiện:** Sẵn sàng bước vào M2 (Identity, Session và Onboarding).
+- **Milestone:** M2 — Identity, Session và Onboarding
+- **Đã hoàn thành:** M2-01, M2-02, M2-03.
+- **Đang thực hiện:** Sẵn sàng M2-04.
 - **Vấn đề/BLOCKED:** Không có.
-- **Kế hoạch tiếp theo:** Triển khai M2-01 đến M2-27 (Identity, Authentication, Onboarding).
-- **Minh chứng:**
-  - Flutter test: `mobile/test/app_test.dart` (10/10 tests PASSED)
-  - Flutter analyze: No issues found!
-  - AI Service test: `ai-service/tests/` (8/8 tests PASSED, Ruff check/format PASSED)
-  - Backend test: `backend/` (9/9 tests PASSED, Maven build SUCCESS)
-  - README: `README.md`
-  - CI workflow: `.github/workflows/ci.yml`
+- **Kế hoạch tiếp theo:** Triển khai tạo/gửi OTP qua provider adapter với fake provider cho local/test.
+- **Minh chứng:** `backend/src/main/resources/db/migration/V1__identity_and_profile.sql`, `backend/src/main/java/com/viegym/identity/`, `backend/src/main/java/com/viegym/auth/`, `backend/src/test/java/com/viegym/BackendApplicationTests.java`, `backend/src/test/java/com/viegym/auth/AuthRegistrationTests.java`; backend verify 14/14 tests pass.
+
+### 2026-08-26
+
+- **Milestone:** M2 — Identity, Session và Onboarding
+- **Đã hoàn thành:** M2-04..M2-15. Trọng tâm phiên này: M2-15 — migration `V3__preference_and_equipment.sql` thêm `equipment` (§6.1), `user_preferences` (§4.6, JSONB có `CHECK jsonb_typeof` array/object) và `user_equipment_preferences` (§4.7, PK gộp user_id+equipment_id, index theo equipment_id). `user_profiles` (§4.5) đã có sẵn từ V1 nên không tạo lại.
+- **Đang thực hiện:** Sẵn sàng M2-16.
+- **Vấn đề/BLOCKED:** Không có. Quyết định: tạo bảng master `equipment` ngay trong V3 (thay vì đợi M4-01) vì FK của `user_equipment_preferences` cần nó; phạm vi M4-01 thu hẹp còn muscle_groups/exercises/mappings.
+- **Kế hoạch tiếp theo:** M2-16 — migration Health Profile, Nutrition Target và Weight Log ban đầu.
+- **Minh chứng:** `backend/src/main/resources/db/migration/V3__preference_and_equipment.sql`; `./mvnw --batch-mode clean verify`: 31/31 tests pass, Flyway áp dụng 4 migration (v0→v3).
+
+### 2026-08-26 — M2-17
+
+- **Milestone:** M2 — Identity, Session và Onboarding
+- **Đã hoàn thành:** M2-17 — User Profile API `GET`/`PUT /api/v1/users/me` theo JWT subject ownership và whitelist field.
+- **Đang thực hiện:** Sẵn sàng M2-18.
+- **Vấn đề/BLOCKED:** Không có. `avatarMediaId` non-null bị từ chối vì USER_PROFILE media là P1.
+- **Kế hoạch tiếp theo:** M2-18 — User/Equipment Preference và completion timestamp, kể cả danh sách equipment rỗng.
+- **Minh chứng:** `backend/src/main/java/com/viegym/profile/`, `backend/src/main/java/com/viegym/identity/UserOnboardingRepository.java`, `backend/src/test/java/com/viegym/profile/UserProfileIntegrationTests.java`; `backend/mvnw -f backend/pom.xml --batch-mode clean verify`: 43/43 tests pass, Flyway v0→v4.
+
+### 2026-08-26 — M2-18..M2-22
+
+- **Milestone:** M2 — Identity, Session và Onboarding
+- **Đã hoàn thành:** M2-18..M2-22 — User Preference, Equipment Preference/catalog và completion timestamp; Health Profile validation; calculator `health-v1`; calorie/macro safety rules; atomic create profile/target/initial weight log.
+- **Đang thực hiện:** Sẵn sàng M2-23.
+- **Vấn đề/BLOCKED:** Không có. Range validation giữ đúng miền contract/schema; tuổi dưới 18 và calculation sex chưa có được lưu với trạng thái `INCOMPLETE`, không bị reject.
+- **Kế hoạch tiếp theo:** M2-23 — Session Bootstrap, Welcome, Login, Register và OTP UI.
+- **Minh chứng:** `backend/src/main/java/com/viegym/preference/`, `backend/src/main/java/com/viegym/health/`, `backend/src/main/resources/db/migration/V5__equipment_catalog_seed.sql`, `backend/src/test/java/com/viegym/preference/PreferenceIntegrationTests.java`, `backend/src/test/java/com/viegym/health/HealthCalculatorTests.java`, `backend/src/test/java/com/viegym/health/HealthProfileIntegrationTests.java`; `./mvnw --batch-mode clean verify`: 54/54 tests pass, Flyway v0→v5, Spotless sạch.
 
 ## 21. Điều kiện bắt đầu P1
 

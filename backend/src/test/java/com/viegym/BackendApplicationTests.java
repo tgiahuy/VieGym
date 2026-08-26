@@ -16,9 +16,15 @@ import com.viegym.common.api.PageResponse;
 import com.viegym.common.api.Pagination;
 import com.viegym.common.error.ApiErrorCode;
 import com.viegym.common.error.ApiException;
+import com.viegym.identity.AccountStatus;
+import com.viegym.identity.AuthProvider;
+import com.viegym.identity.OtpPurpose;
+import com.viegym.identity.TokenStatus;
+import com.viegym.identity.UserRole;
 import com.viegym.observability.CorrelationId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,6 +68,7 @@ class BackendApplicationTests {
         registry.add("SPRING_DATASOURCE_PASSWORD", POSTGRES::getPassword);
         registry.add("springdoc.api-docs.enabled", () -> true);
         registry.add("springdoc.swagger-ui.enabled", () -> true);
+        registry.add("security.test-endpoints-public", () -> true);
     }
 
     @Autowired JdbcTemplate jdbcTemplate;
@@ -90,6 +97,70 @@ class BackendApplicationTests {
                         Integer.class);
 
         assertThat(applied).isEqualTo(1);
+    }
+
+    @Test
+    void appliesIdentityAndProfileMigrationOnCleanPostgreSql() {
+        List<String> tables =
+                jdbcTemplate.queryForList(
+                        "select table_name from information_schema.tables "
+                                + "where table_schema = 'public'",
+                        String.class);
+        List<String> indexes =
+                jdbcTemplate.queryForList(
+                        "select indexname from pg_indexes where schemaname = 'public'",
+                        String.class);
+        List<String> constraints =
+                jdbcTemplate.queryForList(
+                        "select conname from pg_constraint where conname in "
+                                + "('chk_users_auth_provider', 'chk_users_role', 'chk_users_status', "
+                                + "'chk_users_local_password', 'chk_users_active_verified', "
+                                + "'chk_refresh_tokens_status', 'chk_refresh_tokens_revoked', "
+                                + "'chk_otp_codes_purpose', 'chk_otp_codes_attempt_count', "
+                                + "'chk_otp_codes_max_attempts', 'chk_security_rate_limit_scope')",
+                        String.class);
+
+        assertThat(tables)
+                .contains(
+                        "users",
+                        "refresh_tokens",
+                        "otp_codes",
+                        "security_rate_limit_events",
+                        "user_profiles");
+        assertThat(indexes)
+                .contains(
+                        "uq_users_email_ci",
+                        "uq_users_provider_subject",
+                        "idx_refresh_tokens_user_status",
+                        "idx_otp_destination_purpose",
+                        "idx_security_rate_limit_subject");
+        assertThat(constraints)
+                .contains(
+                        "chk_users_auth_provider",
+                        "chk_users_role",
+                        "chk_users_status",
+                        "chk_users_local_password",
+                        "chk_users_active_verified",
+                        "chk_refresh_tokens_status",
+                        "chk_refresh_tokens_revoked",
+                        "chk_otp_codes_purpose",
+                        "chk_otp_codes_attempt_count",
+                        "chk_otp_codes_max_attempts",
+                        "chk_security_rate_limit_scope");
+    }
+
+    @Test
+    void identityEnumsMatchDatabaseConstraints() {
+        assertThat(checkConstraintDefinition("chk_users_auth_provider"))
+                .contains(enumSqlValues(AuthProvider.class));
+        assertThat(checkConstraintDefinition("chk_users_role"))
+                .contains(enumSqlValues(UserRole.class));
+        assertThat(checkConstraintDefinition("chk_users_status"))
+                .contains(enumSqlValues(AccountStatus.class));
+        assertThat(checkConstraintDefinition("chk_refresh_tokens_status"))
+                .contains(enumSqlValues(TokenStatus.class));
+        assertThat(checkConstraintDefinition("chk_otp_codes_purpose"))
+                .contains(enumSqlValues(OtpPurpose.class));
     }
 
     @Test
@@ -178,6 +249,20 @@ class BackendApplicationTests {
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/swagger-ui/index.html"));
+    }
+
+    private String checkConstraintDefinition(String name) {
+        return jdbcTemplate.queryForObject(
+                "select pg_get_constraintdef(oid) from pg_constraint where conname = ?",
+                String.class,
+                name);
+    }
+
+    private <T extends Enum<T>> String enumSqlValues(Class<T> enumType) {
+        return Arrays.stream(enumType.getEnumConstants())
+                .map(value -> "'" + value.name() + "'::character varying")
+                .toList()
+                .toString();
     }
 
     @RestController

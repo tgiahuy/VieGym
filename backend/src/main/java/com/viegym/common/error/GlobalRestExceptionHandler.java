@@ -10,6 +10,7 @@ import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -51,6 +52,14 @@ public class GlobalRestExceptionHandler {
         return error(ApiErrorCode.VALIDATION_ERROR, VALIDATION_MESSAGE, List.of(violation));
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiErrorResponse> handleUnreadableBody(
+            HttpMessageNotReadableException exception) {
+        FieldViolation violation =
+                new FieldViolation("request", "MALFORMED", "Request body is malformed");
+        return error(ApiErrorCode.VALIDATION_ERROR, VALIDATION_MESSAGE, List.of(violation));
+    }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException exception) {
@@ -63,6 +72,12 @@ public class GlobalRestExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ApiErrorResponse> handleNotFound(NoResourceFoundException exception) {
         return error(ApiErrorCode.RESOURCE_NOT_FOUND, "Resource not found", List.of());
+    }
+
+    @ExceptionHandler(ApiValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleApiValidationException(
+            ApiValidationException exception) {
+        return error(ApiErrorCode.VALIDATION_ERROR, VALIDATION_MESSAGE, exception.violations());
     }
 
     @ExceptionHandler(ApiException.class)

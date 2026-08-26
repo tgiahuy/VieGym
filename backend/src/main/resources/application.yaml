@@ -5,9 +5,9 @@ spring:
   application:
     name: viegym-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/viegym}
+    username: ${SPRING_DATASOURCE_USERNAME:viegym_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:viegym_dev_password}
     hikari:
       maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
       minimum-idle: ${DB_POOL_MIN_IDLE:2}

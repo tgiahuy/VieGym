@@ -14,6 +14,9 @@
 │  State: Riverpod  │  Router: go_router               │
 │  HTTP: dart-dio (generated from OpenAPI)             │
 └───────────────────────┬─────────────────────────────┘
+│  React Web Frontend (TypeScript / Vite)               │
+│  UI prototype and web client                          │
+└───────────────────────┬─────────────────────────────┘
                         │ REST /api/v1
                         ▼
 ┌─────────────────────────────────────────────────────┐
@@ -43,6 +46,8 @@
 |---------|-----------|
 | Flutter | 3.44.4 (pin qua FVM) |
 | Dart | ≥ 3.8 |
+| Node.js | ≥ 20 |
+| pnpm | ≥ 9 |
 | Java | 21 (Temurin) |
 | Maven Wrapper | bundled |
 | Python | 3.12 |
@@ -111,6 +116,16 @@ cd mobile
 flutter pub get
 flutter run --dart-define=APP_ENV=dev
 ```
+
+### 1.7 Frontend Web — React/Vite
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Vite hiển thị URL local sau khi development server khởi động.
 
 ---
 
@@ -199,6 +214,14 @@ flutter test                   # widget + unit tests
 flutter test --coverage        # với coverage report
 ```
 
+### Frontend Web
+
+```bash
+cd frontend
+pnpm lint
+pnpm build
+```
+
 ---
 
 ## 4. Biến môi trường
@@ -261,6 +284,9 @@ CI tự động kiểm tra spec không bị stale (**OpenAPI no-diff gate**).
 
 ```
 VieGym/
+├── frontend/         # React + TypeScript + Vite web app
+│   ├── src/          # pages, components, layouts, hooks
+│   └── public/       # static assets
 ├── mobile/           # Flutter app
 │   └── lib/
 │       ├── core/     # config, network, router, theme
@@ -276,7 +302,7 @@ VieGym/
 │       ├── core/     # config, security
 │       ├── models/   # Pydantic schemas
 │       └── services/ # AI provider
-├── docs/             # Project_Progress.md, ADR, SRS review
+├── docs/             # Project docs and frontend screen specification
 ├── checkM0/          # M0 milestone evidence
 └── compose.yaml      # Docker Compose stack
 ```

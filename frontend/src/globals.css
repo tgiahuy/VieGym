@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 40% 6%; /* Deep Navy/Black */
+    --foreground: 210 40% 98%; /* Almost White */
+
+    --card: 225 30% 11%; /* Charcoal/Dark Indigo Surface */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 225 40% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 350 80% 52%; /* Stronger, more saturated red */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 225 20% 25%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 225 20% 25%;
+    --muted-foreground: 215 20% 65%; /* Cool Gray */
+
+    --accent: 225 20% 25%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 350 80% 52%; /* Synced with new primary color */
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+
+    --border: 225 20% 15%;
+    --input: 225 20% 15%;
+    --ring: 350 80% 52%; /* Synced with new primary color */
+
+    --radius: 1rem; /* Softer, larger radius */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Manrope', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+      display: none;
+  }
+  .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+  }
+}

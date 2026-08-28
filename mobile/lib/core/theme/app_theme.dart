@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 
 /// VieGym design-system tokens.
-/// Seed hue: HSL(162, 72%, 28%) — deep teal-green for fitness brand.
+/// Native Flutter interpretation of the React VieGym design tokens.
 abstract final class AppColors {
-  static const primary = Color(0xFF1A6B52);
-  static const primaryContainer = Color(0xFFB7F0D8);
-  static const secondary = Color(0xFF2D6A8A);
-  static const error = Color(0xFFBA1A1A);
-  static const surface = Color(0xFFF6FBF8);
-  static const onSurface = Color(0xFF1C1B1F);
+  static const primary = Color(0xFFFF2E54);
+  static const primaryContainer = Color(0xFF3B121A);
+  static const secondary = Color(0xFF232838);
+  static const error = Color(0xFFFF4D6D);
+  static const surface = Color(0xFF0A0C14);
+  static const onSurface = Color(0xFFF6F7FB);
 
-  // Dark
-  static const primaryDark = Color(0xFF5FD4A6);
-  static const surfaceDark = Color(0xFF0F1F19);
-  static const onSurfaceDark = Color(0xFFE2E9E5);
+  // Dark & Neon
+  static const primaryDark = Color(0xFFFF2E54);
+  static const surfaceDark = Color(0xFF0A0C14);
+  static const onSurfaceDark = Color(0xFFF6F7FB);
+  static const accentEmerald = Color(0xFF10B981);
+  static const accentAmber = Color(0xFFF59E0B);
+  static const accentBlue = Color(0xFF3B82F6);
 }
 
 class AppTheme {
@@ -28,9 +31,18 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    final cs = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+    final generated = ColorScheme.fromSeed(
+      seedColor: AppColors.primaryDark,
       brightness: Brightness.dark,
+    );
+    final cs = generated.copyWith(
+      primary: AppColors.primaryDark,
+      surface: AppColors.surfaceDark,
+      onSurface: AppColors.onSurfaceDark,
+      surfaceContainer: const Color(0xFF141724),
+      surfaceContainerHigh: const Color(0xFF1B1F30),
+      surfaceContainerHighest: const Color(0xFF252A40),
+      outlineVariant: const Color(0xFF282E44),
     );
     return _buildTheme(cs);
   }
@@ -39,18 +51,19 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
+      scaffoldBackgroundColor: cs.surface,
       // ── Typography ────────────────────────────────────────────────────────
       textTheme: const TextTheme(
         displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400),
         displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
-        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w600),
-        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
-        headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
-        titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+        headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
         bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
       // ── AppBar ────────────────────────────────────────────────────────────
       appBarTheme: AppBarTheme(
@@ -61,68 +74,85 @@ class AppTheme {
         foregroundColor: cs.onSurface,
         titleTextStyle: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w800,
           color: cs.onSurface,
         ),
       ),
       // ── Card ─────────────────────────────────────────────────────────────
       cardTheme: CardThemeData(
+        color: cs.surfaceContainer,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: cs.outlineVariant, width: 1),
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.6), width: 1),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       ),
       // ── FilledButton ──────────────────────────────────────────────────────
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle:
-              const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
       ),
       // ── ElevatedButton ────────────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(88, 48),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
       ),
       // ── InputDecoration ──────────────────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outlineVariant),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.6)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: cs.primary, width: 1.8),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         filled: true,
-        fillColor: cs.surfaceContainerLowest,
+        fillColor: cs.surfaceContainer,
       ),
       // ── Divider ──────────────────────────────────────────────────────────
       dividerTheme: DividerThemeData(
-        color: cs.outlineVariant,
+        color: cs.outlineVariant.withValues(alpha: 0.5),
         thickness: 1,
         space: 0,
       ),
       // ── BottomNavigationBar / NavigationBar ───────────────────────────────
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: cs.surface,
-        indicatorColor: cs.primaryContainer,
+        backgroundColor: cs.surfaceContainer,
+        indicatorColor: cs.primary.withValues(alpha: .22),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: cs.onSurface);
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: cs.primary,
+            );
           }
           return TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: cs.onSurfaceVariant);
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: cs.onSurfaceVariant,
+          );
         }),
       ),
     );

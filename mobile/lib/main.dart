@@ -9,9 +9,7 @@ void main() {
 
   runApp(
     // ProviderScope is the Riverpod DI root — must wrap the entire widget tree.
-    const ProviderScope(
-      child: VieGymApp(),
-    ),
+    const ProviderScope(child: VieGymApp()),
   );
 }
 
@@ -27,8 +25,7 @@ class VieGymApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      // Follows the device setting; user preference (P1) overrides in M8.
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

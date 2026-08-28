@@ -21,18 +21,17 @@ void main() {
       expect(EnvConfig.isDebugLogging, isTrue);
     });
 
-    testWidgets('App starts with ProviderScope and renders splash placeholder',
-        (tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: VieGymApp(),
-        ),
-      );
+    testWidgets('App starts with native VieGym dashboard and navigation', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const ProviderScope(child: VieGymApp()));
       await tester.pumpAndSettle();
 
-      expect(find.text('VieGym'), findsWidgets);
-      expect(find.text('Backend kết nối và stack đang chạy ✓'), findsOneWidget);
-      expect(find.byIcon(Icons.fitness_center), findsOneWidget);
+      expect(find.text('Gia Huy'), findsOneWidget);
+      expect(find.text('Upper Body A'), findsOneWidget);
+      expect(find.text('Trang chủ'), findsOneWidget);
+      expect(find.text('Tập luyện'), findsOneWidget);
+      expect(find.text('AI Coach'), findsOneWidget);
     });
   });
 
@@ -79,13 +78,12 @@ void main() {
   });
 
   group('M1-18: Shared UI Widgets', () {
-    testWidgets('LoadingView displays indicator and optional message',
-        (tester) async {
+    testWidgets('LoadingView displays indicator and optional message', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: LoadingView(message: 'Đang tải dữ liệu...'),
-          ),
+          home: Scaffold(body: LoadingView(message: 'Đang tải dữ liệu...')),
         ),
       );
 
@@ -96,9 +94,7 @@ void main() {
     testWidgets('EmptyView displays message and icon', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: EmptyView(message: 'Chưa có bài tập nào'),
-          ),
+          home: Scaffold(body: EmptyView(message: 'Chưa có bài tập nào')),
         ),
       );
 
@@ -106,7 +102,9 @@ void main() {
       expect(find.byIcon(Icons.inbox_rounded), findsOneWidget);
     });
 
-    testWidgets('ErrorView displays message and triggers retry', (tester) async {
+    testWidgets('ErrorView displays message and triggers retry', (
+      tester,
+    ) async {
       var retried = false;
       await tester.pumpWidget(
         MaterialApp(
@@ -126,14 +124,13 @@ void main() {
       expect(retried, isTrue);
     });
 
-    testWidgets('OfflineView displays offline warning and retry button',
-        (tester) async {
+    testWidgets('OfflineView displays offline warning and retry button', (
+      tester,
+    ) async {
       var retried = false;
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: OfflineView(onRetry: () => retried = true),
-          ),
+          home: Scaffold(body: OfflineView(onRetry: () => retried = true)),
         ),
       );
 
@@ -144,8 +141,9 @@ void main() {
       expect(retried, isTrue);
     });
 
-    testWidgets('AsyncValueWidget handles loading, data and error states',
-        (tester) async {
+    testWidgets('AsyncValueWidget handles loading, data and error states', (
+      tester,
+    ) async {
       // Data state
       await tester.pumpWidget(
         MaterialApp(

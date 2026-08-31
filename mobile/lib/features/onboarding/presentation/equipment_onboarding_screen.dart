@@ -65,9 +65,9 @@ class _EquipmentOnboardingScreenState
             ),
             Text(
               'Đã chọn ${selectedIds.length}/${masterEquipmentCatalogue.length} dụng cụ',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
             ),
           ],
         ),
@@ -78,9 +78,7 @@ class _EquipmentOnboardingScreenState
             decoration: BoxDecoration(
               color: colors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(
-                color: colors.primary.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
             ),
             child: Text(
               'Bước 2/2',
@@ -180,12 +178,14 @@ class _EquipmentOnboardingScreenState
 
           // Grouped Equipment list
           ...categories.map((cat) {
-            final items =
-                filteredCatalogue.where((e) => e.category == cat).toList();
+            final items = filteredCatalogue
+                .where((e) => e.category == cat)
+                .toList();
             if (items.isEmpty) return const SizedBox.shrink();
 
-            final selectedInCat =
-                items.where((e) => selectedIds.contains(e.id)).length;
+            final selectedInCat = items
+                .where((e) => selectedIds.contains(e.id))
+                .length;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,11 +245,7 @@ class _EquipmentOnboardingScreenState
                           color: colors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          item.icon,
-                          color: colors.primary,
-                          size: 22,
-                        ),
+                        child: Icon(item.icon, color: colors.primary, size: 22),
                       ),
                       title: Text(
                         item.name,
@@ -260,9 +256,9 @@ class _EquipmentOnboardingScreenState
                       ),
                       subtitle: Text(
                         item.description,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 12,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(fontSize: 12),
                       ),
                       trailing: Checkbox(
                         value: isSelected,
@@ -321,10 +317,7 @@ class _EquipmentOnboardingScreenState
 }
 
 class _PresetButton extends StatelessWidget {
-  const _PresetButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _PresetButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
@@ -349,10 +342,7 @@ class _PresetButton extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           ),
         ),
       ),

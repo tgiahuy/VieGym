@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:viegym/shared/widgets/brand_icons.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -9,6 +10,7 @@ class WelcomeScreen extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
           // Background Gradient / Glow
@@ -17,9 +19,9 @@ class WelcomeScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    colors.surface,
-                    colors.surfaceContainerHighest.withValues(alpha: 0.4),
-                    colors.surface,
+                    Colors.transparent,
+                    colors.surface.withValues(alpha: 0.08),
+                    colors.surface.withValues(alpha: 0.62),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -27,59 +29,22 @@ class WelcomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
-            top: -60,
-            right: -60,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.primary.withValues(alpha: 0.12),
-              ),
-            ),
-          ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 20),
-                  // Logo Center
-                  Column(
+                  // App Logo Top-Left Corner
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 104,
-                        height: 104,
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(32),
-                          border: Border.all(
-                            color: colors.primary.withValues(alpha: 0.45),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withValues(alpha: 0.35),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.fitness_center_rounded,
-                            size: 52,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                      const VieGymLogo(size: 44, borderRadius: 14),
+                      const SizedBox(width: 12),
                       Text(
                         'VIEGYM',
                         style: TextStyle(
-                          fontSize: 34,
+                          fontSize: 24,
                           fontWeight: FontWeight.w900,
                           fontStyle: FontStyle.italic,
                           letterSpacing: 2,
@@ -88,6 +53,9 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  const Spacer(),
+
                   // Bottom Content & Actions
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,21 +63,22 @@ class WelcomeScreen extends StatelessWidget {
                       const Text(
                         'Tập thông minh.\nSống khoẻ mạnh.',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 34,
                           fontWeight: FontWeight.w900,
                           height: 1.15,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
                         'Huấn luyện viên thể hình & dinh dưỡng cá nhân hoá cùng trí tuệ nhân tạo AI.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                              height: 1.4,
-                            ),
+                          color: colors.onSurfaceVariant,
+                          height: 1.45,
+                          fontSize: 14.5,
+                        ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 32),
                       FilledButton(
                         onPressed: () => context.push('/register'),
                         style: FilledButton.styleFrom(
@@ -134,10 +103,10 @@ class WelcomeScreen extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          side: BorderSide(
-                            color: colors.outlineVariant,
+                          side: BorderSide(color: colors.outlineVariant),
+                          backgroundColor: colors.surfaceContainer.withValues(
+                            alpha: 0.6,
                           ),
-                          backgroundColor: colors.surfaceContainer.withValues(alpha: 0.6),
                         ),
                         child: Text(
                           'Bạn đã có tài khoản?',

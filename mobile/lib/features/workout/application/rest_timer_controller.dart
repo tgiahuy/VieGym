@@ -87,7 +87,6 @@ class RestTimerController extends Notifier<RestTimerState> {
   }
 }
 
-final restTimerProvider =
-    NotifierProvider<RestTimerController, RestTimerState>(
+final restTimerProvider = NotifierProvider<RestTimerController, RestTimerState>(
   RestTimerController.new,
 );

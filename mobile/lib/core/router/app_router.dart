@@ -11,6 +11,8 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/welcome_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/nutrition/domain/food_models.dart';
+import '../../features/nutrition/presentation/ai_meal_generate_screen.dart';
+import '../../features/nutrition/presentation/favorite_foods_screen.dart';
 import '../../features/nutrition/presentation/food_detail_screen.dart';
 import '../../features/nutrition/presentation/food_search_screen.dart';
 import '../../features/nutrition/presentation/meal_builder_screen.dart';
@@ -23,6 +25,7 @@ import '../../features/profile/presentation/account_security_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/profile/presentation/equipment_preference_screen.dart';
 import '../../features/profile/presentation/health_profile_edit_screen.dart';
+import '../../features/profile/presentation/personal_records_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/progress_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
@@ -30,15 +33,19 @@ import '../../features/profile/presentation/user_preference_screen.dart';
 import '../../features/profile/presentation/user_profile_screen.dart';
 import '../../features/shell/presentation/home_shell.dart';
 import '../../features/shell/presentation/not_found_screen.dart';
+import '../../features/workout/domain/workout_models.dart';
 import '../../features/workout/presentation/ai_workout_generate_screen.dart';
 import '../../features/workout/presentation/exercise_detail_screen.dart';
 import '../../features/workout/presentation/exercise_library_screen.dart';
+import '../../features/workout/presentation/favorite_exercises_screen.dart';
+import '../../features/workout/presentation/workout_history_detail_screen.dart';
 import '../../features/workout/presentation/workout_history_screen.dart';
 import '../../features/workout/presentation/workout_schedule_screen.dart';
 import '../../features/workout/presentation/workout_session_screen.dart';
 import '../../features/workout/presentation/workout_summary_screen.dart';
 import '../../features/workout/presentation/workout_swap_schedule_screen.dart';
 import '../../features/workout/presentation/workout_tab_screen.dart';
+import '../../shared/widgets/auth_video_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -47,34 +54,39 @@ final routerProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) =>
         NotFoundScreen(errorMessage: state.error?.toString()),
     routes: [
-      // Auth Routes
-      GoRoute(
-        path: '/welcome',
-        name: 'welcome',
-        builder: (context, state) => const WelcomeScreen(),
-      ),
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        name: 'forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
-      ),
-      GoRoute(
-        path: '/otp',
-        name: 'otp',
-        builder: (context, state) => const OtpScreen(),
+      // Authentication routes share one persistent video background.
+      ShellRoute(
+        builder: (context, state, child) => AuthVideoShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/welcome',
+            name: 'welcome',
+            builder: (context, state) => const WelcomeScreen(),
+          ),
+          GoRoute(
+            path: '/login',
+            name: 'login',
+            builder: (context, state) => const LoginScreen(),
+          ),
+          GoRoute(
+            path: '/register',
+            name: 'register',
+            builder: (context, state) => const RegisterScreen(),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            name: 'forgot-password',
+            builder: (context, state) => const ForgotPasswordScreen(),
+          ),
+          GoRoute(
+            path: '/otp',
+            name: 'otp',
+            builder: (context, state) => const OtpScreen(),
+          ),
+        ],
       ),
 
-      // Onboarding Routes
+      // Onboarding uses the regular app background without video.
       GoRoute(
         path: '/onboarding/health',
         name: 'onboarding-health',
@@ -149,12 +161,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/workout/summary',
         name: 'workout-summary',
-        builder: (context, state) => const WorkoutSummaryScreen(),
+        builder: (context, state) {
+          final summary = state.extra as WorkoutSummaryData?;
+          return WorkoutSummaryScreen(summary: summary);
+        },
       ),
       GoRoute(
         path: '/workout/library',
         name: 'exercise-library',
-        builder: (context, state) => const ExerciseLibraryScreen(),
+        builder: (context, state) {
+          final isPicker = state.uri.queryParameters['select'] == 'true';
+          final isMulti = state.uri.queryParameters['multi'] == 'true';
+          final title =
+              state.uri.queryParameters['title'] ?? 'Thư viện bài tập';
+          return ExerciseLibraryScreen(
+            isPicker: isPicker,
+            isMultiSelect: isMulti,
+            title: title,
+          );
+        },
       ),
       GoRoute(
         path: '/workout/schedule',
@@ -175,9 +200,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const WorkoutHistoryScreen(),
       ),
       GoRoute(
+        path: '/workout/history/detail',
+        name: 'workout-history-detail',
+        builder: (context, state) {
+          final historyId = state.uri.queryParameters['id'] ?? '';
+          return WorkoutHistoryDetailScreen(historyId: historyId);
+        },
+      ),
+      GoRoute(
         path: '/workout/generate',
         name: 'workout-generate',
         builder: (context, state) => const AiWorkoutGenerateScreen(),
+      ),
+      GoRoute(
+        path: '/workout/favorites',
+        name: 'workout-favorites',
+        builder: (context, state) => const FavoriteExercisesScreen(),
       ),
       GoRoute(
         path: '/exercise/:id',
@@ -227,9 +265,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/meal/generate',
+        name: 'meal-generate',
+        builder: (context, state) {
+          final mealTypeStr = state.uri.queryParameters['mealType'];
+          final mealType = MealType.values
+              .where((m) => m.code == mealTypeStr)
+              .firstOrNull;
+          return AiMealGenerateScreen(initialMealType: mealType);
+        },
+      ),
+      GoRoute(
         path: '/meal/plan',
         name: 'meal-plan',
         builder: (context, state) => const MealPlannerScreen(),
+      ),
+      GoRoute(
+        path: '/nutrition/favorites',
+        name: 'nutrition-favorites',
+        builder: (context, state) => const FavoriteFoodsScreen(),
+      ),
+      GoRoute(
+        path: '/meal/favorites',
+        name: 'meal-favorites',
+        builder: (context, state) => const FavoriteFoodsScreen(),
       ),
       GoRoute(
         path: '/meal/history',
@@ -262,6 +321,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/equipment',
         name: 'profile-equipment',
         builder: (context, state) => const EquipmentPreferenceScreen(),
+      ),
+      GoRoute(
+        path: '/profile/records',
+        name: 'profile-records',
+        builder: (context, state) => const PersonalRecordsScreen(),
       ),
       GoRoute(
         path: '/profile/preferences',

@@ -64,10 +64,7 @@ class ApiErrorHandler {
         return _fromResponse(err.response);
 
       case DioExceptionType.cancel:
-        return const ApiError(
-          code: 'CANCELLED',
-          message: 'Yêu cầu đã bị huỷ.',
-        );
+        return const ApiError(code: 'CANCELLED', message: 'Yêu cầu đã bị huỷ.');
 
       case DioExceptionType.unknown:
       default:

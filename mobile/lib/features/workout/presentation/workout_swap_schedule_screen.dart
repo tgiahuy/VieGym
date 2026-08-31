@@ -35,7 +35,7 @@ class _WorkoutSwapScheduleScreenState
           'Thứ Năm',
           'Thứ Sáu',
           'Thứ Bảy',
-          'Chủ Nhật'
+          'Chủ Nhật',
         ];
         final dayName = dayNames[d.weekday - 1];
         final day = d.day.toString().padLeft(2, '0');
@@ -151,7 +151,9 @@ class _WorkoutSwapScheduleScreenState
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Không thể hoán đổi buổi tập đã hoàn thành.'),
+                      content: Text(
+                        'Không thể hoán đổi buổi tập đã hoàn thành.',
+                      ),
                     ),
                   );
                 }
@@ -177,18 +179,18 @@ class _WorkoutSwapScheduleScreenState
     WorkoutScheduleItem? sourceItem;
     if (widget.sourceScheduleId != null) {
       sourceItem = schedules.cast<WorkoutScheduleItem?>().firstWhere(
-            (s) => s?.id == widget.sourceScheduleId,
-            orElse: () => null,
-          );
+        (s) => s?.id == widget.sourceScheduleId,
+        orElse: () => null,
+      );
     }
     sourceItem ??= schedules.cast<WorkoutScheduleItem?>().firstWhere(
-          (s) => s?.date == todayStr && s?.status != ScheduleStatus.rest,
-          orElse: () => null,
-        );
+      (s) => s?.date == todayStr && s?.status != ScheduleStatus.rest,
+      orElse: () => null,
+    );
     sourceItem ??= schedules.cast<WorkoutScheduleItem?>().firstWhere(
-          (s) => s?.status == ScheduleStatus.planned,
-          orElse: () => schedules.isNotEmpty ? schedules.first : null,
-        );
+      (s) => s?.status == ScheduleStatus.planned,
+      orElse: () => schedules.isNotEmpty ? schedules.first : null,
+    );
 
     final availableTargets = sourceItem == null
         ? <WorkoutScheduleItem>[]
@@ -201,9 +203,9 @@ class _WorkoutSwapScheduleScreenState
     final targetItem = _selectedTargetId == null
         ? null
         : availableTargets.cast<WorkoutScheduleItem?>().firstWhere(
-              (t) => t?.id == _selectedTargetId,
-              orElse: () => null,
-            );
+            (t) => t?.id == _selectedTargetId,
+            orElse: () => null,
+          );
 
     return Scaffold(
       appBar: AppBar(
@@ -283,8 +285,10 @@ class _WorkoutSwapScheduleScreenState
               ),
               if (sourceItem?.date == todayStr)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -307,9 +311,7 @@ class _WorkoutSwapScheduleScreenState
               margin: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: colors.primary.withValues(alpha: 0.4),
-                ),
+                side: BorderSide(color: colors.primary.withValues(alpha: 0.4)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -373,7 +375,11 @@ class _WorkoutSwapScheduleScreenState
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(Icons.timer_outlined, size: 14, color: Colors.grey),
+                        const Icon(
+                          Icons.timer_outlined,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${sourceItem.durationMinutes} phút',
@@ -418,7 +424,11 @@ class _WorkoutSwapScheduleScreenState
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.event_busy_rounded, size: 36, color: Colors.grey),
+                  const Icon(
+                    Icons.event_busy_rounded,
+                    size: 36,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 8),
                   const Text(
                     'Không tìm thấy buổi tập sắp tới nào khả dụng để hoán đổi.',
@@ -472,7 +482,9 @@ class _WorkoutSwapScheduleScreenState
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: isSelected ? colors.primary : Colors.grey,
+                                  color: isSelected
+                                      ? colors.primary
+                                      : Colors.grey,
                                 ),
                               ),
                               Container(
@@ -530,8 +542,9 @@ class _WorkoutSwapScheduleScreenState
               decoration: BoxDecoration(
                 color: colors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
-                border:
-                    Border.all(color: colors.primary.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: colors.primary.withValues(alpha: 0.3),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

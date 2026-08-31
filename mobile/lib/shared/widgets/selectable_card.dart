@@ -51,10 +51,14 @@ class SelectableCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: (iconColor ?? colors.primary).withValues(alpha: 0.15),
+                    color: (iconColor ?? colors.primary).withValues(
+                      alpha: 0.15,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: (iconColor ?? colors.primary).withValues(alpha: 0.3),
+                      color: (iconColor ?? colors.primary).withValues(
+                        alpha: 0.3,
+                      ),
                     ),
                   ),
                   child: Icon(
@@ -77,7 +81,9 @@ class SelectableCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: isSelected ? colors.primary : colors.onSurface,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.onSurface,
                             ),
                           ),
                         ),
@@ -111,9 +117,9 @@ class SelectableCard extends StatelessWidget {
                     Text(
                       description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            height: 1.35,
-                          ),
+                        color: colors.onSurfaceVariant,
+                        height: 1.35,
+                      ),
                     ),
                   ],
                 ),

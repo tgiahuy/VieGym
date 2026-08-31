@@ -36,9 +36,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đổi mật khẩu thành công!')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đổi mật khẩu thành công!')));
     context.pop();
   }
 
@@ -143,9 +143,18 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.phone_iphone_rounded, color: Colors.greenAccent),
-                  title: const Text('iPhone 15 Pro (Thiết bị này)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                  subtitle: const Text('Hồ Chí Minh, Việt Nam • Đang hoạt động', style: TextStyle(fontSize: 12)),
+                  leading: const Icon(
+                    Icons.phone_iphone_rounded,
+                    color: Colors.greenAccent,
+                  ),
+                  title: const Text(
+                    'iPhone 15 Pro (Thiết bị này)',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  subtitle: const Text(
+                    'Hồ Chí Minh, Việt Nam • Đang hoạt động',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   trailing: Container(
                     width: 8,
                     height: 8,

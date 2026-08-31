@@ -14,7 +14,8 @@ class NotFoundScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Không tìm thấy trang'),
         leading: IconButton(
-          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/home'),
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
         ),
       ),

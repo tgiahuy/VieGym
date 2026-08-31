@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../application/nutrition_controller.dart';
+import '../../../shared/widgets/resilient_network_image.dart';
+import '../application/favorite_foods_controller.dart';
 import '../data/food_catalog.dart';
 import '../domain/food_models.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
-  const FoodSearchScreen({
-    super.key,
-    this.initialMealType = MealType.lunch,
-  });
+  const FoodSearchScreen({super.key, this.initialMealType = MealType.lunch});
 
   final MealType initialMealType;
 
@@ -39,14 +37,17 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final favoriteIds = ref.watch(favoriteFoodsProvider);
 
     final filteredFoods = masterFoodCatalog.where((food) {
       final q = _query.toLowerCase().trim();
-      final matchesQuery = q.isEmpty ||
+      final matchesQuery =
+          q.isEmpty ||
           food.name.toLowerCase().contains(q) ||
           food.description.toLowerCase().contains(q);
 
-      final matchesCategory = _selectedCategory == FoodCategory.all ||
+      final matchesCategory =
+          _selectedCategory == FoodCategory.all ||
           food.category == _selectedCategory;
 
       return matchesQuery && matchesCategory;
@@ -58,35 +59,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
         ),
-        title: Column(
-          children: [
-            const Text(
-              'Thư viện món ăn',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            Text(
-              'Thêm vào: ${_activeMealType.label}',
-              style: TextStyle(
-                fontSize: 11,
-                color: colors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Thư viện món ăn',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
-        actions: [
-          PopupMenuButton<MealType>(
-            icon: const Icon(Icons.tune_rounded),
-            initialValue: _activeMealType,
-            onSelected: (val) => setState(() => _activeMealType = val),
-            itemBuilder: (context) => MealType.values.map((m) {
-              return PopupMenuItem(
-                value: m,
-                child: Text('Đổi sang: ${m.label}'),
-              );
-            }).toList(),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -156,7 +132,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                     itemCount: filteredFoods.length,
                     itemBuilder: (context, index) {
                       final item = filteredFoods[index];
@@ -178,16 +154,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                             child: Row(
                               children: [
                                 // Thumbnail
-                                Container(
+                                SizedBox(
                                   width: 64,
                                   height: 64,
-                                  decoration: BoxDecoration(
+                                  child: ResilientNetworkImage(
+                                    url: item.imageUrl,
+                                    semanticLabel: 'Ảnh món ${item.name}',
                                     borderRadius: BorderRadius.circular(12),
-                                    color: colors.surfaceContainerHighest,
-                                    image: DecorationImage(
-                                      image: NetworkImage(item.imageUrl),
-                                      fit: BoxFit.cover,
-                                    ),
+                                    placeholderIcon: Icons.restaurant_rounded,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -229,32 +203,28 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                   ),
                                 ),
 
-                                // Quick Add Button
-                                IconButton.filledTonal(
-                                  icon: const Icon(Icons.add_rounded),
+                                const SizedBox(width: 8),
+
+                                // Favorite Toggle Button
+                                IconButton(
+                                  tooltip: favoriteIds.contains(item.id)
+                                      ? 'Bỏ yêu thích'
+                                      : 'Thêm vào yêu thích',
+                                  icon: Icon(
+                                    favoriteIds.contains(item.id)
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: favoriteIds.contains(item.id)
+                                        ? const Color(0xFFFF2E54)
+                                        : colors.onSurfaceVariant.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                    size: 22,
+                                  ),
                                   onPressed: () {
                                     ref
-                                        .read(nutritionProvider.notifier)
-                                        .addFoodEntry(
-                                          foodId: item.id,
-                                          name: item.name,
-                                          mealType: _activeMealType,
-                                          calories: item.baseCalories,
-                                          protein: item.baseProtein,
-                                          carbs: item.baseCarbs,
-                                          fat: item.baseFat,
-                                          servingAmount: 1,
-                                          servingUnit: item.baseServingUnit,
-                                          imageUrl: item.imageUrl,
-                                        );
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Đã thêm ${item.name} vào ${_activeMealType.label}!',
-                                        ),
-                                      ),
-                                    );
+                                        .read(favoriteFoodsProvider.notifier)
+                                        .toggleFavorite(item.id);
                                   },
                                 ),
                               ],

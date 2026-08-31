@@ -21,9 +21,7 @@ class CommonMistakesCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Colors.amber.withValues(alpha: 0.35),
-        ),
+        side: BorderSide(color: Colors.amber.withValues(alpha: 0.35)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -59,8 +57,8 @@ class CommonMistakesCard extends StatelessWidget {
                     Text(
                       'Tránh sai tư thế & chấn thương khi tập',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),

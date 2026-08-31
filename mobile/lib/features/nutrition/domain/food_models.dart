@@ -82,6 +82,7 @@ class FoodEntry {
     required this.servingUnit,
     required this.imageUrl,
     required this.date,
+    this.loggedTime,
   });
 
   final String id;
@@ -96,6 +97,7 @@ class FoodEntry {
   final String servingUnit;
   final String imageUrl;
   final String date;
+  final String? loggedTime;
 }
 
 class CalculatedNutrition {

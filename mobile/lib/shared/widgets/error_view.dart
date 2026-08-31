@@ -5,11 +5,7 @@ import 'package:flutter/material.dart';
 /// Used by [AsyncValueWidget] and can be used standalone for
 /// full-screen error states.
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const ErrorView({super.key, required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;

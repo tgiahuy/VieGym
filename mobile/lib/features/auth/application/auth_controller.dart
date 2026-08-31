@@ -5,10 +5,7 @@ class AuthController extends Notifier<AuthState> {
   @override
   AuthState build() => const AuthState();
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     state = state.copyWith(status: AuthStatus.authenticating);
     await Future<void>.delayed(const Duration(milliseconds: 200));
 
@@ -106,16 +103,29 @@ class AuthController extends Notifier<AuthState> {
   }
 
   void updateDisplayName(String displayName) {
-    if (state.user != null) {
-      state = state.copyWith(
-        user: AuthUser(
-          id: state.user!.id,
-          email: state.user!.email,
-          displayName: displayName.trim(),
-          avatarUrl: state.user!.avatarUrl,
-        ),
-      );
-    }
+    final current = state.user;
+    state = state.copyWith(
+      user: AuthUser(
+        id: current?.id ?? 'user_123',
+        email: current?.email ?? 'viegym.user@gmail.com',
+        displayName: displayName.trim(),
+        phoneNumber: current?.phoneNumber,
+        avatarUrl: current?.avatarUrl,
+      ),
+    );
+  }
+
+  void updateProfile({required String displayName, String? phoneNumber}) {
+    final current = state.user;
+    state = state.copyWith(
+      user: AuthUser(
+        id: current?.id ?? 'user_123',
+        email: current?.email ?? 'viegym.user@gmail.com',
+        displayName: displayName.trim(),
+        phoneNumber: phoneNumber?.trim(),
+        avatarUrl: current?.avatarUrl,
+      ),
+    );
   }
 
   void logout() {

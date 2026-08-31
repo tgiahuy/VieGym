@@ -49,10 +49,9 @@ class ProgressState {
   final List<WeightLogItem> weightLogs;
   final List<PersonalRecordItem> personalRecords;
 
-  double get weeklyCompletionRatio =>
-      targetWorkoutsPerWeek == 0
-          ? 0.0
-          : (completedWorkoutsThisWeek / targetWorkoutsPerWeek).clamp(0.0, 1.0);
+  double get weeklyCompletionRatio => targetWorkoutsPerWeek == 0
+      ? 0.0
+      : (completedWorkoutsThisWeek / targetWorkoutsPerWeek).clamp(0.0, 1.0);
 
   ProgressState copyWith({
     int? completedWorkoutsThisWeek,
@@ -141,8 +140,36 @@ class ProgressController extends Notifier<ProgressState> {
       weightKg: weightKg,
     );
 
+    state = state.copyWith(weightLogs: [newItem, ...state.weightLogs]);
+  }
+
+  void addPersonalRecord({
+    required String exerciseName,
+    required double weightKg,
+    required int reps,
+  }) {
+    final now = DateTime.now();
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}';
+
+    final newItem = PersonalRecordItem(
+      id: 'pr_${DateTime.now().millisecondsSinceEpoch}',
+      exerciseName: exerciseName.trim(),
+      weightKg: weightKg,
+      reps: reps,
+      date: dateStr,
+    );
+
     state = state.copyWith(
-      weightLogs: [newItem, ...state.weightLogs],
+      personalRecords: [newItem, ...state.personalRecords],
+    );
+  }
+
+  void deletePersonalRecord(String id) {
+    state = state.copyWith(
+      personalRecords: state.personalRecords
+          .where((pr) => pr.id != id)
+          .toList(),
     );
   }
 
@@ -152,7 +179,6 @@ class ProgressController extends Notifier<ProgressState> {
   }
 }
 
-final progressProvider =
-    NotifierProvider<ProgressController, ProgressState>(
+final progressProvider = NotifierProvider<ProgressController, ProgressState>(
   ProgressController.new,
 );

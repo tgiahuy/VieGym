@@ -117,8 +117,7 @@ class _RulerPickerState extends State<RulerPicker> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final totalSteps =
-        ((widget.max - widget.min) / widget.step).round() + 1;
+    final totalSteps = ((widget.max - widget.min) / widget.step).round() + 1;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -250,12 +249,15 @@ class _RulerPickerState extends State<RulerPicker> {
                           controller: _scrollController,
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
-                          padding: EdgeInsets.symmetric(horizontal: sidePadding),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: sidePadding,
+                          ),
                           itemCount: totalSteps,
                           itemBuilder: (context, index) {
                             final val = widget.min + index * widget.step;
                             final isMajor = val % widget.majorTickInterval == 0;
-                            final isMedium = !isMajor &&
+                            final isMedium =
+                                !isMajor &&
                                 (val % widget.mediumTickInterval == 0);
                             final tickHeight = isMajor
                                 ? 30.0
@@ -266,8 +268,12 @@ class _RulerPickerState extends State<RulerPicker> {
                             final tickColor = isMajor
                                 ? colors.onSurface
                                 : (isMedium
-                                    ? colors.outlineVariant.withValues(alpha: 0.9)
-                                    : colors.outlineVariant.withValues(alpha: 0.45));
+                                      ? colors.outlineVariant.withValues(
+                                          alpha: 0.9,
+                                        )
+                                      : colors.outlineVariant.withValues(
+                                          alpha: 0.45,
+                                        ));
 
                             return SizedBox(
                               width: widget.itemWidth,
@@ -327,7 +333,9 @@ class _RulerPickerState extends State<RulerPicker> {
                                 borderRadius: BorderRadius.circular(4),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withValues(alpha: 0.45),
+                                    color: colors.primary.withValues(
+                                      alpha: 0.45,
+                                    ),
                                     blurRadius: 6,
                                     spreadRadius: 1,
                                   ),

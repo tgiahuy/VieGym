@@ -27,9 +27,7 @@ class RestTimerOverlay extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colors.primary.withValues(alpha: 0.5),
-              ),
+              border: Border.all(color: colors.primary.withValues(alpha: 0.5)),
             ),
             child: Row(
               children: [
@@ -116,25 +114,18 @@ class RestTimerOverlay extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Top Action Row
+              // Top Action Row (Close button only)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: () => notifier.setMinimized(true),
-                    icon: const Icon(Icons.fullscreen_exit_rounded, size: 16),
-                    label: const Text(
-                      'Thu nhỏ & xem bài tiếp',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white24),
-                    ),
-                  ),
                   IconButton(
                     onPressed: notifier.stopRest,
-                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    tooltip: 'Đóng thời gian nghỉ',
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white70,
+                      size: 28,
+                    ),
                   ),
                 ],
               ),
@@ -157,7 +148,11 @@ class RestTimerOverlay extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.timer_rounded, size: 16, color: colors.primary),
+                        Icon(
+                          Icons.timer_rounded,
+                          size: 16,
+                          color: colors.primary,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'THỜI GIAN NGHỈ NGƠI',
@@ -201,7 +196,10 @@ class RestTimerOverlay extends ConsumerWidget {
                             vertical: 10,
                           ),
                         ),
-                        child: const Text('-15s', style: TextStyle(fontSize: 13)),
+                        child: const Text(
+                          '-15s',
+                          style: TextStyle(fontSize: 13),
+                        ),
                       ),
                       const SizedBox(width: 14),
                       OutlinedButton(
@@ -214,7 +212,10 @@ class RestTimerOverlay extends ConsumerWidget {
                             vertical: 10,
                           ),
                         ),
-                        child: const Text('+15s', style: TextStyle(fontSize: 13)),
+                        child: const Text(
+                          '+15s',
+                          style: TextStyle(fontSize: 13),
+                        ),
                       ),
                     ],
                   ),

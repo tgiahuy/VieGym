@@ -30,8 +30,8 @@ class _HealthProfileEditScreenState
     final profile = ref.read(healthProfileProvider);
     _age = profile.age;
     _heightCm = profile.heightCm.toDouble();
-    _weightKg = profile.weightKg.toDouble();
-    _targetWeightKg = profile.targetWeightKg.toDouble();
+    _weightKg = profile.weightKg.roundToDouble();
+    _targetWeightKg = profile.targetWeightKg.roundToDouble();
     _gender = profile.gender;
     _goal = profile.goal;
     _activityLevel = profile.activityLevel;
@@ -39,7 +39,9 @@ class _HealthProfileEditScreenState
   }
 
   void _save() {
-    ref.read(healthProfileProvider.notifier).updateProfile(
+    ref
+        .read(healthProfileProvider.notifier)
+        .updateProfile(
           gender: _gender,
           age: _age,
           heightCm: _heightCm.round(),
@@ -138,7 +140,7 @@ class _HealthProfileEditScreenState
           ),
           const SizedBox(height: 20),
 
-          // Height & Weight Controls
+          // Height & Weight Controls (Số tròn nguyên bản)
           Card(
             margin: EdgeInsets.zero,
             child: Padding(
@@ -149,69 +151,99 @@ class _HealthProfileEditScreenState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Chiều cao:', style: TextStyle(fontWeight: FontWeight.w700)),
-                      Text('${_heightCm.round()} cm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: colors.primary)),
+                      const Text(
+                        'Chiều cao:',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${_heightCm.round()} cm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: colors.primary,
+                        ),
+                      ),
                     ],
                   ),
                   Slider(
                     value: _heightCm,
                     min: 130,
                     max: 210,
-                    onChanged: (val) => setState(() => _heightCm = val),
+                    divisions: 80,
+                    onChanged: (val) =>
+                        setState(() => _heightCm = val.roundToDouble()),
                   ),
                   const Divider(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Cân nặng:', style: TextStyle(fontWeight: FontWeight.w700)),
-                      Text('${_weightKg.toStringAsFixed(1)} kg', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: colors.primary)),
+                      const Text(
+                        'Cân nặng:',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${_weightKg.round()} kg',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: colors.primary,
+                        ),
+                      ),
                     ],
                   ),
                   Slider(
                     value: _weightKg,
                     min: 35,
                     max: 150,
-                    onChanged: (val) => setState(() => _weightKg = val),
+                    divisions: 115,
+                    onChanged: (val) =>
+                        setState(() => _weightKg = val.roundToDouble()),
                   ),
                   const Divider(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Cân nặng mục tiêu:', style: TextStyle(fontWeight: FontWeight.w700)),
-                      Text('${_targetWeightKg.toStringAsFixed(1)} kg', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: colors.primary)),
+                      const Text(
+                        'Cân nặng mục tiêu:',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${_targetWeightKg.round()} kg',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: colors.primary,
+                        ),
+                      ),
                     ],
                   ),
                   Slider(
                     value: _targetWeightKg,
                     min: 35,
                     max: 150,
-                    onChanged: (val) => setState(() => _targetWeightKg = val),
+                    divisions: 115,
+                    onChanged: (val) =>
+                        setState(() => _targetWeightKg = val.roundToDouble()),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
-          // Fitness Goal Selector
-          const Text('Mục tiêu thể hình', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+          // Fitness Goal Selector with Rich Visual Illustration Cards
+          const Text(
+            'Mục tiêu thể hình',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 8),
-          ...FitnessGoal.values.map((g) {
-            final isSelected = _goal == g;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 6),
-              color: isSelected ? colors.primary.withValues(alpha: 0.12) : null,
-              child: ListTile(
-                title: Text(g.label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                trailing: Radio<FitnessGoal>(
-                  value: g,
-                  groupValue: _goal,
-                  onChanged: (val) {
-                    if (val != null) setState(() => _goal = val);
-                  },
-                ),
-                onTap: () => setState(() => _goal = g),
-              ),
+
+          ...FitnessGoal.values.map((goal) {
+            final isSelected = _goal == goal;
+            return _GoalIllustrationCard(
+              goal: goal,
+              isSelected: isSelected,
+              onTap: () => setState(() => _goal = goal),
             );
           }),
         ],
@@ -226,7 +258,10 @@ class _HealthProfileEditScreenState
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: const Text('Cập nhật chỉ số', style: TextStyle(fontWeight: FontWeight.w800)),
+          child: const Text(
+            'Cập nhật chỉ số',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
         ),
       ),
     );
@@ -252,9 +287,200 @@ class _MetricBox extends StatelessWidget {
       children: [
         Text(label, style: Theme.of(context).textTheme.labelSmall),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: color)),
-        Text(subLabel, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
+        Text(
+          subLabel,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10),
+        ),
       ],
+    );
+  }
+}
+
+class _GoalIllustrationCard extends StatelessWidget {
+  const _GoalIllustrationCard({
+    required this.goal,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final FitnessGoal goal;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  (IconData, Color, List<Color>) _getGoalVisuals() {
+    switch (goal) {
+      case FitnessGoal.gainMuscle:
+        return (
+          Icons.fitness_center_rounded,
+          const Color(0xFFFF2E54),
+          [const Color(0xFFFF2E54), const Color(0xFFFF5277)],
+        );
+      case FitnessGoal.loseFat:
+        return (
+          Icons.local_fire_department_rounded,
+          Colors.orangeAccent,
+          [Colors.deepOrange, Colors.orangeAccent],
+        );
+      case FitnessGoal.buildStrength:
+        return (
+          Icons.bolt_rounded,
+          Colors.purpleAccent,
+          [Colors.deepPurple, Colors.purpleAccent],
+        );
+      case FitnessGoal.maintain:
+        return (
+          Icons.favorite_rounded,
+          Colors.greenAccent,
+          [Colors.teal, Colors.greenAccent],
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final (icon, accentColor, gradientColors) = _getGoalVisuals();
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      color: isSelected
+          ? colors.primary.withValues(alpha: 0.12)
+          : colors.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isSelected
+              ? colors.primary
+              : colors.outlineVariant.withValues(alpha: 0.35),
+          width: isSelected ? 1.6 : 1.0,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Visual Icon Illustration Container
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(
+                    colors: gradientColors
+                        .map(
+                          (c) => c.withValues(alpha: isSelected ? 0.35 : 0.15),
+                        )
+                        .toList(),
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                    color: accentColor.withValues(
+                      alpha: isSelected ? 0.6 : 0.25,
+                    ),
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: isSelected ? colors.primary : accentColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Title & Description
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            goal.label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.onSurface,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accentColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            goal.badge,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      goal.description,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: colors.onSurfaceVariant,
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Radio Check Circle
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? colors.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected ? colors.primary : colors.outlineVariant,
+                    width: 1.5,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

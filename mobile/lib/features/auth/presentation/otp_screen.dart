@@ -13,8 +13,10 @@ class OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
@@ -42,15 +44,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final success = await ref.read(authProvider.notifier).verifyOtp(code);
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Xác thực thành công!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Xác thực thành công!')));
         context.go('/onboarding/health');
       } else {
         final error = ref.read(authProvider).errorMessage;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Xác thực thất bại')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error ?? 'Xác thực thất bại')));
       }
     }
   }
@@ -76,6 +78,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -135,10 +138,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               Text(
                 '(Mẹo: Nhập 123456 hoặc 6 số bất kỳ để tiếp tục)',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colors.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
               ),
               const SizedBox(height: 30),
               FilledButton(

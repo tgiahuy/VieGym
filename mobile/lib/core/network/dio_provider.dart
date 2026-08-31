@@ -14,33 +14,30 @@ import 'auth_interceptor.dart';
 /// Interceptor order:
 ///   1. [AuthInterceptor]  — attaches Bearer token, handles 401 → refresh
 ///   2. [LogInterceptor]   — logs in debug mode only
-final dioProvider = Provider<Dio>(
-  (ref) {
-    final options = BaseOptions(
-      baseUrl: EnvConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 10),
-      headers: const {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    );
+final dioProvider = Provider<Dio>((ref) {
+  final options = BaseOptions(
+    baseUrl: EnvConfig.apiBaseUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 10),
+    headers: const {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+  );
 
-    final dio = Dio(options);
+  final dio = Dio(options);
 
-    dio.interceptors.addAll([
-      // M1: stub interceptor — replaced with real AuthInterceptor in M2
-      StubAuthInterceptor(),
-      if (EnvConfig.isDebugLogging)
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          logPrint: (obj) => debugPrint('[Dio] $obj'),
-        ),
-    ]);
+  dio.interceptors.addAll([
+    // M1: stub interceptor — replaced with real AuthInterceptor in M2
+    StubAuthInterceptor(),
+    if (EnvConfig.isDebugLogging)
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (obj) => debugPrint('[Dio] $obj'),
+      ),
+  ]);
 
-    return dio;
-  },
-  name: 'dioProvider',
-);
+  return dio;
+}, name: 'dioProvider');

@@ -23,7 +23,7 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
     'Vai',
     'Tay trước',
     'Tay sau',
-    'Bụng/Core'
+    'Bụng/Core',
   ];
   static const _durationOptions = [30, 45, 60, 75, 90];
   static const _mealOptions = [3, 4, 5, 6];
@@ -116,7 +116,9 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? colors.primary.withValues(alpha: 0.15)
-                                    : Theme.of(context).colorScheme.surfaceContainer,
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainer,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
@@ -163,7 +165,9 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? colors.primary.withValues(alpha: 0.15)
-                                    : Theme.of(context).colorScheme.surfaceContainer,
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainer,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
@@ -203,7 +207,10 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                       ),
                       Text(
                         'Đã chọn: ${prefs.targetMusclesPriority.length}',
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -212,20 +219,23 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                     spacing: 6,
                     runSpacing: 6,
                     children: _allMuscles.map((muscle) {
-                      final isSelected =
-                          prefs.targetMusclesPriority.contains(muscle);
+                      final isSelected = prefs.targetMusclesPriority.contains(
+                        muscle,
+                      );
                       return FilterChip(
                         selected: isSelected,
                         label: Text(muscle),
                         labelStyle: TextStyle(
                           fontSize: 12,
-                          fontWeight:
-                              isSelected ? FontWeight.w800 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w500,
                           color: isSelected ? colors.primary : null,
                         ),
                         selectedColor: colors.primary.withValues(alpha: 0.15),
                         checkmarkColor: colors.primary,
-                        onSelected: (_) => notifier.toggleMusclePriority(muscle),
+                        onSelected: (_) =>
+                            notifier.toggleMusclePriority(muscle),
                       );
                     }).toList(),
                   ),
@@ -283,7 +293,9 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? colors.primary.withValues(alpha: 0.15)
-                                    : Theme.of(context).colorScheme.surfaceContainer,
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainer,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isSelected
@@ -433,7 +445,9 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
+                        backgroundColor: Colors.redAccent.withValues(
+                          alpha: 0.1,
+                        ),
                         side: const BorderSide(color: Colors.redAccent),
                         deleteIcon: const Icon(
                           Icons.close_rounded,

@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/exercise_tag_chip.dart';
+import '../application/favorite_exercises_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
 import 'widgets/common_mistakes_card.dart';
 import 'widgets/muscle_target_card.dart';
 
 class ExerciseDetailScreen extends ConsumerWidget {
-  const ExerciseDetailScreen({
-    super.key,
-    required this.exerciseId,
-  });
+  const ExerciseDetailScreen({super.key, required this.exerciseId});
 
   final String exerciseId;
 
@@ -19,6 +18,7 @@ class ExerciseDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final exercise = findExercise(exerciseId);
     final colors = Theme.of(context).colorScheme;
+    final isFav = ref.watch(favoriteExercisesProvider).contains(exerciseId);
 
     if (exercise == null) {
       return Scaffold(
@@ -41,12 +41,27 @@ class ExerciseDetailScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            tooltip: isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
             onPressed: () {
+              final added = ref
+                  .read(favoriteExercisesProvider.notifier)
+                  .toggleFavorite(exerciseId);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã lưu bài tập vào danh sách yêu thích!')),
+                SnackBar(
+                  content: Text(
+                    added
+                        ? 'Đã thêm "${exercise.name}" vào danh sách yêu thích! ❤️'
+                        : 'Đã bỏ "${exercise.name}" khỏi danh sách yêu thích.',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ),
               );
             },
-            icon: const Icon(Icons.bookmark_border_rounded),
+            icon: Icon(
+              isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: isFav ? colors.primary : colors.onSurface,
+            ),
           ),
         ],
       ),
@@ -127,20 +142,14 @@ class ExerciseDetailScreen extends ConsumerWidget {
           // Muscle & Equipment Badges
           Row(
             children: [
-              Chip(
-                label: Text(exercise.primaryMuscle),
-                backgroundColor: colors.primary.withValues(alpha: 0.15),
-                labelStyle: TextStyle(
-                  color: colors.primary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                ),
+              ExerciseTagChip.muscle(
+                label: exercise.primaryMuscle,
+                fontSize: 12,
               ),
               const SizedBox(width: 8),
-              Chip(
-                label: Text(exercise.equipment.label),
-                backgroundColor: colors.surfaceContainer,
-                labelStyle: const TextStyle(fontSize: 12),
+              ExerciseTagChip.equipment(
+                label: exercise.equipment.label,
+                fontSize: 12,
               ),
             ],
           ),
@@ -253,15 +262,28 @@ class ExerciseDetailScreen extends ConsumerWidget {
         minimum: const EdgeInsets.all(16),
         child: FilledButton.icon(
           onPressed: () {
-            ref.read(workoutSessionProvider.notifier).replaceExercise(
-                  originalExerciseId: ref
-                      .read(workoutSessionProvider)
-                      .currentExercise
-                      .exerciseId,
-                  replacementExerciseId: exercise.id,
-                );
+            final session = ref.read(workoutSessionProvider);
+            final startsAddOn = session.isFinalized;
+            if (!session.isFinalized &&
+                session.exercises.isNotEmpty &&
+                session.currentExercise.exerciseId.isNotEmpty) {
+              ref
+                  .read(workoutSessionProvider.notifier)
+                  .replaceExercise(
+                    originalExerciseId: session.currentExercise.exerciseId,
+                    replacementExerciseId: exercise.id,
+                  );
+            } else {
+              ref.read(workoutSessionProvider.notifier).addExercise(exercise);
+            }
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Đã chọn ${exercise.name} cho buổi tập!')),
+              SnackBar(
+                content: Text(
+                  startsAddOn
+                      ? 'Đã tạo buổi tập thêm với ${exercise.name}.'
+                      : 'Đã chọn ${exercise.name} cho buổi tập!',
+                ),
+              ),
             );
             context.push('/workout/session');
           },

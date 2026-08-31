@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:viegym/shared/widgets/brand_icons.dart';
 
 class AuthHeader extends StatelessWidget {
   const AuthHeader({
     super.key,
     required this.title,
     required this.subtitle,
-    this.icon = Icons.fitness_center_rounded,
+    this.icon,
     this.onBack,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  final IconData? icon;
   final VoidCallback? onBack;
 
   @override
@@ -39,32 +40,29 @@ class AuthHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.4),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.primary.withValues(alpha: 0.25),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+        if (icon == null || icon == Icons.fitness_center_rounded)
+          const VieGymLogo(size: 72, borderRadius: 24)
+        else
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: colors.primary.withValues(alpha: 0.4),
+                width: 1.5,
               ),
-            ],
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 34,
-              color: colors.primary,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
+            child: Center(child: Icon(icon, size: 34, color: colors.primary)),
           ),
-        ),
         const SizedBox(height: 14),
         Text(
           title,
@@ -80,9 +78,9 @@ class AuthHeader extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-                fontSize: 13,
-              ),
+            color: colors.onSurfaceVariant,
+            fontSize: 13,
+          ),
         ),
       ],
     );

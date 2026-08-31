@@ -97,20 +97,30 @@ class SessionExercise {
 
 class SetLog {
   const SetLog({
+    this._id,
     required this.number,
     required this.weightKg,
     required this.reps,
     this.completed = false,
   });
 
+  final String? _id;
+  String get id => _id ?? 'set_$number';
   final int number;
   final double weightKg;
   final int reps;
   final bool completed;
 
-  SetLog copyWith({double? weightKg, int? reps, bool? completed}) {
+  SetLog copyWith({
+    String? id,
+    int? number,
+    double? weightKg,
+    int? reps,
+    bool? completed,
+  }) {
     return SetLog(
-      number: number,
+      id: id ?? this.id,
+      number: number ?? this.number,
       weightKg: weightKg ?? this.weightKg,
       reps: reps ?? this.reps,
       completed: completed ?? this.completed,
@@ -126,6 +136,7 @@ class WorkoutSessionState {
     required this.logs,
     this.currentExerciseIndex = 0,
     this.isPaused = false,
+    this.isFinalized = false,
   });
 
   final String id;
@@ -134,8 +145,23 @@ class WorkoutSessionState {
   final Map<String, List<SetLog>> logs;
   final int currentExerciseIndex;
   final bool isPaused;
+  final bool isFinalized;
 
-  SessionExercise get currentExercise => exercises[currentExerciseIndex];
+  SessionExercise get currentExercise {
+    if (exercises.isEmpty) {
+      return const SessionExercise(
+        exerciseId: '',
+        name: '',
+        primaryMuscle: '',
+        equipment: EquipmentType.bodyweight,
+        targetSets: 0,
+        targetReps: 0,
+        weightKg: 0,
+      );
+    }
+    final validIndex = currentExerciseIndex.clamp(0, exercises.length - 1);
+    return exercises[validIndex];
+  }
 
   int get totalSets => exercises.fold(0, (sum, item) => sum + item.targetSets);
 
@@ -154,11 +180,15 @@ class WorkoutSessionState {
     return total;
   }
 
+  bool get isCompleted =>
+      exercises.isNotEmpty && totalSets > 0 && completedSets >= totalSets;
+
   WorkoutSessionState copyWith({
     List<SessionExercise>? exercises,
     Map<String, List<SetLog>>? logs,
     int? currentExerciseIndex,
     bool? isPaused,
+    bool? isFinalized,
   }) {
     return WorkoutSessionState(
       id: id,
@@ -167,6 +197,7 @@ class WorkoutSessionState {
       logs: logs ?? this.logs,
       currentExerciseIndex: currentExerciseIndex ?? this.currentExerciseIndex,
       isPaused: isPaused ?? this.isPaused,
+      isFinalized: isFinalized ?? this.isFinalized,
     );
   }
 }
@@ -200,6 +231,13 @@ enum ScheduleStatus {
   final String label;
 }
 
+class PlannedExercisePreview {
+  const PlannedExercisePreview({required this.name, required this.setsReps});
+
+  final String name;
+  final String setsReps;
+}
+
 class WorkoutScheduleItem {
   const WorkoutScheduleItem({
     required this.id,
@@ -209,6 +247,7 @@ class WorkoutScheduleItem {
     required this.targetMuscles,
     required this.durationMinutes,
     this.status = ScheduleStatus.planned,
+    this.plannedExercises = const [],
   });
 
   final String id;
@@ -218,6 +257,7 @@ class WorkoutScheduleItem {
   final String targetMuscles;
   final int durationMinutes;
   final ScheduleStatus status;
+  final List<PlannedExercisePreview> plannedExercises;
 
   WorkoutScheduleItem copyWith({
     String? id,
@@ -227,6 +267,7 @@ class WorkoutScheduleItem {
     String? targetMuscles,
     int? durationMinutes,
     ScheduleStatus? status,
+    List<PlannedExercisePreview>? plannedExercises,
   }) {
     return WorkoutScheduleItem(
       id: id ?? this.id,
@@ -236,8 +277,45 @@ class WorkoutScheduleItem {
       targetMuscles: targetMuscles ?? this.targetMuscles,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       status: status ?? this.status,
+      plannedExercises: plannedExercises ?? this.plannedExercises,
     );
   }
+}
+
+class HistorySetLog {
+  const HistorySetLog({
+    required this.setNumber,
+    required this.weightKg,
+    required this.reps,
+    this.isPr = false,
+    this.rpe,
+  });
+
+  final int setNumber;
+  final double weightKg;
+  final int reps;
+  final bool isPr;
+  final double? rpe;
+}
+
+class HistoryExerciseLog {
+  const HistoryExerciseLog({
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.primaryMuscle,
+    this.secondaryMuscles = const [],
+    required this.sets,
+  });
+
+  final String exerciseId;
+  final String exerciseName;
+  final String primaryMuscle;
+  final List<String> secondaryMuscles;
+  final List<HistorySetLog> sets;
+
+  int get totalSets => sets.length;
+  double get volumeKg =>
+      sets.fold(0.0, (sum, s) => sum + (s.weightKg * s.reps));
 }
 
 class WorkoutHistoryItem {
@@ -249,6 +327,8 @@ class WorkoutHistoryItem {
     required this.totalVolumeKg,
     required this.completedSetsCount,
     required this.prCount,
+    this.targetMuscles = const [],
+    this.exercises = const [],
   });
 
   final String id;
@@ -258,4 +338,30 @@ class WorkoutHistoryItem {
   final double totalVolumeKg;
   final int completedSetsCount;
   final int prCount;
+  final List<String> targetMuscles;
+  final List<HistoryExerciseLog> exercises;
+
+  WorkoutHistoryItem copyWith({
+    String? id,
+    String? date,
+    String? workoutName,
+    int? durationMinutes,
+    double? totalVolumeKg,
+    int? completedSetsCount,
+    int? prCount,
+    List<String>? targetMuscles,
+    List<HistoryExerciseLog>? exercises,
+  }) {
+    return WorkoutHistoryItem(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      workoutName: workoutName ?? this.workoutName,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      totalVolumeKg: totalVolumeKg ?? this.totalVolumeKg,
+      completedSetsCount: completedSetsCount ?? this.completedSetsCount,
+      prCount: prCount ?? this.prCount,
+      targetMuscles: targetMuscles ?? this.targetMuscles,
+      exercises: exercises ?? this.exercises,
+    );
+  }
 }

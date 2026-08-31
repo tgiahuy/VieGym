@@ -78,15 +78,20 @@ class AiConsentScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: colors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colors.primary.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: colors.primary.withValues(alpha: 0.3),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.check_circle_rounded,
-                          size: 18, color: colors.primary),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: colors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Chế độ Cá nhân hóa đang hoạt động',
@@ -121,8 +126,11 @@ class AiConsentScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.visibility_off_rounded,
-                          size: 18, color: Colors.amber),
+                      Icon(
+                        Icons.visibility_off_rounded,
+                        size: 18,
+                        color: Colors.amber,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Chế độ Kiến thức Phổ quát (General Knowledge)',
@@ -137,7 +145,11 @@ class AiConsentScreen extends ConsumerWidget {
                   SizedBox(height: 8),
                   Text(
                     'AI sẽ chỉ tạo các buổi tập theo giáo án tiêu chuẩn cơ bản. Mọi thông tin sức khỏe, mức phục hồi cơ và cấu hình thiết bị cá nhân sẽ được ẩn hoàn toàn.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -155,7 +167,11 @@ class AiConsentScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.shield_outlined, size: 18, color: Colors.blueAccent),
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 18,
+                        color: Colors.blueAccent,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Cam kết an toàn dữ liệu VieGym',
@@ -169,7 +185,11 @@ class AiConsentScreen extends ConsumerWidget {
                   SizedBox(height: 6),
                   Text(
                     'Dữ liệu của bạn được bảo mật nghiêm ngặt và chỉ phục vụ cho việc tính toán luyện tập cá nhân. Bạn có thể thay đổi tùy chọn này bất cứ lúc nào.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -185,7 +205,10 @@ class AiConsentScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text('Xong', style: TextStyle(fontWeight: FontWeight.w800)),
+            child: const Text(
+              'Xong',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
           ),
         ],
       ),

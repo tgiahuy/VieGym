@@ -25,7 +25,8 @@ const exerciseCatalog = <ExerciseDefinition>[
       ),
       ExerciseMistake(
         mistake: 'Nhấc mông và cong thắt lưng quá mức khỏi mặt ghế khi đẩy.',
-        fix: 'Giữ mông luôn tiếp xúc với mặt ghế, tạo độ cong sinh lý tự nhiên.',
+        fix:
+            'Giữ mông luôn tiếp xúc với mặt ghế, tạo độ cong sinh lý tự nhiên.',
         injuryRisk: 'Dồn áp lực nguy hiểm lên các đốt sống thắt lưng L4-L5.',
       ),
     ],
@@ -48,7 +49,8 @@ const exerciseCatalog = <ExerciseDefinition>[
     commonMistakes: [
       ExerciseMistake(
         mistake: 'Xoay cổ tay ra ngoài khi đẩy lên cao.',
-        fix: 'Giữ cố định vị trí lòng bàn tay hướng vào nhau trong suốt chuyển động.',
+        fix:
+            'Giữ cố định vị trí lòng bàn tay hướng vào nhau trong suốt chuyển động.',
         injuryRisk: 'Làm mất tác dụng giảm tải lực bẻ xoắn lên khớp cổ tay.',
       ),
     ],
@@ -118,7 +120,8 @@ const exerciseCatalog = <ExerciseDefinition>[
     commonMistakes: [
       ExerciseMistake(
         mistake: 'Đặt ghế quá dốc (> 60 độ).',
-        fix: 'Chỉ nên để góc dốc 30-45 độ để lực tác động vào ngực trên thay vì vai trước.',
+        fix:
+            'Chỉ nên để góc dốc 30-45 độ để lực tác động vào ngực trên thay vì vai trước.',
         injuryRisk: 'Làm vai gánh toàn bộ tải trọng.',
       ),
     ],
@@ -155,7 +158,8 @@ const exerciseCatalog = <ExerciseDefinition>[
     primaryMuscleKey: 'triceps',
     secondaryMuscles: [],
     equipment: EquipmentType.cable,
-    description: 'Bài cô lập tay sau với lực căng liên tục và khóa khớp an toàn.',
+    description:
+        'Bài cô lập tay sau với lực căng liên tục và khóa khớp an toàn.',
     instructions: [
       'Gắn dây thừng vào đầu cáp cao.',
       'Khuỷu tay khép sát thân người, kéo cáp xuống dưới.',
@@ -201,7 +205,8 @@ const exerciseCatalog = <ExerciseDefinition>[
     primaryMuscleKey: 'quads',
     secondaryMuscles: ['Mông', 'Đùi sau', 'Lưng dưới'],
     equipment: EquipmentType.barbell,
-    description: 'Vua của các bài tập thân dưới, xây dựng cơ đùi và sức mạnh bộc phát.',
+    description:
+        'Vua của các bài tập thân dưới, xây dựng cơ đùi và sức mạnh bộc phát.',
     instructions: [
       'Đặt thanh tạ trên cơ cầu vai (High bar) hoặc gai xương bả vai (Low bar).',
       'Đứng chân rộng bằng vai hoặc hơn một chút, mũi chân mở 15-30 độ.',
@@ -212,7 +217,8 @@ const exerciseCatalog = <ExerciseDefinition>[
       ExerciseMistake(
         mistake: 'Đầu gối chụm vào trong (Knee valgus) khi đứng dậy.',
         fix: 'Chủ động mở đầu gối theo hướng mũi chân trong suốt chuyển động.',
-        injuryRisk: 'Tổn thương dây chằng chéo trước (ACL) và sụn chêm đầu gối.',
+        injuryRisk:
+            'Tổn thương dây chằng chéo trước (ACL) và sụn chêm đầu gối.',
       ),
     ],
   ),
@@ -239,13 +245,13 @@ List<ExerciseDefinition> replacementCandidates({
           'ex_pec_deck_fly',
         ]
       : exerciseCatalog
-          .where(
-            (item) =>
-                item.id != originalExerciseId &&
-                item.primaryMuscle == original.primaryMuscle,
-          )
-          .map((item) => item.id)
-          .toList();
+            .where(
+              (item) =>
+                  item.id != originalExerciseId &&
+                  item.primaryMuscle == original.primaryMuscle,
+            )
+            .map((item) => item.id)
+            .toList();
 
   return preferredIds
       .map(findExercise)

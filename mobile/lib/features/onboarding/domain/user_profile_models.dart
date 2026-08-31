@@ -2,7 +2,10 @@ enum BiologicalGender {
   male('Nam', 'Thể hình & Thể lực'),
   female('Nữ', 'Săn chắc & Vóc dáng'),
   other('Khác (Non-binary)', 'Tính toán theo chuẩn trung tính'),
-  preferNotToSay('Không muốn tiết lộ', 'Bảo mật tuyệt đối, dùng mức trung bình chuẩn');
+  preferNotToSay(
+    'Không muốn tiết lộ',
+    'Bảo mật tuyệt đối, dùng mức trung bình chuẩn',
+  );
 
   const BiologicalGender(this.label, this.description);
   final String label;
@@ -99,6 +102,8 @@ class HealthProfile {
     this.goal = FitnessGoal.gainMuscle,
     this.activityLevel = ActivityLevel.active,
     this.experience = TrainingExperience.intermediate,
+    this.workoutDaysPerWeek = 4,
+    this.sessionDurationMinutes = 60,
   });
 
   final String nickname;
@@ -110,6 +115,8 @@ class HealthProfile {
   final FitnessGoal goal;
   final ActivityLevel activityLevel;
   final TrainingExperience experience;
+  final int workoutDaysPerWeek;
+  final int sessionDurationMinutes;
 
   double get bmi => weightKg / ((heightCm / 100) * (heightCm / 100));
 
@@ -129,7 +136,8 @@ class HealthProfile {
     return switch (gender) {
       BiologicalGender.male => (base + 5).round(),
       BiologicalGender.female => (base - 161).round(),
-      BiologicalGender.other || BiologicalGender.preferNotToSay => (base - 78).round(),
+      BiologicalGender.other ||
+      BiologicalGender.preferNotToSay => (base - 78).round(),
     };
   }
 
@@ -154,6 +162,8 @@ class HealthProfile {
     FitnessGoal? goal,
     ActivityLevel? activityLevel,
     TrainingExperience? experience,
+    int? workoutDaysPerWeek,
+    int? sessionDurationMinutes,
   }) {
     return HealthProfile(
       nickname: nickname ?? this.nickname,
@@ -165,6 +175,9 @@ class HealthProfile {
       goal: goal ?? this.goal,
       activityLevel: activityLevel ?? this.activityLevel,
       experience: experience ?? this.experience,
+      workoutDaysPerWeek: workoutDaysPerWeek ?? this.workoutDaysPerWeek,
+      sessionDurationMinutes:
+          sessionDurationMinutes ?? this.sessionDurationMinutes,
     );
   }
 }

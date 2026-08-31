@@ -3,21 +3,18 @@ class AuthUser {
     required this.id,
     required this.email,
     required this.displayName,
+    this.phoneNumber,
     this.avatarUrl,
   });
 
   final String id;
   final String email;
   final String displayName;
+  final String? phoneNumber;
   final String? avatarUrl;
 }
 
-enum AuthStatus {
-  unauthenticated,
-  authenticating,
-  authenticated,
-  error,
-}
+enum AuthStatus { unauthenticated, authenticating, authenticated, error }
 
 class AuthState {
   const AuthState({

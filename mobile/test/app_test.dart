@@ -7,6 +7,7 @@ import 'package:viegym/core/network/api_error_handler.dart';
 import 'package:viegym/core/network/dio_provider.dart';
 import 'package:viegym/main.dart';
 import 'package:viegym/shared/widgets/async_value_widget.dart';
+import 'package:viegym/shared/widgets/bouncing_icon_button.dart';
 import 'package:viegym/shared/widgets/empty_view.dart';
 import 'package:viegym/shared/widgets/error_view.dart';
 import 'package:viegym/shared/widgets/loading_view.dart';
@@ -31,7 +32,42 @@ void main() {
       expect(find.text('Upper Body A'), findsOneWidget);
       expect(find.text('Trang chủ'), findsOneWidget);
       expect(find.text('Tập luyện'), findsOneWidget);
+      expect(find.text('Bữa ăn'), findsOneWidget);
       expect(find.text('AI Coach'), findsOneWidget);
+      expect(find.text('Cá nhân'), findsOneWidget);
+    });
+
+    testWidgets('Main tabs remain usable on a 320px-wide screen', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(const ProviderScope(child: VieGymApp()));
+      await tester.pumpAndSettle();
+
+      for (final label in const [
+        'Tập luyện',
+        'Bữa ăn',
+        'AI Coach',
+        'Cá nhân',
+        'Trang chủ',
+      ]) {
+        await tester.tap(find.text(label).last);
+        await tester.pumpAndSettle();
+        final exception = tester.takeException();
+        expect(
+          exception,
+          isNull,
+          reason: exception is FlutterError
+              ? 'Lỗi tại tab $label\n${exception.toStringDeep()}'
+              : 'Lỗi tại tab $label: $exception',
+        );
+      }
     });
   });
 
@@ -172,5 +208,27 @@ void main() {
       expect(find.text('Đang tải...'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
+
+    testWidgets(
+      'BouncingIconButton and BouncingEffect trigger animation and callback on tap',
+      (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BouncingIconButton(
+                icon: const Icon(Icons.fitness_center),
+                onPressed: () => tapped = true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.fitness_center), findsOneWidget);
+        await tester.tap(find.byType(BouncingIconButton));
+        await tester.pumpAndSettle();
+        expect(tapped, isTrue);
+      },
+    );
   });
 }

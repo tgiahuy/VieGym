@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'exercise_muscle_visualizer.dart';
+
 class MuscleTargetCard extends StatelessWidget {
   const MuscleTargetCard({
     super.key,
     required this.primaryMuscle,
     required this.secondaryMuscles,
+    this.showVisualizer = true,
   });
 
   final String primaryMuscle;
   final List<String> secondaryMuscles;
+  final bool showVisualizer;
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +22,7 @@ class MuscleTargetCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: colors.outlineVariant.withValues(alpha: 0.6),
-        ),
+        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -56,8 +58,8 @@ class MuscleTargetCard extends StatelessWidget {
                     Text(
                       'Bản đồ chuyển động sinh học',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -166,6 +168,18 @@ class MuscleTargetCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            ],
+
+            // Reusable Body Muscle Map & Zoom Inset
+            if (showVisualizer) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+              ExerciseMuscleVisualizer(
+                primaryMuscle: primaryMuscle,
+                secondaryMuscles: secondaryMuscles,
+                mapHeight: 330,
               ),
             ],
           ],

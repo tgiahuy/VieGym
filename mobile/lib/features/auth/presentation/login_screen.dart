@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/utils/greeting_utils.dart';
 import '../../../shared/widgets/auth_header.dart';
+import '../../../shared/widgets/bouncing_icon_button.dart';
+import '../../../shared/widgets/brand_icons.dart';
 import '../../../shared/widgets/social_auth_button.dart';
 import '../application/auth_controller.dart';
 
@@ -29,22 +32,133 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(authProvider.notifier).login(
+    final success = await ref
+        .read(authProvider.notifier)
+        .login(
           email: _emailController.text,
           password: _passwordController.text,
         );
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng nhập thành công!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
         context.go('/home');
       } else {
         final error = ref.read(authProvider).errorMessage;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Đăng nhập thất bại')),
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error ?? 'Đăng nhập thất bại')));
+      }
+    }
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    final colors = Theme.of(context).colorScheme;
+
+    final authenticated = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: colors.surfaceContainer,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Biometric Scanner Pulse Icon
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.4),
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.fingerprint_rounded,
+                    size: 40,
+                    color: colors.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Xác thực Sinh trắc học',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sử dụng Face ID hoặc cảm biến vân tay trên thiết bị để đăng nhập nhanh vào VieGym.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colors.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Hủy'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 18,
+                        ),
+                        label: const Text('Xác thực ngay'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         );
+      },
+    );
+
+    if (authenticated == true && mounted) {
+      final success = await ref
+          .read(authProvider.notifier)
+          .login(email: 'biometric.user@viegym.vn', password: 'demo');
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Xác thực Face ID / Vân tay thành công!'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.go('/home');
+        }
       }
     }
   }
@@ -55,6 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -65,7 +180,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 AuthHeader(
                   title: 'Đăng nhập',
-                  subtitle: 'Chào mừng bạn quay trở lại VieGym',
+                  subtitle:
+                      '${getTimeBasedGreeting()}! Chào mừng bạn quay trở lại VieGym',
                   onBack: () => context.pop(),
                 ),
                 const SizedBox(height: 28),
@@ -115,7 +231,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onFieldSubmitted: (_) => _handleLogin(),
                   decoration: InputDecoration(
                     hintText: 'Nhập mật khẩu',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -152,21 +271,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: authState.isLoading ? null : _handleLogin,
-                  child: authState.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text(
-                          'Đăng nhập',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+
+                // Login action row with Face ID / Biometrics button
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: authState.isLoading ? null : _handleLogin,
+                        child: authState.isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Đăng nhập',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Biometric Authentication (Face ID / Fingerprint) button
+                    BouncingIconButton(
+                      tooltip: 'Đăng nhập bằng Face ID / Vân tay',
+                      icon: const Icon(Icons.fingerprint_rounded, size: 28),
+                      backgroundColor: colors.surfaceContainer,
+                      color: colors.primary,
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(12),
+                      enableGlow: true,
+                      onPressed: _handleBiometricLogin,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 Row(
@@ -194,14 +336,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 18),
+
+                // Enhanced Google and Facebook Social Login Buttons
                 Row(
                   children: [
                     Expanded(
                       child: SocialAuthButton(
                         label: 'Google',
-                        icon: const Icon(Icons.g_mobiledata, size: 24, color: Colors.redAccent),
+                        icon: const GoogleLogo(size: 20),
                         onPressed: () {
-                          ref.read(authProvider.notifier).login(
+                          ref
+                              .read(authProvider.notifier)
+                              .login(
                                 email: 'google.user@viegym.vn',
                                 password: 'demo',
                               );
@@ -209,13 +355,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: SocialAuthButton(
                         label: 'Facebook',
-                        icon: const Icon(Icons.facebook_rounded, size: 20, color: Colors.blue),
+                        icon: const FacebookLogo(size: 20),
                         onPressed: () {
-                          ref.read(authProvider.notifier).login(
+                          ref
+                              .read(authProvider.notifier)
+                              .login(
                                 email: 'facebook.user@viegym.vn',
                                 password: 'demo',
                               );

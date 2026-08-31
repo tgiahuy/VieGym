@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/resilient_network_image.dart';
+import '../application/favorite_foods_controller.dart';
 import '../application/nutrition_controller.dart';
 import '../data/food_catalog.dart';
 import '../domain/food_models.dart';
@@ -11,10 +14,16 @@ class FoodDetailScreen extends ConsumerStatefulWidget {
     super.key,
     required this.foodId,
     this.initialMealType = MealType.lunch,
+    this.initialServingId,
+    this.initialQuantity,
+    this.isMealBuilderMode = false,
   });
 
   final String foodId;
   final MealType initialMealType;
+  final String? initialServingId;
+  final double? initialQuantity;
+  final bool isMealBuilderMode;
 
   @override
   ConsumerState<FoodDetailScreen> createState() => _FoodDetailScreenState();
@@ -30,15 +39,170 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
     super.initState();
     _selectedMeal = widget.initialMealType;
     final food = findFoodById(widget.foodId);
-    if (food != null && food.servingOptions.isNotEmpty) {
+    if (widget.initialServingId != null &&
+        widget.initialServingId!.isNotEmpty) {
+      _selectedServingId = widget.initialServingId!;
+    } else if (food != null && food.servingOptions.isNotEmpty) {
       _selectedServingId = food.servingOptions.first.id;
     } else {
       _selectedServingId = '';
     }
+
+    if (widget.initialQuantity != null && widget.initialQuantity! > 0) {
+      _quantity = widget.initialQuantity!;
+    }
   }
 
-  void _addFood(FoodItem food, CalculatedNutrition calculated) {
-    ref.read(nutritionProvider.notifier).addFoodEntry(
+  Future<void> _addFood(FoodItem food, CalculatedNutrition calculated) async {
+    if (widget.isMealBuilderMode) {
+      Navigator.pop(context, {
+        'servingId': _selectedServingId,
+        'quantity': _quantity,
+      });
+      return;
+    }
+
+    final nutritionState = ref.read(nutritionProvider);
+    final remainingKcal = nutritionState.remainingCalories;
+    final willExceed =
+        (nutritionState.consumedCalories + calculated.calories) >
+        nutritionState.targetCalories;
+    final isVeryLowRemaining =
+        remainingKcal <= 100 || calculated.calories > remainingKcal;
+
+    if (willExceed || isVeryLowRemaining) {
+      final excessKcal =
+          (nutritionState.consumedCalories + calculated.calories) -
+          nutritionState.targetCalories;
+
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          final colors = Theme.of(dialogContext).colorScheme;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+            icon: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.accentAmber.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: AppColors.accentAmber,
+                size: 28,
+              ),
+            ),
+            title: const Text(
+              'Lượng calo sắp đạt chỉ tiêu',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Lượng calo còn lại hôm nay chỉ còn $remainingKcal kcal. Thêm "${food.name}" (+${calculated.calories} kcal) sẽ khiến bạn ${excessKcal > 0 ? "vượt chỉ tiêu $excessKcal kcal" : "đạt ngưỡng tối đa"} trong ngày.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.45,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentAmber.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.accentAmber.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: AppColors.accentAmber,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Không khuyến khích thêm món ăn nếu bạn đang muốn duy trì hoặc giảm mỡ.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accentAmber,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        side: BorderSide(
+                          color: colors.outlineVariant.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: Text(
+                        'Hủy',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accentAmber,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Vẫn thêm',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      );
+
+      if (proceed != true) return;
+    }
+
+    ref
+        .read(nutritionProvider.notifier)
+        .addFoodEntry(
           foodId: food.id,
           name: '${food.name} (${calculated.servingName})',
           mealType: _selectedMeal,
@@ -51,14 +215,38 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
           imageUrl: food.imageUrl,
         );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Đã thêm ${food.name} (${calculated.calories} kcal) vào ${_selectedMeal.label}!',
-        ),
-      ),
-    );
-    context.pop();
+    if (!mounted) return;
+    if (GoRouter.maybeOf(context) != null && context.canPop()) {
+      context.pop();
+    } else if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  IconData _getMealIcon(MealType meal) {
+    switch (meal) {
+      case MealType.breakfast:
+        return Icons.wb_twilight_rounded;
+      case MealType.lunch:
+        return Icons.wb_sunny_rounded;
+      case MealType.dinner:
+        return Icons.nights_stay_rounded;
+      case MealType.snack:
+        return Icons.cookie_outlined;
+    }
+  }
+
+  String _getMealLabel(MealType meal) {
+    switch (meal) {
+      case MealType.breakfast:
+        return 'Sáng';
+      case MealType.lunch:
+        return 'Trưa';
+      case MealType.dinner:
+        return 'Tối';
+      case MealType.snack:
+        return 'Phụ';
+    }
   }
 
   @override
@@ -78,6 +266,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
       servingOptionId: _selectedServingId,
       quantity: _quantity,
     );
+    final isFav = ref.watch(favoriteFoodsProvider).contains(food.id);
 
     return Scaffold(
       appBar: AppBar(
@@ -86,19 +275,30 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
         ),
         title: Text(food.name, style: const TextStyle(fontSize: 16)),
+        actions: [
+          IconButton(
+            tooltip: isFav ? 'Bỏ yêu thích' : 'Thêm vào yêu thích',
+            icon: Icon(
+              isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: isFav ? colors.primary : colors.onSurface,
+            ),
+            onPressed: () {
+              ref.read(favoriteFoodsProvider.notifier).toggleFavorite(food.id);
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
           // Food Image Banner
-          Container(
+          SizedBox(
             height: 200,
-            decoration: BoxDecoration(
+            child: ResilientNetworkImage(
+              url: food.imageUrl,
+              semanticLabel: 'Ảnh món ${food.name}',
               borderRadius: BorderRadius.circular(20),
-              image: DecorationImage(
-                image: NetworkImage(food.imageUrl),
-                fit: BoxFit.cover,
-              ),
+              placeholderIcon: Icons.restaurant_rounded,
             ),
           ),
           const SizedBox(height: 16),
@@ -116,9 +316,9 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
           Text(
             food.description,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  height: 1.35,
-                ),
+              color: colors.onSurfaceVariant,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 18),
 
@@ -173,18 +373,25 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
             const SizedBox(height: 8),
             Card(
               margin: EdgeInsets.zero,
-              child: Column(
-                children: food.servingOptions.map((opt) {
-                  return RadioListTile<String>(
-                    title: Text(opt.name, style: const TextStyle(fontSize: 14)),
-                    subtitle: Text('${opt.grams}g'),
-                    value: opt.id,
-                    groupValue: _selectedServingId,
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedServingId = val);
-                    },
-                  );
-                }).toList(),
+              child: RadioGroup<String>(
+                groupValue: _selectedServingId,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedServingId = value);
+                  }
+                },
+                child: Column(
+                  children: food.servingOptions.map((opt) {
+                    return RadioListTile<String>(
+                      title: Text(
+                        opt.name,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      subtitle: Text('${opt.grams}g'),
+                      value: opt.id,
+                    );
+                  }).toList(),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -248,30 +455,141 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 3. Target Meal Selector
-          const Text(
-            '3. Thêm vào bữa ăn nào?',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: MealType.values.map((meal) {
-              final isSelected = _selectedMeal == meal;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: ChoiceChip(
-                    label: Text(
-                      meal.label.replaceAll('Bữa ', ''),
-                      style: const TextStyle(fontSize: 12),
+          // 3. Target Meal Selector (Hidden in meal builder edit mode)
+          if (!widget.isMealBuilderMode) ...[
+            const Text(
+              '3. Thêm vào bữa ăn nào?',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: MealType.values.map((meal) {
+                final isSelected = _selectedMeal == meal;
+                final icon = _getMealIcon(meal);
+                final shortLabel = _getMealLabel(meal);
+
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => setState(() => _selectedMeal = meal),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colors.primary.withValues(alpha: 0.16)
+                              : colors.surfaceContainer,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.outlineVariant.withValues(alpha: 0.35),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icon,
+                              size: 22,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              shortLabel,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: isSelected
+                                    ? FontWeight.w900
+                                    : FontWeight.w600,
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    selected: isSelected,
-                    onSelected: (_) => setState(() => _selectedMeal = meal),
                   ),
-                ),
-              );
-            }).toList(),
-          ),
+                );
+              }).toList(),
+            ),
+            if (!widget.isMealBuilderMode) ...[
+              Consumer(
+                builder: (context, ref, _) {
+                  final nutritionState = ref.watch(nutritionProvider);
+                  final remainingKcal = nutritionState.remainingCalories;
+                  final willExceed =
+                      (nutritionState.consumedCalories + calculated.calories) >
+                      nutritionState.targetCalories;
+                  final isVeryLowRemaining =
+                      remainingKcal <= 100 ||
+                      calculated.calories > remainingKcal;
+
+                  if (!willExceed && !isVeryLowRemaining) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final excessKcal =
+                      (nutritionState.consumedCalories + calculated.calories) -
+                      nutritionState.targetCalories;
+
+                  return Container(
+                    margin: const EdgeInsets.only(top: 18),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentAmber.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.accentAmber.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.accentAmber,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Lượng calo sắp đạt chỉ tiêu trong ngày',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.accentAmber,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Calo còn lại: $remainingKcal kcal. Thêm món này (+${calculated.calories} kcal) sẽ khiến bạn ${excessKcal > 0 ? "vượt chỉ tiêu $excessKcal kcal" : "chạm mức tối đa"}. Không khuyến khích thêm món ăn nếu bạn đang muốn duy trì hoặc giảm mỡ.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -284,9 +602,15 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          icon: const Icon(Icons.add_circle_rounded),
+          icon: Icon(
+            widget.isMealBuilderMode
+                ? Icons.check_circle_rounded
+                : Icons.add_circle_rounded,
+          ),
           label: Text(
-            'Thêm vào ${_selectedMeal.label} (+${calculated.calories} kcal)',
+            widget.isMealBuilderMode
+                ? 'Cập nhật khẩu phần (${calculated.calories} kcal)'
+                : 'Thêm vào ${_selectedMeal.label} (+${calculated.calories} kcal)',
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
         ),
@@ -317,9 +641,7 @@ class _MacroBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -342,10 +664,7 @@ class _MacroBox extends StatelessWidget {
           ),
           Text(
             unit,
-            style: TextStyle(
-              fontSize: 9,
-              color: colors.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 9, color: colors.onSurfaceVariant),
           ),
         ],
       ),

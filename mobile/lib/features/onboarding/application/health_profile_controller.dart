@@ -42,6 +42,14 @@ class HealthProfileController extends Notifier<HealthProfile> {
     state = state.copyWith(experience: experience);
   }
 
+  void updateWorkoutDaysPerWeek(int days) {
+    state = state.copyWith(workoutDaysPerWeek: days);
+  }
+
+  void updateSessionDurationMinutes(int minutes) {
+    state = state.copyWith(sessionDurationMinutes: minutes);
+  }
+
   void updateProfile({
     String? nickname,
     BiologicalGender? gender,
@@ -52,6 +60,8 @@ class HealthProfileController extends Notifier<HealthProfile> {
     FitnessGoal? goal,
     ActivityLevel? activityLevel,
     TrainingExperience? experience,
+    int? workoutDaysPerWeek,
+    int? sessionDurationMinutes,
   }) {
     state = state.copyWith(
       nickname: nickname,
@@ -63,14 +73,16 @@ class HealthProfileController extends Notifier<HealthProfile> {
       goal: goal,
       activityLevel: activityLevel,
       experience: experience,
+      workoutDaysPerWeek: workoutDaysPerWeek,
+      sessionDurationMinutes: sessionDurationMinutes,
     );
   }
 }
 
 final healthProfileProvider =
     NotifierProvider<HealthProfileController, HealthProfile>(
-  HealthProfileController.new,
-);
+      HealthProfileController.new,
+    );
 
 class UserEquipmentController extends Notifier<Set<String>> {
   @override
@@ -101,5 +113,5 @@ class UserEquipmentController extends Notifier<Set<String>> {
 
 final userEquipmentProvider =
     NotifierProvider<UserEquipmentController, Set<String>>(
-  UserEquipmentController.new,
-);
+      UserEquipmentController.new,
+    );

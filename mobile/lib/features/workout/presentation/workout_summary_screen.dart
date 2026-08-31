@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../application/workout_schedule_controller.dart';
+import '../application/workout_session_controller.dart';
 import '../domain/workout_models.dart';
 
 class WorkoutSummaryScreen extends ConsumerWidget {
-  const WorkoutSummaryScreen({
-    super.key,
-    this.summary,
-  });
+  const WorkoutSummaryScreen({super.key, this.summary});
 
   final WorkoutSummaryData? summary;
 
@@ -16,15 +15,34 @@ class WorkoutSummaryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
 
-    final title = summary?.title ?? 'Upper Body A';
-    final duration = summary?.durationFormatted ?? '45:12';
-    final volume = summary != null
-        ? '${summary!.totalVolumeKg.toStringAsFixed(0)} kg'
-        : '3,450 kg';
-    final sets = summary != null
-        ? '${summary!.completedSets}/${summary!.totalSets}'
-        : '14/14';
-    final prs = summary?.prCount ?? 2;
+    final latestHistory = ref
+        .watch(workoutScheduleProvider)
+        .history
+        .firstOrNull;
+    final session = ref.watch(workoutSessionProvider);
+
+    final title = summary?.title ?? latestHistory?.workoutName ?? session.title;
+    final duration =
+        summary?.durationFormatted ??
+        (latestHistory != null
+            ? '${latestHistory.durationMinutes.toString().padLeft(2, '0')}:00'
+            : '00:00');
+
+    final volumeNum =
+        summary?.totalVolumeKg ??
+        latestHistory?.totalVolumeKg ??
+        session.totalVolumeKg;
+    final volume =
+        '${volumeNum.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} kg';
+
+    final completedSets =
+        summary?.completedSets ??
+        latestHistory?.completedSetsCount ??
+        session.completedSets;
+    final totalSets = summary?.totalSets ?? session.totalSets;
+    final sets = '$completedSets/$totalSets';
+
+    final prs = summary?.prCount ?? latestHistory?.prCount ?? 0;
 
     return Scaffold(
       body: SafeArea(
@@ -76,8 +94,8 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                 'Bạn đã hoàn thành buổi tập $title',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
+                  color: colors.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -152,10 +170,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                 ),
                 child: const Text(
                   'Về trang tập luyện',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                 ),
               ),
               const SizedBox(height: 12),
@@ -166,9 +181,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  side: BorderSide(
-                    color: colors.outlineVariant,
-                  ),
+                  side: BorderSide(color: colors.outlineVariant),
                 ),
                 child: Text(
                   'Xem lịch sử buổi tập',
@@ -209,9 +222,7 @@ class _MetricTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

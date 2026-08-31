@@ -52,12 +52,30 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: cs,
       scaffoldBackgroundColor: cs.surface,
+      splashFactory: InkSparkle.splashFactory,
+      highlightColor: cs.primary.withValues(alpha: 0.12),
+      splashColor: cs.primary.withValues(alpha: 0.20),
+      // ── IconButton ────────────────────────────────────────────────────────
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          highlightColor: cs.primary.withValues(alpha: 0.15),
+          splashFactory: InkSparkle.splashFactory,
+        ),
+      ),
       // ── Typography ────────────────────────────────────────────────────────
       textTheme: const TextTheme(
         displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400),
         displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
-        headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-        headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+        headlineLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.5,
+        ),
         headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
         titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -84,7 +102,10 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.6), width: 1),
+          side: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.6),
+            width: 1,
+          ),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       ),
@@ -117,7 +138,9 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.6)),
+          borderSide: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.6),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

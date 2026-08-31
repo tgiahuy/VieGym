@@ -140,16 +140,7 @@ abstract final class EquipmentPresets {
     'band',
   ];
 
-  static const homeDumbbell = [
-    'db',
-    'bench',
-    'bw',
-    'band',
-  ];
+  static const homeDumbbell = ['db', 'bench', 'bw', 'band'];
 
-  static const bodyweightOnly = [
-    'bw',
-    'pullup_bar',
-    'band',
-  ];
+  static const bodyweightOnly = ['bw', 'pullup_bar', 'band'];
 }

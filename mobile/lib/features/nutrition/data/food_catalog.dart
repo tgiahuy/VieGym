@@ -172,7 +172,8 @@ const masterFoodCatalog = <FoodItem>[
     baseFat: 11,
     imageUrl:
         'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=500&auto=format&fit=crop&q=80',
-    description: 'Trứng gà luộc nguyên quả giàu amino acids và choline cần thiết.',
+    description:
+        'Trứng gà luộc nguyên quả giàu amino acids và choline cần thiết.',
     servingOptions: [
       ServingOption(
         id: 'opt_trung_2',
@@ -206,7 +207,8 @@ const masterFoodCatalog = <FoodItem>[
     baseFat: 18,
     imageUrl:
         'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=500&auto=format&fit=crop&q=80',
-    description: 'Phi lê cá hồi áp chảo giàu Omega-3, EPA và DHA tốt cho tim mạch và phục hồi cơ.',
+    description:
+        'Phi lê cá hồi áp chảo giàu Omega-3, EPA và DHA tốt cho tim mạch và phục hồi cơ.',
     servingOptions: [
       ServingOption(
         id: 'opt_ca_hoi_150',
@@ -236,7 +238,8 @@ const masterFoodCatalog = <FoodItem>[
     baseFat: 1.8,
     imageUrl:
         'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&auto=format&fit=crop&q=80',
-    description: 'Gạo lứt giàu chất xơ, chỉ số đường huyết GI thấp giúp no lâu và duy trì năng lượng bền bỉ.',
+    description:
+        'Gạo lứt giàu chất xơ, chỉ số đường huyết GI thấp giúp no lâu và duy trì năng lượng bền bỉ.',
     servingOptions: [
       ServingOption(
         id: 'opt_lut_std',
@@ -264,7 +267,8 @@ const masterFoodCatalog = <FoodItem>[
     baseFat: 0.2,
     imageUrl:
         'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?w=500&auto=format&fit=crop&q=80',
-    description: 'Khoai lang mật/khoai lang vàng ngọt bùi, nguồn carb chậm tuyệt vời trước buổi tập.',
+    description:
+        'Khoai lang mật/khoai lang vàng ngọt bùi, nguồn carb chậm tuyệt vời trước buổi tập.',
     servingOptions: [
       ServingOption(
         id: 'opt_khoai_1',
@@ -294,7 +298,8 @@ const masterFoodCatalog = <FoodItem>[
     baseFat: 0.5,
     imageUrl:
         'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=500&auto=format&fit=crop&q=80',
-    description: 'Bột đạm whey tinh khiết hấp thu siêu nhanh sau khi tập luyện để chống dị hóa cơ bắp.',
+    description:
+        'Bột đạm whey tinh khiết hấp thu siêu nhanh sau khi tập luyện để chống dị hóa cơ bắp.',
     servingOptions: [
       ServingOption(
         id: 'opt_whey_1',
@@ -322,7 +327,8 @@ const masterFoodCatalog = <FoodItem>[
     baseFat: 0.3,
     imageUrl:
         'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=500&auto=format&fit=crop&q=80',
-    description: 'Chuối chín tự nhiên giàu kali giúp chống chuột rút cơ và bổ sung glycogen nhanh chóng.',
+    description:
+        'Chuối chín tự nhiên giàu kali giúp chống chuột rút cơ và bổ sung glycogen nhanh chóng.',
     servingOptions: [
       ServingOption(
         id: 'opt_chuoi_1',
@@ -369,7 +375,9 @@ CalculatedNutrition calculateFoodNutrition({
 
   return CalculatedNutrition(
     calories: (food.baseCalories * totalMultiplier).round(),
-    protein: double.parse((food.baseProtein * totalMultiplier).toStringAsFixed(1)),
+    protein: double.parse(
+      (food.baseProtein * totalMultiplier).toStringAsFixed(1),
+    ),
     carbs: double.parse((food.baseCarbs * totalMultiplier).toStringAsFixed(1)),
     fat: double.parse((food.baseFat * totalMultiplier).toStringAsFixed(1)),
     servingName: option.name,

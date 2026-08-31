@@ -78,8 +78,12 @@ class UserPreferencesController extends Notifier<UserPreferences> {
   }
 
   void addDislikedFood(String food) {
-    if (food.trim().isEmpty || state.dislikedFoods.contains(food.trim())) return;
-    state = state.copyWith(dislikedFoods: [...state.dislikedFoods, food.trim()]);
+    if (food.trim().isEmpty || state.dislikedFoods.contains(food.trim())) {
+      return;
+    }
+    state = state.copyWith(
+      dislikedFoods: [...state.dislikedFoods, food.trim()],
+    );
   }
 
   void removeDislikedFood(String food) {
@@ -89,7 +93,9 @@ class UserPreferencesController extends Notifier<UserPreferences> {
   }
 
   void addAllergy(String allergy) {
-    if (allergy.trim().isEmpty || state.allergies.contains(allergy.trim())) return;
+    if (allergy.trim().isEmpty || state.allergies.contains(allergy.trim())) {
+      return;
+    }
     state = state.copyWith(allergies: [...state.allergies, allergy.trim()]);
   }
 
@@ -102,5 +108,5 @@ class UserPreferencesController extends Notifier<UserPreferences> {
 
 final userPreferencesProvider =
     NotifierProvider<UserPreferencesController, UserPreferences>(
-  UserPreferencesController.new,
-);
+      UserPreferencesController.new,
+    );

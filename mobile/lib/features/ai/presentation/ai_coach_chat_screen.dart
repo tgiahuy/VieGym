@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../application/ai_coach_controller.dart';
 import '../domain/ai_models.dart';
@@ -42,21 +43,69 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(aiCoachProvider);
+    final colors = Theme.of(context).colorScheme;
+
+    final quickSuggestions = [
+      // Bữa ăn
+      (
+        '🥗 Gợi ý thực đơn tăng cơ',
+        'Gợi ý cho tôi thực đơn tăng cơ giàu protein tối ưu',
+      ),
+      ('🍳 Bữa sáng nhanh gọn', 'Gợi ý bữa sáng lành mạnh chuẩn bị nhanh gọn'),
+      (
+        '🍱 Bữa trưa 500 kcal',
+        'Hãy lên thực đơn bữa trưa khoảng 500 kcal giàu đạm',
+      ),
+      ('🥑 Bữa tối nhẹ bụng', 'Gợi ý bữa tối nhẹ bụng dễ tiêu hóa phục hồi cơ'),
+      (
+        '⚡ Bữa phụ giàu protein',
+        'Gợi ý bữa phụ nạp năng lượng trước hoặc sau khi tập',
+      ),
+      // Buổi tập
+      (
+        '🏋️ Gợi ý buổi tập Ngực & Tay',
+        'Gợi ý cho tôi buổi tập Ngực & Tay sau hiệu quả',
+      ),
+      (
+        '🦅 Gợi ý buổi tập Lưng xô',
+        'Gợi ý cho tôi buổi tập Lưng xô & Tay trước Pull Day',
+      ),
+      (
+        '🦵 Gợi ý buổi tập Chân mông',
+        'Gợi ý cho tôi buổi tập Chân & Mông toàn diện',
+      ),
+      (
+        '⏱️ Buổi tập Full Body 45\'',
+        'Gợi ý buổi tập toàn thân Full Body 45 phút',
+      ),
+      (
+        '⚠️ Đau cổ tay khi Bench Press',
+        'Hôm nay tôi bị đau cổ tay, có bài nào thay Bench Press không?',
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Column(
           children: [
-            Text('AI Coach Chat'),
-            Text('Chế độ cá nhân hóa', style: TextStyle(fontSize: 10)),
+            Text(
+              'AI Coach Chat',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            Text(
+              'Hỏi đáp & Hỗ trợ thông minh',
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
           ],
         ),
       ),
       body: Column(
         children: [
+          // Chat Messages List
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
               itemCount: state.messages.length + (state.isGenerating ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == state.messages.length) {
@@ -66,31 +115,51 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
               },
             ),
           ),
-          if (state.messages.length == 1)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-              child: Wrap(
-                spacing: 7,
-                runSpacing: 7,
-                children: [
-                  ActionChip(
-                    label: const Text('Đau cổ tay khi Bench Press'),
-                    onPressed: () => _send(
-                      'Hôm nay tôi bị đau cổ tay, có bài nào thay Bench Press không?',
-                    ),
-                  ),
-                  ActionChip(
-                    label: const Text('Gợi ý bữa trưa'),
-                    onPressed: () =>
-                        _send('Hãy lên thực đơn bữa trưa giúp tôi'),
-                  ),
-                ],
+
+          // Horizontal Quick Suggestion Chips (Gợi ý bữa ăn & buổi tập)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: colors.surfaceContainer.withValues(alpha: 0.5),
+              border: Border(
+                top: BorderSide(
+                  color: colors.outlineVariant.withValues(alpha: 0.3),
+                ),
               ),
             ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: quickSuggestions.map((item) {
+                  final (label, prompt) = item;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      label: Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      backgroundColor: colors.surfaceContainerHighest,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      onPressed: () => _send(prompt),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
+          // Bottom Input Bar
           SafeArea(
             top: false,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 border: Border(
@@ -107,15 +176,29 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
                       enabled: !state.isGenerating,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                        hintText: 'Nhập yêu cầu món ăn hoặc bài tập...',
+                      decoration: InputDecoration(
+                        hintText: 'Hỏi AI về món ăn, buổi tập, bài tập...',
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        filled: true,
+                        fillColor: colors.surfaceContainer,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
                     onPressed: state.isGenerating ? null : _send,
-                    icon: const Icon(Icons.send_rounded),
+                    icon: const Icon(Icons.send_rounded, size: 20),
                   ),
                 ],
               ),
@@ -163,6 +246,8 @@ class _MessageBubble extends ConsumerWidget {
                 message.text,
                 style: TextStyle(
                   color: isUser ? colors.onPrimary : colors.onSurface,
+                  fontSize: 13.5,
+                  height: 1.35,
                 ),
               ),
             ),
@@ -171,6 +256,8 @@ class _MessageBubble extends ConsumerWidget {
               _ReplacementProposalCard(proposal: proposal),
             if (message.proposal case final MealProposal proposal)
               _MealProposalCard(proposal: proposal),
+            if (message.proposal case final WorkoutProposal proposal)
+              _WorkoutProposalCard(proposal: proposal),
             const SizedBox(height: 9),
           ],
         ),
@@ -222,59 +309,83 @@ class _ReplacementProposalCard extends ConsumerWidget {
                 _StatusChip(status: proposal.status),
               ],
             ),
-            const Divider(height: 24),
-            ...proposal.alternatives.map(
-              (alternative) => Container(
-                margin: const EdgeInsets.only(bottom: 9),
-                padding: const EdgeInsets.all(12),
+            const Divider(height: 22),
+            ...proposal.alternatives.map((item) {
+              final isApplied = item.exerciseId == proposal.selectedExerciseId;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  color: isApplied
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.12)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isApplied
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.transparent,
+                  ),
                 ),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      alternative.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${alternative.targetMuscles.join(', ')} • ${alternative.equipment}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      alternative.reason,
-                      style: const TextStyle(fontSize: 12, height: 1.4),
-                    ),
-                    if (isPending) ...[
-                      const SizedBox(height: 9),
-                      OutlinedButton(
-                        onPressed: () =>
-                            _confirmReplacement(context, ref, alternative),
-                        child: const Text('Chọn bài này'),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Thiết bị: ${item.equipment} • Nhóm cơ: ${item.targetMuscles.join(', ')}',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.reason,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                    if (isPending)
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            _confirmReplacement(context, ref, item),
+                        child: const Text(
+                          'Chọn bài này',
+                          style: TextStyle(fontSize: 11),
+                        ),
+                      ),
                   ],
                 ),
-              ),
-            ),
+              );
+            }),
             Container(
+              margin: const EdgeInsets.only(top: 6),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
                     Icons.warning_amber_rounded,
-                    size: 18,
                     color: Colors.amber,
+                    size: 16,
                   ),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       proposal.warning,
@@ -349,6 +460,12 @@ class _MealProposalCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -356,45 +473,276 @@ class _MealProposalCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.restaurant_rounded),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.restaurant_rounded,
+                    size: 16,
+                    color: Colors.greenAccent,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Đề xuất ${proposal.mealName}',
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    proposal.mealName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 _StatusChip(status: proposal.status),
               ],
             ),
-            const Divider(height: 22),
+            const Divider(height: 18),
             ...proposal.items.map(
-              (item) => ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(item.name),
-                subtitle: Text(item.serving),
-                trailing: Text('${item.calories} kcal'),
+              (item) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '• ${item.name} (${item.serving})',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${item.calories} kcal • ${item.protein}g đạm',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
             ),
-            Text(
-              '${proposal.totalCalories} kcal • ${proposal.totalProtein.toStringAsFixed(1)}g protein',
-              style: const TextStyle(fontWeight: FontWeight.w900),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tổng dinh dưỡng:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    '${proposal.totalCalories} kcal • ${proposal.totalProtein.toStringAsFixed(1)}g Protein',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
-            Text(proposal.reason, style: const TextStyle(fontSize: 12)),
+            Text(
+              proposal.reason,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.25,
+              ),
+            ),
             if (proposal.status == ProposalStatus.pending) ...[
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () =>
-                    ref.read(aiCoachProvider.notifier).applyMeal(proposal.id),
-                child: const Text('Áp dụng / Thêm vào thực đơn'),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => ref
+                          .read(aiCoachProvider.notifier)
+                          .applyMeal(proposal.id),
+                      child: const Text(
+                        'Thêm vào thực đơn',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () => ref
+                        .read(aiCoachProvider.notifier)
+                        .dismissProposal(proposal.id),
+                    child: const Text('Bỏ qua'),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () => ref
-                    .read(aiCoachProvider.notifier)
-                    .dismissProposal(proposal.id),
-                child: const Text('Bỏ qua'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkoutProposalCard extends ConsumerWidget {
+  const _WorkoutProposalCard({required this.proposal});
+
+  final WorkoutProposal proposal;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.primary.withValues(alpha: 0.35)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.fitness_center_rounded,
+                    size: 16,
+                    color: colors.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        proposal.workoutTitle,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        '${proposal.focusArea} • ~${proposal.durationMinutes} phút',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _StatusChip(status: proposal.status),
+              ],
+            ),
+            const Divider(height: 18),
+            ...proposal.items.map((item) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            'Tác động: ${item.targetMuscle} • Nghỉ: ${item.restSeconds}s',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        item.setsReps,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 6),
+            Text(
+              proposal.reason,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: colors.onSurfaceVariant,
+                height: 1.25,
+              ),
+            ),
+            if (proposal.status == ProposalStatus.pending) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        ref
+                            .read(aiCoachProvider.notifier)
+                            .applyWorkout(proposal.id);
+                        context.push('/workout/session');
+                      },
+                      icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                      label: const Text(
+                        'Bắt đầu tập ngay',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () => ref
+                        .read(aiCoachProvider.notifier)
+                        .dismissProposal(proposal.id),
+                    child: const Text('Bỏ qua'),
+                  ),
+                ],
               ),
             ],
           ],

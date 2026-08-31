@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/auth_header.dart';
+import '../../../shared/widgets/brand_icons.dart';
 import '../../../shared/widgets/social_auth_button.dart';
 import '../application/auth_controller.dart';
 
@@ -32,7 +33,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(authProvider.notifier).register(
+    final success = await ref
+        .read(authProvider.notifier)
+        .register(
           email: _emailController.text,
           password: _passwordController.text,
           confirmPassword: _confirmPasswordController.text,
@@ -48,9 +51,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         context.push('/otp');
       } else {
         final error = ref.read(authProvider).errorMessage;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Đăng ký thất bại')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error ?? 'Đăng ký thất bại')));
       }
     }
   }
@@ -61,6 +64,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -120,7 +124,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     hintText: 'Tối thiểu 6 ký tự',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -159,7 +166,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onFieldSubmitted: (_) => _handleRegister(),
                   decoration: InputDecoration(
                     hintText: 'Nhập lại mật khẩu',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
@@ -168,7 +178,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         size: 20,
                       ),
                       onPressed: () {
-                        setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                        setState(
+                          () => _obscureConfirmPassword =
+                              !_obscureConfirmPassword,
+                        );
                       },
                     ),
                     filled: true,
@@ -224,12 +237,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                // Enhanced Google and Facebook Social Auth Buttons
                 Row(
                   children: [
                     Expanded(
                       child: SocialAuthButton(
                         label: 'Google',
-                        icon: const Icon(Icons.g_mobiledata, size: 24, color: Colors.redAccent),
+                        icon: const GoogleLogo(size: 20),
                         onPressed: () {
                           context.push('/onboarding/health');
                         },
@@ -239,7 +253,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Expanded(
                       child: SocialAuthButton(
                         label: 'Facebook',
-                        icon: const Icon(Icons.facebook_rounded, size: 20, color: Colors.blue),
+                        icon: const FacebookLogo(size: 20),
                         onPressed: () {
                           context.push('/onboarding/health');
                         },

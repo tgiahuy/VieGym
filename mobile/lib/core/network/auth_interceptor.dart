@@ -112,11 +112,11 @@ class AuthInterceptor extends Interceptor {
 /// All callbacks are no-ops that return null / throw immediately.
 class StubAuthInterceptor extends AuthInterceptor {
   StubAuthInterceptor()
-      : super(
-          getAccessToken: () async => null,
-          getRefreshToken: () async => null,
-          refreshAccessToken: (_) async =>
-              throw Exception('Stub: no token storage'),
-          onRefreshFailed: () async {},
-        );
+    : super(
+        getAccessToken: () async => null,
+        getRefreshToken: () async => null,
+        refreshAccessToken: (_) async =>
+            throw Exception('Stub: no token storage'),
+        onRefreshFailed: () async {},
+      );
 }

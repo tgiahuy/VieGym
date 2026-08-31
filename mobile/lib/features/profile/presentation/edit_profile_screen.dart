@@ -14,6 +14,7 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _nameController;
+  late TextEditingController _phoneController;
   late TextEditingController _bioController;
 
   @override
@@ -23,8 +24,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final authState = ref.read(authProvider);
     final initialName = profile.nickname.isNotEmpty
         ? profile.nickname
-        : (authState.user?.displayName ?? 'Nguyễn Văn Gym');
+        : (authState.user?.displayName ?? 'Gia Huy');
+    final initialPhone = authState.user?.phoneNumber ?? '0987 654 321';
     _nameController = TextEditingController(text: initialName);
+    _phoneController = TextEditingController(text: initialPhone);
     _bioController = TextEditingController(
       text: 'Mục tiêu: Tăng cơ nạc, tập đều 5 buổi / tuần.',
     );
@@ -33,15 +36,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     _bioController.dispose();
     super.dispose();
   }
 
   void _saveProfile() {
     final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
     if (name.isNotEmpty) {
       ref.read(healthProfileProvider.notifier).updateNickname(name);
-      ref.read(authProvider.notifier).updateDisplayName(name);
+      ref
+          .read(authProvider.notifier)
+          .updateProfile(
+            displayName: name,
+            phoneNumber: phone.isNotEmpty ? phone : null,
+          );
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Đã cập nhật thông tin cá nhân!')),
@@ -62,7 +72,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         title: const Text('Chỉnh sửa hồ sơ'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
         children: [
           // Avatar Center
           Center(
@@ -71,7 +81,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: colors.primary.withValues(alpha: 0.2),
-                  child: Icon(Icons.person_rounded, size: 56, color: colors.primary),
+                  child: Icon(
+                    Icons.person_rounded,
+                    size: 56,
+                    color: colors.primary,
+                  ),
                 ),
                 Positioned(
                   bottom: 0,
@@ -82,7 +96,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       color: colors.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.camera_alt_rounded, size: 16, color: colors.onPrimary),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 16,
+                      color: colors.onPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -95,6 +113,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             decoration: const InputDecoration(
               labelText: 'Họ và tên',
               prefixIcon: Icon(Icons.person_outline_rounded),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Số điện thoại',
+              prefixIcon: Icon(Icons.phone_outlined),
             ),
           ),
           const SizedBox(height: 16),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../onboarding/application/health_profile_controller.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
@@ -10,11 +11,15 @@ class UserProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final healthProfile = ref.watch(healthProfileProvider);
     final user = authState.user;
     final colors = Theme.of(context).colorScheme;
 
-    final displayName = user?.displayName ?? 'Nguyễn Văn Gym';
+    final displayName = healthProfile.nickname.isNotEmpty
+        ? healthProfile.nickname
+        : (user?.displayName ?? 'Gia Huy');
     final email = user?.email ?? 'viegym.user@gmail.com';
+    final phoneNumber = user?.phoneNumber ?? '0987 654 321';
 
     return Scaffold(
       appBar: AppBar(
@@ -25,7 +30,7 @@ class UserProfileScreen extends ConsumerWidget {
         title: const Text('Hồ sơ tài khoản'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 36),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
           // Avatar & Name Card
           Card(
@@ -38,7 +43,9 @@ class UserProfileScreen extends ConsumerWidget {
                     radius: 44,
                     backgroundColor: colors.primary.withValues(alpha: 0.15),
                     child: Text(
-                      displayName.isNotEmpty ? displayName[0].toUpperCase() : 'G',
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'G',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
@@ -138,8 +145,50 @@ class UserProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   trailing: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'ĐÃ XÁC THỰC',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.greenAccent,
+                      ),
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.phone_outlined, size: 20),
+                  ),
+                  title: const Text(
+                    'Số điện thoại',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  subtitle: Text(
+                    phoneNumber,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),

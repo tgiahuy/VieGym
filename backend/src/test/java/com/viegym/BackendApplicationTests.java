@@ -241,7 +241,7 @@ class BackendApplicationTests {
                 .andExpect(jsonPath("$.openapi").value(matchesPattern("3\\.[01]\\..+")))
                 .andExpect(jsonPath("$.info.title").value("VieGym API"))
                 .andExpect(jsonPath("$.info.version").value("v1"))
-                .andExpect(jsonPath("$.servers[0].url").value("/api/v1"))
+                .andExpect(jsonPath("$.servers[0].url").value("http://localhost:8080/api/v1"))
                 .andExpect(jsonPath("$.components.securitySchemes.bearerAuth.type").value("http"))
                 .andExpect(
                         jsonPath("$.components.securitySchemes.bearerAuth.scheme").value("bearer"));

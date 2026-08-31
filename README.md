@@ -2,7 +2,7 @@
 
 > Ứng dụng theo dõi thể hình và dinh dưỡng toàn diện — Đồ án tốt nghiệp MVP P0
 
-[![CI](https://github.com/your-org/VieGym/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/VieGym/actions/workflows/ci.yml)
+[![CI](https://github.com/tgiahuy/VieGym/actions/workflows/ci.yml/badge.svg)](https://github.com/tgiahuy/VieGym/actions/workflows/ci.yml)
 
 ---
 
@@ -10,12 +10,9 @@
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Flutter Mobile App (Android)                        │
+│  Flutter Mobile App (Android / iOS)                  │
 │  State: Riverpod  │  Router: go_router               │
-│  HTTP: dart-dio (generated from OpenAPI)             │
-└───────────────────────┬─────────────────────────────┘
-│  React Web Frontend (TypeScript / Vite)               │
-│  UI prototype and web client                          │
+│  HTTP: Dio / dart-dio generated from OpenAPI         │
 └───────────────────────┬─────────────────────────────┘
                         │ REST /api/v1
                         ▼
@@ -46,8 +43,6 @@
 |---------|-----------|
 | Flutter | 3.44.4 (pin qua FVM) |
 | Dart | ≥ 3.8 |
-| Node.js | ≥ 20 |
-| pnpm | ≥ 9 |
 | Java | 21 (Temurin) |
 | Maven Wrapper | bundled |
 | Python | 3.12 |
@@ -63,7 +58,7 @@
 ### 1.1 Clone repository
 
 ```bash
-git clone https://github.com/your-org/VieGym.git
+git clone https://github.com/tgiahuy/VieGym.git
 cd VieGym
 ```
 
@@ -116,16 +111,6 @@ cd mobile
 flutter pub get
 flutter run --dart-define=APP_ENV=dev
 ```
-
-### 1.7 Frontend Web — React/Vite
-
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
-
-Vite hiển thị URL local sau khi development server khởi động.
 
 ---
 
@@ -214,14 +199,6 @@ flutter test                   # widget + unit tests
 flutter test --coverage        # với coverage report
 ```
 
-### Frontend Web
-
-```bash
-cd frontend
-pnpm lint
-pnpm build
-```
-
 ---
 
 ## 4. Biến môi trường
@@ -243,26 +220,39 @@ Các biến quan trọng nhất:
 
 ## 5. OpenAPI và Dart Client
 
-Backend tự động tạo spec OpenAPI khi build:
+Spec đã commit nằm tại `backend/src/main/resources/openapi/openapi.json`. Để cập nhật
+spec, khởi động backend với profile `local`, sau đó xuất trực tiếp từ Springdoc:
 
 ```bash
+# Terminal 1 — hạ tầng và backend
+docker compose up -d postgres
 cd backend
-./mvnw package -DskipTests
-# Spec xuất ra: backend/src/main/resources/openapi/openapi.json
+SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
+
+# Terminal 2 — từ repository root
+curl --fail --silent --show-error http://localhost:8080/v3/api-docs \
+  | jq . > backend/src/main/resources/openapi/openapi.json
 ```
 
-Tái tạo Dart client (dart-dio) từ spec:
+Tái tạo Dart client bằng đúng OpenAPI Generator `7.15.0` đã pin trong backend:
 
 ```bash
 # Từ root của repository:
-openapi-generator-cli generate \
+npx --yes @openapitools/openapi-generator-cli version-manager set 7.15.0
+npx --yes @openapitools/openapi-generator-cli generate \
   -i backend/src/main/resources/openapi/openapi.json \
   -g dart-dio \
   -o mobile/lib/api/generated \
-  --additional-properties=pubName=viegym_api,pubVersion=0.1.0
+  --additional-properties=pubName=viegym_api,pubVersion=0.1.0,serializationLibrary=json_serializable
+
+cd mobile/lib/api/generated
+dart pub get
+dart run build_runner build --delete-conflicting-outputs
+dart format .
 ```
 
-CI tự động kiểm tra spec không bị stale (**OpenAPI no-diff gate**).
+Không chỉnh sửa model/API generated bằng tay. CI khởi động backend, xuất lại
+`/v3/api-docs` và thất bại nếu spec committed bị thiếu hoặc stale.
 
 ---
 
@@ -284,9 +274,6 @@ CI tự động kiểm tra spec không bị stale (**OpenAPI no-diff gate**).
 
 ```
 VieGym/
-├── frontend/         # React + TypeScript + Vite web app
-│   ├── src/          # pages, components, layouts, hooks
-│   └── public/       # static assets
 ├── mobile/           # Flutter app
 │   └── lib/
 │       ├── core/     # config, network, router, theme
@@ -302,7 +289,20 @@ VieGym/
 │       ├── core/     # config, security
 │       ├── models/   # Pydantic schemas
 │       └── services/ # AI provider
-├── docs/             # Project docs and frontend screen specification
+├── docs/             # Đặc tả, kiến trúc, kế hoạch và tiến độ dự án
 ├── checkM0/          # M0 milestone evidence
+├── AI_RULES.md       # Quy tắc bắt buộc cho AI coding/design agents
 └── compose.yaml      # Docker Compose stack
 ```
+
+## 8. Nguồn sự thật và tiến độ
+
+- Quy tắc làm việc với AI: [`AI_RULES.md`](AI_RULES.md).
+- Đặc tả sản phẩm: [`docs/spec/specs.md`](docs/spec/specs.md).
+- API contract: [`docs/kientruchethong/API_SPEC.md`](docs/kientruchethong/API_SPEC.md).
+- Database contract: [`docs/kientruchatang/DATABASE.md`](docs/kientruchatang/DATABASE.md).
+- Tiến độ triển khai: [`docs/Project_Progress.md`](docs/Project_Progress.md).
+- Thu thập dataset: [`docs/VIEGYM_DATASET_ACQUISITION_PLAN.md`](docs/VIEGYM_DATASET_ACQUISITION_PLAN.md).
+
+UI prototype của các milestone sau có thể đã tồn tại nhưng chỉ được xem là hoàn tất
+khi đạt Definition of Done full-stack trong `docs/Project_Progress.md`.

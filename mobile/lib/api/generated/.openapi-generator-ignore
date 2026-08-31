@@ -21,3 +21,7 @@
 #docs/*.md
 # Then explicitly reverse the ignore rule for a single file:
 #!docs/README.md
+
+# Maintained by VieGym so the generated package stays compatible with the
+# Flutter/Dart version pinned by the application.
+pubspec.yaml

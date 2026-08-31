@@ -31,7 +31,11 @@ public class OpenApiConfig {
                                 .description(
                                         "Backend API for VieGym workout, nutrition and AI coach")
                                 .contact(new Contact().name("VieGym")))
-                .servers(List.of(new Server().url("/api/v1").description("API v1")))
+                .servers(
+                        List.of(
+                                new Server()
+                                        .url("http://localhost:8080/api/v1")
+                                        .description("Local development API v1")))
                 .components(new Components().addSecuritySchemes(BEARER_AUTH, bearerScheme));
     }
 }

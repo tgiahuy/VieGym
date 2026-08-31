@@ -56,20 +56,30 @@ jobs:
         run: ./mvnw --batch-mode clean verify
 
       # ── OpenAPI no-diff gate ────────────────────────────────────────────────
-      # Regenerates the OpenAPI spec and fails if the committed spec is stale.
-      # This ensures the dart-dio generated client is always in sync.
+      # Starts the application against the CI PostgreSQL service, exports the
+      # live Springdoc contract and fails when the committed spec is missing or stale.
       - name: Verify OpenAPI spec is up-to-date (no-diff gate)
         run: |
-          ./mvnw --batch-mode -q -DskipTests clean package
-          # Collect the generated spec (springdoc writes it during package)
+          set -euo pipefail
           GENERATED="target/openapi.json"
           COMMITTED="src/main/resources/openapi/openapi.json"
-          if [ -f "$GENERATED" ] && [ -f "$COMMITTED" ]; then
-            diff <(jq --sort-keys . "$GENERATED") <(jq --sort-keys . "$COMMITTED") \
-              || (echo "ERROR: OpenAPI spec is stale. Run './mvnw package' and commit the updated spec." && exit 1)
-          else
-            echo "SKIP: no committed spec found at $COMMITTED — add one in M2."
-          fi
+
+          test -f "$COMMITTED" || {
+            echo "ERROR: committed OpenAPI spec is missing at $COMMITTED."
+            exit 1
+          }
+
+          ./mvnw --batch-mode -q -DskipTests \
+            -Dspring-boot.run.profiles=local spring-boot:start
+          trap './mvnw --batch-mode -q spring-boot:stop' EXIT
+
+          curl --fail --silent --show-error --retry 10 --retry-delay 2 \
+            http://localhost:8080/v3/api-docs > "$GENERATED"
+
+          diff <(jq --sort-keys . "$GENERATED") <(jq --sort-keys . "$COMMITTED") || {
+            echo "ERROR: OpenAPI spec is stale. Export /v3/api-docs and regenerate the Dart client."
+            exit 1
+          }
 
   # ────────────────────────────────────────────────────────────────────────────
   # AI Service — FastAPI / Python 3.12

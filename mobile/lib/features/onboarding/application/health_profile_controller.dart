@@ -6,6 +6,14 @@ class HealthProfileController extends Notifier<HealthProfile> {
   @override
   HealthProfile build() => const HealthProfile();
 
+  void completeProfile() {
+    state = state.copyWith(isCompleted: true);
+  }
+
+  void resetProfile() {
+    state = const HealthProfile(isCompleted: false);
+  }
+
   void updateNickname(String nickname) {
     state = state.copyWith(nickname: nickname.trim());
   }
@@ -62,6 +70,7 @@ class HealthProfileController extends Notifier<HealthProfile> {
     TrainingExperience? experience,
     int? workoutDaysPerWeek,
     int? sessionDurationMinutes,
+    bool? isCompleted,
   }) {
     state = state.copyWith(
       nickname: nickname,
@@ -75,6 +84,7 @@ class HealthProfileController extends Notifier<HealthProfile> {
       experience: experience,
       workoutDaysPerWeek: workoutDaysPerWeek,
       sessionDurationMinutes: sessionDurationMinutes,
+      isCompleted: isCompleted,
     );
   }
 }
@@ -115,3 +125,29 @@ final userEquipmentProvider =
     NotifierProvider<UserEquipmentController, Set<String>>(
       UserEquipmentController.new,
     );
+
+class EquipmentOnboardingNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void complete() => state = true;
+  void reset() => state = false;
+}
+
+final equipmentOnboardingCompletedProvider =
+    NotifierProvider<EquipmentOnboardingNotifier, bool>(
+      EquipmentOnboardingNotifier.new,
+    );
+
+/// Navigation Guard Helper
+/// Xác định route khởi tạo chính xác dựa theo trạng thái session và onboarding
+String resolveOnboardingRoute({
+  required bool isAuthenticated,
+  required bool isHealthProfileCompleted,
+  required bool isEquipmentOnboardingCompleted,
+}) {
+  if (!isAuthenticated) return '/welcome';
+  if (!isHealthProfileCompleted) return '/onboarding/health';
+  if (!isEquipmentOnboardingCompleted) return '/onboarding/equipment';
+  return '/home';
+}

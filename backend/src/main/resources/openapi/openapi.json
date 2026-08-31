@@ -488,6 +488,36 @@
           }
         }
       }
+    },
+    "/api/v1/auth/facebook": {
+      "post": {
+        "tags": [
+          "auth-controller"
+        ],
+        "operationId": "facebook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacebookLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1146,6 +1176,17 @@
         "type": "object",
         "properties": {
           "idToken": {
+            "type": "string"
+          },
+          "deviceInfo": {
+            "type": "string"
+          }
+        }
+      },
+      "FacebookLoginRequest": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
             "type": "string"
           },
           "deviceInfo": {

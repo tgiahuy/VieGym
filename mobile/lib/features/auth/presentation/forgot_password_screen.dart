@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/auth_header.dart';
 import '../application/auth_controller.dart';
+import '../domain/auth_state.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -32,12 +33,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     if (mounted) {
       if (success) {
+        final email = _emailController.text.trim();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đã gửi mã xác thực OTP đến email của bạn!'),
           ),
         );
-        context.push('/otp');
+        context.push('/otp', extra: {
+          'email': email,
+          'purpose': OtpPurpose.passwordReset,
+        });
       } else {
         final error = ref.read(authProvider).errorMessage;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,8 +122,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         ),
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       'Nhớ lại mật khẩu?',

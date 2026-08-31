@@ -84,6 +84,7 @@ class _HealthProfileOnboardingScreenState
   }
 
   void _finishHealthProfile() {
+    ref.read(healthProfileProvider.notifier).completeProfile();
     final profile = ref.read(healthProfileProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

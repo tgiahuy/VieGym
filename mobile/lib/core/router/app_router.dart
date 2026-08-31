@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 import '../../features/ai/presentation/ai_coach_chat_screen.dart';
 import '../../features/ai/presentation/ai_consent_screen.dart';
 import '../../features/ai/presentation/ai_tab_screen.dart';
+import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/otp_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
+import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/welcome_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/nutrition/domain/food_models.dart';
@@ -49,7 +52,7 @@ import '../../shared/widgets/auth_video_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/splash',
     debugLogDiagnostics: true,
     errorBuilder: (context, state) =>
         NotFoundScreen(errorMessage: state.error?.toString()),
@@ -58,6 +61,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => AuthVideoShell(child: child),
         routes: [
+          GoRoute(
+            path: '/splash',
+            name: 'splash',
+            builder: (context, state) => const SplashScreen(),
+          ),
           GoRoute(
             path: '/welcome',
             name: 'welcome',
@@ -81,7 +89,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/otp',
             name: 'otp',
-            builder: (context, state) => const OtpScreen(),
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final email = extra?['email'] as String? ??
+                  state.uri.queryParameters['email'];
+              final purposeVal = extra?['purpose'] ??
+                  state.uri.queryParameters['purpose'];
+              final purpose = purposeVal is OtpPurpose
+                  ? purposeVal
+                  : (purposeVal == 'passwordReset'
+                      ? OtpPurpose.passwordReset
+                      : OtpPurpose.register);
+              return OtpScreen(email: email, purpose: purpose);
+            },
+          ),
+          GoRoute(
+            path: '/reset-password',
+            name: 'reset-password',
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final email = extra?['email'] as String? ??
+                  state.uri.queryParameters['email'];
+              return ResetPasswordScreen(email: email);
+            },
           ),
         ],
       ),

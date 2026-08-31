@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:viegym/core/config/env_config.dart';
 import 'package:viegym/core/network/api_error_handler.dart';
 import 'package:viegym/core/network/dio_provider.dart';
+import 'package:viegym/features/auth/application/auth_controller.dart';
+import 'package:viegym/features/auth/domain/auth_state.dart';
 import 'package:viegym/main.dart';
 import 'package:viegym/shared/widgets/async_value_widget.dart';
 import 'package:viegym/shared/widgets/bouncing_icon_button.dart';
@@ -12,6 +14,18 @@ import 'package:viegym/shared/widgets/empty_view.dart';
 import 'package:viegym/shared/widgets/error_view.dart';
 import 'package:viegym/shared/widgets/loading_view.dart';
 import 'package:viegym/shared/widgets/offline_view.dart';
+
+class _AuthenticatedAuthController extends AuthController {
+  @override
+  AuthState build() => const AuthState(
+        status: AuthStatus.authenticated,
+        user: AuthUser(
+          id: 'user_1',
+          email: 'giahuy@viegym.vn',
+          displayName: 'Gia Huy',
+        ),
+      );
+}
 
 void main() {
   group('M1-16: Core Env & Main App', () {
@@ -25,7 +39,14 @@ void main() {
     testWidgets('App starts with native VieGym dashboard and navigation', (
       tester,
     ) async {
-      await tester.pumpWidget(const ProviderScope(child: VieGymApp()));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(_AuthenticatedAuthController.new),
+          ],
+          child: const VieGymApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Gia Huy'), findsOneWidget);
@@ -47,7 +68,14 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const ProviderScope(child: VieGymApp()));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(_AuthenticatedAuthController.new),
+          ],
+          child: const VieGymApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       for (final label in const [

@@ -7,7 +7,9 @@ import '../../../shared/widgets/auth_header.dart';
 import '../../../shared/widgets/bouncing_icon_button.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../../../shared/widgets/social_auth_button.dart';
+import '../../onboarding/application/health_profile_controller.dart';
 import '../application/auth_controller.dart';
+import '../domain/auth_state.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -40,13 +42,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
 
     if (mounted) {
+      final authState = ref.read(authProvider);
       if (success) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
-        context.go('/home');
+        final healthProfile = ref.read(healthProfileProvider);
+        final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+        final targetRoute = resolveOnboardingRoute(
+          isAuthenticated: true,
+          isHealthProfileCompleted: healthProfile.isCompleted,
+          isEquipmentOnboardingCompleted: equipmentCompleted,
+        );
+        context.go(targetRoute);
+      } else if (authState.isPendingVerification) {
+        final email = _emailController.text.trim();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              authState.errorMessage ??
+                  'Tài khoản chưa kích hoạt. Vui lòng nhập OTP.',
+            ),
+          ),
+        );
+        context.push('/otp', extra: {'email': email, 'purpose': OtpPurpose.register});
       } else {
-        final error = ref.read(authProvider).errorMessage;
+        final error = authState.errorMessage;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error ?? 'Đăng nhập thất bại')));
@@ -344,14 +365,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: SocialAuthButton(
                         label: 'Google',
                         icon: const GoogleLogo(size: 20),
-                        onPressed: () {
-                          ref
+                        onPressed: () async {
+                          final success = await ref
                               .read(authProvider.notifier)
-                              .login(
-                                email: 'google.user@viegym.vn',
-                                password: 'demo',
-                              );
-                          context.go('/home');
+                              .loginWithGoogle();
+                          if (context.mounted && success) {
+                            final healthProfile = ref.read(healthProfileProvider);
+                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final targetRoute = resolveOnboardingRoute(
+                              isAuthenticated: true,
+                              isHealthProfileCompleted: healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                            );
+                            context.go(targetRoute);
+                          }
                         },
                       ),
                     ),
@@ -360,14 +387,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: SocialAuthButton(
                         label: 'Facebook',
                         icon: const FacebookLogo(size: 20),
-                        onPressed: () {
-                          ref
+                        onPressed: () async {
+                          final success = await ref
                               .read(authProvider.notifier)
-                              .login(
-                                email: 'facebook.user@viegym.vn',
-                                password: 'demo',
-                              );
-                          context.go('/home');
+                              .loginWithFacebook();
+                          if (context.mounted && success) {
+                            final healthProfile = ref.read(healthProfileProvider);
+                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final targetRoute = resolveOnboardingRoute(
+                              isAuthenticated: true,
+                              isHealthProfileCompleted: healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                            );
+                            context.go(targetRoute);
+                          }
                         },
                       ),
                     ),

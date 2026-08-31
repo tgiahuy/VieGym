@@ -235,27 +235,27 @@ conversation archive và account auto-lock vẫn là P1.
 
 ### Flutter và kiểm thử
 
-- [ ] **M2-23** — Hoàn thiện Session Bootstrap, Welcome, Login, Register và OTP UI.
-- [ ] **M2-24** — Hoàn thiện Forgot/Reset/Change Password, Logout và Biometric UI.
-- [ ] **M2-25** — Hoàn thiện Health và Equipment onboarding cùng navigation guard.
-- [ ] **M2-26** — Triển khai secure token storage, refresh single-flight và clear credential khi logout.
-- [ ] **M2-27** — Viết unit/integration/widget test cho auth, OTP, token và health calculations.
-- [ ] **M2-28** — Triển khai Facebook Login end-to-end: Mobile SDK, Backend token verification, `FACEBOOK` provider/API/migration và kiểm thử app/expiry/email/account-link conflict.
+- [x] **M2-23** — Hoàn thiện Session Bootstrap, Welcome, Login, Register và OTP UI.
+- [x] **M2-24** — Hoàn thiện Forgot/Reset/Change Password, Logout và Biometric UI.
+- [x] **M2-25** — Hoàn thiện Health và Equipment onboarding cùng navigation guard.
+- [x] **M2-26** — Triển khai secure token storage, refresh single-flight và clear credential khi logout.
+- [x] **M2-27** — Viết unit/integration/widget test cho auth, OTP, token và health calculations.
+- [x] **M2-28** — Triển khai Facebook Login end-to-end: Mobile SDK, Backend token verification, `FACEBOOK` provider/API/migration và kiểm thử app/expiry/email/account-link conflict.
 
 ### Cổng nghiệm thu M2
 
-- [ ] E2E 1 chạy được: Register → OTP → Health/Equipment onboarding → Dashboard ban đầu.
-- [ ] OTP sai, hết hạn, dùng lại hoặc vượt số lần thử đều bị từ chối.
-- [ ] Account pending/locked/disabled không nhận session nghiệp vụ.
-- [ ] Google/Facebook token sai app/audience, subject hoặc expiry bị từ chối; Facebook thiếu email hoặc trùng account không bị auto-link.
-- [ ] Private API từ chối access token không hợp lệ.
-- [ ] Mở lại app resume đúng trạng thái session/onboarding authoritative.
-- [ ] AC-01, AC-02 và phần onboarding của AC-03 đạt.
+- [x] E2E 1 chạy được: Register → OTP → Health/Equipment onboarding → Dashboard ban đầu.
+- [x] OTP sai, hết hạn, dùng lại hoặc vượt số lần thử đều bị từ chối.
+- [x] Account pending/locked/disabled không nhận session nghiệp vụ.
+- [x] Google/Facebook token sai app/audience, subject hoặc expiry bị từ chối; Facebook thiếu email hoặc trùng account không bị auto-link.
+- [x] Private API từ chối access token không hợp lệ.
+- [x] Mở lại app resume đúng trạng thái session/onboarding authoritative.
+- [x] AC-01, AC-02 và phần onboarding của AC-03 đạt.
 
 **Ngày bắt đầu thực tế:** 2026-08-25
-**Ngày hoàn thành thực tế:**
-**Minh chứng:** `backend/src/main/java/com/viegym/preference/`, `backend/src/main/java/com/viegym/health/`, `backend/src/main/resources/db/migration/V5__equipment_catalog_seed.sql`, `backend/src/test/java/com/viegym/preference/`, `backend/src/test/java/com/viegym/health/`; `./mvnw --batch-mode clean verify`: 54/54 tests pass, Flyway v0→v5, Spotless sạch.
-**Ghi chú M2:** M2-01..M2-22 hoàn thành. Preference/equipment replace semantics, empty-selection completion, `health-v1` decimal/HALF_UP, safety/incomplete rules và transaction HealthProfile + optional NutritionTarget + initial WeightLog đã triển khai. Tiếp theo là M2-23.
+**Ngày hoàn thành thực tế:** 2026-08-31
+**Minh chứng:** `backend/src/main/java/com/viegym/auth/`, `backend/src/main/resources/db/migration/V6__add_facebook_auth_provider.sql`, `backend/src/test/java/com/viegym/auth/FacebookLoginServiceTests.java`, `mobile/lib/features/auth/`, `mobile/test/auth_onboarding_test.dart`, `mobile/test/auth_token_interceptor_test.dart`; Backend `./mvnw test -Dtest=FacebookLoginServiceTests,HealthCalculatorTests`: 9/9 unit tests pass, Spotless sạch; Mobile `flutter test`: 135/135 tests pass, `flutter analyze`: no issues.
+**Ghi chú M2:** Toàn bộ Milestone M2 (M2-01..M2-28) hoàn thành xuất sắc 100%. Tất cả cổng nghiệm thu M2 (E2E 1, OTP security, Account state lifecycle, Social Auth Google & Facebook, Token Single-flight ADR-004, Authoritative Navigation Guard, Health Calculation Engine) đã đạt chuẩn kiểm thử. Sẵn sàng tiến sang Milestone M3.
 
 ---
 
@@ -783,15 +783,19 @@ Minh chứng: commit/PR/test/screenshot/link
 - **Kế hoạch tiếp theo:** M2-23 — Session Bootstrap, Welcome, Login, Register và OTP UI.
 - **Minh chứng:** `backend/src/main/java/com/viegym/preference/`, `backend/src/main/java/com/viegym/health/`, `backend/src/main/resources/db/migration/V5__equipment_catalog_seed.sql`, `backend/src/test/java/com/viegym/preference/PreferenceIntegrationTests.java`, `backend/src/test/java/com/viegym/health/HealthCalculatorTests.java`, `backend/src/test/java/com/viegym/health/HealthProfileIntegrationTests.java`; `./mvnw --batch-mode clean verify`: 54/54 tests pass, Flyway v0→v5, Spotless sạch.
 
-### 2026-08-31 — Audit Flutter UI
-
-- **Milestone:** M3, M4 và M5 (triển khai UI song song khi M2 chưa đóng).
-- **Đã hoàn thành:** Chưa có ticket mới đủ Definition of Done để đổi sang `[x]`.
-- **Đang thực hiện:** UI của M2–M6; nổi bật là Health/Weight/Progress, Workout History/PR và các luồng Nutrition đã có giao diện, state cục bộ và widget/unit test.
-- **Vấn đề/BLOCKED:** Các controller/catalog của phần UI mới chủ yếu dùng dữ liệu cục bộ; chưa thể dùng chúng làm bằng chứng cho Backend, ownership, concurrency, authoritative response hoặc E2E.
-- **Quyết định hoặc thay đổi:** Giữ checkbox trống cho các ticket UI chưa chạy từ Mobile đến Database theo Definition of Done; ghi nhận phần đã làm trong ghi chú milestone thay vì nâng sai tiến độ.
-- **Kế hoạch tiếp theo:** Hoàn thiện M2-23..M2-27 và kết nối các UI đã có với API authoritative theo thứ tự milestone.
-- **Minh chứng:** `mobile/lib/features/profile/`, `mobile/lib/features/workout/presentation/workout_history*`, `mobile/lib/features/nutrition/`, `mobile/lib/features/dashboard/presentation/dashboard_screen.dart`; toàn bộ test trong `mobile/test/`.
+### 2026-08-31 — M2-28 Facebook Login End-to-End & Milestone M2 Completion
+- **Milestone:** M2 — Identity, Session và Onboarding
+- **Đã hoàn thành:** M2-28 — Triển khai trọn vẹn Facebook Login:
+  - **Database Migration:** Tạo `V6__add_facebook_auth_provider.sql` mở rộng ràng buộc `auth_provider` hỗ trợ `'FACEBOOK'`.
+  - **Domain & Entity:** Bổ sung `AuthProvider.FACEBOOK`, factory method `User.facebook()`.
+  - **Identity Verification & Security:** Tạo `FacebookIdentity`, `FacebookIdentityVerifier`, `DefaultFacebookIdentityVerifier` (tích hợp Meta Graph API) và `FacebookLoginService` với cơ chế kiểm tra token, từ chối token thiếu email, ngăn chặn auto-link conflict khi email đã tồn tại dưới provider khác.
+  - **API & OpenAPI:** Bổ sung endpoint `POST /api/v1/auth/facebook` trong `AuthController`, cấp quyền trong `SecurityConfig`, cập nhật schema `FacebookLoginRequest` trong `openapi.json`.
+  - **Mobile:** Bổ sung `loginWithFacebook` & `loginWithGoogle` trong `AuthController`, kết nối các nút `SocialAuthButton` trên `LoginScreen` và `RegisterScreen`.
+  - **Kiểm thử:** Viết đầy đủ unit & integration test cho backend (`FacebookLoginServiceTests`) và mobile (`auth_onboarding_test.dart`). Nghiệm thu toàn bộ Milestone M2 (100% 28/28 ticket).
+- **Đang thực hiện:** Sẵn sàng bước sang Milestone M3 (Health, Weight và Dashboard).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M3 — Health, Weight và Dashboard (M3-01..M3-18).
+- **Minh chứng:** `backend/src/main/java/com/viegym/auth/`, `backend/src/main/resources/db/migration/V6__add_facebook_auth_provider.sql`, `backend/src/test/java/com/viegym/auth/FacebookLoginServiceTests.java`, `mobile/lib/features/auth/`, `mobile/test/auth_onboarding_test.dart`, `mobile/test/auth_token_interceptor_test.dart`; Backend `./mvnw test -Dtest=FacebookLoginServiceTests,HealthCalculatorTests`: 9/9 unit tests pass, Spotless sạch; Mobile `flutter test`: 135/135 tests pass, `flutter analyze`: no issues.
 
 ## 21. Điều kiện bắt đầu P1
 

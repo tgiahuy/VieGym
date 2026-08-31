@@ -79,6 +79,19 @@ public class User {
         return user;
     }
 
+    public static User facebook(String email, String providerSubject, OffsetDateTime now) {
+        User user = new User();
+        user.email = email;
+        user.authProvider = AuthProvider.FACEBOOK;
+        user.providerSubject = providerSubject;
+        user.role = UserRole.USER;
+        user.status = AccountStatus.ACTIVE;
+        user.emailVerifiedAt = now;
+        user.createdAt = now;
+        user.updatedAt = now;
+        return user;
+    }
+
     public Long id() {
         return id;
     }
@@ -129,5 +142,9 @@ public class User {
         this.emailVerifiedAt = now;
         this.status = AccountStatus.ACTIVE;
         this.updatedAt = now;
+    }
+
+    public void lock() {
+        this.status = AccountStatus.LOCKED;
     }
 }

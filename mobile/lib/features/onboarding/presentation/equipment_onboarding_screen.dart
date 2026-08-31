@@ -25,11 +25,17 @@ class _EquipmentOnboardingScreenState
   }
 
   void _finish() {
+    ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Thiết lập hoàn tất! Chào mừng bạn đến với VieGym'),
       ),
     );
+    context.go('/home');
+  }
+
+  void _skip() {
+    ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
     context.go('/home');
   }
 
@@ -96,18 +102,45 @@ class _EquipmentOnboardingScreenState
         children: [
           // Quick presets
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.tune_rounded, size: 16, color: colors.primary),
-              const SizedBox(width: 6),
-              Text(
-                'MẪU THIẾT LẬP NHANH',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                  color: colors.onSurfaceVariant,
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.tune_rounded, size: 16, color: colors.primary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'MẪU THIẾT LẬP NHANH',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (selectedIds.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    notifier.clearAll();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Đã bỏ chọn tất cả thiết bị')),
+                    );
+                  },
+                  child: Text(
+                    'Bỏ chọn tất cả',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: colors.error,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -281,7 +314,7 @@ class _EquipmentOnboardingScreenState
             Expanded(
               flex: 1,
               child: OutlinedButton(
-                onPressed: () => context.go('/home'),
+                onPressed: _skip,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(0, 52),
                   shape: RoundedRectangleBorder(

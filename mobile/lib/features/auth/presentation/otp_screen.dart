@@ -1,12 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/auth_header.dart';
 import '../application/auth_controller.dart';
+import '../domain/auth_state.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
-  const OtpScreen({super.key});
+  const OtpScreen({
+    super.key,
+    this.email,
+    this.purpose = OtpPurpose.register,
+  });
+
+  final String? email;
+  final OtpPurpose purpose;
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -19,8 +29,35 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
 
+  Timer? _timer;
+  int _cooldownSeconds = 60;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCooldownTimer();
+  }
+
+  void _startCooldownTimer() {
+    _timer?.cancel();
+    setState(() {
+      _cooldownSeconds = 60;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      if (_cooldownSeconds > 0) {
+        setState(() {
+          _cooldownSeconds--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _timer?.cancel();
     for (final controller in _controllers) {
       controller.dispose();
     }
@@ -32,28 +69,66 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   String get _otpCode => _controllers.map((c) => c.text).join();
 
+  String get _effectiveEmail {
+    final authState = ref.read(authProvider);
+    return widget.email ?? authState.pendingEmail ?? 'user@viegym.vn';
+  }
+
+  OtpPurpose get _effectivePurpose {
+    final authState = ref.read(authProvider);
+    return widget.email != null ? widget.purpose : authState.pendingPurpose;
+  }
+
   Future<void> _verifyOtp() async {
     final code = _otpCode;
     if (code.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đủ 6 chữ số')),
+        const SnackBar(content: Text('Vui lòng nhập đủ 6 chữ số OTP.')),
       );
       return;
     }
 
-    final success = await ref.read(authProvider.notifier).verifyOtp(code);
+    final success = await ref
+        .read(authProvider.notifier)
+        .verifyOtp(code, purpose: _effectivePurpose);
+
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Xác thực thành công!')));
-        context.go('/onboarding/health');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Xác thực thành công!')),
+        );
+        if (_effectivePurpose == OtpPurpose.register) {
+          context.go('/onboarding/health');
+        } else if (_effectivePurpose == OtpPurpose.passwordReset) {
+          context.push('/reset-password', extra: {'email': _effectiveEmail});
+        } else {
+          context.go('/login');
+        }
       } else {
         final error = ref.read(authProvider).errorMessage;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error ?? 'Xác thực thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error ?? 'Xác thực thất bại')),
+        );
       }
+    }
+  }
+
+  Future<void> _handleResend() async {
+    if (_cooldownSeconds > 0) return;
+
+    final success = await ref
+        .read(authProvider.notifier)
+        .resendOtp(email: _effectiveEmail, purpose: _effectivePurpose);
+
+    if (mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã gửi lại mã OTP tới ${AuthState.maskEmail(_effectiveEmail)}',
+          ),
+        ),
+      );
+      _startCooldownTimer();
     }
   }
 
@@ -76,6 +151,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final colors = Theme.of(context).colorScheme;
+    final purpose = _effectivePurpose;
+    final maskedEmail = AuthState.maskEmail(_effectiveEmail);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -86,13 +163,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               AuthHeader(
-                title: 'Xác thực OTP',
-                subtitle:
-                    'Nhập mã 6 chữ số chúng tôi vừa gửi đến email của bạn',
+                title: purpose.displayName,
+                subtitle: '${purpose.subtitle}\n$maskedEmail',
                 icon: Icons.shield_outlined,
                 onBack: () => context.pop(),
               ),
               const SizedBox(height: 36),
+
+              // OTP 6-digit inputs
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (index) {
@@ -105,6 +183,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       maxLength: 1,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -135,12 +214,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 }),
               ),
               const SizedBox(height: 14),
+
               Text(
                 '(Mẹo: Nhập 123456 hoặc 6 số bất kỳ để tiếp tục)',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
               ),
               const SizedBox(height: 30),
+
+              // Submit Button
               FilledButton(
                 onPressed: authState.isLoading ? null : _verifyOtp,
                 child: authState.isLoading
@@ -158,21 +240,28 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       ),
               ),
               const SizedBox(height: 18),
+
+              // Resend Action with Cooldown Timer
               Center(
-                child: TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đã gửi lại mã OTP qua email!'),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Chưa nhận được mã? Gửi lại',
+                child: TextButton.icon(
+                  onPressed: _cooldownSeconds == 0 ? _handleResend : null,
+                  icon: Icon(
+                    Icons.replay_rounded,
+                    size: 16,
+                    color: _cooldownSeconds == 0
+                        ? colors.primary
+                        : colors.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                  label: Text(
+                    _cooldownSeconds > 0
+                        ? 'Gửi lại mã sau (${_cooldownSeconds}s)'
+                        : 'Chưa nhận được mã? Gửi lại',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: colors.primary,
+                      color: _cooldownSeconds == 0
+                          ? colors.primary
+                          : colors.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                   ),
                 ),

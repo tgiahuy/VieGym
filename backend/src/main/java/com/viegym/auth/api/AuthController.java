@@ -1,5 +1,6 @@
 package com.viegym.auth.api;
 
+import com.viegym.auth.application.FacebookLoginService;
 import com.viegym.auth.application.GoogleLoginService;
 import com.viegym.auth.application.LoginService;
 import com.viegym.auth.application.OtpResendService;
@@ -34,6 +35,7 @@ public class AuthController {
     private final SessionService sessionService;
     private final PasswordService passwordService;
     private final GoogleLoginService googleLoginService;
+    private final FacebookLoginService facebookLoginService;
 
     public AuthController(
             RegistrationService registrationService,
@@ -42,7 +44,8 @@ public class AuthController {
             LoginService loginService,
             SessionService sessionService,
             PasswordService passwordService,
-            GoogleLoginService googleLoginService) {
+            GoogleLoginService googleLoginService,
+            FacebookLoginService facebookLoginService) {
         this.registrationService = registrationService;
         this.otpVerificationService = otpVerificationService;
         this.otpResendService = otpResendService;
@@ -50,6 +53,7 @@ public class AuthController {
         this.sessionService = sessionService;
         this.passwordService = passwordService;
         this.googleLoginService = googleLoginService;
+        this.facebookLoginService = facebookLoginService;
     }
 
     @PostMapping("/register")
@@ -81,6 +85,12 @@ public class AuthController {
     @PostMapping("/google")
     ResponseEntity<ApiResponse<SessionResponse>> google(@RequestBody GoogleLoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(googleLoginService.login(request)));
+    }
+
+    @PostMapping("/facebook")
+    ResponseEntity<ApiResponse<SessionResponse>> facebook(
+            @RequestBody FacebookLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(facebookLoginService.login(request)));
     }
 
     @PostMapping("/refresh")

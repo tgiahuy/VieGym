@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:viegym/core/network/token_storage.dart';
 import 'package:viegym/features/auth/application/auth_controller.dart';
 import 'package:viegym/features/auth/domain/auth_state.dart';
+import 'package:viegym/features/auth/presentation/forgot_password_screen.dart';
 import 'package:viegym/features/auth/presentation/login_screen.dart';
+import 'package:viegym/features/auth/presentation/otp_screen.dart';
 import 'package:viegym/features/auth/presentation/register_screen.dart';
+import 'package:viegym/features/auth/presentation/reset_password_screen.dart';
+import 'package:viegym/features/auth/presentation/splash_screen.dart';
 import 'package:viegym/features/auth/presentation/welcome_screen.dart';
 import 'package:viegym/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:viegym/features/onboarding/application/health_profile_controller.dart';
 import 'package:viegym/features/onboarding/data/equipment_catalog.dart';
 import 'package:viegym/features/onboarding/domain/user_profile_models.dart';
+import 'package:viegym/features/onboarding/presentation/equipment_onboarding_screen.dart';
 import 'package:viegym/features/onboarding/presentation/health_profile_onboarding_screen.dart';
+import 'package:viegym/features/profile/presentation/account_security_screen.dart';
 import 'package:viegym/shared/utils/greeting_utils.dart';
 import 'package:viegym/shared/widgets/brand_icons.dart';
 import 'package:viegym/shared/widgets/ruler_picker.dart';
@@ -95,6 +103,40 @@ void main() {
       expect(state.isAuthenticated, isTrue);
     });
 
+    test('loginWithGoogle completes authentication and saves tokens', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final success =
+          await container.read(authProvider.notifier).loginWithGoogle();
+      expect(success, isTrue);
+
+      final state = container.read(authProvider);
+      expect(state.status, AuthStatus.authenticated);
+      expect(state.user?.displayName, 'Google Athlete');
+      expect(
+        await container.read(tokenStorageProvider).hasRefreshToken(),
+        isTrue,
+      );
+    });
+
+    test('loginWithFacebook completes authentication and saves tokens', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final success =
+          await container.read(authProvider.notifier).loginWithFacebook();
+      expect(success, isTrue);
+
+      final state = container.read(authProvider);
+      expect(state.status, AuthStatus.authenticated);
+      expect(state.user?.displayName, 'Facebook Athlete');
+      expect(
+        await container.read(tokenStorageProvider).hasRefreshToken(),
+        isTrue,
+      );
+    });
+
     test(
       'Register stores pending email and verifyOtp completes authentication',
       () async {
@@ -139,6 +181,105 @@ void main() {
       expect(state.status, AuthStatus.error);
       expect(state.errorMessage, contains('không khớp'));
     });
+
+    test('maskEmail correctly masks username while keeping domain', () {
+      expect(AuthState.maskEmail('nguyen@viegym.vn'), 'n***n@viegym.vn');
+      expect(AuthState.maskEmail('ab@viegym.vn'), 'a***@viegym.vn');
+      expect(AuthState.maskEmail('user@gmail.com'), 'u***r@gmail.com');
+      expect(AuthState.maskEmail('invalid-email'), 'invalid-email');
+    });
+
+    test('resendOtp updates cooldown seconds and pending parameters', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final success = await container
+          .read(authProvider.notifier)
+          .resendOtp(email: 'test@viegym.vn', purpose: OtpPurpose.register);
+
+      expect(success, isTrue);
+      final state = container.read(authProvider);
+      expect(state.pendingEmail, 'test@viegym.vn');
+      expect(state.pendingPurpose, OtpPurpose.register);
+      expect(state.resendCooldownSeconds, 60);
+    });
+
+    test('forgotPassword sets pending verification with passwordReset purpose', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final success = await container
+          .read(authProvider.notifier)
+          .forgotPassword('reset@viegym.vn');
+
+      expect(success, isTrue);
+      final state = container.read(authProvider);
+      expect(state.pendingEmail, 'reset@viegym.vn');
+      expect(state.pendingPurpose, OtpPurpose.passwordReset);
+      expect(state.isPendingVerification, isTrue);
+    });
+
+    test('resetPassword validates matching and min length', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Mismatched
+      final failMismatch = await container
+          .read(authProvider.notifier)
+          .resetPassword(
+            email: 'user@viegym.vn',
+            newPassword: 'password123',
+            confirmPassword: 'wrongpassword',
+          );
+      expect(failMismatch, isFalse);
+      expect(container.read(authProvider).errorMessage, contains('không khớp'));
+
+      // Short password
+      final failShort = await container
+          .read(authProvider.notifier)
+          .resetPassword(
+            email: 'user@viegym.vn',
+            newPassword: '123',
+            confirmPassword: '123',
+          );
+      expect(failShort, isFalse);
+      expect(container.read(authProvider).errorMessage, contains('ít nhất 6 ký tự'));
+
+      // Success
+      final success = await container
+          .read(authProvider.notifier)
+          .resetPassword(
+            email: 'user@viegym.vn',
+            newPassword: 'newpassword123',
+            confirmPassword: 'newpassword123',
+          );
+      expect(success, isTrue);
+      expect(container.read(authProvider).status, AuthStatus.unauthenticated);
+    });
+
+    test('changePassword validates fields and updates authenticated state', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final failEmpty = await container
+          .read(authProvider.notifier)
+          .changePassword(
+            currentPassword: '',
+            newPassword: 'password123',
+            confirmPassword: 'password123',
+          );
+      expect(failEmpty, isFalse);
+
+      final success = await container
+          .read(authProvider.notifier)
+          .changePassword(
+            currentPassword: 'oldPassword123',
+            newPassword: 'newPassword123',
+            confirmPassword: 'newPassword123',
+          );
+      expect(success, isTrue);
+      expect(container.read(authProvider).status, AuthStatus.authenticated);
+    });
   });
 
   group('HealthProfile calculation tests', () {
@@ -162,17 +303,74 @@ void main() {
       expect(profile.tdee, equals((1674 * 1.55).round() + 300));
     });
 
-    test('TDEE adjusts correctly for cutting / fat loss goal', () {
-      const profile = HealthProfile(
-        gender: BiologicalGender.female,
-        heightCm: 160,
-        weightKg: 55,
-        goal: FitnessGoal.loseFat,
-        activityLevel: ActivityLevel.light,
-      );
+    test('BMI Category correctly classifies underweight, normal, pre-obese, and obese', () {
+      // Underweight (< 18.5)
+      const underweight = HealthProfile(heightCm: 175, weightKg: 50);
+      expect(underweight.bmiCategory, 'Nhẹ cân');
 
-      final expectedBase = (profile.bmr * 1.375).round();
-      expect(profile.tdee, equals(expectedBase - 400));
+      // Normal (18.5 - 24.9)
+      const normal = HealthProfile(heightCm: 175, weightKg: 68);
+      expect(normal.bmiCategory, 'Bình thường');
+
+      // Pre-obese (25.0 - 29.9)
+      const preObese = HealthProfile(heightCm: 175, weightKg: 80);
+      expect(preObese.bmiCategory, 'Tiền béo phì');
+
+      // Obese (>= 30.0)
+      const obese = HealthProfile(heightCm: 175, weightKg: 100);
+      expect(obese.bmiCategory, 'Béo phì');
+    });
+
+    test('BMR calculations for Female and Non-binary / Other offsets', () {
+      // Base: 10 * 60 + 6.25 * 165 - 5 * 25 = 600 + 1031.25 - 125 = 1506.25
+      // Female offset: base - 161 = 1345.25 -> 1345
+      const female = HealthProfile(
+        gender: BiologicalGender.female,
+        heightCm: 165,
+        weightKg: 60,
+        age: 25,
+      );
+      expect(female.bmr, 1345);
+
+      // Other / Non-binary offset: base - 78 = 1428.25 -> 1428
+      const nonBinary = HealthProfile(
+        gender: BiologicalGender.other,
+        heightCm: 165,
+        weightKg: 60,
+        age: 25,
+      );
+      expect(nonBinary.bmr, 1428);
+    });
+
+    test('TDEE adjusts correctly for all fitness goals', () {
+      const baseProfile = HealthProfile(
+        gender: BiologicalGender.male,
+        heightCm: 170,
+        weightKg: 70,
+        age: 25,
+        activityLevel: ActivityLevel.active, // 1.55 multiplier
+      );
+      final baseTdee = (baseProfile.bmr * 1.55).round();
+
+      // Gain muscle (+300)
+      expect(baseProfile.copyWith(goal: FitnessGoal.gainMuscle).tdee, baseTdee + 300);
+
+      // Lose fat (-400)
+      expect(baseProfile.copyWith(goal: FitnessGoal.loseFat).tdee, baseTdee - 400);
+
+      // Build strength (+150)
+      expect(baseProfile.copyWith(goal: FitnessGoal.buildStrength).tdee, baseTdee + 150);
+
+      // Maintain (0)
+      expect(baseProfile.copyWith(goal: FitnessGoal.maintain).tdee, baseTdee);
+    });
+
+    test('weightDifference calculates correct target offset', () {
+      const cuttingProfile = HealthProfile(weightKg: 80, targetWeightKg: 72);
+      expect(cuttingProfile.weightDifference, -8);
+
+      const bulkingProfile = HealthProfile(weightKg: 65, targetWeightKg: 70);
+      expect(bulkingProfile.weightDifference, 5);
     });
 
     test('BMR adjusts correctly when age changes', () {
@@ -549,6 +747,402 @@ void main() {
         expect(find.text('Facebook'), findsOneWidget);
         expect(find.byType(GoogleLogo), findsOneWidget);
         expect(find.byType(FacebookLogo), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'SplashScreen renders brand logo, motto, and loading indicator',
+      (tester) async {
+        await tester.pumpWidget(
+          const ProviderScope(child: MaterialApp(home: SplashScreen())),
+        );
+        // pump frames for animation
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(VieGymLogo), findsOneWidget);
+        expect(find.text('VIEGYM'), findsOneWidget);
+        expect(find.text('Luyện tập & Dinh dưỡng thông minh'), findsOneWidget);
+        expect(find.text('Đang khởi tạo phiên làm việc...'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // advance timer without pumpAndSettle due to repeating pulse animation
+        await tester.pump(const Duration(milliseconds: 650));
+      },
+    );
+
+    testWidgets(
+      'OtpScreen renders 6 digits input, masked email, and cooldown button',
+      (tester) async {
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              home: OtpScreen(
+                email: 'nguyenvana@gmail.com',
+                purpose: OtpPurpose.register,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Xác thực đăng ký'), findsOneWidget);
+        expect(find.textContaining('n***a@gmail.com'), findsOneWidget);
+        expect(find.byType(TextField), findsNWidgets(6));
+        expect(find.text('Xác nhận mã OTP'), findsOneWidget);
+        expect(find.textContaining('Gửi lại mã sau'), findsOneWidget);
+
+        // Enter OTP digit
+        await tester.enterText(find.byType(TextField).first, '1');
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'OtpScreen supports passwordReset purpose variant',
+      (tester) async {
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              home: OtpScreen(
+                email: 'user@viegym.vn',
+                purpose: OtpPurpose.passwordReset,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Xác thực đặt lại mật khẩu'), findsOneWidget);
+        expect(find.textContaining('đặt lại mật khẩu mới'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ForgotPasswordScreen renders email field and submits OTP request',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final router = GoRouter(
+          initialLocation: '/forgot',
+          routes: [
+            GoRoute(
+              path: '/forgot',
+              builder: (_, _) => const ForgotPasswordScreen(),
+            ),
+            GoRoute(
+              path: '/otp',
+              builder: (_, _) => const Scaffold(body: Text('OTP Screen Target')),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp.router(
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Quên mật khẩu'), findsOneWidget);
+        expect(find.text('Email đã đăng ký'), findsOneWidget);
+        expect(find.text('Gửi mã xác thực OTP'), findsOneWidget);
+        expect(find.text('Đăng nhập'), findsOneWidget);
+
+        // Enter valid email and submit
+        await tester.enterText(find.byType(TextFormField), 'test@viegym.vn');
+        await tester.tap(find.text('Gửi mã xác thực OTP'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('OTP Screen Target'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ResetPasswordScreen renders checklist, fields, and handles password reset',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final router = GoRouter(
+          initialLocation: '/reset',
+          routes: [
+            GoRoute(
+              path: '/reset',
+              builder: (_, _) =>
+                  const ResetPasswordScreen(email: 'user@viegym.vn'),
+            ),
+            GoRoute(
+              path: '/login',
+              builder: (_, _) =>
+                  const Scaffold(body: Text('Login Screen Target')),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp.router(
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Đặt lại mật khẩu'), findsAtLeast(1));
+        expect(find.text('Mật khẩu mới'), findsOneWidget);
+        expect(find.text('Xác nhận mật khẩu mới'), findsOneWidget);
+        expect(find.text('Yêu cầu mật khẩu:'), findsOneWidget);
+        expect(find.text('Tối thiểu 6 ký tự'), findsOneWidget);
+
+        // Enter new password & confirm
+        final textFields = find.byType(TextFormField);
+        await tester.enterText(textFields.first, 'Secret123');
+        await tester.enterText(textFields.last, 'Secret123');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Đặt lại mật khẩu').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Login Screen Target'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'AccountSecurityScreen renders Change Password, Biometric and 2FA toggles',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 1100);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(home: AccountSecurityScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Bảo mật tài khoản'), findsOneWidget);
+        expect(find.text('Đổi mật khẩu'), findsOneWidget);
+        expect(find.text('Mật khẩu hiện tại'), findsOneWidget);
+        expect(find.text('Xác thực Sinh trắc học'), findsOneWidget);
+        expect(find.text('Mở khóa nhanh Face ID / Vân tay'), findsOneWidget);
+        expect(find.text('Bảo vệ 2 lớp (2FA)'), findsOneWidget);
+        expect(find.text('iPhone 17 Pro Max (Thiết bị này)'), findsOneWidget);
+
+        // Toggle Biometric switch
+        final switches = find.byType(Switch);
+        expect(switches, findsNWidgets(2));
+        await tester.tap(switches.first);
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Đã tắt xác thực sinh trắc học'), findsOneWidget);
+      },
+    );
+
+    test('resolveOnboardingRoute directs users according to authoritative session & onboarding status', () {
+      expect(
+        resolveOnboardingRoute(
+          isAuthenticated: false,
+          isHealthProfileCompleted: false,
+          isEquipmentOnboardingCompleted: false,
+        ),
+        '/welcome',
+      );
+
+      expect(
+        resolveOnboardingRoute(
+          isAuthenticated: true,
+          isHealthProfileCompleted: false,
+          isEquipmentOnboardingCompleted: false,
+        ),
+        '/onboarding/health',
+      );
+
+      expect(
+        resolveOnboardingRoute(
+          isAuthenticated: true,
+          isHealthProfileCompleted: true,
+          isEquipmentOnboardingCompleted: false,
+        ),
+        '/onboarding/equipment',
+      );
+
+      expect(
+        resolveOnboardingRoute(
+          isAuthenticated: true,
+          isHealthProfileCompleted: true,
+          isEquipmentOnboardingCompleted: true,
+        ),
+        '/home',
+      );
+    });
+
+    testWidgets(
+      'EquipmentOnboardingScreen renders presets, clear all, and completes onboarding',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 1100);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final router = GoRouter(
+          initialLocation: '/equipment',
+          routes: [
+            GoRoute(
+              path: '/equipment',
+              builder: (_, _) => const EquipmentOnboardingScreen(),
+            ),
+            GoRoute(
+              path: '/home',
+              builder: (_, _) => const Scaffold(body: Text('Home Target Screen')),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp.router(
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Thiết bị của bạn'), findsOneWidget);
+        expect(find.text('MẪU THIẾT LẬP NHANH'), findsOneWidget);
+        expect(find.text('🏋️ Full Gym'), findsOneWidget);
+        expect(find.text('🏠 Tạ đơn & Dây'), findsOneWidget);
+        expect(find.text('🤸 Bodyweight'), findsOneWidget);
+        expect(find.text('Bỏ chọn tất cả'), findsOneWidget);
+        expect(find.text('Bỏ qua'), findsOneWidget);
+        expect(find.text('Hoàn tất & Bắt đầu'), findsOneWidget);
+
+        // Tap 'Bỏ chọn tất cả'
+        await tester.tap(find.text('Bỏ chọn tất cả'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Đã bỏ chọn tất cả thiết bị'), findsOneWidget);
+
+        // Tap 'Hoàn tất & Bắt đầu'
+        await tester.tap(find.text('Hoàn tất & Bắt đầu'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Home Target Screen'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'OtpScreen handles invalid OTP error gracefully',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              home: OtpScreen(email: 'user@viegym.vn'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Incomplete code -> tap 'Xác nhận mã OTP'
+        await tester.tap(find.text('Xác nhận mã OTP'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Vui lòng nhập đủ 6 chữ số'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'E2E Flow 1: Register -> OTP -> Health Profile transition',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 1100);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final router = GoRouter(
+          initialLocation: '/register',
+          routes: [
+            GoRoute(
+              path: '/register',
+              builder: (_, _) => const RegisterScreen(),
+            ),
+            GoRoute(
+              path: '/otp',
+              builder: (_, state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                return OtpScreen(
+                  email: extra?['email'] as String? ?? 'athlete@viegym.vn',
+                  purpose: extra?['purpose'] as OtpPurpose? ?? OtpPurpose.register,
+                );
+              },
+            ),
+            GoRoute(
+              path: '/onboarding/health',
+              builder: (_, _) => const HealthProfileOnboardingScreen(),
+            ),
+            GoRoute(
+              path: '/onboarding/equipment',
+              builder: (_, _) => const EquipmentOnboardingScreen(),
+            ),
+            GoRoute(
+              path: '/home',
+              builder: (_, _) => const Scaffold(body: Text('Initial Dashboard Target')),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Register step
+        expect(find.text('Đăng ký tài khoản'), findsAtLeast(1));
+        final fields = find.byType(TextFormField);
+        await tester.enterText(fields.at(0), 'athlete@viegym.vn');
+        await tester.enterText(fields.at(1), 'Password123');
+        await tester.enterText(fields.at(2), 'Password123');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(FilledButton));
+        await tester.pumpAndSettle();
+
+        // 2. OTP step
+        expect(find.text('Xác thực đăng ký'), findsOneWidget);
+        final pinFields = find.byType(TextField);
+        for (int i = 0; i < 6; i++) {
+          await tester.enterText(pinFields.at(i), '${i + 1}');
+        }
+        await tester.pumpAndSettle();
+
+        // 3. Auto-verified on 6th digit -> Reached Health Profile Onboarding wizard
+        expect(find.text('Bước 1 / 11'), findsOneWidget);
       },
     );
   });

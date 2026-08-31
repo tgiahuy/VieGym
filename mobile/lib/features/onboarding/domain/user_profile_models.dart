@@ -104,6 +104,7 @@ class HealthProfile {
     this.experience = TrainingExperience.intermediate,
     this.workoutDaysPerWeek = 4,
     this.sessionDurationMinutes = 60,
+    this.isCompleted = true,
   });
 
   final String nickname;
@@ -117,6 +118,7 @@ class HealthProfile {
   final TrainingExperience experience;
   final int workoutDaysPerWeek;
   final int sessionDurationMinutes;
+  final bool isCompleted;
 
   double get bmi => weightKg / ((heightCm / 100) * (heightCm / 100));
 
@@ -164,6 +166,7 @@ class HealthProfile {
     TrainingExperience? experience,
     int? workoutDaysPerWeek,
     int? sessionDurationMinutes,
+    bool? isCompleted,
   }) {
     return HealthProfile(
       nickname: nickname ?? this.nickname,
@@ -178,6 +181,7 @@ class HealthProfile {
       workoutDaysPerWeek: workoutDaysPerWeek ?? this.workoutDaysPerWeek,
       sessionDurationMinutes:
           sessionDurationMinutes ?? this.sessionDurationMinutes,
+      isCompleted: isCompleted ?? this.isCompleted,
     );
   }
 }

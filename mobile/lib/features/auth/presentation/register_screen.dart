@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/auth_header.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../../../shared/widgets/social_auth_button.dart';
+import '../../onboarding/application/health_profile_controller.dart';
 import '../application/auth_controller.dart';
+import '../domain/auth_state.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -43,12 +45,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     if (mounted) {
       if (success) {
+        final email = _emailController.text.trim();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đăng ký thành công! Vui lòng nhập mã OTP.'),
           ),
         );
-        context.push('/otp');
+        context.push('/otp', extra: {
+          'email': email,
+          'purpose': OtpPurpose.register,
+        });
       } else {
         final error = ref.read(authProvider).errorMessage;
         ScaffoldMessenger.of(
@@ -244,8 +250,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: SocialAuthButton(
                         label: 'Google',
                         icon: const GoogleLogo(size: 20),
-                        onPressed: () {
-                          context.push('/onboarding/health');
+                        onPressed: () async {
+                          final success = await ref
+                              .read(authProvider.notifier)
+                              .loginWithGoogle();
+                          if (context.mounted && success) {
+                            final healthProfile = ref.read(healthProfileProvider);
+                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final targetRoute = resolveOnboardingRoute(
+                              isAuthenticated: true,
+                              isHealthProfileCompleted: healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                            );
+                            context.go(targetRoute);
+                          }
                         },
                       ),
                     ),
@@ -254,8 +272,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: SocialAuthButton(
                         label: 'Facebook',
                         icon: const FacebookLogo(size: 20),
-                        onPressed: () {
-                          context.push('/onboarding/health');
+                        onPressed: () async {
+                          final success = await ref
+                              .read(authProvider.notifier)
+                              .loginWithFacebook();
+                          if (context.mounted && success) {
+                            final healthProfile = ref.read(healthProfileProvider);
+                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final targetRoute = resolveOnboardingRoute(
+                              isAuthenticated: true,
+                              isHealthProfileCompleted: healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                            );
+                            context.go(targetRoute);
+                          }
                         },
                       ),
                     ),

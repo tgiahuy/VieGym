@@ -3,8 +3,8 @@
 > Kiến trúc hệ thống tổng quan và chi tiết cho ứng dụng quản lý luyện tập,
 > dinh dưỡng, sức khỏe và AI Coach cá nhân hóa VieGym.
 >
-> **Phiên bản tài liệu:** 1.0 — 2026-08-19  
-> **Nguồn sự thật:** [SRS v3.0](../spec/specs.md),
+> **Phiên bản tài liệu:** 1.2 — 2026-08-31
+> **Nguồn sự thật:** [SRS v3.2](../spec/specs.md),
 > [phân rã phân hệ](../spec/phan_ra_phan_he_he_thong.md),
 > [luồng nghiệp vụ](../spec/bussiness_mainflow.md),
 > [phân rã tính năng](../spec/phan_ra_tinh_nang.md),
@@ -157,7 +157,8 @@ ObjectStorageService
 
 Token/Identity Verification
   ├── LocalCredentialService
-  └── GoogleIdentityVerifier
+  ├── GoogleIdentityVerifier
+  └── FacebookIdentityVerifier
 ```
 
 MVP chọn một AI provider mặc định qua cấu hình. Adapter provider còn lại chỉ
@@ -221,7 +222,7 @@ PENDING ──► APPLIED | DISMISSED | EXPIRED
 Các event nội bộ có thể dùng sau khi transaction thành công:
 
 ```text
-WorkoutCompleted       ──► Dashboard invalidation / Notification P1
+WorkoutCompleted       ──► Dashboard invalidation / Notification P0 local/in-app
 MealEntryChanged       ──► Dashboard invalidation / signal refresh
 WeightLogged           ──► Trend refresh / signal refresh
 RecommendationApplied ──► Audit / preference feedback
@@ -245,7 +246,7 @@ bất đồng bộ, retry bền vững hoặc scale độc lập được chứn
 
 | ID | Phân hệ | Dữ liệu sở hữu chính | Trách nhiệm |
 |---|---|---|---|
-| **PH1** | Identity & Auth | `User`, `RefreshToken`, `OtpCode` | Register/OTP, login, Google Login, refresh, logout, password và role |
+| **PH1** | Identity & Auth | `User`, `RefreshToken`, `OtpCode` | Register/OTP, login, Google/Facebook Login, refresh, logout, password và role |
 | **PH2** | User Profile & Preference | `UserProfile`, `UserPreference`, `UserEquipmentPreference` | Hồ sơ cơ bản, equipment, food/training preference và constraint |
 | **PH3** | Health & Body | `HealthProfile`, `NutritionTarget`, `WeightLog` | Metric authoritative, target, cân nặng và trend |
 | **PH4** | Workout | Exercise, Program, Schedule, Session và Log | Thư viện bài tập, lập lịch, ghi buổi tập, volume/completion/PR |
@@ -254,7 +255,7 @@ bất đồng bộ, retry bền vững hoặc scale độc lập được chứn
 | **PH7** | AI Coach | Consent, Conversation, Context Snapshot, Recommendation | Context, rule, chat, daily recommendation, validation và Apply/Dismiss |
 | **PH8** | Admin & Audit | `AuditLog`; metadata admin | Quản trị Exercise/Food P0 và truy vết mutation nhạy cảm |
 | **PH9** | Media & Storage | `MediaObject` | Upload, MIME/size validation, access policy và orphan cleanup |
-| **PH10** | Notification | `Notification`, `NotificationPreference` | Reminder/in-app notification P1; không phải source of truth |
+| **PH10** | Notification | `Notification`, `NotificationPreference` | Notification Center/reminder local/in-app P0; không phải source of truth |
 
 ### 4.1. Dependency Graph
 
@@ -324,7 +325,7 @@ Issue access token + refresh session
 - Account chưa verify không được cấp token nghiệp vụ.
 - Register và password reset dùng OTP purpose riêng.
 - Refresh token có expiry, revoke và rotation.
-- Google identity token được verify server-side.
+- Google identity token và Facebook access token được verify server-side.
 - Biometric chỉ mở credential local trong secure storage; biometric data không
   gửi lên server.
 - Response cho forgot/reset không làm lộ email có tồn tại hay không.
@@ -518,7 +519,8 @@ UPDATE_USER_PREFERENCE_PROPOSAL
 REVIEW_NUTRITION_TARGET_PROPOSAL
 ```
 
-`LOG_REMINDER_ONLY` dành cho notification P1, không xuất hiện trong P0.
+`LOG_REMINDER_ONLY` khả dụng trong P0 để tạo reminder qua PH10 sau review/xác nhận;
+không mutation domain và phải tôn trọng Notification Preference cùng AI Consent.
 Proposal tạo meal/schedule bắt buộc có `targetDate` trong cửa sổ cho phép và chỉ
 tham chiếu ID nằm trong candidate shortlist. Preference payload chỉ nhận key và
 value trong whitelist đã version hóa.
@@ -656,14 +658,16 @@ Redis mất dữ liệu không được làm mất session/business record autho
 /api/v1/health/**                  PH3 Health
 /api/v1/weight-logs/**             PH3 Body Tracking
 /api/v1/exercises/**               PH4 Exercise Catalog
+/api/v1/favorite-exercises/**      PH4 Favorite Exercise
 /api/v1/workout-*/**               PH4 Workout
 /api/v1/foods/**                   PH5 Food Catalog
+/api/v1/favorite-foods/**          PH5 Favorite Food
 /api/v1/meal-plans/**              PH5 Nutrition
 /api/v1/dashboard                  PH6 Dashboard
 /api/v1/ai/**                      PH7 AI Coach
 /api/v1/admin/**                   PH8 Admin/Audit
 /api/v1/media/**                   PH9 Media
-/api/v1/notifications/**           PH10 Notification — P1
+/api/v1/notifications/**           PH10 Notification — P0 local/in-app
 ```
 
 ### 8.3. Internal AI API
@@ -704,7 +708,8 @@ extension, object existence và visibility policy.
 - Refresh token có expiry, revoke và rotation; logout revoke đúng session.
 - OTP lưu dạng được bảo vệ, có purpose, TTL, attempts, resend cooldown và rate
   limit.
-- Google token được verify server-side trước khi liên kết/cấp phiên.
+- Google token và Facebook access token được verify server-side trước khi liên kết/cấp phiên; Backend không tin identity/profile do client tự gửi.
+- Social account không được tự động liên kết với account hiện có chỉ dựa trên email.
 - Token/session credential trên mobile nằm trong `flutter_secure_storage`,
   không lưu trong `shared_preferences`.
 
@@ -801,7 +806,7 @@ bổ sung theo phạm vi triển khai:
 | Mark missed schedule | Lazy materialize sau cutoff + grace theo profile timezone; bỏ qua session active | P0 authoritative |
 | Orphan media cleanup | Xóa object upload dở dang/không còn reference | P0 hardening |
 | Conversation summary | Giới hạn context budget | P0/P1 theo dung lượng chat |
-| Notification scheduler | Reminder workout/meal/weight | P1 |
+| Notification scheduler | Reminder workout/meal/weight local/in-app | P0; idempotent, preference/timezone-aware |
 | Weekly Review | Tạo aggregate/review tuần | P1 |
 
 Trong môi trường nhiều instance, scheduled job cần cơ chế single-execution hoặc
@@ -872,7 +877,7 @@ backend/
 │   ├── admin/                        ← PH8 use cases
 │   ├── audit/                        ← PH8 audit
 │   ├── media/                        ← PH9
-│   ├── notification/                 ← PH10 P1
+│   ├── notification/                 ← PH10 P0 local/in-app
 │   └── common/
 │       ├── config/
 │       ├── dto/
@@ -1068,6 +1073,7 @@ trúc P0 đã chốt. Chỉ thêm bằng ADR khi có yêu cầu vận hành và 
 - PH7 AI Consent, Context, Coach, Recommendation và Apply/Dismiss.
 - PH8 Admin Exercise/Food và audit tối thiểu.
 - PH9 Exercise/Food media baseline hoặc URL/asset demo hợp lệ theo SRS.
+- PH10 Notification Center, workout/meal/weight reminder local/in-app, preference và read/delete state.
 - Security, ownership, privacy và AI no-auto-mutation baseline.
 
 ### 15.3. P1
@@ -1075,7 +1081,6 @@ trúc P0 đã chốt. Chỉ thêm bằng ADR khi có yêu cầu vận hành và 
 - Weekly Review, Preference Memory và Plan Adjustment Proposal.
 - Admin User, import preview/validation, AI Rule/Prompt và metrics.
 - Admin Dashboard.
-- Local/in-app Notification.
 
 ### 15.4. P2/Future
 

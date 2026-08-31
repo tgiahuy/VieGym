@@ -280,6 +280,8 @@ Bucket `viegym-media` phải được một bootstrap job/script idempotent tạ
 | `JWT_ACCESS_TTL` | Backend | Có | Mặc định contract `PT15M` |
 | `JWT_REFRESH_TTL` | Backend | Có | Mặc định contract `P7D` |
 | `GOOGLE_CLIENT_ID` | Backend | Khi bật Google Login | Audience dùng verify token |
+| `FACEBOOK_APP_ID` | Backend | Khi bật Facebook Login | App ID bắt buộc khớp token do Meta cấp |
+| `FACEBOOK_APP_SECRET` | Backend | Khi bật Facebook Login | Secret dùng server-side để xác minh token; không đưa vào Mobile |
 | `OTP_TTL`, `OTP_MAX_ATTEMPTS`, `OTP_RESEND_COOLDOWN` | Backend | Có | ADR-005: `PT10M`, 5 attempts, `PT1M`; client không hard-code |
 | `SCHEDULE_MISSED_GRACE` | Backend | Có | Grace sau cuối ngày local trước khi materialize `MISSED`; pin cùng ADR-007 |
 | `MAIL_PROVIDER_*` | Backend | Khi gửi OTP email | Resend production/demo online; fake inbox local/test |
@@ -397,7 +399,7 @@ LOG_LEVEL=INFO
 ```
 
 - Pydantic settings phải fail fast khi thiếu config bắt buộc.
-- FastAPI không nhận `SPRING_DATASOURCE_*`, storage credential, JWT signing key hoặc Google client secret.
+- FastAPI không nhận `SPRING_DATASOURCE_*`, storage credential, JWT signing key hoặc social identity provider secret.
 - Provider name/model có thể ghi telemetry; API key và full prompt/context không được log.
 
 ### 4.4. Profiles
@@ -707,7 +709,7 @@ Core P0 không phụ thuộc message broker hoặc worker riêng. Job có thể 
 | Mark missed schedule | Lazy authoritative; scheduler chỉ materialize sớm | Sau cuối ngày + grace theo profile timezone | Bỏ qua session active; không đổi `CANCELLED/COMPLETED` |
 | Orphan media cleanup | Scheduler hardening | Theo retention/TTL | Xóa idempotent, bảo toàn reference |
 | Conversation summary | Khi context vượt budget | Sau message/async nội bộ | Không là source of truth domain |
-| Notification scheduler | Không P0 | P1 | Lỗi không rollback domain |
+| Notification scheduler | Scheduler/lazy job P0 | P0 local/in-app | Idempotent; tôn trọng preference/timezone; lỗi không rollback domain |
 | Weekly Review | Không P0 | P1 | Tuân consent |
 
 Khi Backend chạy nhiều instance:
@@ -912,6 +914,7 @@ Một máy dev/demo khoảng 4 vCPU, 8 GB RAM và disk đủ media thường thu
 - [ ] Password dùng BCrypt; OTP/refresh token chỉ lưu hash.
 - [ ] JWT key có rotation/`kid` strategy và không nằm trong repository/image.
 - [ ] Google token verify issuer/audience/signature/expiry server-side.
+- [ ] Facebook token verify app/user/expiry/data-access expiry server-side; không tin profile client và không auto-link chỉ bằng email.
 - [ ] Secret lấy từ secret manager/workload identity; có rotation runbook.
 - [ ] Rate limit login/OTP/forgot-password theo subject/IP/device phù hợp, chống enumeration.
 

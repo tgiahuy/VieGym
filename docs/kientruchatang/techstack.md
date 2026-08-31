@@ -106,6 +106,7 @@ Các nguyên tắc bắt buộc:
 |---|---|---|
 | **flutter_secure_storage** | **Đã chốt/P0 — ADR-004** | Chỉ lưu refresh token opaque; access token giữ trong bộ nhớ |
 | **local_auth** | **Đề xuất/P0** | Biometric chỉ mở credential local; không gửi biometric lên server |
+| **Meta Facebook Login SDK qua Flutter wrapper** | **Đề xuất/P0** | Lấy Facebook user access token trên Mobile; token luôn được Backend xác minh, pin version sau compatibility/security review |
 | **shared_preferences** | **Đề xuất** | Preference không nhạy cảm như theme/onboarding flag |
 | **image_picker** / **file_picker** | **Đề xuất** | Chọn avatar/media theo contract PH9 |
 | **cached_network_image** | **Đề xuất** | Cache ảnh Exercise/Food/avatar trên client |
@@ -170,6 +171,7 @@ Chỉ sử dụng một build tool. **Maven** được đề xuất cho MVP (`po
 | **OAuth2 Resource Server + JOSE JWT** | **Đề xuất/P0** | Validate access token theo chuẩn, tránh custom auth filter không cần thiết |
 | **BCrypt** | **Đã chốt/P0** | Hash local password |
 | **Google Identity token verification** | **Đã chốt/P0** | Google Login được verify server-side |
+| **Meta token verification adapter** | **Đề xuất/P0** | Xác minh Facebook token đúng app/user/expiry và lấy profile tối thiểu từ Meta |
 | **Refresh token rotation/revocation** | **Đã chốt/P0** | Quản lý phiên đăng nhập và logout |
 | **OTP hash + TTL + attempt/rate limit** | **Đã chốt/P0** | Register/password reset an toàn |
 
@@ -203,7 +205,7 @@ Backend phải xác thực quyền trước khi cấp URL, kiểm tra object/met
 backend/
 ├── src/main/java/com/viegym/
 │   ├── ViegymApplication.java
-│   ├── identity/                ← Auth, JWT, OTP, Google Login
+│   ├── identity/                ← Auth, JWT, OTP, Google/Facebook Login
 │   ├── preference/
 │   ├── health/
 │   ├── workout/
@@ -392,7 +394,7 @@ Không gọi provider thật trong unit test/CI mặc định. Provider smoke te
 
 - Công thức BMI, BMR, TDEE, calories/macro và boundary validation.
 - Ownership và role `USER`/`ADMIN` trên private/admin API.
-- OTP TTL/attempt, refresh token revoke/rotation và Google token verification boundary.
+- OTP TTL/attempt, refresh token revoke/rotation và Google/Facebook token verification boundary.
 - Workout session state machine, volume/completion/PR.
 - Meal nutrition snapshot và daily aggregation.
 - AI consent OFF, context whitelist, schema validation và no-auto-mutation.

@@ -1,8 +1,8 @@
 # VieGym — Master Technical Design
 
-> **Phiên bản:** 1.0
+> **Phiên bản:** 1.2
 >
-> **Ngày cập nhật:** 2026-08-19
+> **Ngày cập nhật:** 2026-08-31
 >
 > **Trạng thái:** Baseline thiết kế triển khai MVP
 >
@@ -30,16 +30,18 @@ hoặc cấu hình triển khai chi tiết đã có tài liệu chuyên trách.
 
 ### 1.1. Trong phạm vi
 
-- Authentication, session, OTP và Google Login.
+- Authentication, session, OTP và Social Login bằng Google/Facebook.
 - User Profile, User Preference và Equipment Preference.
 - Health Profile, BMI, BMR, TDEE, calories/macro target và Weight Tracking.
 - Exercise Library, Workout Program, Schedule, Session, Log và PR.
+- Favorite Exercise và Favorite Food theo ownership.
 - Food Database, Meal Planner, nutrition summary và meal history/template.
 - Dashboard tổng hợp dữ liệu authoritative.
 - AI Consent, Context, Coach Chat, Daily Recommendation và Apply/Dismiss.
 - Admin quản lý Exercise/Food và Audit Log ở mức P0 baseline.
 - Media cho Exercise và Food ở mức P0 baseline; avatar Profile là P1.
-- Notification, Weekly Review và các phần mở rộng được đánh dấu P1/P2.
+- Notification local/in-app, workout/meal/weight reminder, preference và read/delete state ở P0.
+- Push notification/automation, Weekly Review và các phần mở rộng được đánh dấu P1/P2.
 
 ### 1.2. Ngoài phạm vi
 
@@ -59,7 +61,7 @@ hoặc cấu hình triển khai chi tiết đã có tài liệu chuyên trách.
 
 Khi có khác biệt, áp dụng thứ tự ưu tiên sau:
 
-1. [SRS v3.0](./spec/specs.md) — source of truth về yêu cầu và phạm vi.
+1. [SRS v3.2](./spec/specs.md) — source of truth về yêu cầu và phạm vi.
 2. [Luồng nghiệp vụ](./spec/bussiness_mainflow.md) — hành vi end-to-end.
 3. [Phân rã phân hệ](./spec/phan_ra_phan_he_he_thong.md) — owner và boundary.
 4. [Phân rã tính năng](./spec/phan_ra_tinh_nang.md) — feature ID, priority và AC.
@@ -246,13 +248,13 @@ hoặc external dependency.
 - `identity`: account, credential, OTP, token và role.
 - `preference`: user preference và equipment preference.
 - `health`: health profile, metric, nutrition target và weight log.
-- `workout`: exercise, program, schedule, session, set log và PR.
-- `nutrition`: food, meal plan, meal entry, snapshot và nutrition summary.
+- `workout`: exercise, favorite exercise, program, schedule, session, set log và PR.
+- `nutrition`: food, favorite food, meal plan, meal entry, snapshot và nutrition summary.
 - `dashboard`: query aggregation, không sở hữu mutation.
 - `ai`: consent, context, conversation, rule, recommendation và Apply routing.
 - `admin/audit`: admin use case và audit log.
 - `media`: metadata, upload lifecycle và access policy.
-- `notification`: notification/reminder P1.
+- `notification`: Notification Center/reminder local/in-app P0; push/automation P2.
 
 Module consumer gọi application/domain service của owner. Không truy cập trực
 tiếp repository của module khác để tránh bypass rule và transaction boundary.
@@ -276,7 +278,8 @@ mobile/lib/
     ├── dashboard/
     ├── ai_coach/
     ├── admin/
-    └── media/
+    ├── media/
+    └── notifications/
 ```
 
 Mỗi feature chỉ tách `data`, `domain`, `presentation` khi cần thiết. Mobile dùng
@@ -644,8 +647,11 @@ Backend kiểm tra:
 - Refresh token được rotate/revoke và lưu server-side ở dạng an toàn.
 - Logout revoke session tương ứng; password reset/change có thể revoke session
   theo security policy canonical.
-- Google token được Backend verify với issuer/audience/expiry; Mobile assertion
-  không tự tạo account trust.
+- Google token được Backend verify với issuer/audience/expiry; Facebook access
+  token được verify đúng Meta app/user/expiry và dữ liệu profile được lấy từ
+  Meta. Mobile assertion hoặc profile tự gửi không tạo account trust.
+- Không tự động liên kết social account với account hiện có chỉ dựa trên email;
+  xung đột phải qua flow liên kết có xác thực.
 
 ### 9.2. Authorization và ownership
 
@@ -880,14 +886,14 @@ SRS Requirement / Acceptance Criteria
   Identity API và Identity/Profile database domain.
 - Health/Profile: UC-02, UC-03, UC-10; FT-UP, FT-HP; MH09, MH10, MH33..MH38,
   MH42, MH43; Profile/Health API và Health database domain.
-- Workout: UC-04..UC-07; FT-WO; MH11..MH19; Workout API và database domain.
-- Nutrition: UC-08, UC-09; FT-MP; MH20..MH25, MH54; Food/Meal API và domain.
+- Workout: UC-04..UC-07; FT-WO; MH11..MH19, MH56; Workout API và database domain.
+- Nutrition: UC-08, UC-09; FT-MP; MH20..MH25, MH54, MH57; Food/Meal API và domain.
 - Dashboard: UC-11; FT-DB; MH03; Dashboard API và cross-domain read model.
 - AI: UC-12..UC-14, UC-17; FT-AI; MH27..MH32, MH55; AI public/internal API và
   AI Coach database domain.
 - Admin/Media: UC-19, UC-21; FT-AD, FT-MD; MH45..MH51; Admin/Media API,
   Media và Audit database domain.
-- Notification: FT-NT, MH40/MH41; P1/P2, không thuộc đường găng P0.
+- Notification: UC-22; FT-NT-001..004; MH41; local/in-app thuộc P0, FT-NT-005 push/automation thuộc P2.
 
 Khi thêm hoặc sửa feature, change phải cập nhật các mắt xích bị ảnh hưởng thay
 vì chỉ cập nhật một tài liệu đơn lẻ.

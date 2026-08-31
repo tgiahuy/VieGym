@@ -3,8 +3,8 @@
 > Mô tả cách VieGym được phân rã thành các phân hệ, trách nhiệm, dữ liệu
 > sở hữu, API boundary và quan hệ phụ thuộc.
 >
-> **Nguồn:** `specs.md` v3.0 và `bussiness_mainflow.md` v3.0
-> **Phiên bản:** 3.0 — 2026-08-19
+> **Nguồn:** `specs.md` v3.2 và `bussiness_mainflow.md` v3.2
+> **Phiên bản:** 3.2 — 2026-08-31
 
 ---
 
@@ -67,7 +67,7 @@ identity cho toàn hệ thống nhưng không sở hữu dữ liệu nghiệp v�
 - Đăng ký local, email duy nhất và password hash — P0.
 - Register + OTP: account `PENDING` → verify → activate → cấp token — P0.
 - Login, logout, refresh và revoke session — P0.
-- Google Login verify server-side — P0.
+- Google/Facebook Login verify server-side — P0.
 - Forgot/Reset Password bằng OTP purpose riêng — P0.
 - Biometric chỉ mở local session/token trong secure storage — P0.
 - Role `USER`/`ADMIN`, locked/disabled và ownership baseline — P0.
@@ -81,6 +81,7 @@ identity cho toàn hệ thống nhưng không sở hữu dữ liệu nghiệp v�
 | POST | `/api/v1/auth/otp/resend` | Resend theo cooldown/rate limit |
 | POST | `/api/v1/auth/login` | Đăng nhập local |
 | POST | `/api/v1/auth/google` | Google Login server-side |
+| POST | `/api/v1/auth/facebook` | Facebook Login server-side |
 | POST | `/api/v1/auth/refresh` | Làm mới/rotation token |
 | POST | `/api/v1/auth/logout` | Revoke phiên |
 | POST | `/api/v1/auth/password/forgot` | Khởi tạo reset password |
@@ -454,7 +455,8 @@ AI chỉ trả proposal thuộc whitelist:
 - `REVIEW_NUTRITION_TARGET_PROPOSAL`
 - `LOG_REMINDER_ONLY`
 
-`LOG_REMINDER_ONLY` là reserved P1 và không được gửi trong P0.
+`LOG_REMINDER_ONLY` thuộc P0 cho reminder local/in-app sau user review/xác nhận;
+PH10 kiểm tra preference/timezone/consent và không mutation domain.
 
 ```text
 APPLY: User Approval → Ownership → PENDING/Expiry Check
@@ -581,8 +583,8 @@ Media & Storage
 
 ### Mô tả
 
-Reminder/thông báo không phải source of truth và không nằm trên đường
-găng P0.
+Reminder/thông báo local/in-app thuộc P0 nhưng không phải source of truth.
+Push/automation bên ngoài ứng dụng vẫn là P2.
 
 ### Entities
 
@@ -593,8 +595,9 @@ găng P0.
 
 ### Chức năng chính
 
-- Local/in-app workout, meal, weight reminder — P1.
-- Weekly Review/recommendation notification theo consent — P1.
+- Local/in-app workout, meal, weight reminder — P0.
+- Notification Center, read state và preference — P0.
+- Recommendation notification theo consent — P0; Weekly Review vẫn P1.
 - Push, automation và scheduling nâng cao — P2.
 
 ### API Endpoints
@@ -735,8 +738,8 @@ cuối cùng và mọi mutation vẫn thuộc Spring Boot Backend.
 | Register / OTP | UC-01 | FT-ID-001/006/008; MH05/MH06 | PH1 | P0 |
 | Health onboarding/recalculation | UC-02/03 | FT-HP-001..004; MH09/MH42 | PH3 | P0 |
 | Equipment/User Preference | UC-04/18 | FT-UP-003..005, FT-WO-003; MH10/MH37/MH38 | PH2, PH4 consumer | P0 |
-| Exercise/Program/Schedule/Session/Log | UC-04..07 | FT-WO-001..011; MH11..19 | PH4 | P0 |
-| Food/Meal Planner | UC-08/09 | FT-MP-001..006/009; MH20..25 | PH5 | P0 |
+| Exercise/Program/Schedule/Session/Log/Favorite | UC-04..07 | FT-WO-001..011; MH11..19/MH56 | PH4 | P0 |
+| Food/Meal Planner/Favorite | UC-08/09 | FT-MP-001..007/009; MH20..25/MH57 | PH5 | P0 |
 | Weight Tracking | UC-10 | FT-HP-005..007; MH43 | PH3 | P0 |
 | Dashboard | UC-11 | FT-DB-001..005/007; MH03 | PH6 | P0 |
 | AI Consent/Coach | UC-12/17 | FT-AI-001..007/014; MH28/MH29/MH55 | PH7 | P0 |
@@ -745,7 +748,7 @@ cuối cùng và mọi mutation vẫn thuộc Spring Boot Backend.
 | Exercise/Food media | UC-21 | FT-MD-001..003 | PH9 | P0 baseline |
 | Weekly Review/Plan Adjustment | UC-15/16 | FT-AI-011/012; MH32 | PH7 | P1 |
 | Admin User/Import/Rule/Prompt | UC-20 | FT-AD-002/005/006/007; MH48/MH49/MH50 | PH8 | P1 |
-| Local/in-app reminder | Optional flow | FT-NT-001..004; MH41 | PH10 | P1 |
+| Local/in-app reminder | UC-22 | FT-NT-001..004; MH41 | PH10 | P0 |
 | Push/automation | Future flow | FT-NT-005 | PH10 | P2 |
 
 ---
@@ -763,13 +766,13 @@ cuối cùng và mọi mutation vẫn thuộc Spring Boot Backend.
 - PH7 Consent, Context, Coach, Recommendation, Apply/Dismiss.
 - PH8 Exercise/Food admin và audit tối thiểu phục vụ demo.
 - PH9 Exercise/Food media baseline.
+- PH10 Notification local/in-app, workout/meal/weight reminder, preference và read/delete state.
 
 ### P1 — Chỉ làm khi P0 ổn định
 
 - Weekly Review, Preference Memory và Plan Adjustment Proposal.
 - Admin User, import preview/validation, AI Rule/Prompt và metrics.
 - Admin Dashboard.
-- Notification local/in-app.
 
 ### P2 / Future
 

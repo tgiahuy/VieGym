@@ -1,12 +1,12 @@
-# VieGym — Software Requirements Specification (SRS) v3.0
+# VieGym — Software Requirements Specification (SRS) v3.2
 
 > **Mục đích:** Source of Truth cấp yêu cầu cho VieGym Mobile App, Backend và AI Service trong phạm vi đồ án tốt nghiệp.
 >
-> **Phiên bản:** 3.0  
-> **Ngày cập nhật:** 2026-08-19  
+> **Phiên bản:** 3.2
+> **Ngày cập nhật:** 2026-08-31
 > **Nền tảng MVP:** Flutter Mobile App + Spring Boot Backend + PostgreSQL + Python FastAPI AI Service
 >
-> **Cập nhật đồng bộ:** chuẩn hóa Admin P0/P1, canonical screen ID, Use Case UC-01..UC-21 và Acceptance Criteria AC-01..AC-19.
+> **Cập nhật đồng bộ:** đưa Favorite Exercise, Favorite Food và Notification local/in-app vào P0; push/automation vẫn là P2.
 
 ---
 
@@ -55,11 +55,12 @@ VieGym kết hợp ba nhóm chức năng:
 
 | Phân hệ | Chức năng |
 |---|---|
-| Authentication | Đăng ký, đăng nhập, JWT, Google Login, refresh token, OTP, quên mật khẩu, biometric unlock local |
+| Authentication | Đăng ký, đăng nhập, JWT, Google/Facebook Login, refresh token, OTP, quên mật khẩu, biometric unlock local |
 | Health Profile | Thông tin sức khỏe, mục tiêu, mức vận động |
 | Health Calculation | BMI, BMR, TDEE, calories/macro target |
 | Dashboard | Calories, macro, workout, weight, AI recommendation |
 | Exercise Library | Bài tập, nhóm cơ, thiết bị, video hướng dẫn, mô tả, lỗi sai thường gặp |
+| Favorites | User lưu/bỏ lưu Exercise và Food yêu thích; dữ liệu theo ownership và đồng bộ qua Backend |
 | Gym Equipment Preference | Chọn thiết bị có sẵn khi onboarding/lần đầu tập và chỉnh sửa trong Settings |
 | Workout Builder | Tạo/chọn chương trình và buổi tập cơ bản |
 | Workout Schedule | Lịch tập |
@@ -74,6 +75,7 @@ VieGym kết hợp ba nhóm chức năng:
 | Recommendation Apply/Dismiss | User quyết định trước khi thay đổi dữ liệu |
 | Admin & Audit baseline | Admin quản lý/hide Exercise, Food và xem Audit Log tối thiểu |
 | Media baseline | Ảnh/video Exercise và ảnh Food qua URL/asset hoặc object storage hợp lệ |
+| Notification baseline | Notification Center local/in-app, workout/meal/weight reminder, preference và read/delete state |
 
 ## 2.2. MVP mở rộng nếu còn thời gian
 
@@ -88,10 +90,11 @@ VieGym kết hợp ba nhóm chức năng:
 |---|---|---|
 | P0 | Auth, Health Profile, Health Calculation, Dashboard cơ bản | Hoàn thiện tài khoản, hồ sơ và metric authoritative |
 | P0 | Food Database, Meal Planner, Exercise Library, Equipment Preference, Workout Log | Chứng minh luồng ăn uống + luyện tập |
+| P0 | Favorite Exercise/Food và Notification local/in-app | Lưu lựa chọn thường dùng, nhắc việc và điều hướng về đúng resource |
 | P0 | AI Consent, AI Context, AI Coach, Daily Recommendation | Chứng minh AI personalization an toàn |
 | P0 | Recommendation Apply/Dismiss, Ownership, Security baseline | Chứng minh AI không tự mutation và dữ liệu được bảo vệ |
 | P0 baseline | Admin quản lý Exercise/Food và Audit Log | Đủ dữ liệu catalog và truy vết cho demo |
-| P1 | Weekly Review, Plan Adjustment, Preference Memory, Admin mở rộng, notification local/in-app | Chỉ triển khai khi P0 ổn định |
+| P1 | Weekly Review, Plan Adjustment, Preference Memory, Admin mở rộng, Water Tracker và app settings | Chỉ triển khai khi P0 ổn định |
 | P2 | Push automation, offline queue nâng cao, media cleanup | Không bắt buộc cho demo MVP |
 
 ## 2.4. Ngoài MVP
@@ -147,7 +150,7 @@ Persona phục vụ thiết kế, seed data và demo; hệ thống không hard-c
 
 ### Account/Auth
 - `UserRole`: USER, ADMIN
-- `AuthProvider`: LOCAL, GOOGLE
+- `AuthProvider`: LOCAL, GOOGLE, FACEBOOK
 - `OtpPurpose`: REGISTER, PASSWORD_RESET; `LOGIN_VERIFY` reserved P1/MFA
 - `TokenStatus`: ACTIVE, REVOKED, EXPIRED
 
@@ -206,7 +209,8 @@ CANCELLED không tính vào mẫu số completionRate nếu user hủy hợp l�
 ## 5.1. Authentication
 
 - User có thể đăng ký, đăng nhập, refresh token, logout và reset password.
-- Google Login được xử lý server-side qua Backend.
+- Google Login và Facebook Login được xử lý server-side qua Backend.
+- Facebook access token phải được Backend xác minh đúng Meta app, user, expiry và quyền dữ liệu; không tin email/profile do client tự khai báo.
 - Password không được lưu plaintext.
 - OTP phải có expiry, resend cooldown và giới hạn attempts/rate limit.
 - Refresh token phải có expiry, rotation theo mỗi lần refresh và revoke. Reuse token đã rotate phải làm vô hiệu token family theo policy bảo mật.
@@ -854,8 +858,9 @@ Mọi action phải:
 3. Được Backend validate lại.
 4. Chỉ mutation sau khi User APPLY.
 
-Trong P0, `LOG_REMINDER_ONLY` là giá trị reserved và không được gửi trong `allowedActions` vì
-Notification thuộc P1. Hai action `ADD_MEAL_ENTRY_PROPOSAL` và
+Trong P0, `LOG_REMINDER_ONLY` chỉ tạo notification/reminder qua PH10 sau khi user
+review/xác nhận; action này không mutation Health/Workout/Nutrition và phải tôn trọng
+Notification Preference cùng AI Consent. Hai action `ADD_MEAL_ENTRY_PROPOSAL` và
 `CREATE_WORKOUT_SCHEDULE_PROPOSAL` bắt buộc có `targetDate`; Apply phải validate ngày đích chưa
 qua và resource liên quan vẫn hợp lệ. P0 khóa cửa sổ: Meal Entry chỉ cho đúng
 `recommendationDate`; Workout Schedule cho khoảng từ `recommendationDate` đến tối đa 14 ngày
@@ -1005,7 +1010,7 @@ Backend validate proposal trước khi apply.
 |---|---|---|
 | NFR-SEC-001 | Private API yêu cầu JWT và ownership check | P0 |
 | NFR-SEC-002 | Password/refresh token/OTP được bảo vệ bằng hash, expiry, revoke và rate limit | P0 |
-| NFR-SEC-003 | Google Login được verify server-side | P0 |
+| NFR-SEC-003 | Google/Facebook Login được verify server-side; không tự liên kết account chỉ dựa trên email | P0 |
 | NFR-SEC-004 | AI API key và provider credential chỉ nằm server-side | P0 |
 | NFR-SEC-005 | Audit log không chứa password, token, API key hoặc raw personal context thừa | P0 |
 
@@ -1062,6 +1067,7 @@ Baseline riêng cho môi trường đồ án tốt nghiệp:
 | UC-19 | Admin quản lý Exercise/Food và Audit Log | P0 baseline |
 | UC-20 | Admin mở rộng: User/Import/AI Rule/Prompt | P1 |
 | UC-21 | Media/Storage baseline cho Exercise/Food | P0 baseline |
+| UC-22 | Favorite Exercise/Food và Notification local/in-app | P0 |
 
 ## 16.1. Use Case chi tiết P0
 
@@ -1073,10 +1079,10 @@ Baseline riêng cho môi trường đồ án tốt nghiệp:
 
 1. Guest đăng ký local; Backend validate, hash password, tạo account PENDING và gửi OTP.
 2. Guest verify OTP hợp lệ; Backend kích hoạt account rồi mới cấp access token + refresh token.
-3. Hoặc Guest đăng nhập local/Google; Backend xác thực credential và account status trước khi cấp token.
+3. Hoặc Guest đăng nhập local/Google/Facebook; Backend xác thực credential/provider token và account status trước khi cấp token.
 4. Mobile lưu session credential được phép bằng secure storage.
 
-**Luồng thay thế:** Email trùng, sai credential, OTP hết hạn, Google token không hợp lệ hoặc rate limit → lỗi chuẩn.
+**Luồng thay thế:** Email trùng, sai credential, OTP hết hạn, Google/Facebook token không hợp lệ, Facebook không cấp email bắt buộc, xung đột liên kết account hoặc rate limit → lỗi chuẩn.
 
 **Hậu điều kiện:** User có phiên hợp lệ.
 
@@ -1222,6 +1228,14 @@ User Management, Admin Dashboard, Import và AI Rule/Prompt không thuộc slice
 
 PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp vụ.
 
+### UC-22 — Favorites và Notification
+
+1. User add/remove Favorite Exercise/Food; Backend kiểm tra ownership/visibility và xử lý idempotent.
+2. PH10 tạo workout/meal/weight reminder local/in-app theo preference, timezone và quiet hours.
+3. Mobile tải Notification Center, unread count và mark read/read-all idempotent.
+4. Deep link luôn đi qua session/ownership guard; notification có nội dung AI cá nhân hóa phải kiểm tra AI Consent.
+5. Lỗi notification không rollback transaction Health/Workout/Nutrition nguồn.
+
 ---
 
 # 17. Acceptance Criteria
@@ -1247,6 +1261,8 @@ PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp v�
 | AC-17 | Mutation sau APPLY do domain owner thực hiện atomically và có audit |
 | AC-18 | Media P0 hiển thị asset hợp lệ và enforce role/ownership/MIME/size validation |
 | AC-19 | Audit/log không chứa password, token, OTP, API key hoặc personal context dư thừa |
+| AC-20 | Favorite Exercise/Food thuộc đúng user, add/remove idempotent, chỉ tham chiếu catalog item hợp lệ và được khôi phục sau khi mở lại app |
+| AC-21 | Notification chỉ trả dữ liệu của đúng user; read/preference idempotent, reminder tôn trọng preference/timezone/consent và lỗi notification không rollback domain transaction |
 
 ---
 
@@ -1269,6 +1285,8 @@ PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp v�
 | Recommendation Apply/Dismiss | UC-14 | AC-15/16/17 |
 | Media | UC-21 | AC-18 |
 | Admin/Audit | UC-19 | AC-19 |
+| Favorites | UC-04/08/22 | AC-20 |
+| Notification | UC-22 | AC-21 |
 
 ---
 
@@ -1404,7 +1422,11 @@ Equipment Preference
     ↓
 Workout
     ↓
+Favorite Exercise
+    ↓
 Meal Planner
+    ↓
+Favorite Food
     ↓
 Dashboard
     ↓
@@ -1415,6 +1437,8 @@ AI Coach
 Daily Recommendation
     ↓
 Apply/Dismiss
+    ↓
+Notification Center / Reminder
 ```
 
 Test Plan chi tiết được quản lý riêng.
@@ -1471,7 +1495,7 @@ Production hardening nằm ngoài MVP.
 - AI Weekly Review nâng cao.
 - AI Plan Adjustment.
 - Preference Memory nâng cao.
-- Notification nâng cao.
+- Push notification và automation nâng cao.
 - Offline queue nâng cao.
 - Wearable integration.
 - Computer Vision.
@@ -1520,5 +1544,5 @@ VieGym MVP được xem là đạt mức demo khi:
 - Private resources có ownership check.
 - Admin quản lý Exercise/Food và xem Audit Log ở mức P0 baseline.
 - Exercise/Food media hợp lệ, có kiểm tra quyền và validation tối thiểu.
-- Các acceptance criteria AC-01..AC-19 có test tương ứng ở đúng tầng.
+- Các acceptance criteria AC-01..AC-21 có test tương ứng ở đúng tầng.
 - Demo flow chạy end-to-end.

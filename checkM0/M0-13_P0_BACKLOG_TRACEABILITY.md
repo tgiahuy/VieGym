@@ -1,6 +1,6 @@
 # M0-13 — P0 backlog và traceability baseline
 
-> Trạng thái: READY · Ngày khóa: 2026-08-19 · Scope: 62 feature P0, 19 AC, 7 E2E
+> Trạng thái: READY · Ngày revise: 2026-08-31 · Scope: 68 feature P0, 21 AC, 8 E2E
 
 ## Quy ước thực thi
 
@@ -15,7 +15,7 @@
 |---|---|---|---|---|---|---|
 | ST-01 Local register + OTP | P0-Critical | M1 | UC-01; FT-ID-001/008/010; AC-01/19 | MH05/06 | `/auth/register`, `/auth/otp/verify`, `/auth/otp/resend`; `users`, `otp_codes`, `audit_logs` | register pending, OTP success/wrong/expired/reuse/cooldown/rate-limit, enumeration/log redaction |
 | ST-02 Login, refresh, logout | P0-Critical | ST-01 | UC-01; FT-ID-002/004/005/010; AC-01/02/19 | MH01/04/44 | `/auth/login`, `/auth/refresh`, `/auth/logout`; `users`, `refresh_tokens` | role/status guard, rotation, reuse revokes family, concurrent refresh single-flight, logout |
-| ST-03 Password + Google + biometric | P0-High | ST-01/02 | UC-01; FT-ID-003/006/007/009; AC-01/19 | MH06/07/08/52/53 | forgot/reset/change/Google endpoints; `users`, `otp_codes`, `refresh_tokens` | invalid Google assertion, reset purpose isolation, change password, biometric không bypass server |
+| ST-03 Password + social login + biometric | P0-High | ST-01/02 | UC-01; FT-ID-003/006/007/009; AC-01/19 | MH02/04/05/06/07/08/52/53 | forgot/reset/change + Google/Facebook endpoints; `users`, `otp_codes`, `refresh_tokens` | invalid Google/Facebook token, Facebook app/expiry/email/link conflict, reset purpose isolation, change password, biometric không bypass server |
 | ST-04 User/equipment preference | P0-High | ST-02 | UC-04/18; FT-UP-001/003/004; AC-02/05 | MH10/34/35/37/38 | `/profile`, `/preferences`, `/equipment-preferences`; profile/preference/equipment tables | whitelist update, ownership, empty-equipment onboarding flag, equipment filter/match |
 | ST-05 Health onboarding + calculation | P0-Critical | ST-02 | UC-02/03; FT-HP-001..004; AC-03/04 | MH09/42 | health profile/metric/target endpoints; `health_profiles`, `nutrition_targets`, `weight_logs` | range, calculationSex/age incomplete, BMI/BMR/TDEE/macro fixtures, atomic save |
 | ST-06 Weight history/trend | P0-High | ST-05 | UC-10; FT-HP-005..007; AC-09 | MH43 | `PUT /weight-logs/{loggedDate}`, list/summary; `weight_logs` | natural-key upsert, newest-log metric sync, target unchanged, 7/30-day trend, chart insufficient-data state |
@@ -54,9 +54,16 @@
 | ST-19 Admin Exercise/Food + audit | P0-Normal | ST-07/11 | UC-19; FT-AD-003/004/008; AC-02/19 | MH45/46/47/51 | admin exercise/food CRUD, audit list; catalog/audit tables | ADMIN role, validation, hide preserves history, audit redaction/filter |
 | ST-20 Media lifecycle | P0-High | ADR-003/006, ST-19 | UC-21; FT-MD-001..003; AC-18/19 | MH13/22/46/47 | resource-first upload-init/complete/access/delete; `media_objects` | non-null owner, role/sort, presigned TTL, MIME spoof/size, allowlist, orphan/failed state |
 
+## Epic E6 — Favorites và Notification
+
+| Story | Priority | Dependency | UC / FT / AC | MH | API / DB | Test bắt buộc |
+|---|---|---|---|---|---|---|
+| ST-21 Favorite Exercise/Food | P0-High | ST-07/11 | UC-04/08; FT-WO-010, FT-MP-007; AC-02/20 | MH12/13/21/22/56/57 | favorite list/add/remove; `favorite_exercises`, `favorite_foods` | ownership, composite uniqueness, add/remove idempotent, hidden visibility, restore after app restart |
+| ST-22 Notification Center/Reminder | P0-High | ST-02/06/09/12/15 | UC-22; FT-NT-001..004; AC-02/11/21 | MH03/41 | `/notifications/**`; `notifications`, `notification_preferences` | ownership, list/read/read-all/delete/preference, timezone/quiet hours, consent, failure isolation, deep-link guard |
+
 ## Phủ phạm vi và E2E
 
-- 62/62 feature P0 được gắn vào ST-01..ST-20; P1/P2 không nằm trong story acceptance.
-- AC-01..AC-19 đều có ít nhất một story owner và test tương ứng.
-- 7 E2E bắt buộc: register/onboarding (ST-01/05), workout (ST-07..10), meal (ST-11..13), weight/dashboard (ST-06/14), AI consent/chat (ST-15/16), recommendation Apply/Dismiss (ST-17/18), admin/media (ST-19/20).
-- Execution order: M1 foundation → ST-01..06 → ST-07..14 → ST-15..18 → ST-19..20; story độc lập trong cùng phase có thể làm song song nhưng không bỏ dependency.
+- 68/68 feature P0 được gắn vào ST-01..ST-22; P1/P2 không nằm trong story acceptance.
+- AC-01..AC-21 đều có ít nhất một story owner và test tương ứng.
+- 8 E2E bắt buộc: register/onboarding (ST-01/05), workout (ST-07..10/21), meal (ST-11..13/21), weight/dashboard (ST-06/14), AI consent/chat (ST-15/16), recommendation Apply/Dismiss (ST-17/18), admin/media (ST-19/20), Notification Center/reminder (ST-22).
+- Execution order: M1 foundation → ST-01..06 → ST-07..14/21 → ST-15..18 → ST-19..20/22; story độc lập trong cùng phase có thể làm song song nhưng không bỏ dependency.

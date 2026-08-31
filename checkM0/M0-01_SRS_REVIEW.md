@@ -61,7 +61,7 @@ Review này chỉ xác nhận vai trò và mức độ đầy đủ của SRS. V
 1. **Boundary nghiệp vụ rõ:** Backend là business authority; PostgreSQL là source of truth; AI không có quyền mutation.
 2. **Phạm vi được bảo vệ:** P0/P1/P2 và Out of Scope được ghi rõ, giúp hạn chế scope creep trong đồ án tốt nghiệp.
 3. **Luồng AI an toàn:** consent, context whitelist, output validation và User approval tạo thành một chuỗi kiểm soát đầy đủ.
-4. **Yêu cầu có thể kiểm thử:** 19 AC bao phủ các rủi ro chính như ownership, transaction, state machine, AI safety và audit.
+4. **Yêu cầu có thể kiểm thử:** 21 AC bao phủ ownership, transaction, state machine, AI safety, audit, Favorites và Notification.
 5. **Có truy vết:** SRS liên kết Use Case, AC và các tài liệu API/DB/screen/architecture cấp dưới.
 6. **Phù hợp triển khai theo vertical slice:** các Use Case được nhóm theo Auth, Health, Workout, Nutrition, AI và Admin/Media.
 

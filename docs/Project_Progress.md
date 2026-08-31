@@ -1,11 +1,11 @@
 # Kế hoạch và theo dõi tiến độ triển khai VieGym
 
-> **Phiên bản:** 2.1
-> **Ngày cập nhật:** 2026-08-20
+> **Phiên bản:** 2.4
+> **Ngày cập nhật:** 2026-08-31
 > **Loại dự án:** Đồ án tốt nghiệp
-> **Phạm vi:** MVP P0 theo SRS v3.0  
-> **Thời gian kế hoạch:** 24 tuần  
-> **Trạng thái tổng thể:** M0R đã hoàn thành; sẵn sàng thực hiện M1
+> **Phạm vi:** MVP P0 theo SRS v3.2
+> **Thời gian kế hoạch:** 25 tuần
+> **Trạng thái tổng thể:** M2 đang thực hiện; UI prototype của M3–M6 đang được triển khai song song, chưa đạt Definition of Done full-stack
 
 ## 1. Cách sử dụng tài liệu
 
@@ -35,8 +35,9 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - PostgreSQL là nguồn dữ liệu authoritative và được quản lý bằng Flyway.
 - FastAPI AI Service stateless, chỉ nhận context do Backend cung cấp.
 - Media baseline cho Exercise và Food; avatar Profile thuộc P1.
+- Favorite Exercise/Food và Notification Center/reminder local/in-app thuộc P0.
 - Docker Compose, CI, seed data, APK và tài liệu demo.
-- 19 Acceptance Criteria cấp MVP và 7 luồng E2E bắt buộc.
+- 21 Acceptance Criteria cấp MVP và 8 luồng E2E bắt buộc.
 
 ## 3. Nguyên tắc triển khai
 
@@ -55,18 +56,18 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
 - [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
 - [x] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 22/22
-- [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 22/27
+- [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 22/28
 - [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
-- [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/27
-- [ ] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 0/22
+- [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/28
+- [ ] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 0/23
 - [ ] **M6 — AI Coach và Recommendation** — Tuần 16–19 — Tiến độ: 0/28
-- [ ] **M7 — Admin, Media và Audit** — Tuần 20–21 — Tiến độ: 0/19
-- [ ] **M8 — Hardening, UAT và Release** — Tuần 22–24 — Tiến độ: 0/28
+- [ ] **M7 — Admin, Media, Notification và Audit** — Tuần 20–22 — Tiến độ: 0/26
+- [ ] **M8 — Hardening, UAT và Release** — Tuần 23–25 — Tiến độ: 0/29
 
-**Tiến độ tổng:** 55/218 công việc — 25,2%
+**Tiến độ tổng:** 71/229 công việc — 31,0%
 **Milestone hiện tại:** M2
-**Cập nhật gần nhất:** 2026-08-26
-**Ghi chú tổng:** M0, M0R và M1 hoàn thành đầy đủ. M2 đang thực hiện: M2-01..M2-22 hoàn thành; Backend đã có identity/session, preference/equipment onboarding và Health Profile calculation/persistence, sẵn sàng cho M2-23.
+**Cập nhật gần nhất:** 2026-08-31
+**Ghi chú tổng:** M0, M0R và M1 hoàn thành đầy đủ. M2 đang thực hiện: M2-01..M2-22 hoàn thành. PLAN-007 đưa Favorite Exercise, Favorite Food và Notification local/in-app vào P0; baseline mới gồm 68 feature, 50 UI unit, 21 AC và 8 E2E. UI prototype đã có nhưng chưa đủ Definition of Done vì còn dùng state/catalog cục bộ.
 
 ---
 
@@ -106,7 +107,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 **Ngày bắt đầu thực tế:** 2026-08-19
 **Ngày hoàn thành thực tế:** 2026-08-19
 **Minh chứng:** [`M0-01_SRS_REVIEW.md`](../checkM0/M0-01_SRS_REVIEW.md), [`M0-02_SPEC_CONSISTENCY_REVIEW.md`](../checkM0/M0-02_SPEC_CONSISTENCY_REVIEW.md), [`M0-03_P0_SCOPE_BASELINE.md`](../checkM0/M0-03_P0_SCOPE_BASELINE.md), [`ADR-001`](../checkM0/ADR-001_FLUTTER_STATE_MANAGEMENT.md) đến [`ADR-007`](../checkM0/ADR-007_EXPIRY_POLICY.md), [`M0-11_12_VERSION_BUILD_BASELINE.md`](../checkM0/M0-11_12_VERSION_BUILD_BASELINE.md), [`M0-13_P0_BACKLOG_TRACEABILITY.md`](../checkM0/M0-13_P0_BACKLOG_TRACEABILITY.md), [`M0-14_GIT_AND_CODING_CONVENTIONS.md`](../checkM0/M0-14_GIT_AND_CODING_CONVENTIONS.md), [`M0-15_DEFINITION_OF_READY_REVIEW.md`](../checkM0/M0-15_DEFINITION_OF_READY_REVIEW.md)
-**Ghi chú M0:** Hoàn thành 15/15. P0 frozen; 7 ADR ACCEPTED; runtime/build pin; 20 story có traceability; 49/49 ticket M1/M2 READY.
+**Ghi chú M0:** Hoàn thành 15/15. P0 được revise bởi PLAN-007 thành 68 feature/50 UI/21 AC/8 E2E; 7 ADR ACCEPTED; runtime/build pin; 22 story có traceability; M1/M2 vẫn 50/50 ticket READY.
 
 ---
 
@@ -130,8 +131,10 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [x] **M0R-11** — Chốt error-code/HTTP matrix, pagination và OpenAPI `dart-dio` no-diff CI gate.
 - [x] **M0R-12** — Đồng bộ SRS, flow, feature, screen, subsystem, API, DB, SA, server, tech stack và backlog.
 
-**Quyết định phạm vi:** giữ nguyên P0 frozen. `LOG_REMINDER_ONLY`, Login OTP/MFA,
-conversation archive và account auto-lock không được lén đưa vào P0; chúng vẫn là P1.
+**Quyết định phạm vi:** baseline P0 được cập nhật bởi PLAN-007. `LOG_REMINDER_ONLY`
+thuộc P0 khi chỉ tạo reminder local/in-app qua PH10 sau review/xác nhận của user và
+tuân thủ preference/timezone/AI Consent; push/automation vẫn là P2. Login OTP/MFA,
+conversation archive và account auto-lock vẫn là P1.
 
 ---
 
@@ -199,7 +202,7 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Phạm vi:** UC-01..03; FT-ID-001..010; FT-UP-001/003/004; FT-HP-001..004  
 **Màn hình:** MH01/02/04/05/06/07/08/09/10/44/52/53  
 **Trạng thái:** Đang thực hiện
-**Tiến độ:** 22/27
+**Tiến độ:** 22/28
 
 ### Database và Backend Identity
 
@@ -237,12 +240,14 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **M2-25** — Hoàn thiện Health và Equipment onboarding cùng navigation guard.
 - [ ] **M2-26** — Triển khai secure token storage, refresh single-flight và clear credential khi logout.
 - [ ] **M2-27** — Viết unit/integration/widget test cho auth, OTP, token và health calculations.
+- [ ] **M2-28** — Triển khai Facebook Login end-to-end: Mobile SDK, Backend token verification, `FACEBOOK` provider/API/migration và kiểm thử app/expiry/email/account-link conflict.
 
 ### Cổng nghiệm thu M2
 
 - [ ] E2E 1 chạy được: Register → OTP → Health/Equipment onboarding → Dashboard ban đầu.
 - [ ] OTP sai, hết hạn, dùng lại hoặc vượt số lần thử đều bị từ chối.
 - [ ] Account pending/locked/disabled không nhận session nghiệp vụ.
+- [ ] Google/Facebook token sai app/audience, subject hoặc expiry bị từ chối; Facebook thiếu email hoặc trùng account không bị auto-link.
 - [ ] Private API từ chối access token không hợp lệ.
 - [ ] Mở lại app resume đúng trạng thái session/onboarding authoritative.
 - [ ] AC-01, AC-02 và phần onboarding của AC-03 đạt.
@@ -260,7 +265,7 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 **Phụ thuộc:** M2  
 **Phạm vi:** UC-10/11; FT-HP-005..007; FT-DB-001..005/007  
 **Màn hình:** MH03/42/43  
-**Trạng thái:** Chưa bắt đầu  
+**Trạng thái:** Đang thực hiện
 **Tiến độ:** 0/18
 
 ### Health và Weight Backend
@@ -299,8 +304,8 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 **Ngày bắt đầu thực tế:**  
 **Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M3:**
+**Minh chứng:** `mobile/lib/features/profile/presentation/health_profile_edit_screen.dart`, `mobile/lib/features/profile/presentation/profile_screen.dart`, `mobile/lib/features/profile/presentation/progress_screen.dart`, `mobile/lib/features/profile/application/progress_controller.dart`, `mobile/test/profile_progress_test.dart`, `mobile/test/workout_features_test.dart`.
+**Ghi chú M3:** UI xem/sửa Health Profile, Weight Tracking, chart/progress và Dashboard đã được triển khai bằng state cục bộ. Chưa đánh dấu M3-13..M3-18 vì chưa tích hợp Backend authoritative, còn thiếu section-level loading/error và test ownership/trend đầy đủ theo Definition of Done.
 
 ---
 
@@ -308,10 +313,10 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 **Thời gian:** Tuần 9–12  
 **Phụ thuộc:** M2; Dashboard M3 có thể được mở rộng sau mutation  
-**Phạm vi:** UC-04..07; FT-WO-001..009/011  
-**Màn hình:** MH11..19  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/27
+**Phạm vi:** UC-04..07; FT-WO-001..011
+**Màn hình:** MH11..19/56
+**Trạng thái:** Đang thực hiện
+**Tiến độ:** 0/28
 
 ### Exercise Catalog
 
@@ -351,19 +356,21 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **M4-25** — Hoàn thiện MH18/19 History và Personal Record.
 - [ ] **M4-26** — Refresh Dashboard/History từ response authoritative sau finish.
 - [ ] **M4-27** — Viết unit/integration/widget test cho state machine, ownership, concurrency và calculations.
+- [ ] **M4-28** — Triển khai Favorite Exercise full-stack: migration/composite unique key, list/add/remove idempotent, visibility/ownership, MH56 và widget/integration test.
 
 ### Cổng nghiệm thu M4
 
-- [ ] E2E 2 chạy được: Exercise → Program → Schedule → Session → Log/PR.
+- [ ] E2E 2 chạy được: Exercise → Favorite → Program → Schedule → Session → Log/PR.
 - [ ] Hai request Finish đồng thời không tạo hai Workout Log.
 - [ ] Discard không tạo PR hoặc completion giả.
 - [ ] User không đọc/sửa Workout resource của user khác.
 - [ ] AC-05, AC-06 và AC-07 đạt.
+- [ ] Phần Favorite Exercise của AC-20 đạt.
 
 **Ngày bắt đầu thực tế:**  
 **Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M4:**
+**Minh chứng:** `mobile/lib/features/workout/presentation/workout_history_screen.dart`, `mobile/lib/features/workout/presentation/workout_history_detail_screen.dart`, `mobile/lib/features/profile/presentation/personal_records_screen.dart`, `mobile/test/workout_features_test.dart`, `mobile/test/profile_progress_test.dart`.
+**Ghi chú M4:** UI Library, Favorite Exercises, schedule, session, history/detail và Personal Record đã được triển khai bằng state/catalog cục bộ. Chưa đánh dấu M4-23..M4-28 vì còn thiếu Program/Workout Builder, Discard/unknown-result, Favorite API persistence, tích hợp Backend authoritative, ownership và concurrency test.
 
 ---
 
@@ -371,10 +378,10 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 **Thời gian:** Tuần 13–15  
 **Phụ thuộc:** M2 và M3  
-**Phạm vi:** UC-08/09; FT-MP-001..006/009/011  
-**Màn hình:** MH20..25/54  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/22
+**Phạm vi:** UC-08/09; FT-MP-001..007/009/011
+**Màn hình:** MH20..25/54/57
+**Trạng thái:** Đang thực hiện
+**Tiến độ:** 0/23
 
 ### Food và Meal Backend
 
@@ -403,18 +410,20 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **M5-20** — Refresh Dashboard sau add/update/delete Meal Entry.
 - [ ] **M5-21** — Gắn nhãn tham khảo cho giá trị dinh dưỡng ước lượng.
 - [ ] **M5-22** — Viết test cho snapshot, summary, ownership, concurrency và hidden Food.
+- [ ] **M5-23** — Triển khai Favorite Food full-stack: migration/composite unique key, list/add/remove idempotent, visibility/ownership, MH57 và widget/integration test.
 
 ### Cổng nghiệm thu M5
 
-- [ ] E2E 3 chạy được: Food → Meal Entry → Nutrition Summary → Dashboard.
+- [ ] E2E 3 chạy được: Food → Favorite → Meal Entry → Nutrition Summary → Dashboard.
 - [ ] Sửa Food không làm thay đổi Meal Entry lịch sử.
 - [ ] Concurrent entry không tạo Meal Plan trùng hoặc tổng sai.
 - [ ] AC-08 và phần Nutrition của AC-10 đạt.
+- [ ] Phần Favorite Food của AC-20 đạt.
 
 **Ngày bắt đầu thực tế:**  
 **Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M5:**
+**Minh chứng:** `mobile/lib/features/nutrition/`, `mobile/lib/features/dashboard/presentation/dashboard_screen.dart`, `mobile/test/nutrition_features_test.dart`.
+**Ghi chú M5:** UI Meal Tab, Food Library/Detail, Favorite Foods, Meal Plan/Entry Editor, Nutrition Summary và phản ứng Dashboard đã được triển khai bằng state/catalog cục bộ. Chưa đánh dấu M5-16..M5-23 vì chưa tích hợp Backend/Database; ngoài ra còn thiếu Favorite API persistence, Template preview/copy flow, nhãn dữ liệu ước lượng nhất quán và test ownership/concurrency/hidden Food.
 
 ---
 
@@ -482,14 +491,14 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 ---
 
-## 12. M7 — Admin, Media và Audit
+## 12. M7 — Admin, Media, Notification và Audit
 
-**Thời gian:** Tuần 20–21  
+**Thời gian:** Tuần 20–22
 **Phụ thuộc:** M4, M5 và M6  
-**Phạm vi:** UC-19/21; FT-AD-003/004/008; FT-MD-001..003  
-**Màn hình:** MH45/46/47/51  
+**Phạm vi:** UC-19/21/22; FT-AD-003/004/008; FT-MD-001..003; FT-NT-001..004
+**Màn hình:** MH41/45/46/47/51
 **Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/19
+**Tiến độ:** 0/26
 
 ### Admin và Audit
 
@@ -519,12 +528,24 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **M7-18** — Hoàn thiện media picker/upload/progress/error/retry UI.
 - [ ] **M7-19** — Viết test cho role, ownership, MIME/size, audit redaction và history preservation.
 
+### Notification local/in-app
+
+- [ ] **M7-20** — Tạo migration `notifications`, `notification_preferences`, enum/status và index ownership/unread/scheduled.
+- [ ] **M7-21** — Triển khai list/pagination, unread count, read/read-all/delete idempotent và ownership cho Notification Center.
+- [ ] **M7-22** — Triển khai GET/PUT preference, timezone, quiet hours và permission-facing contract.
+- [ ] **M7-23** — Triển khai workout/meal/weight reminder scheduler/event handler idempotent; lỗi PH10 không rollback domain transaction.
+- [ ] **M7-24** — Enforce AI Consent cho notification có nội dung cá nhân hóa; Weekly Review vẫn P1, push/automation vẫn P2.
+- [ ] **M7-25** — Hoàn thiện MH41 Notification Center & Settings, bell/unread badge, read/delete state và deep link qua guard.
+- [ ] **M7-26** — Viết unit/integration/widget test cho ownership, preference, timezone/quiet hours, consent, idempotency và failure isolation.
+
 ### Cổng nghiệm thu M7
 
 - [ ] E2E 7 chạy được: Admin thêm Exercise/Food + media → User đọc catalog mới.
+- [ ] E2E 8 chạy được: reminder/event → Notification Center → mark read → deep link; preference OFF không tạo reminder tương ứng.
 - [ ] USER không truy cập được admin API hoặc admin route.
 - [ ] Hide Exercise/Food không phá Workout/Meal history.
 - [ ] AC-18 và AC-19 đạt.
+- [ ] AC-21 đạt.
 
 **Ngày bắt đầu thực tế:**  
 **Ngày hoàn thành thực tế:**  
@@ -535,11 +556,11 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 ## 13. M8 — Hardening, UAT và Release
 
-**Thời gian:** Tuần 22–24  
+**Thời gian:** Tuần 23–25
 **Phụ thuộc:** M0..M7  
 **Mục tiêu:** chuyển bản feature-complete thành sản phẩm có thể cài đặt, demo và nghiệm thu.  
 **Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/28
+**Tiến độ:** 0/29
 
 ### Regression và E2E
 
@@ -550,42 +571,43 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **M8-05** — Chạy E2E 5 với happy path và failure branch.
 - [ ] **M8-06** — Chạy E2E 6 với happy path và failure branch.
 - [ ] **M8-07** — Chạy E2E 7 với happy path và failure branch.
-- [ ] **M8-08** — Chạy regression toàn bộ API và Mobile sau khi sửa lỗi.
+- [ ] **M8-08** — Chạy E2E 8 Notification với happy path, preference OFF, ownership/deep-link failure branch.
+- [ ] **M8-09** — Chạy regression toàn bộ API và Mobile sau khi sửa lỗi.
 
 ### Security, reliability và performance
 
-- [ ] **M8-09** — Kiểm tra authentication, role và ownership matrix cho toàn bộ API P0.
-- [ ] **M8-10** — Kiểm tra secret scan, dependency vulnerability và cấu hình production.
-- [ ] **M8-11** — Kiểm tra rate limit cho OTP/login và validation input/file.
-- [ ] **M8-12** — Kiểm tra log/audit không chứa secret hoặc dữ liệu cá nhân dư thừa.
-- [ ] **M8-13** — Đo API latency baseline và review slow query/index.
-- [ ] **M8-14** — Kiểm tra AI timeout, retry, quota/budget và fallback.
-- [ ] **M8-15** — Chạy migration trên database rỗng.
-- [ ] **M8-16** — Chạy migration trên bản sao database có dữ liệu mẫu.
-- [ ] **M8-17** — Thực hiện backup và restore rehearsal.
+- [ ] **M8-10** — Kiểm tra authentication, role và ownership matrix cho toàn bộ API P0.
+- [ ] **M8-11** — Kiểm tra secret scan, dependency vulnerability và cấu hình production.
+- [ ] **M8-12** — Kiểm tra rate limit cho OTP/login và validation input/file.
+- [ ] **M8-13** — Kiểm tra log/audit không chứa secret hoặc dữ liệu cá nhân dư thừa.
+- [ ] **M8-14** — Đo API latency baseline và review slow query/index.
+- [ ] **M8-15** — Kiểm tra AI timeout, retry, quota/budget và fallback.
+- [ ] **M8-16** — Chạy migration trên database rỗng.
+- [ ] **M8-17** — Chạy migration trên bản sao database có dữ liệu mẫu.
+- [ ] **M8-18** — Thực hiện backup và restore rehearsal.
 
 ### UX và chất lượng bản build
 
-- [ ] **M8-18** — Review loading, empty, error, offline và unknown-result trên toàn bộ màn hình P0.
-- [ ] **M8-19** — Review navigation, deep link, session, onboarding và role guard.
-- [ ] **M8-20** — Review accessibility: touch target, contrast, font scale và semantic label.
-- [ ] **M8-21** — Kiểm tra timezone, locale, date và unit trên toàn ứng dụng.
-- [ ] **M8-22** — Kiểm tra APK trên emulator và ít nhất một thiết bị Android thật.
-- [ ] **M8-23** — Đóng băng feature; chỉ nhận bug fix và tài liệu release.
+- [ ] **M8-19** — Review loading, empty, error, offline và unknown-result trên toàn bộ màn hình P0.
+- [ ] **M8-20** — Review navigation, deep link, session, onboarding và role guard.
+- [ ] **M8-21** — Review accessibility: touch target, contrast, font scale và semantic label.
+- [ ] **M8-22** — Kiểm tra timezone, locale, date và unit trên toàn ứng dụng.
+- [ ] **M8-23** — Kiểm tra APK trên emulator và ít nhất một thiết bị Android thật.
+- [ ] **M8-24** — Đóng băng feature; chỉ nhận bug fix và tài liệu release.
 
 ### UAT và bàn giao
 
-- [ ] **M8-24** — Đối chiếu và ghi bằng chứng cho đủ 19 Acceptance Criteria cấp MVP.
-- [ ] **M8-25** — Chuẩn bị seed data, demo account và demo script 20 bước.
-- [ ] **M8-26** — Hoàn thiện README, OpenAPI, runbook, kiến trúc và hướng dẫn cài đặt.
-- [ ] **M8-27** — Build APK Release Candidate và Docker images được pin version.
-- [ ] **M8-28** — Thực hiện UAT cuối, lập biên bản lỗi/chấp nhận và đóng milestone.
+- [ ] **M8-25** — Đối chiếu và ghi bằng chứng cho đủ 21 Acceptance Criteria cấp MVP.
+- [ ] **M8-26** — Chuẩn bị seed data, demo account và demo script 20 bước.
+- [ ] **M8-27** — Hoàn thiện README, OpenAPI, runbook, kiến trúc và hướng dẫn cài đặt.
+- [ ] **M8-28** — Build APK Release Candidate và Docker images được pin version.
+- [ ] **M8-29** — Thực hiện UAT cuối, lập biên bản lỗi/chấp nhận và đóng milestone.
 
 ### Cổng nghiệm thu M8 — MVP Done
 
 - [ ] CI xanh trên Release Candidate.
-- [ ] 7/7 luồng E2E đạt cả happy path và failure branch.
-- [ ] 19/19 Acceptance Criteria cấp MVP có bằng chứng.
+- [ ] 8/8 luồng E2E đạt cả happy path và failure branch.
+- [ ] 21/21 Acceptance Criteria cấp MVP có bằng chứng.
 - [ ] Không còn bug Blocker hoặc Critical.
 - [ ] Bug Major còn lại có quyết định xử lý hoặc chấp nhận rõ ràng.
 - [ ] Clean install, migration, backup/restore và APK install đều đạt.
@@ -599,15 +621,15 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 
 ---
 
-## 14. Checklist 7 luồng E2E bắt buộc
+## 14. Checklist 8 luồng E2E bắt buộc
 
 - [ ] **E2E-01** — Register → OTP → Health/Equipment onboarding → Dashboard.
   - [ ] Happy path đạt.
   - [ ] OTP invalid/expired/rate-limit branch đạt.
-- [ ] **E2E-02** — Login → Exercise → Program → Schedule → Session → Log/PR.
+- [ ] **E2E-02** — Login → Exercise → Favorite → Program → Schedule → Session → Log/PR.
   - [ ] Happy path đạt.
   - [ ] Invalid transition/concurrent Finish branch đạt.
-- [ ] **E2E-03** — Food → Meal Plan → Entry → Nutrition Summary → Dashboard.
+- [ ] **E2E-03** — Food → Favorite → Meal Plan → Entry → Nutrition Summary → Dashboard.
   - [ ] Happy path đạt.
   - [ ] Hidden Food/invalid serving/concurrency branch đạt.
 - [ ] **E2E-04** — Weight Log → metric/progress refresh.
@@ -622,6 +644,9 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **E2E-07** — Admin Exercise/Food + media → User đọc catalog mới.
   - [ ] Happy path đạt.
   - [ ] USER role/MIME invalid/hidden history branch đạt.
+- [ ] **E2E-08** — Domain reminder/event → Notification Center → mark read → deep link đúng resource.
+  - [ ] Happy path đạt.
+  - [ ] Preference OFF/ownership/AI Consent OFF branch đạt.
 
 ## 15. Checklist Acceptance Criteria cấp MVP
 
@@ -644,6 +669,8 @@ conversation archive và account auto-lock không được lén đưa vào P0; c
 - [ ] **AC-17** — Apply mutation qua domain owner và có audit.
 - [ ] **AC-18** — Media hiển thị hợp lệ và enforce quyền/validation.
 - [ ] **AC-19** — Audit không chứa secret hoặc personal context thừa.
+- [ ] **AC-20** — Favorite Exercise/Food đúng ownership, idempotent, persist qua Backend và không làm lộ catalog item hidden.
+- [ ] **AC-21** — Notification đúng ownership, preference/timezone/consent, read idempotent và failure không rollback domain.
 
 ## 16. Definition of Ready
 
@@ -691,6 +718,8 @@ Một công việc/vertical slice chỉ được đánh dấu `[x]` khi:
 - **2026-08-19 — PLAN-003:** Xử lý 8 phát hiện M0-01; khóa calculation sex, health-v1, mandatory rules, benchmark, seed baseline và demo-data retention.
 - **2026-08-19 — PLAN-004:** Frozen P0 gồm 62 feature, 47 UI, 19 AC và 7 E2E.
 - **2026-08-19 — PLAN-005:** Chấp nhận ADR-001..ADR-007; pin runtime/build tool; tạo 20 story và xác nhận 49/49 ticket M1/M2 READY.
+- **2026-08-28 — PLAN-006:** Mở rộng FT-ID-003 thành Social Login Google/Facebook P0; thêm contract `/auth/facebook`, provider `FACEBOOK`, trust boundary Meta và M2-28; tổng M1/M2 là 50/50 ticket READY.
+- **2026-08-31 — PLAN-007:** Promote FT-WO-010 Favorite Exercise, FT-MP-007 Favorite Food và FT-NT-001..004 Notification local/in-app vào P0; thêm MH56/MH57, chuyển MH41 sang P0, thêm AC-20/21 và E2E-08; backlog thành 229 công việc trong 25 tuần. Push/automation vẫn P2.
 
 ## 20. Nhật ký triển khai
 
@@ -754,13 +783,23 @@ Minh chứng: commit/PR/test/screenshot/link
 - **Kế hoạch tiếp theo:** M2-23 — Session Bootstrap, Welcome, Login, Register và OTP UI.
 - **Minh chứng:** `backend/src/main/java/com/viegym/preference/`, `backend/src/main/java/com/viegym/health/`, `backend/src/main/resources/db/migration/V5__equipment_catalog_seed.sql`, `backend/src/test/java/com/viegym/preference/PreferenceIntegrationTests.java`, `backend/src/test/java/com/viegym/health/HealthCalculatorTests.java`, `backend/src/test/java/com/viegym/health/HealthProfileIntegrationTests.java`; `./mvnw --batch-mode clean verify`: 54/54 tests pass, Flyway v0→v5, Spotless sạch.
 
+### 2026-08-31 — Audit Flutter UI
+
+- **Milestone:** M3, M4 và M5 (triển khai UI song song khi M2 chưa đóng).
+- **Đã hoàn thành:** Chưa có ticket mới đủ Definition of Done để đổi sang `[x]`.
+- **Đang thực hiện:** UI của M2–M6; nổi bật là Health/Weight/Progress, Workout History/PR và các luồng Nutrition đã có giao diện, state cục bộ và widget/unit test.
+- **Vấn đề/BLOCKED:** Các controller/catalog của phần UI mới chủ yếu dùng dữ liệu cục bộ; chưa thể dùng chúng làm bằng chứng cho Backend, ownership, concurrency, authoritative response hoặc E2E.
+- **Quyết định hoặc thay đổi:** Giữ checkbox trống cho các ticket UI chưa chạy từ Mobile đến Database theo Definition of Done; ghi nhận phần đã làm trong ghi chú milestone thay vì nâng sai tiến độ.
+- **Kế hoạch tiếp theo:** Hoàn thiện M2-23..M2-27 và kết nối các UI đã có với API authoritative theo thứ tự milestone.
+- **Minh chứng:** `mobile/lib/features/profile/`, `mobile/lib/features/workout/presentation/workout_history*`, `mobile/lib/features/nutrition/`, `mobile/lib/features/dashboard/presentation/dashboard_screen.dart`; toàn bộ test trong `mobile/test/`.
+
 ## 21. Điều kiện bắt đầu P1
 
 P1 chỉ được đưa vào kế hoạch khi tất cả điều kiện sau đã hoàn thành:
 
 - [ ] M0 đến M8 đều hoàn thành.
-- [ ] 19/19 Acceptance Criteria đạt.
-- [ ] 7/7 E2E đạt.
+- [ ] 21/21 Acceptance Criteria đạt.
+- [ ] 8/8 E2E đạt.
 - [ ] Không còn Blocker/Critical.
 - [ ] Backup/restore và clean installation đã được rehearsal.
 - [ ] Sản phẩm MVP đã được nghiệm thu cho đồ án tốt nghiệp.

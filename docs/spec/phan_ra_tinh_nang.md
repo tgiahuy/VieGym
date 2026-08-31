@@ -1,16 +1,16 @@
 # Phân Rã Tính Năng Hệ Thống — VieGym
 
-> **Phiên bản:** 3.0
-> **Ngày cập nhật:** 2026-08-19
+> **Phiên bản:** 3.2
+> **Ngày cập nhật:** 2026-08-31
 > **Trạng thái:** Baseline triển khai MVP
 
 ## 1. Mục đích và nguồn tham chiếu
 
 Tài liệu phân rã yêu cầu VieGym thành các feature có thể thiết kế, triển khai và kiểm thử. Nguồn tham chiếu, theo thứ tự ưu tiên khi có xung đột:
 
-1. `specs.md` v3.0 — Source of Truth về yêu cầu và phạm vi.
-2. `bussiness_mainflow.md` v3.0 — luồng nghiệp vụ end-to-end.
-3. `phan_ra_phan_he_he_thong.md` v3.0 — subsystem owner và boundary.
+1. `specs.md` v3.2 — Source of Truth về yêu cầu và phạm vi.
+2. `bussiness_mainflow.md` v3.2 — luồng nghiệp vụ end-to-end.
+3. `phan_ra_phan_he_he_thong.md` v3.2 — subsystem owner và boundary.
 4. Tài liệu này — feature breakdown phục vụ triển khai.
 
 Nguyên tắc xuyên suốt:
@@ -54,7 +54,7 @@ Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản
 |---|---|---|
 | FT-ID-001 | Đăng ký local và kích hoạt bằng OTP | P0 |
 | FT-ID-002 | Đăng nhập email/password | P0 |
-| FT-ID-003 | Google Login server-side | P0 |
+| FT-ID-003 | Social Login Google/Facebook server-side | P0 |
 | FT-ID-004 | Đăng xuất và revoke token | P0 |
 | FT-ID-005 | Refresh token | P0 |
 | FT-ID-006 | Quên/đặt lại mật khẩu bằng OTP | P0 |
@@ -74,11 +74,13 @@ Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản
 - **Rules:** Email duy nhất; password được hash; account chưa verify không nhận token nghiệp vụ; lỗi không làm lộ email đã tồn tại.
 - **AC:** OTP hợp lệ kích hoạt account; OTP sai, hết hạn hoặc vượt giới hạn không kích hoạt.
 
-#### FT-ID-002/003 — Đăng nhập local và Google
+#### FT-ID-002/003 — Đăng nhập local, Google và Facebook
 
 - Backend kiểm tra credential và account status trước khi cấp token.
 - Account pending, locked hoặc disabled bị từ chối bằng lỗi chuẩn.
-- Google credential phải được verify server-side trước khi liên kết/tạo account.
+- Google credential và Facebook access token phải được verify server-side trước khi liên kết/tạo account.
+- Với Facebook, Backend chỉ tin `user_id`, `app_id`, expiry và email lấy từ Meta sau khi token hợp lệ; không tin profile/email do Mobile tự gửi.
+- Không tự động liên kết Facebook với tài khoản đã tồn tại chỉ dựa trên email; trường hợp trùng email phải đi qua flow liên kết tài khoản có xác thực.
 - Số lần đăng nhập sai và cooldown là cấu hình bảo mật, không hard-code trong feature.
 
 #### FT-ID-004/005 — Logout và refresh
@@ -218,7 +220,7 @@ Quản lý Exercise Library, Program, Schedule, Session và Log từ lúc chọn
 | FT-WO-007 | Workout Log theo bài/set | P0 |
 | FT-WO-008 | Volume và completion rate | P0 |
 | FT-WO-009 | Workout History/progress | P0 |
-| FT-WO-010 | Favorite Exercise | P1 |
+| FT-WO-010 | Favorite Exercise | P0 |
 | FT-WO-011 | Personal Record | P0 |
 
 `FT-WO-003` tiêu thụ `FT-UP-004`, không sở hữu hoặc lưu Equipment Preference.
@@ -271,6 +273,12 @@ STARTED ↔ PAUSED
 - Backend xác định PR theo weight/reps/volume; Mobile chỉ hiển thị.
 - History hỗ trợ xem log/progress theo khoảng thời gian.
 
+#### FT-WO-010 — Favorite Exercise
+
+- Add/remove favorite là idempotent và chỉ áp dụng cho Exercise user được phép đọc.
+- Favorite thuộc user hiện tại, lưu tại Backend và được khôi phục trên thiết bị khác/sau khi mở lại app.
+- Exercise bị hidden không xuất hiện như lựa chọn mới; reference favorite được xử lý theo visibility policy và không làm lộ dữ liệu.
+
 **Dependencies:** PH1, PH2 Equipment Preference, PH9. **Consumers:** PH6, PH7, PH8.
 
 ---
@@ -289,7 +297,7 @@ Quản lý Food Database món Việt, Meal Plan/Entry và tổng dinh dưỡng t
 | FT-MP-004 | Meal Entry và serving multiplier | P0 |
 | FT-MP-005 | Daily calories/macro summary | P0 |
 | FT-MP-006 | Macro progress/distribution | P0 |
-| FT-MP-007 | Favorite Food | P1 |
+| FT-MP-007 | Favorite Food | P0 |
 | FT-MP-008 | Recent Food | P1 |
 | FT-MP-009 | Meal History/template | P0 |
 | FT-MP-010 | Water Tracker | P1 |
@@ -320,6 +328,12 @@ Quản lý Food Database món Việt, Meal Plan/Entry và tổng dinh dưỡng t
 
 - Khi consent ON, AI có thể tạo `ADD_MEAL_ENTRY_PROPOSAL` dựa trên macro gap và preference.
 - Chỉ mutation sau khi user APPLY và PH5 validate food, serving, constraints và ownership.
+
+#### FT-MP-007 — Favorite Food
+
+- Add/remove favorite là idempotent và chỉ áp dụng cho Food public/active user được phép đọc.
+- Favorite thuộc user hiện tại, lưu tại Backend và được khôi phục trên thiết bị khác/sau khi mở lại app.
+- Food hidden không còn xuất hiện trong danh sách favorite để chọn mới nhưng không làm thay đổi Meal Entry snapshot cũ.
 
 **Dependencies:** PH1, PH2, PH3, PH9. **Consumers:** PH6, PH7, PH8.
 
@@ -433,7 +447,7 @@ DISMISS: authorization → ownership → status validation
 | `CREATE_WORKOUT_SCHEDULE_PROPOSAL` | PH4 | WorkoutDay thuộc shortlist; `targetDate` hợp lệ | Tạo Schedule |
 | `UPDATE_USER_PREFERENCE_PROPOSAL` | PH2 | Field ∈ `disliked_foods`, `meal_preferences`, `training_preferences`, `preferred_training_time`; user xác nhận | Cập nhật preference |
 | `REVIEW_NUTRITION_TARGET_PROPOSAL` | PH3 | Chỉ tạo review flow | Không tự sửa target |
-| `LOG_REMINDER_ONLY` | PH10/client | Reserved P1; không nằm trong `allowedActions` P0 | Reminder khi Notification được bật |
+| `LOG_REMINDER_ONLY` | PH10/client | P0; user review/xác nhận, preference/timezone/consent hợp lệ | Tạo reminder, không mutation domain |
 
 Payload không chứa SQL, endpoint command, token, API key hoặc field ngoài whitelist.
 `allergies` và `dietary_constraints` chỉ do user tự sửa, không bao giờ qua AI proposal.
@@ -509,19 +523,21 @@ Quản lý media Exercise/Food/profile; không lưu binary trong PostgreSQL.
 
 ### 11.1. Mục tiêu và feature
 
-Notification không thuộc P0. Local/in-app reminder làm sau core; push/automation là mở rộng.
+Notification local/in-app thuộc P0. Push/automation bên ngoài ứng dụng vẫn là mở rộng P2.
 
 | ID | Feature | Priority |
 |---|---|---|
-| FT-NT-001 | Local/in-app notification | P1 |
-| FT-NT-002 | Workout reminder | P1 |
-| FT-NT-003 | Meal/weight reminder | P1 |
-| FT-NT-004 | Reminder preference và read state | P1 |
+| FT-NT-001 | Local/in-app notification | P0 |
+| FT-NT-002 | Workout reminder | P0 |
+| FT-NT-003 | Meal/weight reminder | P0 |
+| FT-NT-004 | Reminder preference và read/delete state | P0 |
 | FT-NT-005 | Push/automated AI notification | P2 |
 
-- User bật/tắt loại reminder được hỗ trợ.
+- User bật/tắt loại reminder được hỗ trợ; timezone và quiet hours do Backend lưu theo contract.
+- Notification Center hỗ trợ list/pagination, unread count, read/read-all và deep link qua auth/ownership guard.
 - `LOG_REMINDER_ONLY` không mutation Workout/Meal/Health.
 - Notification lỗi không làm thất bại transaction chính; retry có giới hạn.
+- Notification có nội dung AI cá nhân hóa chỉ được tạo khi AI Consent cho phép.
 
 **Dependencies:** PH1; nhận event từ PH3, PH4, PH5, PH7 khi triển khai.
 
@@ -547,7 +563,7 @@ PH2–PH5 authorized data ──→ PH7 Context/Rule/Recommendation
 PH7 approved action ──────→ PH2/PH3/PH4/PH5 domain owner
 PH7/domain mutation ──────→ PH8 Audit
 PH9 Media ────────────────→ PH2/PH4/PH5
-PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P1+)
+PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P0 local/in-app)
 ```
 
 - Không module nào bypass owner để sửa trực tiếp dữ liệu domain.
@@ -578,7 +594,9 @@ PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P1+)
 | Exercise/Food media | UC-21 | FT-MD-001..003 | PH9 | P0 baseline |
 | Weekly Review/Plan Adjustment | UC-15/16 | FT-AI-011/012 | PH7 | P1 |
 | Admin mở rộng | UC-20 | FT-AD-001/002/005..007/009 | PH8 | P1 |
-| Local/in-app reminder | Optional flow | FT-NT-001..004 | PH10 | P1 |
+| Favorite Exercise | UC-04 | FT-WO-010 | PH4 | P0 |
+| Favorite Food | UC-08 | FT-MP-007 | PH5 | P0 |
+| Local/in-app reminder | UC-22 | FT-NT-001..004 | PH10 | P0 |
 
 ### 13.1. Migration mã feature từ bản 2.0
 
@@ -613,6 +631,8 @@ PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P1+)
 | AC-17 | Mutation sau APPLY do domain owner thực hiện và có audit |
 | AC-18 | Media P0 hiển thị asset hợp lệ và enforce quyền/validation |
 | AC-19 | Audit không chứa password, token, OTP, API key hoặc personal context thừa |
+| AC-20 | Favorite Exercise/Food đúng ownership, add/remove idempotent, chỉ tham chiếu catalog item hợp lệ và được persist qua Backend |
+| AC-21 | Notification đúng ownership; read/preference idempotent; reminder tôn trọng timezone, preference, AI Consent và không rollback domain transaction |
 
 ---
 
@@ -624,18 +644,19 @@ PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P1+)
 - PH2 profile, preference, constraints và equipment.
 - PH3 Health calculation và Weight Tracking.
 - PH4 Exercise, Program, Schedule, Session, Log và progress.
-- PH5 Food Database, Meal Planner và nutrition summary.
+- PH4 Favorite Exercise.
+- PH5 Food Database, Meal Planner, nutrition summary và Favorite Food.
 - PH6 Dashboard.
 - PH7 Consent, Context, Rule Engine, Coach, Daily Recommendation, Apply/Dismiss và validation.
 - PH8 Exercise/Food/Audit baseline.
 - PH9 Exercise/Food media baseline.
+- PH10 Notification local/in-app, workout/meal/weight reminder, preference và read state.
 
 ### P1 — Sau khi P0 ổn định
 
 - Preference Memory, Weekly Review, Plan Adjustment, conversation summary/feedback.
-- Favorite/recent food, favorite exercise, Water Tracker và app settings.
+- Recent Food, Water Tracker và app settings.
 - Admin dashboard/user/import/AI Rule/Prompt/metrics.
-- Local/in-app reminder.
 
 ### P2/Future
 

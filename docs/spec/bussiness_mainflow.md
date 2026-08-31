@@ -1,11 +1,11 @@
 # Luồng Nghiệp Vụ Chính — VieGym
 
-> Tài liệu mô tả các luồng nghiệp vụ end-to-end của VieGym, rút gọn từ `specs.md` v3.0 để phục vụ thiết kế, triển khai, kiểm thử và demo.
+> Tài liệu mô tả các luồng nghiệp vụ end-to-end của VieGym, rút gọn từ `specs.md` v3.2 để phục vụ thiết kế, triển khai, kiểm thử và demo.
 >
-> **Phiên bản:** 3.0  
-> **Ngày cập nhật:** 2026-08-19
+> **Phiên bản:** 3.2
+> **Ngày cập nhật:** 2026-08-31
 >
-> **Cập nhật v3.0:** bổ sung các luồng P0 còn thiếu (Register + OTP, Health Profile View/Edit + recalculation, Workout Session lifecycle, Media/Storage baseline), chuẩn hóa Admin Exercise/Food/Audit baseline ở P0 và Admin mở rộng ở P1, làm rõ AI Consent / Allowed Action Contract / Weight target review / Notification scope, và thêm bảng traceability đối chiếu SRS use case, feature ID, màn hình và subsystem.
+> **Cập nhật v3.2:** đưa Favorite Exercise, Favorite Food và Notification local/in-app vào P0; push/automation vẫn là P2.
 
 ---
 
@@ -15,18 +15,20 @@ VieGym xoay quanh hành trình người dùng từ lúc đăng ký tài khoản,
 
 ```text
 Guest
-  └── Đăng ký / Đăng nhập / Google Login
+  └── Đăng ký / Đăng nhập / Google Login / Facebook Login
         └── Hoàn thiện hồ sơ sức khỏe
               └── Tính Health Metrics
                     └── Chọn thiết bị có sẵn
                           └── Dashboard cá nhân
                                 ├── Luyện tập
                                 │     ├── Xem thư viện bài tập
+                                │     ├── Lưu bài tập yêu thích
                                 │     ├── Tạo giáo án
                                 │     ├── Tạo lịch tập
                                 │     └── Ghi nhận buổi tập
                                 ├── Dinh dưỡng
                                 │     ├── Tìm món ăn Việt Nam
+                                │     ├── Lưu món ăn yêu thích
                                 │     └── Lập meal plan trong ngày
                                 ├── Theo dõi cơ thể
                                 │     └── Cập nhật cân nặng
@@ -36,6 +38,9 @@ Guest
                                 │     └── Daily Recommendation
                                 │           ├── Apply
                                 │           └── Dismiss
+                                ├── Notification Center
+                                │     ├── Xem/đánh dấu đã đọc
+                                │     └── Mở deep link đúng resource
                                 └── Settings
                                       ├── Equipment Preference
                                       └── User Preference
@@ -51,7 +56,7 @@ Sơ đồ trực quan:
 
 ```mermaid
 flowchart TD
-    Guest[Guest] --> Auth[Đăng ký / Đăng nhập / Google Login]
+    Guest[Guest] --> Auth[Đăng ký / Đăng nhập / Google Login / Facebook Login]
     Auth --> Health[Hoàn thiện HealthProfile]
     Health --> Metrics[Tính BMI / BMR / TDEE / Calories / Macro]
     Metrics --> Equipment[Chọn Equipment Preference]
@@ -64,11 +69,13 @@ flowchart TD
     Dashboard --> Settings[Settings]
 
     Workout --> Exercise[Xem thư viện bài tập]
+    Exercise --> FavoriteExercise[Favorite Exercise]
     Workout --> Program[Tạo giáo án]
     Program --> Schedule[Tạo lịch tập]
     Schedule --> Log[Ghi nhận buổi tập]
 
     Nutrition --> Food[Tìm món ăn Việt Nam]
+    Food --> FavoriteFood[Favorite Food]
     Nutrition --> MealPlan[Lập meal plan trong ngày]
 
     AI --> Consent[AI Consent]
@@ -76,6 +83,7 @@ flowchart TD
     Consent --> Recommendation[Daily Recommendation]
     Recommendation --> Apply[Apply]
     Recommendation --> Dismiss[Dismiss]
+    Dashboard --> NotificationCenter[Notification Center]
 
     Settings --> EquipmentSettings[Equipment Preference]
     Settings --> Preference[User Preference]
@@ -107,7 +115,7 @@ Luồng này là cửa vào chính của MVP. User cần xác thực và hoàn t
 ```text
 Guest mở app
   ↓
-Chọn đăng ký / đăng nhập / Google Login
+Chọn đăng ký / đăng nhập / Google Login / Facebook Login
   ↓
 Backend xác thực thông tin
   ↓
@@ -162,10 +170,12 @@ flowchart TD
     Method --> Register[Đăng ký]
     Method --> Login[Đăng nhập]
     Method --> Google[Google Login]
+    Method --> Facebook[Facebook Login]
 
     Register --> Verify[Backend xác thực]
     Login --> Verify
     Google --> Verify
+    Facebook --> Verify
 
     Verify --> Valid{Thông tin hợp lệ?}
     Valid -- Không --> AuthError[Hiển thị lỗi xác thực]
@@ -201,7 +211,9 @@ Business rules:
 - Access Token dùng JWT và có thời hạn ngắn.
 - Refresh Token phải có khả năng thu hồi khi user đăng xuất.
 - OTP cho luồng đăng ký/khôi phục tài khoản phải có thời hạn, resend cooldown và giới hạn attempts/rate limit.
-- Google Login phải được verify server-side.
+- Google Login và Facebook Login phải được verify server-side.
+- Facebook access token phải đúng Meta app/user, còn hạn; Backend lấy identity/profile cần thiết từ Meta và không tin dữ liệu profile do client tự gửi.
+- Không tự động liên kết social account với account hiện có chỉ dựa trên email.
 - Biometric unlock chỉ dùng để mở khóa local session/token đã lưu an toàn trên thiết bị.
 - Tài khoản bị khóa hoặc vô hiệu hóa không được đăng nhập.
 - Nếu thiếu dữ liệu bắt buộc, hệ thống không tính TDEE và yêu cầu user hoàn thiện hồ sơ.
@@ -490,7 +502,7 @@ Business rules:
 - `CANCELLED` không tính vào mẫu số `completionRate` nếu user hủy hợp lệ.
 - Lịch tương lai không vào mẫu số; cửa sổ mặc định là Thứ Hai đến ngày nghiệp vụ hiện tại.
 - Khi không có schedule eligible, `completionRate = null`. Schedule quá cutoff không được cancel để rút khỏi mẫu số.
-- Notification nâng cao không thuộc core P0; nếu triển khai chỉ hoạt động khi user cho phép.
+- Reminder local/in-app thuộc P0 và chỉ hoạt động khi user preference/permission cho phép; lỗi notification không rollback Workout.
 
 ### 4.5. Ghi nhận buổi tập
 
@@ -1239,7 +1251,9 @@ REVIEW_NUTRITION_TARGET_PROPOSAL
 LOG_REMINDER_ONLY
 ```
 
-`LOG_REMINDER_ONLY` là reserved cho P1 và không được gửi trong allowed-actions P0.
+Trong P0, `LOG_REMINDER_ONLY` chỉ được gửi sau khi user review/xác nhận và chỉ tạo
+reminder local/in-app qua PH10. Action phải tuân thủ preference, profile timezone và
+AI Consent; không mutation Workout/Meal/Health. Push/automation vẫn thuộc P2.
 
 Business rules:
 
@@ -1601,15 +1615,17 @@ Bảng này dùng để đối chiếu luồng nghiệp vụ với SRS, feature 
 | Luồng nghiệp vụ | SRS Use Case | Feature IDs | Screens | Subsystem owner | Priority |
 |---|---|---|---|---|---|
 | Register / OTP | UC-01 | FT-ID-001 / 006 / 008 | MH05 / MH06 | Identity & Auth | P0 |
+| Social Login Google/Facebook | UC-01 | FT-ID-003 / 010 | MH02 / MH04 / MH05 | Identity & Auth | P0 |
 | Health Profile | UC-02 / UC-03 | FT-HP-001..004 | MH09 / MH42 | Health Profile & Body Tracking | P0 |
 | Dashboard | UC-11 | FT-DB-001..005 / 007 | MH03 | Dashboard | P0 |
-| Workout Library / Program / Schedule / Session / Log | UC-04..07 | FT-WO-001..011 | MH11..19 | Workout | P0 |
-| Meal Planner | UC-08 / UC-09 | FT-MP-001..006, FT-MP-009 | MH20..25 | Nutrition / Meal | P0 |
+| Workout Library / Favorite / Program / Schedule / Session / Log | UC-04..07 | FT-WO-001..011 | MH11..19 / MH56 | Workout | P0 |
+| Meal Planner / Favorite Food | UC-08 / UC-09 | FT-MP-001..007, FT-MP-009 | MH20..25 / MH57 | Nutrition / Meal | P0 |
 | Weight Tracking | UC-10 | FT-HP-005..007 | MH43 | Health Profile & Body Tracking | P0 |
 | AI Consent / Coach | UC-12 / UC-17 | FT-AI-001..007 / 014 | MH28 / MH29 / MH55 | AI Coach | P0 |
 | Daily Recommendation + Apply / Dismiss | UC-13 / UC-14 | FT-AI-008..010 | MH30 / MH31 | AI Coach | P0 |
 | Admin baseline + Audit | UC-19 | FT-AD-003 / 004 / 008 | MH45 / MH46 / MH47 / MH51 | Admin & Audit | P0 baseline |
 | Media / Storage baseline | UC-21 | FT-MD-001..003 | Admin Exercise/Food media fields | Media / Storage | P0 baseline |
+| Notification Center / Reminder | UC-22 | FT-NT-001..004 | MH41 | Notification | P0 |
 | AI Weekly Review / Plan Adjustment | UC-15 / UC-16 | FT-AI-011 / 012 | MH32 | AI Coach | P1 |
 | Admin mở rộng: User / Import / AI Rule / Prompt | UC-20 | FT-AD-002 / 005 / 006 / 007 | MH48 / MH49 / MH50 | Admin & Audit | P1 |
 
@@ -1621,12 +1637,13 @@ Tài liệu này bao phủ các luồng MVP chính:
 
 - Đăng ký/đăng nhập.
 - Register + OTP verification.
-- Google Login, refresh token và OTP ở phạm vi Authentication.
+- Google/Facebook Login, refresh token và OTP ở phạm vi Authentication.
 - Hoàn thiện Health Profile.
 - Cập nhật Health Profile và tính lại BMI/BMR/TDEE/calories/macro ở Backend.
 - Tính BMI, BMR, TDEE, calories và macro mục tiêu ở Backend.
 - Chọn và chỉnh sửa Equipment Preference.
 - Xem Exercise Library và video hướng dẫn.
+- Favorite/unfavorite Exercise và Food được persist theo ownership.
 - Tạo Workout Program.
 - Tạo Workout Schedule.
 - Ghi nhận Workout Log.
@@ -1649,6 +1666,7 @@ Tài liệu này bao phủ các luồng MVP chính:
 - Ownership và Security baseline.
 - Media/Storage baseline cho Exercise/Food.
 - Admin baseline P0 quản lý bài tập, món ăn và Audit Log.
+- Notification Center, read state, preference và workout/meal/weight reminder local/in-app.
 - User Management, Admin Dashboard, Import CSV/Excel và AI Rule/Prompt ở phạm vi P1.
 
 Các chức năng sau **không thuộc MVP** và không được đưa vào core business flow:
@@ -1662,6 +1680,38 @@ Các chức năng sau **không thuộc MVP** và không được đưa vào core
 - ML prediction.
 - AI tự động thay đổi kế hoạch không cần User approval.
 
+## 16A. Luồng Favorite và Notification P0
+
+### Favorite Exercise/Food
+
+```text
+User mở Library/Detail
+→ Backend trả trạng thái favorite theo user
+→ User Add/Remove
+→ Backend kiểm tra auth + ownership/visibility
+→ Upsert/Delete idempotent favorite relation
+→ Mobile cập nhật từ response authoritative
+```
+
+- Favorite chỉ tham chiếu Exercise/Food user được phép đọc.
+- Item hidden không còn là lựa chọn mới và không được làm lộ qua danh sách favorite.
+- Retry cùng request không tạo bản ghi trùng; dữ liệu được khôi phục sau khi mở lại app.
+
+### Notification Center và reminder
+
+```text
+Domain event hoặc reminder đến hạn
+→ PH10 kiểm tra preference + timezone + quiet hours
+→ Nếu có AI personalized content: kiểm tra AI Consent
+→ Tạo notification thuộc user
+→ Mobile load unread/list
+→ User mở item → mark read idempotent → deep link qua auth/ownership guard
+```
+
+- Notification không phải source of truth và lỗi PH10 không rollback transaction domain gốc.
+- Workout/meal/weight reminder local/in-app thuộc P0; push/automation bên ngoài ứng dụng là P2.
+- User có thể bật/tắt từng nhóm reminder; read/read-all và preference update là idempotent.
+
 ## 17. Future / Optional Flow
 
 Các chức năng có thể phát triển sau khi P0 ổn định:
@@ -1672,9 +1722,6 @@ P1
  ├── User Preference Memory
  ├── Admin Import / AI Rule nâng cao
  └── AI Plan Adjustment Proposal
-
-P1
- └── Notification local/in-app reminder (nếu còn thời gian)
 
 P2
  ├── Notification nâng cao (push / automation)
@@ -1700,8 +1747,6 @@ flowchart TD
     P1 --> Memory[User Preference Memory]
     P1 --> AdminImport[Admin Import / AI Rule nâng cao]
     P1 --> AdjustmentProposal[AI Plan Adjustment Proposal]
-    P1 --> LocalReminder[Notification local / in-app reminder]
-
     P2 --> Notification[Notification nâng cao / push / automation]
     P2 --> Offline[Offline queue nâng cao]
     P2 --> Adjustment[Plan Adjustment mở rộng]

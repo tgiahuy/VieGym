@@ -43,7 +43,7 @@ timezone chỉ dùng hiển thị và không tự thay đổi nghĩa dữ liệu
 - OTP, password, access/refresh token và presigned URL còn hiệu lực không được ghi log.
 - Role `USER` và `ADMIN` không thay thế ownership check. Resource riêng tư luôn được scope theo subject trong JWT.
 - Admin không mặc định được đọc Health, Meal, Workout, conversation hoặc recommendation riêng tư của user.
-- Google ID token chỉ được Backend verify server-side.
+- Google ID token và Facebook access token chỉ được Backend verify server-side; dữ liệu identity/profile từ client không phải nguồn tin cậy.
 
 ### 1.4. Request headers
 
@@ -143,13 +143,13 @@ top-level hoặc mảng trần thay cho cấu trúc này.
 | Code | HTTP | Ý nghĩa |
 |---|---:|---|
 | `VALIDATION_ERROR` | 400 | Field/query không hợp lệ |
-| `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS` | 401 | Credential/session không hợp lệ |
+| `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`, `INVALID_PROVIDER_TOKEN` | 401 | Credential/session/provider token không hợp lệ |
 | `ACCESS_DENIED`, `ACCOUNT_PENDING`, `ACCOUNT_LOCKED`, `ACCOUNT_DISABLED`, `AI_CONSENT_REQUIRED` | 403 | Không đủ quyền/trạng thái không cho phép |
 | `RESOURCE_NOT_FOUND`, `EXERCISE_NOT_FOUND`, `FOOD_NOT_FOUND`, `RESOURCE_HIDDEN` | 404 | Không tồn tại hoặc không tiết lộ |
-| `EMAIL_ALREADY_EXISTS`, `ACTIVE_PROGRAM_EXISTS`, `ACTIVE_SESSION_EXISTS`, `INVALID_STATE_TRANSITION`, `SCHEDULE_NO_LONGER_PLANNED`, `DAY_HAS_PLANNED_SCHEDULES`, `RECOMMENDATION_NOT_PENDING`, `RECOMMENDATION_EXPIRED`, `IDEMPOTENCY_CONFLICT` | 409 | Duplicate/stale/conflict |
+| `EMAIL_ALREADY_EXISTS`, `ACCOUNT_LINK_REQUIRED`, `ACTIVE_PROGRAM_EXISTS`, `ACTIVE_SESSION_EXISTS`, `INVALID_STATE_TRANSITION`, `SCHEDULE_NO_LONGER_PLANNED`, `DAY_HAS_PLANNED_SCHEDULES`, `RECOMMENDATION_NOT_PENDING`, `RECOMMENDATION_EXPIRED`, `IDEMPOTENCY_CONFLICT` | 409 | Duplicate/stale/conflict; social email trùng account cần flow liên kết có xác thực |
 | `OTP_INVALID`, `OTP_EXPIRED` | 400 | OTP sai/hết hạn |
 | `OTP_ATTEMPTS_EXCEEDED`, `OTP_COOLDOWN`, `RATE_LIMITED`, `DAILY_GENERATION_LIMIT_REACHED` | 429 | Vượt ngưỡng/cooldown; có `Retry-After` |
-| `PASSWORD_CHANGE_NOT_SUPPORTED`, `HEALTH_PROFILE_REQUIRED`, `HEALTH_CALCULATION_UNAVAILABLE`, `SESSION_LOG_INVALID`, `FOOD_NOT_SELECTABLE`, `MEAL_TEMPLATE_ITEM_UNAVAILABLE`, `PROPOSAL_TARGET_INVALID` | 422 | Business/safety precondition |
+| `PASSWORD_CHANGE_NOT_SUPPORTED`, `SOCIAL_EMAIL_REQUIRED`, `HEALTH_PROFILE_REQUIRED`, `HEALTH_CALCULATION_UNAVAILABLE`, `SESSION_LOG_INVALID`, `FOOD_NOT_SELECTABLE`, `MEAL_TEMPLATE_ITEM_UNAVAILABLE`, `PROPOSAL_TARGET_INVALID` | 422 | Business/safety precondition |
 | `AI_PROVIDER_UNAVAILABLE`, `AI_OUTPUT_INVALID` | 502 | AI/provider output không dùng được |
 | `MEDIA_SIZE_EXCEEDED` | 413 | Media quá kích thước |
 | `MEDIA_TYPE_NOT_SUPPORTED`, `MEDIA_MIME_MISMATCH` | 415 | Media type/MIME không hợp lệ |
@@ -167,7 +167,7 @@ không parse `message`. Output safety `BLOCKED` không tạo recommendation nên
 |---|---|
 | `UserRole` | `USER`, `ADMIN` |
 | `AccountStatus` | `PENDING`, `ACTIVE`, `LOCKED`, `DISABLED` |
-| `AuthProvider` | `LOCAL`, `GOOGLE` |
+| `AuthProvider` | `LOCAL`, `GOOGLE`, `FACEBOOK` |
 | `OtpPurpose` | `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` reserved ngoài P0 |
 | `Gender` | `MALE`, `FEMALE`, `OTHER`, `UNSPECIFIED` |
 | `CalculationSex` | `MALE`, `FEMALE`, `UNSPECIFIED` |
@@ -187,7 +187,7 @@ không parse `message`. Output safety `BLOCKED` không tạo recommendation nên
 | `RecommendationStatus` | `PENDING`, `APPLIED`, `DISMISSED`, `EXPIRED` |
 | `AiPriority` | `LOW`, `MEDIUM`, `HIGH` |
 | `AiSafetyLevel` | Provider/validation: `NORMAL`, `CAUTION`, `BLOCKED`; persisted recommendation: `NORMAL`, `CAUTION` |
-| `AllowedAction` | P0: `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`; `LOG_REMINDER_ONLY` reserved P1 |
+| `AllowedAction` | P0: `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`, `LOG_REMINDER_ONLY` |
 
 ---
 
@@ -298,6 +298,19 @@ Với `PASSWORD_RESET`, `session` là `null` và response có `resetProof`.
 
 Backend verify issuer, audience, signature, expiry và subject. **200/201:** trả `AuthSession`; user mới có onboarding flags bằng `false`.
 
+### `POST /auth/facebook` 🔓
+
+```json
+{
+  "accessToken": "facebook-user-access-token",
+  "deviceInfo": "VieGym Android 1.0"
+}
+```
+
+Backend xác minh token với Meta, tối thiểu gồm app ID, user ID, expiry và data-access expiry; sau đó tự lấy provider subject và profile/email cần thiết từ Meta. Backend không tin email, tên hoặc Facebook user ID do Mobile tự gửi. **200/201:** trả `AuthSession`; user mới có onboarding flags bằng `false`.
+
+Token sai app, hết hạn hoặc không hợp lệ trả `401 INVALID_PROVIDER_TOKEN`. Nếu Facebook không cung cấp email bắt buộc, trả `422 SOCIAL_EMAIL_REQUIRED`. Nếu email đã thuộc account khác, trả `409 ACCOUNT_LINK_REQUIRED`; P0 không tự động liên kết chỉ dựa trên email.
+
 ### `POST /auth/refresh` 🔓
 
 ```json
@@ -344,7 +357,7 @@ Contract khóa cho màn Account Security của local account.
 }
 ```
 
-Google-only account trả `422 PASSWORD_CHANGE_NOT_SUPPORTED`. Thành công không trả password/token trong response.
+Google/Facebook-only account trả `422 PASSWORD_CHANGE_NOT_SUPPORTED`. Thành công không trả password/token trong response.
 
 ---
 
@@ -568,6 +581,17 @@ Chỉ trả Exercise `PUBLIC`/chưa xóa. `compatibleWithMyEquipment=true` ưu t
 Query `limit` mặc định 5, tối đa 20. Trả Exercise `PUBLIC` cùng primary muscle group, ưu tiên
 khớp equipment preference và loại exercise nguồn. Dùng cho hidden/missing-equipment warning.
 
+### Favorite Exercise 🔒
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/favorite-exercises` | List favorite của user; query `q`, `page`, `size` |
+| `PUT` | `/favorite-exercises/{exerciseId}` | Idempotently add Exercise vào favorite |
+| `DELETE` | `/favorite-exercises/{exerciseId}` | Idempotently remove favorite |
+
+Backend kiểm tra user được phép đọc Exercise trước khi add. Exercise hidden/inactive không được
+trả như lựa chọn mới qua list favorite; endpoint không làm lộ item trái visibility policy.
+
 ### Workout program CRUD 🔒
 
 | Method | Endpoint | Ý nghĩa |
@@ -728,6 +752,17 @@ Query: `q`, `category`, `page`, `size`, `sort=name,asc`. P0 chỉ trả Food `PU
 ```
 
 Giá trị có `estimated=true` phải được UI trình bày là tham khảo.
+
+### Favorite Food 🔒
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/favorite-foods` | List favorite của user; query `q`, `page`, `size` |
+| `PUT` | `/favorite-foods/{foodId}` | Idempotently add Food vào favorite |
+| `DELETE` | `/favorite-foods/{foodId}` | Idempotently remove favorite |
+
+Backend chỉ cho favorite Food `PUBLIC`/active. Food bị hidden không còn xuất hiện trong list
+favorite để chọn mới; Meal Entry snapshot lịch sử không bị thay đổi.
 
 ### `GET /meal-plans?date=2026-08-19` 🔒
 
@@ -1168,7 +1203,7 @@ Không trả password hash, token, OTP hoặc dữ liệu domain riêng tư.
 
 ---
 
-## 9. Notification `[P1]`
+## 9. Notification `[P0 local/in-app]`
 
 ### `GET /notifications` 🔒
 
@@ -1177,6 +1212,16 @@ Query `status`, `type`, pagination. Chỉ trả notification của user hiện t
 ### `POST /notifications/{id}/read` 🔒
 
 Idempotently chuyển notification thuộc user sang `READ`, set `readAt` và trả resource hiện tại.
+
+### `POST /notifications/read-all` 🔒
+
+Idempotently đánh dấu các notification chưa đọc của user hiện tại là `READ`; trả `updatedCount`
+và unread count authoritative sau mutation.
+
+### `DELETE /notifications/{id}` 🔒
+
+Idempotently ẩn notification thuộc user khỏi Notification Center bằng soft delete; không xóa
+domain resource nguồn và không ảnh hưởng audit/retention policy.
 
 ### `GET /notifications/preferences` 🔒 / `PUT /notifications/preferences` 🔒
 
@@ -1193,7 +1238,9 @@ Idempotently chuyển notification thuộc user sang `READ`, set `readAt` và tr
 }
 ```
 
-Notification không phải source of truth; lỗi gửi không rollback transaction domain. Notification AI cá nhân hóa phải tuân theo consent.
+Notification không phải source of truth; lỗi gửi không rollback transaction domain. Workout,
+meal và weight reminder local/in-app thuộc P0. Notification AI cá nhân hóa phải tuân theo
+consent; push/automation bên ngoài ứng dụng là P2.
 
 ---
 
@@ -1264,7 +1311,7 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 - JWT invalid/expired/revoked; USER gọi Admin API.
 - User A đọc/sửa resource Health, Workout, Meal, AI hoặc Media private của user B.
 - OTP sai purpose, expired, vượt attempts, resend cooldown và chống email enumeration.
-- Register/login/refresh/logout và Google token invalid.
+- Register/login/refresh/logout; Google/Facebook token sai app/audience, subject hoặc expiry; Facebook thiếu email và account-link conflict.
 - Concurrent session start/finish; invalid state transition; discarded session không sinh PR.
 - Health input không cho ghi metric; `calculationSex` không bị suy ra từ `gender`, và `UNSPECIFIED`/age dưới 18 phải trả calculation incomplete.
 - Meal totals bỏ qua giá trị client giả mạo.
@@ -1283,13 +1330,15 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 | Profile/Preference | `/users/me`, `/preferences/**` | P0 |
 | Health/Body | `/health/**`, `/weight-logs/**` | P0 |
 | Workout | `/exercises/**`, `/workout-programs/**`, `/workout-schedules/**`, `/workout-sessions/**`, `/workout-logs/**` | P0 |
+| Favorite Exercise | `/favorite-exercises/**` | P0 |
 | Nutrition | `/foods/**`, `/meal-plans/**`, `/meal-templates/**` | P0 |
+| Favorite Food | `/favorite-foods/**` | P0 |
 | Dashboard | `/dashboard` | P0 |
 | AI Coach | `/ai/**` | P0 |
 | Admin baseline | `/admin/exercises/**`, `/admin/foods/**`, `/admin/audit-logs` | P0 |
 | Media | `/media/**` | P0 |
 | Admin mở rộng | `/admin/dashboard`, `/admin/users/**`, `/admin/imports/**`, `/admin/ai-rules/**`, `/admin/prompts/**` | P1 |
-| Notification | `/notifications/**` | P1 |
+| Notification | `/notifications/**` | P0 local/in-app |
 
 ---
 

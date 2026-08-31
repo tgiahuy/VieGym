@@ -1,6 +1,6 @@
 # M0-15 — Definition of Ready review cho M1 và M2
 
-> Kết luận: **PASS — 49/49 ticket READY** · Ngày review: 2026-08-19
+> Kết luận: **PASS — 50/50 ticket READY** · Ngày review: 2026-08-28
 
 ## Tiêu chí review
 
@@ -33,7 +33,7 @@ Mỗi ticket phải có: ID duy nhất; phạm vi/technical owner; input contrac
 | M1-21 | CI | Format/lint/test/migration/build cả ba project; phụ thuộc skeleton |
 | M1-22 | Setup guide | Clean setup/run/test ≤30 phút; kiểm chứng trên checkout sạch |
 
-## M2 — 27/27 READY
+## M2 — 28/28 READY
 
 | Ticket | Traceability/contract | Output nghiệm thu và dependency |
 |---|---|---|
@@ -48,7 +48,7 @@ Mỗi ticket phải có: ID duy nhất; phạm vi/technical owner; input contrac
 | M2-09 | ST-02; FT-ID-004 | Logout revoke session, idempotent/expired cases |
 | M2-10 | ST-03; FT-ID-006/008 | Forgot/reset purpose-isolated, enumeration-safe |
 | M2-11 | ST-03; FT-ID-007 | Change password authenticated + revoke policy test |
-| M2-12 | ST-03; FT-ID-003 | Verify issuer/audience/signature/expiry server-side |
+| M2-12 | ST-03; FT-ID-003 | Verify Google issuer/audience/signature/expiry server-side |
 | M2-13 | FT-ID-010; AC-01/02 | Public/private/admin policy integration test |
 | M2-14 | AC-19; ADR-004/005 | Enumeration và log-redaction security tests |
 | M2-15 | ST-04; FT-UP-001/003/004 | Migration profile/preference/equipment; M1-10 |
@@ -64,6 +64,7 @@ Mỗi ticket phải có: ID duy nhất; phạm vi/technical owner; input contrac
 | M2-25 | ST-04/05; MH09/10 | Health/equipment onboarding + authoritative guard |
 | M2-26 | ST-02; ADR-004 | Secure storage, memory access token, single-flight, clear logout |
 | M2-27 | ST-01..05; AC-01..05/19 | Unit/integration/widget suite và E2E register/onboarding |
+| M2-28 | ST-03; FT-ID-003; MH02/04/05 | Facebook SDK + Backend verifier + `FACEBOOK` migration/API + invalid/app/expiry/email/link tests; M2-02/08/12/23 |
 
 ## Audit dependency và quyết định mở
 
@@ -74,4 +75,3 @@ Mỗi ticket phải có: ID duy nhất; phạm vi/technical owner; input contrac
 ## Kết luận và điều kiện bắt đầu
 
 M1-01 có thể bắt đầu ngay. M2 chỉ bắt đầu sau cổng M1; bên trong M2 phải giữ thứ tự dependency nêu trên. Nếu thay đổi ADR, API hoặc schema trước khi triển khai, ticket bị ảnh hưởng phải review DoR lại.
-

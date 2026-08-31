@@ -1,7 +1,7 @@
 # M0-02 — Review tính nhất quán bộ đặc tả
 
-> **Ngày review:** 2026-08-19  
-> **Nguồn ưu tiên:** SRS v3.0 → Business Flow → Subsystem Breakdown → Feature Breakdown → Screen Breakdown  
+> **Ngày review/revise:** 2026-08-31
+> **Nguồn ưu tiên:** SRS v3.2 → Business Flow → Subsystem Breakdown → Feature Breakdown → Screen Breakdown
 > **Kết luận:** Đạt sau khi xử lý các mâu thuẫn phát hiện
 
 ## 1. Phạm vi kiểm tra
@@ -18,8 +18,8 @@
 - 21 Use Case trong SRS, gồm P0 và P1.
 - 19 Acceptance Criteria trong SRS; 19/19 có mapping UI hoặc ghi rõ Backend-only.
 - 10 subsystem có owner và boundary.
-- 62 feature P0/P0 baseline và 24 feature P1.
-- 47 UI unit P0: 43 USER và 4 ADMIN.
+- 68 feature P0/P0 baseline và 18 feature P1 sau PLAN-007.
+- 50 UI unit P0: 46 USER và 4 ADMIN.
 - Tất cả feature P0 đều có tham chiếu trong Screen Breakdown hoặc được mô tả là shared/backend behavior.
 - Không còn Session status dùng lẫn `CANCELLED` và `DISCARDED`.
 - Không còn Avatar/Profile media bị gắn P0.
@@ -55,7 +55,7 @@
 
 ### C-06 — Screen Breakdown chưa truy vết trực tiếp AC
 
-- **Quyết định:** thêm mapping AC-01..AC-19 tới UI coverage chính và ghi rõ phần Backend-only.
+- **Quyết định:** thêm mapping AC-01..AC-21 tới UI coverage chính và ghi rõ phần Backend-only.
 
 ## 4. Quy tắc canonical sau review
 
@@ -73,6 +73,5 @@
 - Search toàn bộ tài liệu không còn stale Session `CANCELLED` transition.
 - Search không còn `FT-UP-002` hoặc Profile media được gắn P0.
 - 19/19 mã AC xuất hiện trong Screen Breakdown sau khi bổ sung traceability.
-- 62/62 feature P0 có screen/shared/backend coverage.
+- 68/68 feature P0 có screen/shared/backend coverage.
 - Các thay đổi contract đã được cập nhật đồng thời ở tài liệu owner.
-

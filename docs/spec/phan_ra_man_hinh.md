@@ -1,7 +1,7 @@
 # Phân Rã Màn Hình — VieGym
 
-> **Phiên bản:** 3.0
-> **Ngày cập nhật:** 2026-08-19
+> **Phiên bản:** 3.2
+> **Ngày cập nhật:** 2026-08-31
 > **Trạng thái:** Baseline triển khai UI/UX MVP
 > **Nền tảng chính:** Flutter Mobile App (Android)
 > **Phạm vi:** User App và Admin UI tối thiểu phục vụ MVP/demo
@@ -30,10 +30,10 @@ Mục tiêu cuối cùng là bảo đảm UI không tự tạo business rule, kh
 
 Khi có khác biệt, áp dụng thứ tự ưu tiên sau:
 
-1. `specs.md` v3.0 — source of truth cấp yêu cầu và phạm vi.
-2. `bussiness_mainflow.md` v3.0 — luồng nghiệp vụ end-to-end.
-3. `phan_ra_phan_he_he_thong.md` v3.0 — owner, API boundary và dependency.
-4. `phan_ra_tinh_nang.md` v3.0 — feature ID, priority và acceptance criteria triển khai.
+1. `specs.md` v3.2 — source of truth cấp yêu cầu và phạm vi.
+2. `bussiness_mainflow.md` v3.2 — luồng nghiệp vụ end-to-end.
+3. `phan_ra_phan_he_he_thong.md` v3.2 — owner, API boundary và dependency.
+4. `phan_ra_tinh_nang.md` v3.2 — feature ID, priority và acceptance criteria triển khai.
 5. Tài liệu này — đặc tả cách thể hiện trên UI.
 
 Tài liệu màn hình không được dùng để thay đổi yêu cầu ở tài liệu có mức ưu tiên cao hơn.
@@ -232,10 +232,12 @@ MH03 Dashboard
 ├── Workout today → MH17
 ├── Nutrition → MH20/MH23
 ├── Body → MH43
-└── Recommendation → MH31
+├── Recommendation → MH31
+└── Notification Center → MH41
 
 MH11 Workout
 ├── MH12 Exercise Library → MH13 Exercise Detail
+├── MH56 Favorite Exercises → MH13 Exercise Detail
 ├── MH14 Program List → MH15 Builder
 ├── MH16 Schedule → MH17 Session
 ├── MH18 History
@@ -243,6 +245,7 @@ MH11 Workout
 
 MH20 Meal
 ├── MH21 Food Library → MH22 Food Detail → MH24 Meal Entry
+├── MH57 Favorite Foods → MH22 Food Detail → MH24 Meal Entry
 ├── MH23 Meal Plan → MH24 Meal Entry
 ├── MH25 Nutrition Summary
 ├── MH54 Meal History & Template
@@ -264,7 +267,7 @@ MH33 Profile
     ├── MH28 AI Consent
     ├── MH53 Account Security
     ├── MH40 App Settings [P1]
-    ├── MH41 Notification Settings [P1]
+    ├── MH41 Notification Center & Settings
     └── MH44 Logout Dialog
 ```
 
@@ -327,6 +330,7 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH36 | Settings | USER | Screen | PH1/PH2/PH7 entry |
 | MH37 | Equipment Preference | USER | Screen | FT-UP-004, FT-WO-003 |
 | MH38 | User Preference | USER | Screen | FT-UP-003, FT-UP-005 |
+| MH41 | Notification Center & Settings | USER | Sheet/Screen | FT-NT-001..004 |
 | MH42 | Health Profile View/Edit | USER | Screen | FT-HP-001..004 |
 | MH43 | Weight Tracking | USER | Screen + Sheet | FT-HP-005..007 |
 | MH44 | Logout | USER, ADMIN | Dialog | FT-ID-004 |
@@ -334,6 +338,8 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH53 | Account Security / Change Password | USER | Screen | FT-ID-007 |
 | MH54 | Meal History & Template | USER | Screen | FT-MP-009 |
 | MH55 | AI Conversation History | USER | Screen | FT-AI-014 |
+| MH56 | Favorite Exercises | USER | Screen | FT-WO-010 |
+| MH57 | Favorite Foods | USER | Screen | FT-MP-007 |
 
 ### 5.2. P0 Admin UI
 
@@ -351,11 +357,10 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH26 | Water Tracker | USER | Screen | FT-MP-010 |
 | MH32 | Weekly Review | USER | Screen | FT-AI-011 |
 | MH40 | App Settings | USER | Screen | FT-UP-007 |
-| MH41 | Notification Settings | USER | Screen | FT-NT-001, FT-NT-002, FT-NT-003, FT-NT-004 |
 | MH49 | Manage Users | ADMIN | Screen | FT-AD-002 |
 | MH50 | AI Rule / Prompt Management | ADMIN | Screen | FT-AD-006/007/009 |
 
-P1 Favorite Exercise (`FT-WO-010`), Favorite Food (`FT-MP-007`), Recent Food (`FT-MP-008`), Preference Memory (`FT-UP-006`, `FT-AI-013`) và conversation summary/feedback nâng cao (`FT-AI-015`) là state/component trong screen hiện có, không cần route riêng.
+P1 Recent Food (`FT-MP-008`), Preference Memory (`FT-UP-006`, `FT-AI-013`) và conversation summary/feedback nâng cao (`FT-AI-015`) là state/component trong screen hiện có, không cần route riêng.
 
 ### 5.4. Alias và ID migration
 
@@ -367,6 +372,8 @@ P1 Favorite Exercise (`FT-WO-010`), Favorite Food (`FT-MP-007`), Recent Food (`F
 | MH53 | Route mới cho Change Password |
 | MH54 | Route mới cho Meal History & Template |
 | MH55 | Route mới cho AI Conversation History |
+| MH56 | Route P0 cho Favorite Exercises |
+| MH57 | Route P0 cho Favorite Foods |
 
 ---
 
@@ -438,12 +445,13 @@ Giới thiệu ngắn gọn ba giá trị: luyện tập, dinh dưỡng món Vi�
 - `Đăng nhập` → MH04.
 - `Đăng ký` → MH05.
 - `Tiếp tục với Google` → server-side Google Login flow.
+- `Tiếp tục với Facebook` → server-side Facebook Login flow.
 - Skip onboarding giới thiệu → MH04; không cho skip authentication.
 
 #### Rules
 
 - Không mô tả AI như hệ thống tự ra quyết định.
-- Google Login phải gọi Backend, không xác thực hoàn toàn ở client.
+- Google/Facebook Login phải gọi Backend, không xác thực hoàn toàn ở client.
 - Onboarding marketing đã xem có thể được lưu local; không ảnh hưởng Health onboarding.
 
 ### MH04 — Login
@@ -460,6 +468,7 @@ Giới thiệu ngắn gọn ba giá trị: luyện tập, dinh dưỡng món Vi�
 - Password và show/hide.
 - `Đăng nhập`.
 - `Tiếp tục với Google`.
+- `Tiếp tục với Facebook`.
 - `Quên mật khẩu?` → MH52.
 - `Chưa có tài khoản? Đăng ký` → MH05.
 
@@ -485,13 +494,14 @@ Giới thiệu ngắn gọn ba giá trị: luyện tập, dinh dưỡng món Vi�
 
 - `POST /api/v1/auth/login`.
 - `POST /api/v1/auth/google`.
+- `POST /api/v1/auth/facebook`.
 
 ### MH05 — Register
 
 **Actor:** Guest
 **Priority:** P0
 **Type:** Screen
-**Feature:** FT-ID-001
+**Feature:** FT-ID-001, FT-ID-003
 **Owner:** PH1
 
 #### Components
@@ -502,14 +512,17 @@ Giới thiệu ngắn gọn ba giá trị: luyện tập, dinh dưỡng món Vi�
 - Confirm password.
 - Password requirements.
 - `Đăng ký`.
+- `Tiếp tục với Google`.
+- `Tiếp tục với Facebook`.
 - Link về MH04.
 
 #### Rules
 
 - Email duy nhất được Backend kiểm tra; thông báo không làm lộ dữ liệu ngoài policy.
 - Password và confirm phải khớp; password không được log.
-- Register thành công chỉ tạo account pending và gửi OTP.
+- Local register thành công chỉ tạo account pending và gửi OTP.
 - Chưa verify OTP không được cấp token nghiệp vụ.
+- Google/Facebook dùng Social Login server-side; user mới nhận session và tiếp tục onboarding, không đi qua OTP local.
 
 #### Navigation
 
@@ -525,6 +538,8 @@ Submit hợp lệ
 #### Data/API
 
 - `POST /api/v1/auth/register`.
+- `POST /api/v1/auth/google`.
+- `POST /api/v1/auth/facebook`.
 
 ### MH06 — OTP Verification
 
@@ -664,7 +679,7 @@ OTP hoặc reset proof được truyền bằng flow state an toàn; không hi�
 
 #### Rules
 
-- Chỉ local account dùng current password; Google-only account hiển thị hướng dẫn phù hợp với provider.
+- Chỉ local account dùng current password; Google/Facebook-only account hiển thị hướng dẫn phù hợp với provider.
 - Session hợp lệ là bắt buộc.
 - Sau khi đổi, revoke/giữ phiên theo Backend security policy và thông báo kết quả rõ.
 - Contract đã khóa tại `POST /api/v1/auth/password/change`; Mobile không tự đặt URL khác.
@@ -836,7 +851,7 @@ Chỉ một CTA được nhấn mạnh nhất theo context; các action khác l�
 - `GET /dashboard` không gọi AI Provider hoặc sinh recommendation.
 - Completion loại `CANCELLED` hợp lệ khỏi mẫu số theo dữ liệu Backend.
 - Recommendation phải đúng user, còn hiệu lực và đúng trạng thái hiển thị.
-- Notification bell chỉ xuất hiện khi notification P1 được triển khai; không có icon chết ở P0.
+- Notification bell P0 hiển thị unread state authoritative; lỗi Notification Center không làm hỏng Dashboard.
 
 #### Data/API
 
@@ -916,14 +931,14 @@ Là điểm vào nhanh tới buổi tập hôm nay và toàn bộ công cụ Wor
 
 - Không tự suy ra completion từ số card đã hiển thị.
 - Program hoặc schedule thuộc user khác phải bị Backend từ chối.
-- Không hiển thị reminder/notification CTA nếu P1 chưa bật.
+- Notification CTA chỉ hiển thị khi PH10 load được unread state; lỗi PH10 không chặn Workout tab.
 
 ### MH12 — Exercise Library
 
 **Actor:** USER
-**Priority:** P0; Favorite là P1
+**Priority:** P0
 **Type:** Screen
-**Feature:** FT-WO-001, FT-WO-003; FT-WO-010 [P1]
+**Feature:** FT-WO-001, FT-WO-003, FT-WO-010
 **Owner:** PH4; đọc Equipment từ PH2
 
 #### Components
@@ -952,18 +967,20 @@ Là điểm vào nhanh tới buổi tập hôm nay và toàn bộ công cụ Wor
 
 - Chỉ Exercise active/visible được dùng cho lựa chọn mới.
 - Exercise hidden vẫn có thể xuất hiện dạng read-only trong history cũ.
-- Favorite icon chỉ xuất hiện khi `FT-WO-010` P1 được triển khai.
+- Favorite icon là P0; add/remove khóa double tap, rollback optimistic state khi API lỗi và không giả success.
+- Filter Favorite mở MH56 hoặc lọc cùng authoritative favorite set từ Backend.
 
 #### Data/API
 
 - `GET /api/v1/exercises` với query/filter do API Specification xác định.
+- `GET /api/v1/favorite-exercises` và `PUT/DELETE /api/v1/favorite-exercises/{exerciseId}`.
 
 ### MH13 — Exercise Detail
 
 **Actor:** USER
-**Priority:** P0; Favorite là P1
+**Priority:** P0
 **Type:** Screen
-**Feature:** FT-WO-002, FT-MD-001; FT-WO-010 [P1]
+**Feature:** FT-WO-002, FT-MD-001, FT-WO-010
 **Owner:** PH4; media do PH9
 
 #### Nội dung bắt buộc
@@ -980,7 +997,7 @@ Là điểm vào nhanh tới buổi tập hôm nay và toàn bộ công cụ Wor
 
 - Trong context Builder: `Thêm vào chương trình` và quay lại MH15 sau khi chọn.
 - Từ Library thông thường: CTA thêm chỉ xuất hiện nếu app có context đích rõ; không thêm vào một program không xác định.
-- Favorite [P1].
+- Add/remove Favorite Exercise; UI dùng trạng thái do Backend trả.
 
 #### Rules và states
 
@@ -992,7 +1009,34 @@ Là điểm vào nhanh tới buổi tập hôm nay và toàn bộ công cụ Wor
 #### Data/API
 
 - `GET /api/v1/exercises/{id}`.
+- `PUT/DELETE /api/v1/favorite-exercises/{exerciseId}`.
 - Media URL/access metadata từ PH9.
+
+### MH56 — Favorite Exercises
+
+**Actor:** USER
+**Priority:** P0
+**Type:** Screen
+**Feature:** FT-WO-010
+**Owner:** PH4 Workout
+
+#### Nội dung và actions
+
+- Danh sách Exercise user đã favorite, search/filter tối thiểu khi danh sách đủ lớn.
+- Tap item → MH13; bỏ favorite trực tiếp với undo/confirmation phù hợp UX.
+- Empty state → CTA mở MH12.
+
+#### Rules và states
+
+- Loading, empty, pagination/error và retry độc lập.
+- Chỉ đọc/sửa favorite của user hiện tại; add/remove idempotent.
+- Exercise hidden/inactive không được dùng cho lựa chọn mới và không làm lộ catalog item trái visibility policy.
+- Deep link qua session/ownership guard.
+
+#### Data/API
+
+- `GET /api/v1/favorite-exercises`.
+- `PUT/DELETE /api/v1/favorite-exercises/{exerciseId}`.
 
 ### MH14 — Workout Program List
 
@@ -1115,7 +1159,7 @@ Mỗi item hiển thị ngày/giờ theo timezone, workout/program và status `P
 - Chỉ schedule thuộc user được sửa/hủy.
 - Thay đổi Program sau này không viết lại schedule/log lịch sử ngoài contract rõ ràng.
 - Completion rate luôn dùng Backend value.
-- Notification/reminder chỉ hiển thị khi P1 được bật và user cho phép.
+- Notification/reminder P0 chỉ hiển thị khi user preference và permission cho phép.
 
 #### States
 
@@ -1282,7 +1326,7 @@ User chọn Finish
 3. Protein, carbohydrate và fat progress.
 4. BREAKFAST, LUNCH, DINNER, SNACK cùng subtotal.
 5. Primary CTA `Thêm món`.
-6. Lối vào Food Library, Meal Plan, Summary và History/Template.
+6. Lối vào Food Library, Favorite Foods, Meal Plan, Summary và History/Template.
 
 #### States và rules
 
@@ -1290,14 +1334,14 @@ User chọn Finish
 - No meal entry → empty theo ngày nhưng vẫn hiển thị target nếu có.
 - Vượt target dùng wording trung tính, không phán xét.
 - Total/remaining do Backend trả; Mobile không tự cộng làm authority.
-- Favorite/Recent không xuất hiện trong P0 nếu feature P1 chưa bật.
+- Favorite Food là P0; Recent Food vẫn là P1 và không xuất hiện khi feature chưa bật.
 
 ### MH21 — Food Library
 
 **Actor:** USER
-**Priority:** P0; Favorite/Recent là P1
+**Priority:** P0; Recent là P1
 **Type:** Screen
-**Feature:** FT-MP-001; FT-MP-007/008 [P1]
+**Feature:** FT-MP-001, FT-MP-007; FT-MP-008 [P1]
 **Owner:** PH5
 
 #### Components
@@ -1313,7 +1357,8 @@ User chọn Finish
 - Chỉ Food active/public phù hợp được chọn cho entry mới.
 - Food hidden giữ history nhưng không xuất hiện như lựa chọn mới.
 - Nutrition hiển thị theo serving và có nhãn tham khảo khi nguồn ước lượng.
-- Favorite và Recent chỉ hiển thị dưới feature flag P1.
+- Favorite icon là P0; add/remove khóa double tap, rollback optimistic state khi API lỗi.
+- Recent chỉ hiển thị dưới feature flag P1.
 
 #### States
 
@@ -1325,13 +1370,14 @@ User chọn Finish
 #### Data/API
 
 - `GET /api/v1/foods`.
+- `GET /api/v1/favorite-foods` và `PUT/DELETE /api/v1/favorite-foods/{foodId}`.
 
 ### MH22 — Food Detail
 
 **Actor:** USER
 **Priority:** P0
 **Type:** Screen
-**Feature:** FT-MP-002, FT-MD-002
+**Feature:** FT-MP-002, FT-MP-007, FT-MD-002
 **Owner:** PH5; media do PH9
 
 #### Nội dung
@@ -1346,6 +1392,7 @@ User chọn Finish
 
 - `Thêm vào bữa` → MH24 với Food đã chọn nếu có meal/date context.
 - Nếu mở độc lập, yêu cầu chọn date/meal type trong MH24.
+- Add/remove Favorite Food; UI dùng trạng thái do Backend trả.
 
 #### Rules và states
 
@@ -1357,6 +1404,33 @@ User chọn Finish
 #### Data/API
 
 - `GET /api/v1/foods/{id}`.
+- `PUT/DELETE /api/v1/favorite-foods/{foodId}`.
+
+### MH57 — Favorite Foods
+
+**Actor:** USER
+**Priority:** P0
+**Type:** Screen
+**Feature:** FT-MP-007
+**Owner:** PH5 Nutrition
+
+#### Nội dung và actions
+
+- Danh sách Food user đã favorite; giữ meal/date context khi mở từ Meal flow.
+- Tap item → MH22; bỏ favorite trực tiếp; chọn món → MH24 khi có context.
+- Empty state → CTA mở MH21.
+
+#### Rules và states
+
+- Loading, empty, pagination/error và retry độc lập.
+- Chỉ đọc/sửa favorite của user hiện tại; add/remove idempotent.
+- Food hidden không xuất hiện để chọn mới; Meal Entry snapshot cũ không bị thay đổi.
+- Deep link qua session/ownership guard.
+
+#### Data/API
+
+- `GET /api/v1/favorite-foods`.
+- `PUT/DELETE /api/v1/favorite-foods/{foodId}`.
 
 ### MH23 — Meal Plan
 
@@ -1784,7 +1858,7 @@ User gửi message
 | `CREATE_WORKOUT_SCHEDULE_PROPOSAL` | Program/workout, date/time và exercise summary | PH4 tạo Schedule hợp lệ |
 | `UPDATE_USER_PREFERENCE_PROPOSAL` | Field whitelist và before/after; proposal chạm allergy/constraint không bao giờ tới UI | PH2 cập nhật field được user xác nhận |
 | `REVIEW_NUTRITION_TARGET_PROPOSAL` | Lý do và metric; CTA mở review | Không tự sửa target; mở MH42/review flow |
-| `LOG_REMINDER_ONLY` | Không xuất hiện ở P0 | Reserved; chỉ khả dụng khi PH10/client P1 đã triển khai |
+| `LOG_REMINDER_ONLY` | Reminder type, thời điểm/timezone, preference và nội dung để user review | Sau xác nhận, PH10 tạo reminder local/in-app; không mutation Workout/Meal/Health; push/automation vẫn P2 |
 
 #### Apply flow
 
@@ -1876,7 +1950,7 @@ Feedback P0 có thể được lưu như tín hiệu; không tự biến thành 
 - Settings → MH36.
 - Logout → MH44.
 
-P1 App/Notification settings chỉ hiển thị khi feature tương ứng bật.
+P1 App Settings chỉ hiển thị khi feature tương ứng bật; Notification Center/Settings là P0.
 
 #### Rules
 
@@ -1955,7 +2029,7 @@ Gender, date of birth/age, height, current weight, activity level, fitness goal 
 - AI: MH28 Consent.
 - Account: MH53 Security, MH44 Logout.
 - App: MH40 [P1].
-- Notifications: MH41 [P1].
+- Notifications: MH41 [P0].
 
 #### Rules
 
@@ -2137,11 +2211,11 @@ Edit inputs
 
 Display conversion không sửa dữ liệu gốc hoặc metric Backend. Storage/sync policy phải được chốt trước triển khai; screen bị ẩn ở P0.
 
-### MH41 — Notification Settings [P1]
+### MH41 — Notification Center & Settings
 
 **Actor:** USER
-**Priority:** P1
-**Type:** Screen
+**Priority:** P0
+**Type:** Sheet/Screen
 **Feature:** FT-NT-001, FT-NT-002, FT-NT-003, FT-NT-004
 **Owner:** PH10 Notification
 
@@ -2150,8 +2224,9 @@ Display conversion không sửa dữ liệu gốc hoặc metric Backend. Storage
 - Global notification state nếu contract có.
 - Workout, meal, weight và AI/weekly reminder theo feature được hỗ trợ.
 - OS permission state và link system settings.
-- In-app notification list/panel, scheduled/sent/read state nếu feature này được bật; có thể là sheet từ AppShell thay vì route mới.
-- Notification bell chỉ xuất hiện cùng P1 notification list/panel, không xuất hiện như icon chết ở P0.
+- In-app notification list/panel, scheduled/sent/read state; có thể là sheet từ AppShell thay vì route mới.
+- Notification bell hiển thị unread count authoritative và mở đúng MH41.
+- Hỗ trợ `Đọc tất cả`, read từng item, pagination và deep link tới resource qua guard.
 
 #### Rules
 
@@ -2164,6 +2239,8 @@ Display conversion không sửa dữ liệu gốc hoặc metric Backend. Storage
 
 - `GET /api/v1/notifications`.
 - `POST /api/v1/notifications/{id}/read`.
+- `POST /api/v1/notifications/read-all`.
+- `DELETE /api/v1/notifications/{id}`.
 - `GET/PUT /api/v1/notifications/preferences`.
 
 ---
@@ -2701,7 +2778,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 |---|---|---|
 | FT-ID-001 Register + OTP | MH05, MH06 | P0 |
 | FT-ID-002 Local Login | MH04 | P0 |
-| FT-ID-003 Google Login | Action tại MH02/MH04; server-side flow | P0 |
+| FT-ID-003 Social Login Google/Facebook | Action tại MH02/MH04/MH05; server-side flow | P0 |
 | FT-ID-004 Logout/revoke | MH44 | P0 |
 | FT-ID-005 Refresh token | MH01 và global session handling; không cần screen riêng | P0 |
 | FT-ID-006 Forgot/Reset Password | MH52, MH06, MH07 | P0 |
@@ -2750,7 +2827,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | FT-WO-007 Set/Exercise Log | MH17, MH18 | P0 |
 | FT-WO-008 Volume/Completion | MH11/MH16/MH18/MH19 hiển thị Backend value | P0 |
 | FT-WO-009 History/Progress | MH18 | P0 |
-| FT-WO-010 Favorite Exercise | Component tại MH12/MH13 | P1 |
+| FT-WO-010 Favorite Exercise | MH12/MH13/MH56 | P0 |
 | FT-WO-011 Personal Record | MH19 | P0 |
 
 ### 17.4. Nutrition
@@ -2763,7 +2840,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | FT-MP-004 Meal Entry/Multiplier | MH24 | P0 |
 | FT-MP-005 Daily Summary | MH20, MH23, MH25, MH03 | P0 |
 | FT-MP-006 Macro Progress | MH20, MH25 | P0 |
-| FT-MP-007 Favorite Food | Component MH21 | P1 |
+| FT-MP-007 Favorite Food | MH21/MH22/MH57 | P0 |
 | FT-MP-008 Recent Food | Component MH21 | P1 |
 | FT-MP-009 History/Template | MH23, MH54 | P0 |
 | FT-MP-010 Water Tracker | MH26 | P1 |
@@ -2807,7 +2884,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | FT-MD-003 Metadata/access | Shared media states mục 13.2 | P0 baseline |
 | FT-MD-004 Thumbnail/compress | Không cần route; media extension | P1 |
 | FT-MD-005 Orphan cleanup | Backend-only; không tạo UI | P2 |
-| FT-NT-001, FT-NT-002, FT-NT-003, FT-NT-004 Local/in-app reminder | MH41 và entry P1 liên quan | P1 |
+| FT-NT-001, FT-NT-002, FT-NT-003, FT-NT-004 Local/in-app reminder | MH41 và notification bell/deep link liên quan | P0 |
 | FT-NT-005 Push/automated AI notification | Không có core UI | P2 |
 
 ### 17.7. Business flow và Use Case
@@ -2816,10 +2893,10 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 |---|---|---|---|---|
 | Register/Login/OTP | UC-01 | MH04/05/06/07/52; MH01/08/44/53 | PH1 | P0 |
 | Health onboarding/recalculation | UC-02/03 | MH09, MH42 | PH3 | P0 |
-| Equipment/Exercise | UC-04 | MH10/37, MH12/13 | PH2/PH4 | P0 |
+| Equipment/Exercise/Favorite | UC-04 | MH10/37, MH12/13/56 | PH2/PH4 | P0 |
 | Program/Schedule | UC-05/06 | MH14/15/16 | PH4 | P0 |
 | Session/Log/Progress | UC-07 | MH17/18/19 | PH4 | P0 |
-| Food/Meal | UC-08/09 | MH20..25, MH54 | PH5 | P0 |
+| Food/Meal/Favorite | UC-08/09 | MH20..25, MH54/MH57 | PH5 | P0 |
 | Weight | UC-10 | MH43 | PH3 | P0 |
 | Dashboard | UC-11 | MH03 | PH6 | P0 |
 | AI Coach/Consent | UC-12/17 | MH27/28/29/55 | PH7 | P0 |
@@ -2827,6 +2904,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | User Preference | UC-18 | MH37/38 | PH2 | P0 |
 | Admin baseline | UC-19 | MH45/46/47/51 | PH8 | P0 baseline |
 | Media baseline | UC-21 | MH13/22/46/47 + shared media states | PH9 | P0 baseline |
+| Notification Center/Reminder | UC-22 | MH03/MH41 | PH10 | P0 |
 | Weekly/Plan Adjustment | UC-15/16 | MH32/31 | PH7 | P1 |
 | Admin mở rộng | UC-20 | MH45/48/49/50 | PH8 | P1 |
 
@@ -2848,6 +2926,8 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | AC-15/AC-16/AC-17 | MH31 | Apply/Dismiss state, ownership, mutation và audit |
 | AC-18 | MH13, MH22, MH46, MH47 | Exercise/Food media P0 |
 | AC-19 | MH51 | Audit read-only; redaction kiểm tra ở Backend |
+| AC-20 | MH12/13/21/22/56/57 | Favorite ownership/idempotency/visibility; Backend test authoritative |
+| AC-21 | MH03/MH41 | Notification ownership, preference, consent, read/deep-link và failure isolation |
 
 ---
 
@@ -2858,10 +2938,11 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 - Auth/session: MH01, MH02, MH04, MH05, MH06, MH07, MH08, MH44, MH52, MH53.
 - Onboarding/Health: MH09, MH10, MH42, MH43.
 - Main shell: MH03, MH11, MH20, MH27, MH33, MH36.
-- Workout: MH12–MH19.
-- Nutrition: MH21–MH25, MH54.
+- Workout: MH12–MH19, MH56.
+- Nutrition: MH21–MH25, MH54, MH57.
 - AI: MH28–MH31, MH55.
 - Profile/Preference: MH34, MH35, MH37, MH38.
+- Notification: MH41.
 - Admin baseline: MH45 shell, MH46, MH47, MH51.
 - Global loading/empty/error/security/accessibility states.
 
@@ -2870,12 +2951,11 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 - MH26 Water Tracker.
 - MH32 Weekly Review và Plan Adjustment proposal.
 - MH40 App Settings.
-- MH41 Notification Settings/local reminder.
 - MH45 analytics cards.
 - MH48 Import.
 - MH49 User Management.
 - MH50 AI Rule/Prompt/Metrics.
-- Favorite Exercise/Food, Recent Food, Preference Memory, conversation summary/feedback nâng cao.
+- Recent Food, Preference Memory, conversation summary/feedback nâng cao.
 
 ### 18.3. P2/Future
 
@@ -2932,7 +3012,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 - [ ] Daily summary/remaining do Backend tính.
 - [ ] Giá trị ước lượng có nhãn tham khảo.
 - [ ] Meal History/Template P0 có preview/copy validation.
-- [ ] Favorite/Recent không bị xem là P0.
+- [ ] Favorite Food P0 add/remove idempotent, persist qua Backend; Recent Food vẫn là P1.
 
 ### 19.6. AI
 
@@ -2954,7 +3034,16 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 - [ ] Upload validate file và không lưu binary trong PostgreSQL.
 - [ ] Audit read-only và không chứa secret/raw context thừa.
 
-### 19.8. Accessibility và error
+### 19.8. Favorites và Notification
+
+- [ ] Favorite Exercise/Food chỉ thuộc user hiện tại, persist qua Backend và không làm lộ item hidden.
+- [ ] Favorite add/remove idempotent, có loading/error và rollback optimistic state khi thất bại.
+- [ ] Notification list/read/read-all/preference chỉ thao tác trên dữ liệu của user hiện tại.
+- [ ] Reminder tôn trọng timezone, quiet hours, permission và preference.
+- [ ] Notification AI cá nhân hóa tôn trọng AI Consent.
+- [ ] Lỗi notification không rollback Workout/Meal/Weight và deep link luôn chạy qua guard.
+
+### 19.9. Accessibility và error
 
 - [ ] Touch target, contrast, semantic label và font scale đạt yêu cầu.
 - [ ] Loading, Empty và Error không bị trộn.
@@ -2977,7 +3066,7 @@ Một screen/sheet/dialog được xem là hoàn thành khi:
 7. Mutation có submitting, success, failure và unknown-result handling.
 8. Ownership/authorization được Backend kiểm tra.
 9. Không tự tính/ghi đè metric authoritative.
-10. Không tạo feature ngoài scope hoặc hiển thị P1 như P0.
+10. Không tạo feature ngoài scope hoặc hiển thị P1 như P0; Favorites và Notification local/in-app là P0 từ v3.2.
 11. Destructive action có confirmation.
 12. Accessibility và responsive behavior được kiểm tra.
 13. Không log/hiển thị secret hoặc raw personal context.

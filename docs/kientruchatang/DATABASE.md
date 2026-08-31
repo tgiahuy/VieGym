@@ -3,9 +3,9 @@
 > Thiết kế dữ liệu quan hệ cho ứng dụng quản lý sức khỏe, luyện tập, dinh
 > dưỡng và AI Coach cá nhân hóa VieGym.
 >
-> **Phiên bản tài liệu:** 1.0 — 2026-08-19  
-> **Hệ quản trị:** PostgreSQL 16+  
-> **Nguồn yêu cầu:** [SRS v3.0](../spec/specs.md),
+> **Phiên bản tài liệu:** 1.2 — 2026-08-31
+> **Hệ quản trị:** PostgreSQL 16+
+> **Nguồn yêu cầu:** [SRS v3.2](../spec/specs.md),
 > [phân rã phân hệ](../spec/phan_ra_phan_he_he_thong.md),
 > [luồng nghiệp vụ](../spec/bussiness_mainflow.md),
 > [System Architecture](../kientruchethong/sa.md) và
@@ -61,13 +61,17 @@ Ký hiệu phạm vi:
    │                                  └──0..1 [workout_logs]
    │                                           └──1──N [workout_exercise_logs]
    │                                                    └──1──N [workout_set_logs]
+   ├──1──N [favorite_exercises] N──1 [exercises]
    │
    ├──1──N [meal_plans] 1──N [meals] 1──N [meal_entries] N──1 [foods]
+   ├──1──N [favorite_foods] N──1 [foods]
    │
    ├──1──1 [ai_consent_settings] 1──N [ai_consent_histories]
    ├──1──N [ai_conversations] 1──N [ai_messages]
    │                               └──0..N [ai_conversation_summaries]
-   └──1──N [ai_recommendations] 1──N [ai_recommendation_logs]
+   ├──1──N [ai_recommendations] 1──N [ai_recommendation_logs]
+   ├──1──N [notifications]
+   └──1──1 [notification_preferences]
 
 [exercises] N──N [muscle_groups] (via exercise_muscle_groups)
 [exercises] N──N [equipment]     (via exercise_equipment)
@@ -86,6 +90,7 @@ Quan hệ ownership quan trọng:
 | Meal/Entry | `meal_plan_id → meal_plans.user_id` |
 | AI Message/Summary | `conversation_id → ai_conversations.user_id` |
 | Recommendation Log | `recommendation_id → ai_recommendations.user_id` |
+| Favorite Exercise/Food, Notification | `resource.user_id → users.id` |
 
 ---
 
@@ -118,7 +123,7 @@ dễ mở rộng, thay vì PostgreSQL native enum:
 |---|---|
 | `user_role` | `USER`, `ADMIN` |
 | `account_status` | `PENDING`, `ACTIVE`, `LOCKED`, `DISABLED` |
-| `auth_provider` | `LOCAL`, `GOOGLE` |
+| `auth_provider` | `LOCAL`, `GOOGLE`, `FACEBOOK` |
 | `otp_purpose` | `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` dành cho P1 nếu bổ sung MFA |
 | `token_status` | `ACTIVE`, `REVOKED`, `EXPIRED` |
 | `gender` | `MALE`, `FEMALE`, `OTHER`, `UNSPECIFIED` |
@@ -138,7 +143,7 @@ dễ mở rộng, thay vì PostgreSQL native enum:
 | `recommendation_status` | `PENDING`, `APPLIED`, `DISMISSED`, `EXPIRED` |
 | `ai_priority` | `LOW`, `MEDIUM`, `HIGH` |
 | `ai_safety_level` | Provider validation: `NORMAL`, `CAUTION`, `BLOCKED`; recommendation đã persist: chỉ `NORMAL`, `CAUTION` |
-| `allowed_action` | P0: `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`; `LOG_REMINDER_ONLY` dành cho P1 |
+| `allowed_action` | P0: `NONE`, `ADD_MEAL_ENTRY_PROPOSAL`, `CREATE_WORKOUT_SCHEDULE_PROPOSAL`, `UPDATE_USER_PREFERENCE_PROPOSAL`, `REVIEW_NUTRITION_TARGET_PROPOSAL`, `LOG_REMINDER_ONLY` |
 
 ### 3.3. Soft delete và retention
 
@@ -166,9 +171,9 @@ soát.
 |---|---|---|---|
 | `id` | BIGINT | PK, IDENTITY | Định danh user |
 | `email` | VARCHAR(255) | NOT NULL | Email đã normalize; unique không phân biệt hoa thường |
-| `password_hash` | VARCHAR(255) | NULLABLE | BCrypt/Argon2 hash; null với tài khoản Google-only |
-| `auth_provider` | VARCHAR(20) | NOT NULL | `LOCAL`, `GOOGLE` |
-| `provider_subject` | VARCHAR(255) | NULLABLE | Subject do Google xác minh server-side |
+| `password_hash` | VARCHAR(255) | NULLABLE | BCrypt/Argon2 hash; null với tài khoản social-only |
+| `auth_provider` | VARCHAR(20) | NOT NULL | `LOCAL`, `GOOGLE`, `FACEBOOK` |
+| `provider_subject` | VARCHAR(255) | NULLABLE | Subject do Google/Meta xác minh server-side |
 | `role` | VARCHAR(20) | NOT NULL, DEFAULT `USER` | `USER`, `ADMIN` |
 | `status` | VARCHAR(20) | NOT NULL, DEFAULT `PENDING` | Trạng thái account |
 | `email_verified_at` | TIMESTAMPTZ | NULLABLE | Thời điểm verify email |
@@ -180,6 +185,7 @@ Constraints/index chính:
 
 - `UNIQUE INDEX uq_users_email_ci ON users(lower(email))`.
 - Unique partial `(auth_provider, provider_subject)` khi `provider_subject IS NOT NULL`.
+- Email trùng với account/provider khác không được tự động liên kết; P0 trả conflict và yêu cầu flow liên kết có xác thực.
 - Local account phải có `password_hash`; account `ACTIVE` phải đã verify theo
   flow tương ứng.
 
@@ -405,6 +411,17 @@ update. Trend 7–30 ngày được tính từ bảng này, không lưu như ngu
 Exercise `HIDDEN` không được thêm vào program mới nhưng mọi FK/log cũ vẫn hợp
 lệ.
 
+#### `favorite_exercises`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner favorite |
+| `exercise_id` | BIGINT | FK → `exercises(id)`, NOT NULL | Exercise được lưu |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Thời điểm add |
+|  |  | PK (`user_id`, `exercise_id`) | Add idempotent, không trùng |
+
+List favorite luôn áp visibility policy của Exercise và không làm lộ item hidden.
+
 ### 6.2. Workout plan
 
 #### `workout_programs`
@@ -598,6 +615,17 @@ log con → tính volume/PR → set session/schedule `COMPLETED`.
 
 Food hidden không xuất hiện trong tìm kiếm/thêm mới nhưng entry lịch sử vẫn giữ
 snapshot.
+
+### 7.1A. `favorite_foods`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Owner favorite |
+| `food_id` | BIGINT | FK → `foods(id)`, NOT NULL | Food được lưu |
+| `created_at` | TIMESTAMPTZ | NOT NULL | Thời điểm add |
+|  |  | PK (`user_id`, `food_id`) | Add idempotent, không trùng |
+
+List favorite chỉ trả Food `PUBLIC`/active; hide Food không thay đổi Meal Entry snapshot.
 
 ### 7.2. `meal_plans`
 
@@ -931,13 +959,13 @@ tại và đúng loại trong transaction. Index `(owner_type, owner_id, status)
 Presigned access URL chỉ cấp sau access-policy check và có TTL ngắn. Orphan job
 không xóa object còn được lịch sử tham chiếu.
 
-### 9.2. Notification — P1
+### 9.2. Notification — P0 local/in-app
 
 #### `notifications`
 
 `id`, `user_id` FK, `type`, `title`, `content`, `status`
 (`SCHEDULED/SENT/READ/FAILED/CANCELLED`), `scheduled_at`, `sent_at`, `read_at`,
-`source_type`, `source_id`, `created_at`, `updated_at`.
+`source_type`, `source_id`, `deleted_at`, `created_at`, `updated_at`.
 
 #### `notification_preferences`
 
@@ -947,7 +975,7 @@ không xóa object còn được lịch sử tham chiếu.
 
 Notification không phải source of truth và lỗi gửi không rollback transaction
 Health/Workout/Nutrition. Không tạo notification AI cá nhân hóa khi consent
-không cho phép.
+không cho phép. Push/automation bên ngoài ứng dụng là P2.
 
 ### 9.3. `audit_logs`
 
@@ -1056,6 +1084,8 @@ CREATE UNIQUE INDEX uq_workout_sessions_one_active
 CREATE UNIQUE INDEX uq_workout_sessions_schedule
   ON workout_sessions (workout_schedule_id);
 
+-- favorite_exercises và favorite_foods dùng composite PK để bảo đảm idempotency.
+
 CREATE UNIQUE INDEX uq_recommendation_idempotency
   ON ai_recommendation_logs (recommendation_id, idempotency_key)
   WHERE idempotency_key IS NOT NULL;
@@ -1086,6 +1116,13 @@ CREATE INDEX idx_exercise_muscles_group_exercise
   ON exercise_muscle_groups (muscle_group_id, exercise_id);
 CREATE INDEX idx_exercise_equipment_equipment_exercise
   ON exercise_equipment (equipment_id, exercise_id);
+
+CREATE INDEX idx_notifications_user_status_created
+  ON notifications (user_id, status, created_at DESC)
+  WHERE deleted_at IS NULL;
+CREATE INDEX idx_notifications_scheduled
+  ON notifications (status, scheduled_at)
+  WHERE status = 'SCHEDULED' AND deleted_at IS NULL;
 
 CREATE INDEX idx_workout_schedules_user_date_status
   ON workout_schedules (user_id, scheduled_date, status);
@@ -1275,7 +1312,7 @@ Nguyên tắc:
 | AI Coach | PH7 | Consent, Chat, Context, Daily Recommendation, Apply/Dismiss |
 | Admin & Audit | PH8 | Exercise/Food P0, audit; import/rule/prompt P1 |
 | Media | PH9 | Upload init/complete, access policy, orphan cleanup |
-| Notification | PH10 | Reminder/notification P1 |
+| Notification | PH10 | Notification Center/reminder local/in-app P0; push/automation P2 |
 
 Schema này giữ đúng ranh giới kiến trúc cốt lõi của VieGym:
 

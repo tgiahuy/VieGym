@@ -1,18 +1,18 @@
 # M0-03 — P0 Scope Baseline
 
-> **Ngày khóa:** 2026-08-19  
-> **Nguồn:** SRS v3.0 và Feature Breakdown v3.0  
+> **Ngày khóa/revise:** 2026-08-31
+> **Nguồn:** SRS v3.2 và Feature Breakdown v3.2
 > **Trạng thái:** FROZEN cho MVP đồ án tốt nghiệp
 
 ## 1. Mục đích
 
 Tài liệu này là danh sách P0 chính thức dùng để lập backlog, triển khai, kiểm thử và nghiệm thu. Tính năng không xuất hiện trong danh sách P0 dưới đây không được đưa vào đường găng MVP nếu chưa có quyết định thay đổi scope được phê duyệt.
 
-## 2. Feature P0 chính thức — 62 feature
+## 2. Feature P0 chính thức — 68 feature
 
 ### PH1 Identity & Auth — 10
 
-- FT-ID-001..010: đăng ký/OTP, login local/Google, logout, refresh rotation, password flows, biometric local, role/account/authorization.
+- FT-ID-001..010: đăng ký/OTP, login local/Google/Facebook, logout, refresh rotation, password flows, biometric local, role/account/authorization.
 
 ### PH2 User Profile & Preference — 4
 
@@ -25,14 +25,16 @@ Tài liệu này là danh sách P0 chính thức dùng để lập backlog, tri�
 
 - FT-HP-001..007: Health Profile, BMI, BMR/TDEE, calories/macro target, Weight Log, trend và chart/progress.
 
-### PH4 Workout — 10
+### PH4 Workout — 11
 
 - FT-WO-001..009: Exercise, matching, Program, Schedule, Session, Log, volume và history.
+- FT-WO-010: Favorite Exercise.
 - FT-WO-011: Personal Record.
 
-### PH5 Nutrition & Meal Planner — 8
+### PH5 Nutrition & Meal Planner — 9
 
 - FT-MP-001..006: Food, Meal Plan/Entry và nutrition summary.
+- FT-MP-007: Favorite Food.
 - FT-MP-009: Meal History/Template.
 - FT-MP-011: AI Meal Proposal integration.
 
@@ -58,21 +60,23 @@ Tài liệu này là danh sách P0 chính thức dùng để lập backlog, tri�
 - FT-MD-002: Food media.
 - FT-MD-003: Media metadata/access baseline.
 
-### PH10 Notification
+### PH10 Notification — 4
 
-- Không có feature P0. Notification bắt đầu từ P1.
+- FT-NT-001..004: Notification Center local/in-app, workout/meal/weight reminder, preference và read/delete state.
+- FT-NT-005 push/automation vẫn là P2.
 
-## 3. UI P0 chính thức — 47 UI unit
+## 3. UI P0 chính thức — 50 UI unit
 
-### USER — 43
+### USER — 46
 
 - Auth/session: MH01, MH02, MH04, MH05, MH06, MH07, MH08, MH44, MH52, MH53.
 - Health/onboarding: MH09, MH10, MH42, MH43.
 - Main shell: MH03, MH11, MH20, MH27, MH33, MH36.
-- Workout: MH12..MH19.
-- Nutrition: MH21..MH25, MH54.
+- Workout: MH12..MH19, MH56 Favorite Exercises.
+- Nutrition: MH21..MH25, MH54, MH57 Favorite Foods.
 - AI: MH28..MH31, MH55.
 - Profile/preference: MH34, MH35, MH37, MH38.
+- Notification: MH41 Notification Center & Settings.
 
 ### ADMIN — 4
 
@@ -83,8 +87,8 @@ Tài liệu này là danh sách P0 chính thức dùng để lập backlog, tri�
 
 ## 4. Acceptance và E2E P0
 
-- AC-01..AC-19 là điều kiện nghiệm thu bắt buộc.
-- E2E-01..E2E-07 phải có happy path và ít nhất một failure branch.
+- AC-01..AC-21 là điều kiện nghiệm thu bắt buộc.
+- E2E-01..E2E-08 phải có happy path và ít nhất một failure branch.
 - Backend ownership/security test là bắt buộc kể cả khi UI đã có route guard.
 - `calculationStatus=INCOMPLETE` là kết quả hợp lệ, không phải lý do bịa target.
 - Schedule `CANCELLED`; Session `DISCARDED`.
@@ -93,15 +97,13 @@ Tài liệu này là danh sách P0 chính thức dùng để lập backlog, tri�
 
 - FT-ID-011.
 - FT-UP-002, FT-UP-006, FT-UP-007.
-- FT-WO-010.
-- FT-MP-007, FT-MP-008, FT-MP-010.
+- FT-MP-008, FT-MP-010.
 - FT-DB-006.
 - FT-AI-011, FT-AI-012, FT-AI-013, FT-AI-015.
 - FT-AD-001, FT-AD-002, FT-AD-005, FT-AD-006, FT-AD-007, FT-AD-009.
 - FT-MD-004.
-- FT-NT-001..004.
 
-Các UI P1: MH26, MH32, MH40, MH41, MH48, MH49, MH50 và các state/component Favorite/Recent/Preference Memory/Avatar upload.
+Các UI P1: MH26, MH32, MH40, MH48, MH49, MH50 và các state/component Recent/Preference Memory/Avatar upload.
 
 ## 6. P2/Future và Out of Scope
 
@@ -136,7 +138,7 @@ Nếu không đủ bốn điều kiện, đề xuất được đưa vào P1/P2 
 
 ## 8. Kết luận
 
-- P0 chính thức: 62 feature, 47 UI unit, 19 AC và 7 E2E.
-- Không có Shop, Payment, Wearable hoặc feature P1 trong P0.
+- P0 chính thức: 68 feature, 50 UI unit, 21 AC và 8 E2E.
+- PLAN-007 promote Favorites và Notification local/in-app vào P0; không có Shop, Payment, Wearable hoặc feature P1 khác trong P0.
 - Avatar upload là P1; Media P0 chỉ gồm Exercise/Food.
 - Admin P0 chỉ gồm Exercise/Food/Audit.

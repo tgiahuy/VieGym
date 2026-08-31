@@ -1,9 +1,9 @@
 # VieGym — Kế hoạch thu thập và triển khai dữ liệu Exercise, Equipment và Food
 
-> **Phiên bản:** 1.0  
-> **Ngày:** 2026-08-31  
-> **Phạm vi:** Dataset phục vụ MVP P0 theo SRS v3.2  
-> **Đối tượng:** Exercise, Equipment, Muscle Group và Food Việt Nam  
+> **Phiên bản:** 1.0
+> **Ngày:** 2026-08-31
+> **Phạm vi:** Dataset phục vụ MVP P0 theo SRS v3.2
+> **Đối tượng:** Exercise, Equipment, Muscle Group và Food Việt Nam
 > **Không thuộc phạm vi tài liệu:** Barcode, branded product, avatar media, Water Tracker và các tính năng P1/P2
 
 ---

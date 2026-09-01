@@ -1,0 +1,52 @@
+{
+  "datasetVersion": "exercise-import-test-v1",
+  "records": [
+    {
+      "commonMistakes": ["Nhấc mông khỏi ghế"],
+      "description": "Bài tập đẩy ngực phục vụ kiểm thử importer.",
+      "difficulty": "INTERMEDIATE",
+      "equipment": [
+        {"code": "BARBELL", "required": true},
+        {"code": "BENCH", "required": true}
+      ],
+      "importKey": "TEST:bench-press",
+      "instructionSteps": ["Nằm chắc trên ghế.", "Đẩy thanh lên có kiểm soát."],
+      "media": [],
+      "muscleGroups": [
+        {"code": "CHEST", "role": "PRIMARY"},
+        {"code": "TRICEPS", "role": "SECONDARY"}
+      ],
+      "name": "Đẩy ngực với thanh đòn",
+      "recordChecksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "safetyNotes": ["Dùng người hỗ trợ khi tập nặng."],
+      "searchName": "day nguc voi thanh don bench press",
+      "slug": "test-bench-press",
+      "source": "TEST",
+      "sourceExternalId": "bench-press",
+      "sourceVersion": "fixture-v1",
+      "verified": true,
+      "visibility": "PUBLIC"
+    },
+    {
+      "commonMistakes": [],
+      "description": "Bài tập squat phục vụ kiểm thử importer.",
+      "difficulty": "BEGINNER",
+      "equipment": [{"code": "BODYWEIGHT", "required": true}],
+      "importKey": "TEST:bodyweight-squat",
+      "instructionSteps": ["Hạ hông xuống.", "Đứng lên có kiểm soát."],
+      "media": [],
+      "muscleGroups": [{"code": "QUADRICEPS", "role": "PRIMARY"}],
+      "name": "Squat với trọng lượng cơ thể",
+      "recordChecksum": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "safetyNotes": ["Chỉ tập trong phạm vi không đau."],
+      "searchName": "squat voi trong luong co the bodyweight squat",
+      "slug": "test-bodyweight-squat",
+      "source": "TEST",
+      "sourceExternalId": "bodyweight-squat",
+      "sourceVersion": "fixture-v1",
+      "verified": true,
+      "visibility": "PUBLIC"
+    }
+  ],
+  "schemaVersion": 1
+}

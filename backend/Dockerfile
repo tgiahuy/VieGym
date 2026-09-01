@@ -6,13 +6,10 @@ WORKDIR /workspace
 
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
-
-RUN chmod +x mvnw \
-    && ./mvnw -B -ntp -DskipTests dependency:go-offline
-
 COPY src src
 
-RUN ./mvnw -B -ntp -DskipTests package \
+RUN chmod +x mvnw \
+    && ./mvnw -B -ntp -DskipTests package \
     && cp target/backend-0.0.1-SNAPSHOT.jar /workspace/app.jar
 
 FROM eclipse-temurin:21.0.11_10-jre-jammy@sha256:8208b3a3733529f42c4b565bfcbf16d914eb628f3ead8488b6b4d6363fcbe7cf AS runtime

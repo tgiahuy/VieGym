@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/exercise_tag_chip.dart';
+import '../application/exercise_catalog_controller.dart';
 import '../application/favorite_exercises_controller.dart';
 import '../data/exercise_catalog.dart';
 import '../domain/workout_models.dart';
@@ -37,6 +38,14 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   final Set<String> _selectedExerciseIds = {};
   final Map<String, ExerciseDefinition> _selectedExercisesMap = {};
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(exerciseCatalogControllerProvider.notifier).loadInitial();
+    });
+  }
+
   Future<void> _openFilterModal(int initialTab) async {
     final result = await ExerciseFilterModal.show(
       context,
@@ -66,9 +75,19 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final favoriteIds = ref.watch(favoriteExercisesProvider);
+    final catalogState = ref.watch(exerciseCatalogControllerProvider);
     final normalized = _searchQuery.toLowerCase().trim();
 
-    final filtered = exerciseCatalog.where((exercise) {
+    final List<ExerciseDefinition> displayExercises;
+    if (catalogState.rawSummaries.isNotEmpty) {
+      displayExercises = catalogState.exercises;
+    } else {
+      displayExercises = catalogState.exercises.isNotEmpty
+          ? catalogState.exercises
+          : exerciseCatalog;
+    }
+
+    final filtered = displayExercises.where((exercise) {
       // 0. Favorite Filter
       if (_onlyFavorites && !favoriteIds.contains(exercise.id)) {
         return false;
@@ -255,8 +274,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
           // 4. Exercise List
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
+            child: (catalogState.isLoading && catalogState.exercises.isEmpty)
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : filtered.isEmpty
+                    ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Column(
@@ -301,10 +324,16 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       ),
                     ),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      await ref
+                          .read(exerciseCatalogControllerProvider.notifier)
+                          .loadInitial();
+                    },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
                       final exercise = filtered[index];
                       final isSelected = _selectedExerciseIds.contains(
                         exercise.id,
@@ -519,6 +548,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       );
                     },
                   ),
+                ),
           ),
         ],
       ),

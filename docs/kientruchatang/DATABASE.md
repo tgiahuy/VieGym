@@ -377,8 +377,8 @@ update. Trend 7–30 ngày được tính từ bảng này, không lưu như ngu
 | Column | Type | Constraints | Description |
 |---|---|---|---|
 | `id` | BIGINT | PK, IDENTITY | Exercise |
-| `name` | VARCHAR(180) | NOT NULL | Tên bài tập |
-| `search_name` | VARCHAR(180) | NOT NULL | Tên đã normalize cố định để tìm kiếm |
+| `name` | VARCHAR(180) | NOT NULL | Tên bài tập tiếng Anh chuẩn quốc tế (vd: Barbell Bench Press, Romanian Deadlift) |
+| `search_name` | VARCHAR(180) | NOT NULL | Tên chuẩn hóa không dấu phục vụ tìm kiếm song ngữ (EN + VI) |
 | `slug` | VARCHAR(200) | NOT NULL, UNIQUE | Khóa URL/tìm kiếm |
 | `difficulty` | VARCHAR(20) | NOT NULL | Difficulty enum |
 | `description` | TEXT | NOT NULL | Mô tả |
@@ -421,6 +421,36 @@ lệ.
 |  |  | PK (`user_id`, `exercise_id`) | Add idempotent, không trùng |
 
 List favorite luôn áp visibility policy của Exercise và không làm lộ item hidden.
+
+#### `dataset_import_batches`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | BIGINT | PK, IDENTITY | Một lần chạy importer |
+| `dataset_type` | VARCHAR(30) | NOT NULL | Loại master dataset, hiện có `EXERCISE` |
+| `dataset_version` | VARCHAR(100) | NOT NULL | Version processed export |
+| `source_checksum` | VARCHAR(64) | NOT NULL | SHA-256 của toàn bộ export |
+| `status` | VARCHAR(20) | NOT NULL | `RUNNING`, `SUCCEEDED` hoặc `FAILED` |
+| `total_records` | INTEGER | NOT NULL | Tổng số record đầu vào |
+| `inserted_records` | INTEGER | NOT NULL | Số record được tạo mới |
+| `skipped_records` | INTEGER | NOT NULL | Số import key đã tồn tại và không bị ghi đè |
+| `started_at`, `completed_at` | TIMESTAMPTZ |  | Thời gian chạy batch |
+| `error_summary` | TEXT | NULLABLE | Tóm tắt lỗi đã redaction nếu có |
+
+#### `exercise_import_registry`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `source`, `source_external_id` | VARCHAR | PK ghép | Import key ổn định từ nguồn đã pin |
+| `exercise_id` | BIGINT | FK → `exercises(id)`, NOT NULL | Master Exercise authoritative |
+| `source_version` | VARCHAR(100) | NOT NULL | Commit/release nguồn |
+| `record_checksum` | VARCHAR(64) | NOT NULL | SHA-256 processed record |
+| `last_import_batch_id` | BIGINT | FK → `dataset_import_batches(id)`, NOT NULL | Batch gần nhất tạo registry entry |
+| `imported_at`, `updated_at` | TIMESTAMPTZ | NOT NULL | Audit timestamp |
+
+Importer M4-02 dùng policy insert-only theo `(source, source_external_id)`: chạy lại
+cùng dataset không tạo duplicate và không âm thầm ghi đè master data mà Admin có thể
+đã chỉnh sửa. Thay đổi từ source phải đi qua workflow review riêng trước khi update.
 
 ### 6.2. Workout plan
 

@@ -549,13 +549,21 @@ Trả catalog active gồm `id`, `code`, `name`; không phân trang vì danh m�
 Trả catalog active gồm `id`, `code`, `name`. Đây là catalog thuần; trạng thái selected của user
 thuộc `GET /preferences/equipment`.
 
-### `GET /exercises` 🔒
+### `GET /muscle-groups` 🔓
+
+Trả danh sách Master Data nhóm cơ active.
+
+### `GET /equipment` 🔓
+
+Trả danh sách Master Data thiết bị active.
+
+### `GET /exercises` 🔓
 
 Query: `q`, `muscleGroupId`, `equipmentId`, `difficulty`, `compatibleWithMyEquipment`, `page`, `size`, `sort=name,asc`.
 
-Chỉ trả Exercise `PUBLIC`/chưa xóa. `compatibleWithMyEquipment=true` ưu tiên/giới hạn theo equipment preference tùy filter contract, nhưng tập preference rỗng vẫn cho bài bodyweight phù hợp.
+Chỉ trả Exercise `PUBLIC`/chưa xóa (tên tiếng Anh chuẩn quốc tế kèm metadata nhóm cơ, thiết bị). `compatibleWithMyEquipment=true` ưu tiên/giới hạn theo equipment preference tùy filter contract, nhưng tập preference rỗng vẫn cho bài bodyweight phù hợp.
 
-### `GET /exercises/{id}` 🔒
+### `GET /exercises/{id}` 🔓
 
 ```json
 {

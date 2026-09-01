@@ -44,10 +44,50 @@ public class WeightLog {
     protected WeightLog() {}
 
     public WeightLog(User user, LocalDate loggedDate, BigDecimal weightKg, OffsetDateTime now) {
+        this(user, loggedDate, weightKg, null, now);
+    }
+
+    public WeightLog(
+            User user, LocalDate loggedDate, BigDecimal weightKg, String note, OffsetDateTime now) {
         this.user = user;
         this.loggedDate = loggedDate;
         this.weightKg = weightKg;
+        this.note = note;
         this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    public Long id() {
+        return id;
+    }
+
+    public User user() {
+        return user;
+    }
+
+    public LocalDate loggedDate() {
+        return loggedDate;
+    }
+
+    public BigDecimal weightKg() {
+        return weightKg;
+    }
+
+    public String note() {
+        return note;
+    }
+
+    public OffsetDateTime createdAt() {
+        return createdAt;
+    }
+
+    public OffsetDateTime updatedAt() {
+        return updatedAt;
+    }
+
+    public void update(BigDecimal weightKg, String note, OffsetDateTime now) {
+        this.weightKg = weightKg;
+        this.note = note;
         this.updatedAt = now;
     }
 }

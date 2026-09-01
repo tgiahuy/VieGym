@@ -1,0 +1,30 @@
+{
+  "datasetVersion": "viegym-exercises-v1",
+  "sources": [
+    {
+      "source": "FREE_EXERCISE_DB",
+      "repositoryUrl": "https://github.com/yuhonas/free-exercise-db",
+      "commitSha": "a859101d633a01c4a1a920d6a8ce41dabba0705f",
+      "dataUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/a859101d633a01c4a1a920d6a8ce41dabba0705f/dist/exercises.json",
+      "dataFile": "free_exercise_db.json",
+      "dataSha256": "5bb747e3fc658f095a60dcbf6d53c96627acdcc6ffb6fffde86f7e26995d40bf",
+      "license": "Unlicense",
+      "licenseUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/a859101d633a01c4a1a920d6a8ce41dabba0705f/LICENSE.md",
+      "licenseFile": "FREE_EXERCISE_DB_LICENSE.md",
+      "licenseSha256": "6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e",
+      "redistributionAllowed": true,
+      "mediaAllowed": false,
+      "included": true
+    },
+    {
+      "source": "EXERCISES_DATASET_MAIN",
+      "repositoryUrl": "https://github.com/plataformafitness/exercises-dataset-main",
+      "commitSha": "b10290add3dfed2d0fef5704b3dc660b1f73431d",
+      "license": "UNVERIFIED_AT_PINNED_SNAPSHOT",
+      "redistributionAllowed": false,
+      "mediaAllowed": false,
+      "included": false,
+      "rejectionReason": "Pinned repository tree contains README.md only; no immutable data or license file is available."
+    }
+  ]
+}

@@ -44,3 +44,9 @@ Thumbs.db
 *.py[cod]
 .coverage
 htmlcov/
+
+# External dataset snapshots (download with datasets/scripts/fetch_sources.py)
+datasets/exercise/raw/*
+!datasets/exercise/raw/.gitkeep
+datasets/nutrition/raw/*
+!datasets/nutrition/raw/.gitkeep

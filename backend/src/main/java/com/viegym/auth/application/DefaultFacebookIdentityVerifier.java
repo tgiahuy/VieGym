@@ -3,6 +3,7 @@ package com.viegym.auth.application;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.viegym.common.error.ApiErrorCode;
 import com.viegym.common.error.ApiException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ public class DefaultFacebookIdentityVerifier implements FacebookIdentityVerifier
     private final RestClient restClient;
     private final String expectedAppId;
 
+    @Autowired
     public DefaultFacebookIdentityVerifier(@Value("${FACEBOOK_APP_ID:}") String expectedAppId) {
         this(RestClient.builder().baseUrl("https://graph.facebook.com").build(), expectedAppId);
     }

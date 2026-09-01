@@ -1,0 +1,9 @@
+{
+  "bands": "RESISTANCE_BAND",
+  "barbell": "BARBELL",
+  "body only": "BODYWEIGHT",
+  "cable": "CABLE_MACHINE",
+  "dumbbell": "DUMBBELL",
+  "kettlebells": "KETTLEBELL",
+  "machine": "MACHINE"
+}

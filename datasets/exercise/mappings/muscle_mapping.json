@@ -1,0 +1,19 @@
+{
+  "abdominals": "ABS",
+  "abductors": "ABDUCTORS",
+  "adductors": "ADDUCTORS",
+  "biceps": "BICEPS",
+  "calves": "CALVES",
+  "chest": "CHEST",
+  "forearms": "FOREARMS",
+  "glutes": "GLUTES",
+  "hamstrings": "HAMSTRINGS",
+  "lats": "LATS",
+  "lower back": "LOWER_BACK",
+  "middle back": "UPPER_BACK",
+  "neck": "NECK",
+  "quadriceps": "QUADRICEPS",
+  "shoulders": "SHOULDERS",
+  "traps": "TRAPS",
+  "triceps": "TRICEPS"
+}

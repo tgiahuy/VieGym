@@ -95,7 +95,7 @@ class PreferenceIntegrationTests {
         mockMvc.perform(authGet("/api/v1/preferences/equipment", first.token()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.selectedEquipmentIds").isEmpty())
-                .andExpect(jsonPath("$.data.equipment.length()").value(10))
+                .andExpect(jsonPath("$.data.equipment.length()").value(11))
                 .andExpect(jsonPath("$.data.equipmentOnboardingCompletedAt").value((Object) null));
 
         mockMvc.perform(

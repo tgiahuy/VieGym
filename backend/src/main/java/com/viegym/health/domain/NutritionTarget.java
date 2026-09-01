@@ -71,4 +71,34 @@ public class NutritionTarget {
         this.createdAt = now;
         this.updatedAt = now;
     }
+
+    public Long id() {
+        return id;
+    }
+
+    public BigDecimal caloriesKcal() {
+        return caloriesKcal;
+    }
+
+    public BigDecimal proteinG() {
+        return proteinG;
+    }
+
+    public BigDecimal carbsG() {
+        return carbsG;
+    }
+
+    public BigDecimal fatG() {
+        return fatG;
+    }
+
+    public void update(NutritionTargetValues values, OffsetDateTime now) {
+        this.caloriesKcal = values.caloriesKcal();
+        this.proteinG = values.proteinG();
+        this.carbsG = values.carbsG();
+        this.fatG = values.fatG();
+        this.calculationVersion = HealthCalculator.VERSION;
+        this.effectiveFrom = now;
+        this.updatedAt = now;
+    }
 }

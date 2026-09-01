@@ -200,6 +200,71 @@ class HealthProfileIntegrationTests {
                 .content(body);
     }
 
+    @Test
+    void getHealthProfileReturnsExistingProfileAndTargets() throws Exception {
+        Session session = activate("health-get@example.com");
+        mockMvc.perform(authenticatedCreate(session.token(), completeBody()))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                                        "/api/v1/health/profile")
+                                .header("Authorization", "Bearer " + session.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.calculationStatus").value("COMPLETE"))
+                .andExpect(jsonPath("$.data.profile.dateOfBirth").value("1998-05-20"))
+                .andExpect(jsonPath("$.data.profile.currentWeightKg").value(70.2))
+                .andExpect(jsonPath("$.data.metrics.bmi").value(23.59))
+                .andExpect(jsonPath("$.data.nutritionTarget.caloriesKcal").value(2849.95));
+    }
+
+    @Test
+    void getHealthProfileReturnsNotFoundWhenMissing() throws Exception {
+        Session session = activate("health-missing@example.com");
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(
+                                        "/api/v1/health/profile")
+                                .header("Authorization", "Bearer " + session.token()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void updateHealthProfileRecalculatesMetricsAndKeepsExistingWeight() throws Exception {
+        Session session = activate("health-update@example.com");
+        mockMvc.perform(authenticatedCreate(session.token(), completeBody()))
+                .andExpect(status().isCreated());
+
+        String updateBody =
+                """
+                {
+                  "dateOfBirth":"1998-05-20",
+                  "gender":"MALE",
+                  "calculationSex":"MALE",
+                  "heightCm":175.0,
+                  "activityLevel":"ACTIVE",
+                  "fitnessGoal":"GAIN_MUSCLE",
+                  "trainingExperience":"ADVANCED"
+                }
+                """;
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(
+                                        "/api/v1/health/profile")
+                                .header("Authorization", "Bearer " + session.token())
+                                .contentType(APPLICATION_JSON)
+                                .content(updateBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.calculationStatus").value("COMPLETE"))
+                .andExpect(jsonPath("$.data.profile.heightCm").value(175.0))
+                .andExpect(jsonPath("$.data.profile.currentWeightKg").value(70.2))
+                .andExpect(jsonPath("$.data.profile.activityLevel").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.profile.trainingExperience").value("ADVANCED"));
+
+        // Verify counts remain unchanged (no duplicate weight log or nutrition target created)
+        assertCounts(session.userId(), 1, 1, 1);
+    }
+
     private static String completeBody() {
         return """
                {

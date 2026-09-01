@@ -21,6 +21,9 @@ import 'package:viegym/features/workout/presentation/widgets/exercise_muscle_vis
 import 'package:viegym/features/workout/presentation/widgets/favorite_exercises_section.dart';
 import 'package:viegym/features/workout/presentation/widgets/rest_timer_overlay.dart';
 import 'package:viegym/features/workout/presentation/widgets/today_workout_empty_state.dart';
+import 'package:viegym/features/workout/application/exercise_catalog_controller.dart';
+import 'package:viegym/features/workout/domain/exercise_api_models.dart';
+import 'package:viegym/features/workout/presentation/workout_builder_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_history_detail_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_history_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_schedule_screen.dart';
@@ -1391,6 +1394,150 @@ void main() {
         );
       },
     );
+
+    testWidgets('WorkoutBuilderScreen renders days, allows adding day and editing exercise targets', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: WorkoutBuilderScreen())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workout Builder'), findsOneWidget);
+      expect(find.text('CÁC BUỔI TẬP (2)'), findsOneWidget);
+      expect(find.text('Buổi 1'), findsOneWidget);
+      expect(find.text('Buổi 2'), findsOneWidget);
+
+      // Tap thêm buổi
+      await tester.tap(find.text('Thêm buổi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CÁC BUỔI TẬP (3)'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Buổi 3'), findsOneWidget);
+    });
+
+    testWidgets('E2E Flow 2: Exercise -> Favorite -> Program -> Schedule -> Session -> Log/PR', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // 1. Exercise & Favorite
+      final favNotifier = container.read(favoriteExercisesProvider.notifier);
+      final testEx = exerciseCatalog.firstWhere((e) => !favNotifier.isFavorite(e.id));
+      expect(favNotifier.isFavorite(testEx.id), isFalse);
+      favNotifier.toggleFavorite(testEx.id);
+      expect(favNotifier.isFavorite(testEx.id), isTrue);
+
+      // 2. Schedule
+      final schedNotifier = container.read(workoutScheduleProvider.notifier);
+      schedNotifier.addSchedule(
+        title: 'E2E Full Body',
+        targetMuscles: 'Toàn thân',
+        durationMinutes: 45,
+        date: '2026-09-02',
+        time: '18:00',
+      );
+      final schedules = container.read(workoutScheduleProvider).schedules;
+      expect(schedules.any((s) => s.title == 'E2E Full Body'), isTrue);
+
+      // 3. Session & Log
+      final sessionNotifier = container.read(workoutSessionProvider.notifier);
+      sessionNotifier.addExercise(testEx);
+      expect(container.read(workoutSessionProvider).exercises.isNotEmpty, isTrue);
+
+      // Record completion
+      schedNotifier.recordWorkoutCompletion(
+        workoutName: 'E2E Full Body',
+        durationMinutes: 45,
+        totalVolumeKg: 2400,
+        completedSets: 10,
+        prCount: 1,
+      );
+      expect(container.read(workoutScheduleProvider).history.first.workoutName, 'E2E Full Body');
+    });
+
+    test('ExerciseCatalogController handles search query, filtering and fallback', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(exerciseCatalogControllerProvider.notifier);
+      expect(container.read(exerciseCatalogControllerProvider).exercises.isNotEmpty, isTrue);
+
+      controller.setQuery('Bench');
+      expect(container.read(exerciseCatalogControllerProvider).query, 'Bench');
+
+      controller.setMuscleGroup(1);
+      expect(container.read(exerciseCatalogControllerProvider).muscleGroupId, 1);
+
+      controller.setEquipment(2);
+      expect(container.read(exerciseCatalogControllerProvider).equipmentId, 2);
+
+      controller.resetFilters();
+      expect(container.read(exerciseCatalogControllerProvider).query, '');
+      expect(container.read(exerciseCatalogControllerProvider).muscleGroupId, isNull);
+    });
+
+    test('ExerciseApiSummary and ExerciseApiDetail map JSON and convert to ExerciseDefinition correctly', () {
+      final summaryJson = {
+        'id': 101,
+        'name': 'Hít đất rộng tay (Wide Push-up)',
+        'searchName': 'hit dat rong tay',
+        'slug': 'hit-dat-rong-tay',
+        'difficulty': 'BEGINNER',
+        'description': 'Biến thể tập ngực ngoài',
+        'muscleGroups': [
+          {'muscleGroupId': 1, 'code': 'CHEST', 'name': 'Ngực', 'role': 'PRIMARY'},
+          {'muscleGroupId': 2, 'code': 'TRICEPS', 'name': 'Tay sau', 'role': 'SECONDARY'},
+        ],
+        'equipment': [
+          {'equipmentId': 1, 'code': 'BODYWEIGHT', 'name': 'Trọng lượng cơ thể'},
+        ],
+        'isFavorite': true,
+      };
+
+      final summary = ExerciseApiSummary.fromJson(summaryJson);
+      expect(summary.id, 101);
+      expect(summary.name, 'Hít đất rộng tay (Wide Push-up)');
+      expect(summary.isFavorite, isTrue);
+
+      final def = summary.toExerciseDefinition();
+      expect(def.id, 'ex_101');
+      expect(def.primaryMuscle, 'Ngực');
+      expect(def.secondaryMuscles, contains('Tay sau'));
+      expect(def.equipment, EquipmentType.bodyweight);
+
+      final detailJson = {
+        'id': 102,
+        'name': 'Kéo xà đơn (Pull-up)',
+        'searchName': 'keo xa don',
+        'slug': 'keo-xa-don',
+        'difficulty': 'INTERMEDIATE',
+        'description': 'Bài tập lưng xô kinh điển',
+        'instructionSteps': ['Treo người trên xà', 'Kéo cằm vượt quá xà'],
+        'commonMistakes': ['Đung đưa người lấy đà'],
+        'safetyNotes': ['Không thả lỏng vai đột ngột'],
+        'muscleGroups': [
+          {'muscleGroupId': 3, 'code': 'BACK', 'name': 'Lưng', 'role': 'PRIMARY'},
+        ],
+        'equipment': [
+          {'equipmentId': 1, 'code': 'BODYWEIGHT', 'name': 'Trọng lượng cơ thể'},
+        ],
+      };
+
+      final detail = ExerciseApiDetail.fromJson(detailJson);
+      expect(detail.id, 102);
+      expect(detail.instructionSteps.length, 2);
+      expect(detail.safetyNotes.first, 'Không thả lỏng vai đột ngột');
+
+      final detailDef = detail.toExerciseDefinition();
+      expect(detailDef.instructions.length, 2);
+      expect(detailDef.commonMistakes.first.mistake, 'Đung đưa người lấy đà');
+    });
   });
 }
 

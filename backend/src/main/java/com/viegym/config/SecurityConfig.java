@@ -63,6 +63,12 @@ public class SecurityConfig {
                                             "/api/v1/auth/password/forgot",
                                             "/api/v1/auth/password/reset")
                                     .permitAll()
+                                    .requestMatchers(
+                                            org.springframework.http.HttpMethod.GET,
+                                            "/api/v1/exercises/**",
+                                            "/api/v1/muscle-groups/**",
+                                            "/api/v1/equipment/**")
+                                    .permitAll()
                                     .requestMatchers("/api/v1/admin/**")
                                     .hasRole("ADMIN")
                                     .anyRequest()

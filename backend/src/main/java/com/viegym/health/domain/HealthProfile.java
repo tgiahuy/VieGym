@@ -113,4 +113,96 @@ public class HealthProfile {
     public Long id() {
         return id;
     }
+
+    public User user() {
+        return user;
+    }
+
+    public LocalDate dateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public Gender gender() {
+        return gender;
+    }
+
+    public CalculationSex calculationSex() {
+        return calculationSex;
+    }
+
+    public BigDecimal heightCm() {
+        return heightCm;
+    }
+
+    public BigDecimal currentWeightKg() {
+        return currentWeightKg;
+    }
+
+    public ActivityLevel activityLevel() {
+        return activityLevel;
+    }
+
+    public FitnessGoal fitnessGoal() {
+        return fitnessGoal;
+    }
+
+    public TrainingExperience trainingExperience() {
+        return trainingExperience;
+    }
+
+    public BigDecimal bmi() {
+        return bmi;
+    }
+
+    public BigDecimal bmrKcal() {
+        return bmrKcal;
+    }
+
+    public BigDecimal tdeeKcal() {
+        return tdeeKcal;
+    }
+
+    public String calculationVersion() {
+        return calculationVersion;
+    }
+
+    public OffsetDateTime calculatedAt() {
+        return calculatedAt;
+    }
+
+    public void update(
+            LocalDate dateOfBirth,
+            Gender gender,
+            CalculationSex calculationSex,
+            BigDecimal heightCm,
+            ActivityLevel activityLevel,
+            FitnessGoal fitnessGoal,
+            TrainingExperience trainingExperience,
+            HealthCalculationResult calculation,
+            OffsetDateTime now) {
+        this.dateOfBirth = dateOfBirth;
+        this.gender = gender;
+        this.calculationSex = calculationSex;
+        this.heightCm = heightCm;
+        this.activityLevel = activityLevel;
+        this.fitnessGoal = fitnessGoal;
+        this.trainingExperience = trainingExperience;
+        this.bmi = calculation.bmi();
+        this.bmrKcal = calculation.bmrKcal();
+        this.tdeeKcal = calculation.tdeeKcal();
+        this.calculationVersion = HealthCalculator.VERSION;
+        this.calculatedAt = now;
+        this.updatedAt = now;
+    }
+
+    public void updateCurrentWeight(
+            BigDecimal currentWeightKg, HealthCalculationResult calculation, OffsetDateTime now) {
+        this.currentWeightKg = currentWeightKg;
+        this.bmi = calculation.bmi();
+        this.bmrKcal = calculation.bmrKcal();
+        this.tdeeKcal = calculation.tdeeKcal();
+        this.calculationVersion = HealthCalculator.VERSION;
+        this.calculatedAt = now;
+        this.updatedAt = now;
+    }
 }

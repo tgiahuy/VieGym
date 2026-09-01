@@ -143,6 +143,14 @@ class ProgressController extends Notifier<ProgressState> {
     state = state.copyWith(weightLogs: [newItem, ...state.weightLogs]);
   }
 
+  void clearAllLogs() {
+    state = state.copyWith(weightLogs: []);
+  }
+
+  void setWeightLogs(List<WeightLogItem> logs) {
+    state = state.copyWith(weightLogs: logs);
+  }
+
   void addPersonalRecord({
     required String exerciseName,
     required double weightKg,

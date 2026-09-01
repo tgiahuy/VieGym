@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/exercise_tag_chip.dart';
+import '../application/exercise_catalog_controller.dart';
 import '../application/favorite_exercises_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
@@ -16,7 +17,8 @@ class ExerciseDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final exercise = findExercise(exerciseId);
+    final asyncEx = ref.watch(exerciseDetailProvider(exerciseId));
+    final exercise = asyncEx.value ?? findExercise(exerciseId);
     final colors = Theme.of(context).colorScheme;
     final isFav = ref.watch(favoriteExercisesProvider).contains(exerciseId);
 

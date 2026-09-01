@@ -1,0 +1,45 @@
+{
+  "duplicateIds": [],
+  "emptyFieldCounts": {
+    "instructions": 5,
+    "secondaryMuscles": 272
+  },
+  "equipmentCounts": {
+    "<null>": 77,
+    "bands": 20,
+    "barbell": 170,
+    "body only": 111,
+    "cable": 81,
+    "dumbbell": 123,
+    "e-z curl bar": 9,
+    "exercise ball": 12,
+    "foam roll": 11,
+    "kettlebells": 56,
+    "machine": 67,
+    "medicine ball": 17,
+    "other": 122
+  },
+  "invalidRecords": [],
+  "missingRequiredFieldCounts": {},
+  "muscleCounts": {
+    "abdominals": 152,
+    "abductors": 43,
+    "adductors": 54,
+    "biceps": 127,
+    "calves": 209,
+    "chest": 147,
+    "forearms": 119,
+    "glutes": 242,
+    "hamstrings": 280,
+    "lats": 94,
+    "lower back": 131,
+    "middle back": 100,
+    "neck": 9,
+    "quadriceps": 230,
+    "shoulders": 339,
+    "traps": 99,
+    "triceps": 221
+  },
+  "recordCount": 876,
+  "valid": true
+}

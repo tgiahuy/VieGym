@@ -443,7 +443,8 @@ Business rules:
 - User chỉ thấy bài tập đang active.
 - Exercise bị ẩn vẫn giữ được lịch sử log cũ nhưng không nên cho thêm vào program mới.
 - Video có thể dùng URL/object storage/CDN hoặc asset demo hợp lệ.
-- Nội dung hướng dẫn nên ưu tiên tiếng Việt.
+- Tên bài tập sử dụng thuật ngữ tiếng Anh gốc chuẩn quốc tế Gym (kèm hỗ trợ tìm kiếm song ngữ EN/VI).
+- Nội dung hướng dẫn, kỹ thuật, lỗi sai và an toàn được thể hiện bằng tiếng Việt.
 - Equipment Preference chỉ ảnh hưởng việc ưu tiên/gợi ý, không xóa dữ liệu Exercise khỏi hệ thống.
 
 ### 4.3. Tạo giáo án tập

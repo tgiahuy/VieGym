@@ -96,7 +96,7 @@ Golden Dataset phải bao phủ:
 - 300–500 Exercise đã qua structural validation.
 - 20–30 Equipment active; có thể mở rộng tối đa khoảng 40–60 sau MVP.
 - 150–300 Food Việt Nam hoặc nguyên liệu/món ăn đã flatten thành `foods` P0.
-- Mọi record `PUBLIC` phải có tên tiếng Việt đã review.
+- Mọi record Exercise `PUBLIC` sử dụng tên tiếng Anh gốc (Gym standard international terminology), nội dung hướng dẫn (`instructionSteps`, `commonMistakes`, `safetyNotes`, `description`) và nhóm cơ bằng tiếng Việt.
 - Mọi nutrition value phải có source hoặc ghi rõ `is_estimated=true`.
 
 ### 3.3. Sau MVP
@@ -158,6 +158,12 @@ Có thể lấy:
 - metadata/instruction chỉ được dùng theo điều khoản của snapshot đã pin;
 - không lấy image/GIF Gym Visual nếu VieGym chưa có license riêng;
 - giữ attribution nếu điều khoản yêu cầu.
+
+**Trạng thái snapshot ngày 2026-09-01:** nguồn này tạm bị loại khỏi MVP. Commit
+`b10290add3dfed2d0fef5704b3dc660b1f73431d` được pin từ nhánh `main`, nhưng cây Git
+tại commit chỉ chứa `README.md`, không có `data/exercises.json`, `LICENSE` hoặc
+`NOTICE.md` để xác minh độc lập. Pipeline không tải hoặc merge dữ liệu từ nguồn này
+cho đến khi có snapshot bất biến đầy đủ.
 
 ### 4.3. Vai trò của hai nguồn
 
@@ -591,11 +597,12 @@ Difficulty chỉ dùng:
 
 Movement pattern phải thuộc whitelist được chốt trước M4-05.
 
-### E7 — Tên và hướng dẫn tiếng Việt
+### E7 — Tên bài tập và nội dung hướng dẫn
 
-- AI có thể tạo bản dịch nháp.
-- Record chỉ thành `PUBLIC` sau manual review.
-- Ưu tiên thuật ngữ người tập gym Việt Nam thực sự dùng.
+- **Tên bài tập (`name`):** Sử dụng tên tiếng Anh nguyên bản chuẩn quốc tế (ví dụ: *Barbell Bench Press*, *Romanian Deadlift*, *Incline Dumbbell Press*, *Arnold Press*, *Lat Pulldown*), tránh dịch cứng/dịch thô gây lạ lẫm với người tập gym Việt Nam.
+- **Tên tiếng Việt tham khảo (`nameVi`):** Lưu trữ tên tiếng Việt để tham khảo và phục vụ tìm kiếm song ngữ.
+- **Nội dung hướng dẫn & an toàn:** 100% bằng tiếng Việt chuẩn thể hình cho `description`, `instructionSteps`, `commonMistakes`, và `safetyNotes`.
+- **Tìm kiếm (`searchName`):** Chứa các từ khóa không dấu của cả tên tiếng Anh lẫn tên tiếng Việt để người dùng tìm kiếm theo bất kỳ ngôn ngữ nào.
 - Safety note không được dịch máy rồi publish không kiểm tra.
 
 ### E8 — Export

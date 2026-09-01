@@ -38,13 +38,16 @@ services:
       STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
       STORAGE_PATH_STYLE_ACCESS: "true"
       STORAGE_UPLOAD_TTL: ${STORAGE_UPLOAD_TTL:-PT5M}
-      STORAGE_ACCESS_TTL: ${STORAGE_ACCESS_TTL:-PT5M}
       APP_DEFAULT_TIMEZONE: ${APP_DEFAULT_TIMEZONE:-Asia/Ho_Chi_Minh}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      VIEGYM_DATASET_EXERCISE_ENABLED: "true"
+      VIEGYM_DATASET_EXERCISE_PATH: "/app/datasets/exports/viegym_exercises_v1.json"
     read_only: true
     tmpfs:
       - /tmp
+    volumes:
+      - ./datasets:/app/datasets:ro
     healthcheck:
       test:
         - CMD
@@ -107,8 +110,6 @@ services:
     image: postgres:16.14-bookworm@sha256:64154d0babcb1741988719e703419af0382b19953706149f9872fbd0f438efa8
     ports:
       - "127.0.0.1:5432:5432"
-    expose:
-      - "5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-viegym}
       POSTGRES_USER: ${POSTGRES_USER:-viegym_app}
@@ -125,6 +126,7 @@ services:
       retries: 10
       start_period: 10s
     networks:
+      - edge-net
       - db-net
     restart: unless-stopped
 
@@ -193,7 +195,6 @@ networks:
     driver: bridge
   db-net:
     driver: bridge
-    internal: true
   ai-net:
     driver: bridge
     internal: true

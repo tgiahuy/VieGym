@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/widgets/exercise_tag_chip.dart';
+import '../../application/exercise_catalog_controller.dart';
 import '../../application/favorite_exercises_controller.dart';
 import '../../data/exercise_catalog.dart';
 import '../../domain/workout_models.dart';
@@ -20,8 +21,14 @@ class FavoriteExercisesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
     final favoriteIds = ref.watch(favoriteExercisesProvider);
-    final favoriteExercises = exerciseCatalog
-        .where((e) => favoriteIds.contains(e.id))
+    final catalogState = ref.watch(exerciseCatalogControllerProvider);
+    final allKnown = {
+      for (final e in catalogState.exercises) e.id: e,
+      for (final e in exerciseCatalog) e.id: e,
+    };
+    final favoriteExercises = favoriteIds
+        .map((id) => allKnown[id])
+        .whereType<ExerciseDefinition>()
         .toList();
 
     return Column(

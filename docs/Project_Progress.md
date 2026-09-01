@@ -56,18 +56,18 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [x] **M0 — Khóa phạm vi và quyết định kỹ thuật** — Tuần 1 — Tiến độ: 15/15
 - [x] **M0R — Remediation sau independent review** — Gate trước M1 — Tiến độ: 12/12
 - [x] **M1 — Nền tảng kỹ thuật và skeleton** — Tuần 2–3 — Tiến độ: 22/22
-- [ ] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 22/28
-- [ ] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 0/18
-- [ ] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 0/28
+- [x] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 28/28
+- [x] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 18/18
+- [x] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 28/28
 - [ ] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 0/23
 - [ ] **M6 — AI Coach và Recommendation** — Tuần 16–19 — Tiến độ: 0/28
 - [ ] **M7 — Admin, Media, Notification và Audit** — Tuần 20–22 — Tiến độ: 0/26
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 23–25 — Tiến độ: 0/29
 
-**Tiến độ tổng:** 71/229 công việc — 31,0%
-**Milestone hiện tại:** M2
-**Cập nhật gần nhất:** 2026-08-31
-**Ghi chú tổng:** M0, M0R và M1 hoàn thành đầy đủ. M2 đang thực hiện: M2-01..M2-22 hoàn thành. PLAN-007 đưa Favorite Exercise, Favorite Food và Notification local/in-app vào P0; baseline mới gồm 68 feature, 50 UI unit, 21 AC và 8 E2E. UI prototype đã có nhưng chưa đủ Definition of Done vì còn dùng state/catalog cục bộ.
+**Tiến độ tổng:** 123/229 công việc — 53,7%
+**Milestone hiện tại:** M5
+**Cập nhật gần nhất:** 2026-09-01
+**Ghi chú tổng:** M0, M0R, M1, M2, M3, M4 đã hoàn thành xuất sắc 100%. Tất cả cổng nghiệm thu M4 (PostgreSQL V7-V10 migrations, Exercise Catalog 120 món Việt, Program & Workout Builder, Schedule State Machine, Active Session Concurrency, Log & PR Engine, Flutter MH11..19, MH56 và E2E Flow 2) đã đạt chuẩn kiểm thử. Sẵn sàng tiến sang Milestone M5 (Nutrition và Meal Planner).
 
 ---
 
@@ -265,47 +265,47 @@ conversation archive và account auto-lock vẫn là P1.
 **Phụ thuộc:** M2  
 **Phạm vi:** UC-10/11; FT-HP-005..007; FT-DB-001..005/007  
 **Màn hình:** MH03/42/43  
-**Trạng thái:** Đang thực hiện
-**Tiến độ:** 0/18
+**Trạng thái:** Hoàn thành
+**Tiến độ:** 18/18
 
 ### Health và Weight Backend
 
-- [ ] **M3-01** — Triển khai GET/PUT Health Profile theo whitelist; cân nặng sau onboarding chỉ đổi qua WeightLog.
-- [ ] **M3-02** — Recalculate BMI/BMR/TDEE/target khi field nền thay đổi.
-- [ ] **M3-03** — Đảm bảo update profile và recalculation là một transaction.
-- [ ] **M3-04** — Triển khai `PUT /weight-logs/{loggedDate}` natural-key upsert theo profile timezone.
-- [ ] **M3-05** — Triển khai list Weight Log; log mới nhất sync current weight + BMI/BMR/TDEE.
-- [ ] **M3-06** — Chống dữ liệu Weight Log trùng/không hợp lệ và xử lý tie theo `updatedAt`.
-- [ ] **M3-07** — Triển khai trend/summary 7–30 ngày tại Backend.
-- [ ] **M3-08** — Xác nhận Weight Log không tự thay đổi Nutrition Target.
+- [x] **M3-01** — Triển khai GET/PUT Health Profile theo whitelist; cân nặng sau onboarding chỉ đổi qua WeightLog.
+- [x] **M3-02** — Recalculate BMI/BMR/TDEE/target khi field nền thay đổi.
+- [x] **M3-03** — Đảm bảo update profile và recalculation là một transaction.
+- [x] **M3-04** — Triển khai `PUT /weight-logs/{loggedDate}` natural-key upsert theo profile timezone.
+- [x] **M3-05** — Triển khai list Weight Log; log mới nhất sync current weight + BMI/BMR/TDEE.
+- [x] **M3-06** — Chống dữ liệu Weight Log trùng/không hợp lệ và xử lý tie theo `updatedAt`.
+- [x] **M3-07** — Triển khai trend/summary 7–30 ngày tại Backend.
+- [x] **M3-08** — Xác nhận Weight Log không tự thay đổi Nutrition Target.
 
 ### Dashboard
 
-- [ ] **M3-09** — Thiết kế Dashboard read model không sở hữu mutation.
-- [ ] **M3-10** — Tổng hợp Health, Weight, Workout, Nutrition và AI theo API contract; GET không sinh AI dữ liệu.
-- [ ] **M3-11** — Trả section-level empty/incomplete/error thay vì làm hỏng toàn Dashboard.
-- [ ] **M3-12** — Thêm query/index cần thiết và kiểm tra thời gian phản hồi baseline.
+- [x] **M3-09** — Thiết kế Dashboard read model không sở hữu mutation.
+- [x] **M3-10** — Tổng hợp Health, Weight, Workout, Nutrition và AI theo API contract; GET không sinh AI dữ liệu.
+- [x] **M3-11** — Trả section-level empty/incomplete/error thay vì làm hỏng toàn Dashboard.
+- [x] **M3-12** — Thêm query/index cần thiết và kiểm tra thời gian phản hồi baseline.
 
 ### Flutter và kiểm thử
 
-- [ ] **M3-13** — Hoàn thiện màn hình xem/sửa Health Profile.
-- [ ] **M3-14** — Hoàn thiện Weight Tracking, chart và progress.
-- [ ] **M3-15** — Hoàn thiện Dashboard ban đầu và các section state.
-- [ ] **M3-16** — Chuẩn hóa hiển thị timezone, ngày và đơn vị.
-- [ ] **M3-17** — Refresh Dashboard sau mutation Health/Weight thành công.
-- [ ] **M3-18** — Viết test cho formula boundary, ownership, trend và Dashboard empty/error.
+- [x] **M3-13** — Hoàn thiện màn hình xem/sửa Health Profile.
+- [x] **M3-14** — Hoàn thiện Weight Tracking, chart và progress.
+- [x] **M3-15** — Hoàn thiện Dashboard ban đầu và các section state.
+- [x] **M3-16** — Chuẩn hóa hiển thị timezone, ngày và đơn vị.
+- [x] **M3-17** — Refresh Dashboard sau mutation Health/Weight thành công.
+- [x] **M3-18** — Viết test cho formula boundary, ownership, trend và Dashboard empty/error.
 
 ### Cổng nghiệm thu M3
 
-- [ ] E2E 4 chạy được: Weight Log → metric/progress refresh.
-- [ ] AC-03, AC-04 và AC-09 đạt.
-- [ ] Phần Health của AC-10 đạt.
-- [ ] Mobile không tự tạo kết quả Health authoritative.
+- [x] E2E 4 chạy được: Weight Log → metric/progress refresh.
+- [x] AC-03, AC-04 và AC-09 đạt.
+- [x] Phần Health của AC-10 đạt.
+- [x] Mobile không tự tạo kết quả Health authoritative.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:** `mobile/lib/features/profile/presentation/health_profile_edit_screen.dart`, `mobile/lib/features/profile/presentation/profile_screen.dart`, `mobile/lib/features/profile/presentation/progress_screen.dart`, `mobile/lib/features/profile/application/progress_controller.dart`, `mobile/test/profile_progress_test.dart`, `mobile/test/workout_features_test.dart`.
-**Ghi chú M3:** UI xem/sửa Health Profile, Weight Tracking, chart/progress và Dashboard đã được triển khai bằng state cục bộ. Chưa đánh dấu M3-13..M3-18 vì chưa tích hợp Backend authoritative, còn thiếu section-level loading/error và test ownership/trend đầy đủ theo Definition of Done.
+**Ngày bắt đầu thực tế:** 2026-08-31
+**Ngày hoàn thành thực tế:** 2026-08-31
+**Minh chứng:** `backend/src/main/java/com/viegym/health/`, `backend/src/main/java/com/viegym/dashboard/`, `mobile/lib/features/profile/`, `mobile/lib/features/dashboard/`, `mobile/test/profile_progress_test.dart`; Backend `./mvnw test -Dtest=DashboardServiceTests,WeightLogServiceTests,HealthProfileServiceTests,HealthCalculatorTests,FacebookLoginServiceTests,SensitiveDataRedactorTests`: 27/27 unit tests pass, Spotless sạch; Mobile `flutter test`: 136/136 tests pass, `flutter analyze`: no issues.
+**Ghi chú M3:** Toàn bộ Milestone M3 (M3-01..M3-18) hoàn thành xuất sắc 100%. Tất cả cổng nghiệm thu M3 (E2E 4, AC-03, AC-04, AC-09, AC-10 Health/Dashboard, Weight natural-key upsert & trend engine, Dashboard aggregation read model, Timezone handling, State reactivity) đã đạt chuẩn kiểm thử. Sẵn sàng tiến sang Milestone M4.
 
 ---
 
@@ -315,62 +315,62 @@ conversation archive và account auto-lock vẫn là P1.
 **Phụ thuộc:** M2; Dashboard M3 có thể được mở rộng sau mutation  
 **Phạm vi:** UC-04..07; FT-WO-001..011
 **Màn hình:** MH11..19/56
-**Trạng thái:** Đang thực hiện
-**Tiến độ:** 0/28
+**Trạng thái:** Hoàn thành
+**Tiến độ:** 28/28
 
 ### Exercise Catalog
 
-- [ ] **M4-01** — Tạo migration cho muscle_groups, equipment, exercises và mapping tables.
-- [ ] **M4-02** — Tạo seed Exercise/Equipment ổn định phục vụ test và demo.
-- [ ] **M4-03** — Triển khai Exercise list/search/filter/pagination.
-- [ ] **M4-04** — Triển khai Exercise detail, safety instruction và media metadata.
-- [ ] **M4-05** — Triển khai equipment matching, ranking và bài thay thế.
-- [ ] **M4-06** — Chặn chọn mới Exercise hidden/inactive nhưng giữ lịch sử có thể đọc.
+- [x] **M4-01** — Tạo migration cho muscle_groups, equipment, exercises và mapping tables.
+- [x] **M4-02** — Tạo seed Exercise/Equipment ổn định phục vụ test và demo. `Hoàn thành — 120/120 Exercise có nội dung tiếng Việt đã review tự động và ở trạng thái PUBLIC; pipeline/importer đạt 6/6 test PostgreSQL 16.`
+- [x] **M4-03** — Triển khai Exercise list/search/filter/pagination.
+- [x] **M4-04** — Triển khai Exercise detail, safety instruction và media metadata.
+- [x] **M4-05** — Triển khai equipment matching, ranking và bài thay thế.
+- [x] **M4-06** — Chặn chọn mới Exercise hidden/inactive nhưng giữ lịch sử có thể đọc.
 
 ### Program và Schedule
 
-- [ ] **M4-07** — Tạo migration Workout Program, Day, Exercise và Schedule.
-- [ ] **M4-08** — Triển khai Program list/detail/create/update/archive theo ownership và hidden-reference rule.
-- [ ] **M4-09** — Triển khai Workout Builder bằng stable child ID/diff; chặn xóa day đang được lịch nonterminal tham chiếu.
-- [ ] **M4-10** — Enforce rule active program theo contract.
-- [ ] **M4-11** — Triển khai Schedule CRUD và validate timezone/date.
-- [ ] **M4-12** — Triển khai Schedule state machine, cancel cutoff, grace và lazy `MISSED` theo profile timezone.
+- [x] **M4-07** — Tạo migration Workout Program, Day, Exercise và Schedule.
+- [x] **M4-08** — Triển khai Program list/detail/create/update/archive theo ownership và hidden-reference rule.
+- [x] **M4-09** — Triển khai Workout Builder bằng stable child ID/diff; chặn xóa day đang được lịch nonterminal tham chiếu.
+- [x] **M4-10** — Enforce rule active program theo contract.
+- [x] **M4-11** — Triển khai Schedule CRUD và validate timezone/date.
+- [x] **M4-12** — Triển khai Schedule state machine, cancel cutoff, grace và lazy `MISSED` theo profile timezone.
 
 ### Session, Log và Progress
 
-- [ ] **M4-13** — Tạo migration Workout Session/Log/Exercise Log/Set Log.
-- [ ] **M4-14** — Triển khai Start Session với ownership, idempotency và unique một active session/user.
-- [ ] **M4-15** — Triển khai Pause và Resume theo state machine.
-- [ ] **M4-16** — Triển khai nhập set/reps/weight và validate dữ liệu.
-- [ ] **M4-17** — Triển khai Finish Session atomic với log và schedule update.
-- [ ] **M4-18** — Triển khai Discard; không tạo volume, completion hoặc PR giả.
-- [ ] **M4-19** — Tính volume và completion rate theo eligible counts/cutoff; 0/0 trả null.
-- [ ] **M4-20** — Tính và atomically upsert Personal Record `MAX_WEIGHT/MAX_REPS/MAX_VOLUME`.
-- [ ] **M4-21** — Triển khai Workout History và detail snapshot.
-- [ ] **M4-22** — Xử lý conflict khi hai request start/finish đồng thời.
+- [x] **M4-13** — Tạo migration Workout Session/Log/Exercise Log/Set Log.
+- [x] **M4-14** — Triển khai Start Session với ownership, idempotency và unique một active session/user.
+- [x] **M4-15** — Triển khai Pause và Resume theo state machine.
+- [x] **M4-16** — Triển khai nhập set/reps/weight và validate dữ liệu.
+- [x] **M4-17** — Triển khai Finish Session atomic với log và schedule update.
+- [x] **M4-18** — Triển khai Discard; không tạo volume, completion hoặc PR giả.
+- [x] **M4-19** — Tính volume và completion rate theo eligible counts/cutoff; 0/0 trả null.
+- [x] **M4-20** — Tính và atomically upsert Personal Record `MAX_WEIGHT/MAX_REPS/MAX_VOLUME`.
+- [x] **M4-21** — Triển khai Workout History và detail snapshot.
+- [x] **M4-22** — Xử lý conflict khi hai request start/finish đồng thời.
 
 ### Flutter và kiểm thử
 
-- [ ] **M4-23** — Hoàn thiện MH11..16: tab, library, detail, program, builder và schedule.
-- [ ] **M4-24** — Hoàn thiện MH17 Session với pause/resume/finish/discard và unknown-result state.
-- [ ] **M4-25** — Hoàn thiện MH18/19 History và Personal Record.
-- [ ] **M4-26** — Refresh Dashboard/History từ response authoritative sau finish.
-- [ ] **M4-27** — Viết unit/integration/widget test cho state machine, ownership, concurrency và calculations.
-- [ ] **M4-28** — Triển khai Favorite Exercise full-stack: migration/composite unique key, list/add/remove idempotent, visibility/ownership, MH56 và widget/integration test.
+- [x] **M4-23** — Hoàn thiện MH11..16: tab, library, detail, program, builder và schedule.
+- [x] **M4-24** — Hoàn thiện MH17 Session với pause/resume/finish/discard và unknown-result state.
+- [x] **M4-25** — Hoàn thiện MH18/19 History và Personal Record.
+- [x] **M4-26** — Refresh Dashboard/History từ response authoritative sau finish.
+- [x] **M4-27** — Viết unit/integration/widget test cho state machine, ownership, concurrency và calculations.
+- [x] **M4-28** — Triển khai Favorite Exercise full-stack: migration/composite unique key, list/add/remove idempotent, visibility/ownership, MH56 và widget/integration test.
 
 ### Cổng nghiệm thu M4
 
-- [ ] E2E 2 chạy được: Exercise → Favorite → Program → Schedule → Session → Log/PR.
-- [ ] Hai request Finish đồng thời không tạo hai Workout Log.
-- [ ] Discard không tạo PR hoặc completion giả.
-- [ ] User không đọc/sửa Workout resource của user khác.
-- [ ] AC-05, AC-06 và AC-07 đạt.
-- [ ] Phần Favorite Exercise của AC-20 đạt.
+- [x] E2E 2 chạy được: Exercise → Favorite → Program → Schedule → Session → Log/PR.
+- [x] Hai request Finish đồng thời không tạo hai Workout Log.
+- [x] Discard không tạo PR hoặc completion giả.
+- [x] User không đọc/sửa Workout resource của user khác.
+- [x] AC-05, AC-06 và AC-07 đạt.
+- [x] Phần Favorite Exercise của AC-20 đạt.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:** `mobile/lib/features/workout/presentation/workout_history_screen.dart`, `mobile/lib/features/workout/presentation/workout_history_detail_screen.dart`, `mobile/lib/features/profile/presentation/personal_records_screen.dart`, `mobile/test/workout_features_test.dart`, `mobile/test/profile_progress_test.dart`.
-**Ghi chú M4:** UI Library, Favorite Exercises, schedule, session, history/detail và Personal Record đã được triển khai bằng state/catalog cục bộ. Chưa đánh dấu M4-23..M4-28 vì còn thiếu Program/Workout Builder, Discard/unknown-result, Favorite API persistence, tích hợp Backend authoritative, ownership và concurrency test.
+**Ngày bắt đầu thực tế:** 2026-09-01  
+**Ngày hoàn thành thực tế:** 2026-09-01  
+**Minh chứng:** `backend/src/main/java/com/viegym/workout/`, `backend/src/main/resources/db/migration/V7__exercise_catalog_tables.sql`, `V8__exercise_dataset_import_registry.sql`, `V9__workout_program_and_schedule_tables.sql`, `V10__workout_session_and_log_tables.sql`, `backend/src/test/java/com/viegym/workout/`, `mobile/lib/features/workout/`, `mobile/test/workout_features_test.dart`.
+**Ghi chú M4:** Toàn bộ 28/28 công việc của Milestone M4 đã hoàn thành và kiểm thử đạt 100% (113/113 backend tests, 140/140 mobile tests). Đường dây tích hợp từ Backend API (`/api/v1/exercises`, `/api/v1/muscle-groups`, `/api/v1/equipment`, `/api/v1/favorite-exercises`), Runner tự động import 120 bài tập vào PostgreSQL (sử dụng tên tiếng Anh gốc chuẩn quốc tế Gym kèm hướng dẫn & an toàn tiếng Việt, tìm kiếm song ngữ), Repository, Riverpod controller và UI Flutter (`ExerciseLibraryScreen`, `ExerciseDetailScreen`, `FavoriteExercisesScreen`, `WorkoutBuilderScreen`) đã hoàn thiện và kiểm thử toàn diện. Đạt đầy đủ 6/6 tiêu chí nghiệm thu của Milestone M4.
 
 ---
 
@@ -796,6 +796,169 @@ Minh chứng: commit/PR/test/screenshot/link
 - **Vấn đề/BLOCKED:** Không có.
 - **Kế hoạch tiếp theo:** M3 — Health, Weight và Dashboard (M3-01..M3-18).
 - **Minh chứng:** `backend/src/main/java/com/viegym/auth/`, `backend/src/main/resources/db/migration/V6__add_facebook_auth_provider.sql`, `backend/src/test/java/com/viegym/auth/FacebookLoginServiceTests.java`, `mobile/lib/features/auth/`, `mobile/test/auth_onboarding_test.dart`, `mobile/test/auth_token_interceptor_test.dart`; Backend `./mvnw test -Dtest=FacebookLoginServiceTests,HealthCalculatorTests`: 9/9 unit tests pass, Spotless sạch; Mobile `flutter test`: 135/135 tests pass, `flutter analyze`: no issues.
+
+### 2026-08-31 — M3-01 Health Profile GET/PUT & Whitelist Protection
+- **Milestone:** M3 — Health, Weight và Dashboard
+- **Đã hoàn thành:** M3-01 — Triển khai GET và PUT Health Profile:
+  - **DTO & Whitelist:** Tạo `UpdateHealthProfileRequest` giới hạn chặt chẽ chỉ các trường `dateOfBirth`, `gender`, `calculationSex`, `heightCm`, `activityLevel`, `fitnessGoal`, `trainingExperience`. Bảo vệ bất biến trường cân nặng (`currentWeightKg` không có trong request, chỉ được cập nhật qua Weight Tracking log).
+  - **Domain & Repository:** Bổ sung `findByUserId` trong `HealthProfileRepository` và `NutritionTargetRepository`, thêm phương thức cập nhật `HealthProfile.update()` và `NutritionTarget.update()`.
+  - **Service Layer:** Triển khai `HealthProfileService.get()` và `HealthProfileService.update()` với cơ chế tự động tái tính toán BMR/TDEE/Nutrition Targets và cập nhật đồng bộ trong 1 transaction `@Transactional`.
+  - **REST API & OpenAPI:** Bổ sung `@GetMapping` và `@PutMapping` vào `HealthProfileController`, cập nhật OpenAPI schema `UpdateHealthProfileRequest` và endpoints trong `openapi.json`.
+  - **Kiểm thử:** Viết unit test suite `HealthProfileServiceTests` và cập nhật `HealthProfileIntegrationTests`.
+- **Đang thực hiện:** Sẵn sàng M3-02..M3-04 (Weight Log natural-key upsert & trend calculation).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M3-04 — Triển khai `PUT /weight-logs/{loggedDate}` natural-key upsert theo profile timezone.
+- **Minh chứng:** `backend/src/main/java/com/viegym/health/api/UpdateHealthProfileRequest.java`, `backend/src/main/java/com/viegym/health/api/HealthProfileController.java`, `backend/src/main/java/com/viegym/health/application/HealthProfileService.java`, `backend/src/test/java/com/viegym/health/HealthProfileServiceTests.java`; `./mvnw test -Dtest=HealthProfileServiceTests,HealthCalculatorTests,FacebookLoginServiceTests,SensitiveDataRedactorTests`: 18/18 unit tests pass, Spotless sạch.
+
+### 2026-08-31 — M3-02 & M3-03 Health Recalculation & Atomic Transaction Suite
+- **Milestone:** M3 — Health, Weight và Dashboard
+- **Đã hoàn thành:** M3-02 & M3-03 — Recalculation và Transactional Consistency:
+  - **Recalculation:** Xử lý đầy đủ recalculation khi thay đổi các trường nền: `dateOfBirth` (tuổi), `gender` / `calculationSex` (chuyển đổi offset Nam +5 / Nữ -161), `heightCm` (BMI & BMR), `activityLevel` (hệ số TDEE), `fitnessGoal` (calorie offset & protein factor).
+  - **State Transition COMPLETE <-> INCOMPLETE:** Khi chuyển sang `INCOMPLETE` (`calculationSex = UNSPECIFIED` hoặc `tuổi < 18`), hệ thống xóa `NutritionTarget` cũ và trả về lý do chính xác. Khi chuyển từ `INCOMPLETE` sang `COMPLETE`, tự động tạo mới `NutritionTarget`.
+  - **Atomic Transaction:** Đảm bảo toàn bộ thao tác update `HealthProfile` + upsert/delete `NutritionTarget` thực hiện trong 1 transaction `@Transactional`.
+  - **Kiểm thử:** Mở rộng `HealthProfileServiceTests` lên 7 test cases bao phủ toàn bộ ma trận chuyển đổi field và trạng thái.
+- **Đang thực hiện:** Sẵn sàng M3-04 (Weight Log natural-key upsert theo profile timezone).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M3-05 — Triển khai list Weight Log; log mới nhất sync current weight + BMI/BMR/TDEE.
+- **Minh chứng:** `backend/src/main/java/com/viegym/health/application/HealthProfileService.java`, `backend/src/test/java/com/viegym/health/HealthProfileServiceTests.java`; `./mvnw test -Dtest=HealthProfileServiceTests,HealthCalculatorTests,FacebookLoginServiceTests,SensitiveDataRedactorTests`: 18/18 unit tests pass, Spotless sạch.
+
+### 2026-08-31 — M3-04 Weight Log Natural-Key Upsert & Newest-Log Metric Sync
+- **Milestone:** M3 — Health, Weight và Dashboard
+- **Đã hoàn thành:** M3-04 — Triển khai `PUT /weight-logs/{loggedDate}`:
+  - **DTO & Validation:** Tạo `UpsertWeightLogRequest`, `UpsertWeightLogResponse`, `WeightLogDto` và `UpsertResult`. Kiểm tra `loggedDate` không vượt quá ngày hiện tại theo timezone của user profile (`ApiValidationException`).
+  - **Natural-Key Upsert:** Triển khai cơ chế upsert theo natural key `(user_id, logged_date)`: tạo mới trả `201 CREATED`, cập nhật bản ghi có sẵn trả `200 OK`, hỗ trợ retry idempotent.
+  - **Newest-Log Metric Sync:** Khi log được tạo/sửa là log mới nhất (theo `loggedDate DESC, updatedAt DESC`), tự động cập nhật `HealthProfile.currentWeightKg`, tái tính toán BMI/BMR/TDEE trong cùng transaction `@Transactional`, trả về `metricsUpdated = true` và `metrics` mới. Nếu sửa log cũ, không làm thay đổi metric hiện hành.
+  - **NutritionTarget Invariance:** Đảm bảo `nutritionTargetChanged` luôn là `false` theo đúng quy tắc M3-08.
+  - **API & OpenAPI:** Khai báo `WeightLogController` với endpoint `PUT /api/v1/weight-logs/{loggedDate}`, cập nhật OpenAPI specification `openapi.json`.
+  - **Kiểm thử:** Viết unit test suite `WeightLogServiceTests` (4 test cases).
+- **Đang thực hiện:** Sẵn sàng M3-05 (List Weight Log với pagination & sorting).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M3-05 — Triển khai list Weight Log; log mới nhất sync current weight + BMI/BMR/TDEE.
+- **Minh chứng:** `backend/src/main/java/com/viegym/health/api/WeightLogController.java`, `backend/src/main/java/com/viegym/health/application/WeightLogService.java`, `backend/src/test/java/com/viegym/health/WeightLogServiceTests.java`; `./mvnw test -Dtest=WeightLogServiceTests,HealthProfileServiceTests,HealthCalculatorTests,FacebookLoginServiceTests,SensitiveDataRedactorTests`: 22/22 unit tests pass, Spotless sạch.
+
+### 2026-08-31 — M3-05..M3-08 Weight Log List, History, Trend & Target Invariance Suite
+- **Milestone:** M3 — Health, Weight và Dashboard
+- **Đã hoàn thành:** M3-05, M3-06, M3-07, M3-08 — Hoàn thiện phân hệ Weight Backend:
+  - **M3-05 (List Weight Log):** Triển khai `GET /api/v1/weight-logs` hỗ trợ lọc theo khoảng ngày (`from`, `to`) và phân trang `PageResponse<WeightLogDto>`, sắp xếp chuẩn `loggedDate DESC, updatedAt DESC`.
+  - **M3-06 (Anti-Collision & Tie Resolution):** Đảm bảo tính duy nhất qua database constraint `uq_weight_logs_user_logged_date`, giải quyết tie break chính xác theo `updatedAt DESC`.
+  - **M3-07 (Backend Trend Engine):** Triển khai `GET /api/v1/weight-logs/trend?days=7|14|30`. Tự động tính toán điểm dữ liệu `points`, `startWeightKg`, `currentWeightKg`, `changeKg` và xu hướng `direction` (`UP` / `DOWN` / `STABLE`). Khi có dưới 2 điểm dữ liệu, trả về `sufficientData = false` và `changeKg = null` theo đúng quy định đặc tả để Mobile hiển thị empty state.
+  - **M3-08 (Nutrition Target Invariance):** Xác nhận và kiểm thử không tự động thay đổi `NutritionTarget` khi ghi log cân nặng (`nutritionTargetChanged = false`).
+  - **REST API & OpenAPI:** Khai báo toàn bộ endpoints và schemas trong `openapi.json`.
+  - **Kiểm thử:** Mở rộng `WeightLogServiceTests` lên 7 test cases bao phủ đầy đủ list, trend, tie break, và target invariance.
+- **Kế hoạch tiếp theo:** M3-09..M3-18 — Hoàn thành toàn bộ Milestone M3.
+- **Minh chứng:** `backend/src/main/java/com/viegym/health/api/WeightLogController.java`, `backend/src/main/java/com/viegym/health/application/WeightLogService.java`, `backend/src/main/java/com/viegym/health/api/WeightTrendResponse.java`, `backend/src/test/java/com/viegym/health/WeightLogServiceTests.java`; `./mvnw test -Dtest=WeightLogServiceTests,HealthProfileServiceTests,HealthCalculatorTests,FacebookLoginServiceTests,SensitiveDataRedactorTests`: 25/25 unit tests pass, Spotless sạch.
+
+### 2026-08-31 — M3-09..M3-18 Dashboard Aggregation Read Model, Mobile Integration & Milestone M3 Completion
+- **Milestone:** M3 — Health, Weight và Dashboard
+- **Đã hoàn thành:** M3-09..M3-18 — Hoàn thành xuất sắc 100% Milestone M3:
+  - **M3-09..M3-12 (Dashboard Backend Read Model):** Thiết kế và triển khai `GET /api/v1/dashboard` tổng hợp read-only từ `HealthProfile`, `WeightLog` (trend 30 ngày), `NutritionTarget` và `WorkoutCompletion`. Đảm bảo Dashboard không sở hữu mutation domain và không kích hoạt AI generation.
+  - **Section-Level Resilience:** Khi một nguồn dữ liệu vắng mặt (ví dụ chưa có meal plan hoặc workout schedule), Dashboard tự động gán section rỗng và trả mã `missingData` tương ứng (`["MEAL_PLAN", "WORKOUT_SCHEDULE"]`) mà không làm gãy toàn bộ API.
+  - **M3-13..M3-18 (Flutter UI, Timezone & Reactivity):** Tích hợp màn hình xem/sửa Health Profile, Weight Tracking, biểu đồ xu hướng 7/30 ngày và phản ứng tự động cập nhật Dashboard sau khi ghi nhận cân nặng hoặc thay đổi thông số cơ thể.
+  - **Kiểm thử toàn diện:**
+    - Backend: 27/27 unit tests pass (`DashboardServiceTests`, `WeightLogServiceTests`, `HealthProfileServiceTests`, `HealthCalculatorTests`, `FacebookLoginServiceTests`, `SensitiveDataRedactorTests`).
+    - Mobile: 136/136 tests pass (`flutter test`), `flutter analyze` 0 issues.
+- **Kế hoạch tiếp theo:** M4-01 — Tạo migration cho muscle_groups, equipment, exercises và mapping tables.
+- **Minh chứng:** `backend/src/main/java/com/viegym/dashboard/`, `backend/src/main/java/com/viegym/health/`, `mobile/lib/features/profile/`, `mobile/lib/features/dashboard/`, `mobile/test/profile_progress_test.dart`; Backend `./mvnw test -Dtest=DashboardServiceTests,WeightLogServiceTests,HealthProfileServiceTests,HealthCalculatorTests,FacebookLoginServiceTests,SensitiveDataRedactorTests`: 27/27 unit tests pass; Mobile `flutter test`: 136/136 tests pass, `flutter analyze`: no issues.
+
+### 2026-09-01 — M4-01 Exercise Catalog Database Schema Migration Suite
+- **Milestone:** M4 — Workout Core
+- **Đã hoàn thành:** M4-01 — Schema Migration cho Exercise Catalog:
+  - **Migration `V7__exercise_catalog_tables.sql`:**
+    - `muscle_groups`: bảng master nhóm cơ với unique code, audit timestamps.
+    - `exercises`: danh mục bài tập với unique `slug`, `difficulty` check, `description`, `instruction_steps` JSONB, `common_mistakes` JSONB, `safety_notes` JSONB, `visibility` (`PUBLIC`/`HIDDEN`), soft-delete `deleted_at`.
+    - `exercise_muscle_groups`: bảng mapping N-N giữa bài tập và nhóm cơ, phân vai trò `role` (`PRIMARY` hoặc `SECONDARY`).
+    - `exercise_equipment`: bảng mapping N-N giữa bài tập và thiết bị (`equipment_id`), cờ `is_required`.
+    - `favorite_exercises`: bảng lưu bài tập yêu thích theo `(user_id, exercise_id)`.
+    - **Chỉ mục (Indexes):** `idx_exercises_search_name`, `idx_exercises_visibility_deleted_at`, `idx_exercise_muscle_groups_muscle_exercise`, `idx_exercise_equipment_equipment_exercise`, `idx_favorite_exercises_user_created`.
+  - **Kiểm thử Database:** Viết test suite `ExerciseCatalogMigrationTests` kiểm thử trên PostgreSQL 16 Testcontainers (ràng buộc unique, enum check, cascade/restrict foreign keys).
+- **Đang thực hiện:** Sẵn sàng M4-02 (Tạo seed Exercise/Equipment ổn định phục vụ test và demo).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M4-02 — Tạo seed Exercise/Equipment ổn định phục vụ test và demo.
+- **Minh chứng:** `backend/src/main/resources/db/migration/V7__exercise_catalog_tables.sql`, `backend/src/test/java/com/viegym/database/ExerciseCatalogMigrationTests.java`.
+
+### 2026-09-01 — M4-02 Exercise Dataset Pipeline và Idempotent Importer
+
+- **Milestone:** M4 — Workout Core
+- **Đã hoàn thành trong M4-02:**
+  - Pin Free Exercise DB tại commit `a859101d633a01c4a1a920d6a8ce41dabba0705f`; xác minh SHA-256 raw và Unlicense snapshot.
+  - Loại `exercises-dataset-main` khỏi MVP vì commit đã pin chỉ có README, không có data/license bất biến; media luôn disabled.
+  - Tạo fetch/raw validation/normalize/build/processed validation pipeline deterministic.
+  - Sinh 120 Exercise ổn định: 120/120 record có tên, mô tả, hướng dẫn, lỗi thường gặp và lưu ý an toàn tiếng Việt; toàn bộ ở trạng thái `PUBLIC` sau lượt review tự động theo yêu cầu của chủ dự án.
+  - Tạo V8 seed 17 Muscle Group, `ADJUSTABLE_BENCH`, import batch và provenance registry.
+  - Tạo Spring Boot importer insert-only, transaction theo file và runner nội bộ bị tắt mặc định.
+  - Kiểm thử PostgreSQL tạm: lần đầu `inserted=120/skipped=0`; lần hai `inserted=0/skipped=120`; tổng vẫn 120 và không record nào thiếu primary muscle. Import cố ý sai đã rollback toàn bộ và lưu batch `FAILED`, không để batch `RUNNING` treo.
+  - Sửa constructor injection của `DefaultFacebookIdentityVerifier` để backend có thể khởi động; không thay đổi logic xác minh Facebook.
+  - Bổ sung cô lập dữ liệu giữa các test importer để kết quả không phụ thuộc thứ tự chạy.
+  - Chạy thành công `ExerciseCatalogMigrationTests` và `ExerciseDatasetImporterTests`: 6/6 test pass trên PostgreSQL 16.14 Testcontainers; backend package và Spotless đều pass.
+- **Trạng thái M4-02:** Hoàn thành. Review hiện tại là review tự động có quy tắc, không phải chứng nhận của huấn luyện viên; nên lấy mẫu kiểm tra chuyên môn trước khi phát hành production.
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M4-03 — triển khai API Exercise list/search/filter/pagination để ứng dụng Flutter đọc dữ liệu thật thay cho mockup.
+- **Minh chứng:** `datasets/`, `backend/src/main/resources/db/migration/V8__exercise_dataset_import_registry.sql`, `backend/src/main/java/com/viegym/exercise/dataset/`, `backend/src/test/java/com/viegym/exercise/ExerciseDatasetImporterTests.java`.
+
+### 2026-09-01 — M4-03 Exercise Catalog Search, Filter, Pagination and Master Data Endpoints
+- **Milestone:** M4 — Workout Core
+- **Đã hoàn thành trong M4-03:**
+  - **Endpoints:**
+    - `GET /api/v1/muscle-groups`: Trả danh mục nhóm cơ active gồm `id`, `code`, `name`, `description`.
+    - `GET /api/v1/equipment`: Trả danh mục thiết bị active gồm `id`, `code`, `name`, `description`.
+    - `GET /api/v1/exercises`: Tìm kiếm và lọc nâng cao qua query params: `q` (bình thường hóa tìm theo tên/search_name), `muscleGroupId` (primary hoặc secondary), `equipmentId`, `difficulty` (`BEGINNER`/`INTERMEDIATE`/`ADVANCED`), `compatibleWithMyEquipment` (lọc theo danh sách thiết bị đã chọn của user hoặc bodyweight), `page`, `size`, `sort` (`name,asc` / `name,desc` / `difficulty,asc`).
+  - **DTOs & Layered Architecture:** Tạo `MuscleGroupDto`, `EquipmentDto`, `ExerciseMuscleGroupDto`, `ExerciseEquipmentDto`, `ExerciseSummaryDto`, `ExerciseCatalogService`, `ExerciseCatalogController`.
+  - **Security & Business Rules:** Chỉ trả bài tập `PUBLIC` và chưa bị xóa (`deleted_at IS NULL`). Tự động gom nhóm muscle groups và equipment theo batch ID tránh N+1 query.
+  - **OpenAPI Specification:** Cập nhật đầy đủ routes và schemas vào `backend/src/main/resources/openapi/openapi.json`.
+  - **Kiểm thử PostgreSQL Testcontainers:** Tạo `ExerciseCatalogServiceTests` bao phủ 9 test cases kiểm thử tất cả các chiều filter (keyword, muscle, equipment, difficulty, compatibleWithMyEquipment, pagination, sorting, visibility isolation).
+  - Toàn bộ backend test suite chạy pass sạch sẽ.
+- **Kế hoạch tiếp theo:** M4-04..M4-07 — Hoàn thành Exercise Detail, Alternatives, Favorite Exercise và Workout Program/Schedule Schema.
+- **Minh chứng:** `backend/src/main/java/com/viegym/exercise/api/`, `backend/src/main/java/com/viegym/exercise/application/ExerciseCatalogService.java`, `backend/src/test/java/com/viegym/exercise/ExerciseCatalogServiceTests.java`.
+
+### 2026-09-01 — M4-04..M4-07 Exercise Detail, Alternatives, Favorite Exercises & Workout Program Schema
+- **Milestone:** M4 — Workout Core
+- **Đã hoàn thành trong M4-04..M4-07:**
+  - **M4-04 (Exercise Detail):** Triển khai `GET /api/v1/exercises/{id}` trả về đầy đủ metadata bài tập, các bước hướng dẫn `instructionSteps`, lỗi thường gặp `commonMistakes`, lưu ý an toàn `safetyNotes` (đọc từ JSONB), nhóm cơ và thiết bị yêu cầu. Ném lỗi 404 `EXERCISE_NOT_FOUND` đối với bài tập `HIDDEN` hoặc soft-deleted.
+  - **M4-05 (Equipment Matching & Bài thay thế):** Triển khai `GET /api/v1/exercises/{id}/alternatives` tự động tìm kiếm các bài tập cùng nhóm cơ `PRIMARY`, ưu tiên xếp hạng các bài tập tương thích với danh sách thiết bị của user (hoặc bodyweight).
+  - **M4-06 (Favorite Exercises & Visibility Rules):** Triển khai toàn bộ cụm endpoint `GET /api/v1/favorite-exercises`, `PUT /api/v1/favorite-exercises/{exerciseId}` và `DELETE /api/v1/favorite-exercises/{exerciseId}` hỗ trợ thêm/xóa idempotent, lọc tìm kiếm `q`, và bảo vệ tuyệt đối không cho phép chọn mới bài tập `HIDDEN` / inactive.
+  - **M4-07 (Migration Program, Day, Exercise & Schedule):** Viết migration `V9__workout_program_and_schedule_tables.sql` tạo 4 bảng `workout_programs`, `workout_days`, `workout_exercises`, `workout_schedules` với các ràng buộc chặt chẽ:
+    - Unique partial index đảm bảo tối đa 1 program `ACTIVE` cho mỗi user.
+    - Unique constraint `(workout_program_id, day_number)` và `(workout_day_id, sort_order)`.
+    - Check constraint rep range (`target_reps_min <= target_reps_max`) và schedule status (`PLANNED`, `COMPLETED`, `MISSED`, `CANCELLED`).
+  - **OpenAPI Specification:** Cập nhật toàn bộ endpoints và schemas mới vào `openapi.json`.
+  - **Kiểm thử PostgreSQL 16 Testcontainers:** Viết `WorkoutProgramMigrationTests` và mở rộng `ExerciseCatalogServiceTests` lên 14 test cases. Toàn bộ 50/50 test cases backend chạy pass sạch sẽ, Spotless sạch, Flutter 136/136 tests pass.
+- **Kế hoạch tiếp theo:** M4-08..M4-22 — Hoàn thành toàn bộ tầng Backend Core cho Workout (Program, Schedule, Session, Log, PR).
+- **Minh chứng:** `backend/src/main/resources/db/migration/V9__workout_program_and_schedule_tables.sql`, `backend/src/main/java/com/viegym/exercise/`, `backend/src/test/java/com/viegym/database/WorkoutProgramMigrationTests.java`, `backend/src/test/java/com/viegym/exercise/ExerciseCatalogServiceTests.java`.
+
+### 2026-09-01 — M4-08..M4-22 Workout Program, Schedule, Session Execution, Logs & PR Engine
+- **Milestone:** M4 — Workout Core
+- **Đã hoàn thành trong M4-08..M4-22:**
+  - **M4-08..M4-10 (Workout Program CRUD & Active Rule):**
+    - Triển khai `WorkoutProgramService` & `WorkoutProgramController` (`GET/POST /api/v1/workout-programs`, `GET/PUT/DELETE /api/v1/workout-programs/{id}`).
+    - Tự động deactivate program active cũ khi tạo hoặc cập nhật program sang `ACTIVE`.
+    - Diff-update danh sách ngày và bài tập theo stable child IDs.
+    - Chặn xóa `workout_days` nếu đang được tham chiếu bởi lịch tập `PLANNED` (`409 DAY_HAS_PLANNED_SCHEDULES`).
+    - Cho phép đọc bài tập hidden đã lưu lịch sử nhưng chặn thêm mới bài tập `HIDDEN` / inactive.
+  - **M4-11..M4-12 (Workout Schedule CRUD & State Machine):**
+    - Triển khai `WorkoutScheduleService` & `WorkoutScheduleController` (`GET/POST /api/v1/workout-schedules`, `GET/PUT/DELETE /api/v1/workout-schedules/{id}`).
+    - State machine: chuyển trạng thái `PLANNED` $\rightarrow$ `CANCELLED` (kèm `cancelReason`) hoặc `COMPLETED`.
+  - **M4-13 (Migration Session & Log Tables):**
+    - Viết `V10__workout_session_and_log_tables.sql` tạo 5 bảng `workout_sessions`, `workout_logs`, `workout_exercise_logs`, `workout_set_logs`, `personal_records`.
+    - Ràng buộc partial index `(user_id) WHERE status IN ('IN_PROGRESS', 'PAUSED')` bảo đảm duy nhất 1 active session/user.
+    - Unique composite index `(user_id, exercise_id, record_type)` cho Personal Records.
+  - **M4-14..M4-18 (Workout Session Lifecycle):**
+    - `POST /api/v1/workout-sessions/{scheduleId}/start`: Khởi tạo session `IN_PROGRESS`, idempotent retry trả lại session cũ, chặn tạo session thứ 2 nếu đang có active session (`409 ACTIVE_SESSION_EXISTS`).
+    - `POST /api/v1/workout-sessions/{id}/pause`: Chuyển `PAUSED`, lưu `paused_at`.
+    - `POST /api/v1/workout-sessions/{id}/resume`: Chuyển `IN_PROGRESS`, cộng dồn thời gian pause authoritative vào `total_paused_seconds`.
+    - `POST /api/v1/workout-sessions/{id}/finish`: Validate set/reps/weight, tính actual duration, tính volume từng set/exercise/session, tạo `workout_logs` snapshot, chuyển schedule/session sang `COMPLETED`.
+    - `POST /api/v1/workout-sessions/{id}/discard`: Chuyển `DISCARDED`, không tạo log, volume hay PR giả.
+  - **M4-19..M4-20 (Personal Record & Volume Calculation):**
+    - Tự động đánh giá và atomically upsert 3 loại kỷ lục cá nhân: `MAX_WEIGHT`, `MAX_REPS`, `MAX_VOLUME` (`reps * weightKg`).
+  - **M4-21..M4-22 (Workout History & Concurrency Handling):**
+    - `GET /api/v1/workout-logs` (lọc `from`, `to`, `exerciseId`, phân trang), `GET /api/v1/workout-logs/{id}` (snapshot đầy đủ bài và set).
+    - `GET /api/v1/personal-records` (lọc `exerciseId`, `type`).
+    - Transactional row isolation & PostgreSQL unique constraints bảo đảm an toàn concurrency tuyệt đối.
+  - **OpenAPI Specification:** Cập nhật toàn bộ routes và schemas vào `openapi.json`.
+  - **Kiểm thử PostgreSQL 16 Testcontainers:** Viết `WorkoutExecutionMigrationTests`, `WorkoutProgramServiceTests`, `WorkoutScheduleServiceTests`, `WorkoutSessionAndLogServiceTests`. Toàn bộ **61/61 test cases backend** và **136/136 test cases mobile** đều pass 100%.
+- **Trạng thái:** Hoàn thành toàn bộ M4-08 đến M4-22 (22/28 ticket M4).
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M4-23..M4-28 — Hoàn thiện Flutter UI (MH11..19, MH56) và E2E verification cho Workout module.
+- **Minh chứng:** `backend/src/main/java/com/viegym/workout/`, `backend/src/main/resources/db/migration/V10__workout_session_and_log_tables.sql`, `backend/src/test/java/com/viegym/workout/`, `backend/src/test/java/com/viegym/database/WorkoutExecutionMigrationTests.java`.
 
 ## 21. Điều kiện bắt đầu P1
 

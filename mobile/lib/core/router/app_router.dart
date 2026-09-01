@@ -41,6 +41,7 @@ import '../../features/workout/presentation/ai_workout_generate_screen.dart';
 import '../../features/workout/presentation/exercise_detail_screen.dart';
 import '../../features/workout/presentation/exercise_library_screen.dart';
 import '../../features/workout/presentation/favorite_exercises_screen.dart';
+import '../../features/workout/presentation/workout_builder_screen.dart';
 import '../../features/workout/presentation/workout_history_detail_screen.dart';
 import '../../features/workout/presentation/workout_history_screen.dart';
 import '../../features/workout/presentation/workout_schedule_screen.dart';
@@ -246,6 +247,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/workout/favorites',
         name: 'workout-favorites',
         builder: (context, state) => const FavoriteExercisesScreen(),
+      ),
+      GoRoute(
+        path: '/workout/builder',
+        name: 'workout-builder',
+        builder: (context, state) {
+          final name = state.uri.queryParameters['name'];
+          final type = state.uri.queryParameters['type'];
+          return WorkoutBuilderScreen(
+            initialProgramName: name,
+            programType: type,
+          );
+        },
       ),
       GoRoute(
         path: '/exercise/:id',

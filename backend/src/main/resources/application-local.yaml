@@ -3,3 +3,9 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+
+viegym:
+  dataset:
+    exercise:
+      enabled: true
+      path: ${VIEGYM_DATASET_EXERCISE_PATH:../datasets/exports/viegym_exercises_v1.json}

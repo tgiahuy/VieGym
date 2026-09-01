@@ -1,0 +1,8 @@
+{
+  "Barbell_Bench_Press_-_Medium_Grip": ["BENCH"],
+  "Barbell_Incline_Bench_Press_-_Medium_Grip": ["BENCH"],
+  "Dumbbell_Bench_Press": ["BENCH"],
+  "Incline_Dumbbell_Press": ["ADJUSTABLE_BENCH"],
+  "Chin-Up": ["PULL_UP_BAR"],
+  "Pullups": ["PULL_UP_BAR"]
+}

@@ -182,5 +182,34 @@ void main() {
       expect(find.text('Tổng cả tuần'), findsOneWidget);
       expect(find.textContaining('XU HƯỚNG CÂN NẶNG'), findsOneWidget);
     });
+
+    testWidgets(
+      'Weight trend shows insufficient data message when fewer than 2 logs exist',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // Ensure single or empty log
+        container.read(progressProvider.notifier).clearAllLogs();
+        container.read(progressProvider.notifier).logWeight(70.0);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: ProfileScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('XU HƯỚNG CÂN NẶNG'), findsOneWidget);
+      },
+    );
   });
 }

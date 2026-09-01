@@ -8,10 +8,7 @@ import '../application/auth_controller.dart';
 /// MH07 — Reset Password Screen
 /// Màn hình đặt lại mật khẩu mới sau khi xác thực mã OTP thành công.
 class ResetPasswordScreen extends ConsumerStatefulWidget {
-  const ResetPasswordScreen({
-    super.key,
-    this.email,
-  });
+  const ResetPasswordScreen({super.key, this.email});
 
   final String? email;
 
@@ -35,17 +32,19 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   }
 
   bool get _hasMinLength => _newPasswordController.text.length >= 6;
-  bool get _hasLetter => RegExp(r'[a-zA-Z]').hasMatch(_newPasswordController.text);
+  bool get _hasLetter =>
+      RegExp(r'[a-zA-Z]').hasMatch(_newPasswordController.text);
   bool get _hasNumber => RegExp(r'[0-9]').hasMatch(_newPasswordController.text);
 
   Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final targetEmail = widget.email ??
-        ref.read(authProvider).pendingEmail ??
-        'user@viegym.vn';
+    final targetEmail =
+        widget.email ?? ref.read(authProvider).pendingEmail ?? 'user@viegym.vn';
 
-    final success = await ref.read(authProvider.notifier).resetPassword(
+    final success = await ref
+        .read(authProvider.notifier)
+        .resetPassword(
           email: targetEmail,
           newPassword: _newPasswordController.text,
           confirmPassword: _confirmPasswordController.text,
@@ -83,9 +82,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Icon(
-              isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+              isMet
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
               size: 16,
-              color: isMet ? Colors.greenAccent : colors.onSurfaceVariant.withValues(alpha: 0.6),
+              color: isMet
+                  ? Colors.greenAccent
+                  : colors.onSurfaceVariant.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(width: 8),
@@ -94,7 +97,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               text,
               style: TextStyle(
                 fontSize: 12,
-                color: isMet ? colors.onSurface : colors.onSurfaceVariant.withValues(alpha: 0.7),
+                color: isMet
+                    ? colors.onSurface
+                    : colors.onSurfaceVariant.withValues(alpha: 0.7),
                 fontWeight: isMet ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -144,7 +149,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Nhập mật khẩu mới',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureNewPassword
@@ -190,7 +198,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                   onFieldSubmitted: (_) => _handleResetPassword(),
                   decoration: InputDecoration(
                     hintText: 'Nhập lại mật khẩu mới',
-                    prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword

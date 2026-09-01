@@ -275,11 +275,9 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
           // 4. Exercise List
           Expanded(
             child: (catalogState.isLoading && catalogState.exercises.isEmpty)
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
+                ? const Center(child: CircularProgressIndicator())
                 : filtered.isEmpty
-                    ? Center(
+                ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Column(
@@ -334,221 +332,224 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
-                      final exercise = filtered[index];
-                      final isSelected = _selectedExerciseIds.contains(
-                        exercise.id,
-                      );
+                        final exercise = filtered[index];
+                        final isSelected = _selectedExerciseIds.contains(
+                          exercise.id,
+                        );
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        color: (widget.isMultiSelect && isSelected)
-                            ? colors.primary.withValues(alpha: 0.08)
-                            : null,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          side: BorderSide(
-                            color: (widget.isMultiSelect && isSelected)
-                                ? colors.primary
-                                : colors.outlineVariant.withValues(alpha: 0.4),
-                            width: (widget.isMultiSelect && isSelected)
-                                ? 1.8
-                                : 1.0,
-                          ),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: () {
-                            if (widget.isPicker) {
-                              if (widget.isMultiSelect) {
-                                setState(() {
-                                  if (_selectedExerciseIds.contains(
-                                    exercise.id,
-                                  )) {
-                                    _selectedExerciseIds.remove(exercise.id);
-                                    _selectedExercisesMap.remove(exercise.id);
-                                  } else {
-                                    _selectedExerciseIds.add(exercise.id);
-                                    _selectedExercisesMap[exercise.id] =
-                                        exercise;
-                                  }
-                                });
-                              } else {
-                                if (widget.onSelect != null) {
-                                  widget.onSelect!(exercise);
-                                }
-                                if (GoRouter.maybeOf(context) != null &&
-                                    context.canPop()) {
-                                  context.pop(exercise);
-                                } else if (Navigator.of(context).canPop()) {
-                                  Navigator.of(context).pop(exercise);
-                                }
-                              }
-                            } else {
-                              context.push('/exercise/${exercise.id}');
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                // Thumbnail Image
-                                Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(14),
-                                    color: const Color(0xFF1B1E2E),
-                                    border: Border.all(
-                                      color: colors.outlineVariant.withValues(
-                                        alpha: 0.3,
-                                      ),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          color: (widget.isMultiSelect && isSelected)
+                              ? colors.primary.withValues(alpha: 0.08)
+                              : null,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            side: BorderSide(
+                              color: (widget.isMultiSelect && isSelected)
+                                  ? colors.primary
+                                  : colors.outlineVariant.withValues(
+                                      alpha: 0.4,
                                     ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(13),
-                                    child: Image.network(
-                                      exercise.thumbnailUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              Center(
-                                                child: Icon(
-                                                  Icons.fitness_center_rounded,
-                                                  color: colors.primary,
-                                                  size: 26,
-                                                ),
-                                              ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-
-                                // Exercise Info & Reusable Tags
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        exercise.name,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: -0.2,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        exercise.nameVi,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: colors.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-
-                                      // Reusable Tags Row
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 4,
-                                        children: [
-                                          ExerciseTagChip.muscle(
-                                            label: exercise.primaryMuscle,
-                                          ),
-                                          ExerciseTagChip.equipment(
-                                            label: exercise.equipment.label,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(width: 8),
-                                // Favorite button
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(99),
-                                  onTap: () {
-                                    ref
-                                        .read(
-                                          favoriteExercisesProvider.notifier,
-                                        )
-                                        .toggleFavorite(exercise.id);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(6),
-                                    child: Icon(
-                                      favoriteIds.contains(exercise.id)
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: favoriteIds.contains(exercise.id)
-                                          ? colors.primary
-                                          : colors.onSurfaceVariant.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-
-                                // Picker radio / checkbox / chevron action
-                                if (widget.isPicker && widget.isMultiSelect)
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isSelected
-                                          ? colors.primary
-                                          : Colors.transparent,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? colors.primary
-                                            : colors.outlineVariant.withValues(
-                                                alpha: 0.6,
-                                              ),
-                                        width: 1.8,
-                                      ),
-                                    ),
-                                    child: isSelected
-                                        ? const Icon(
-                                            Icons.check_rounded,
-                                            color: Colors.white,
-                                            size: 18,
-                                          )
-                                        : null,
-                                  )
-                                else if (widget.isPicker)
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colors.primary,
-                                        width: 1.8,
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: colors.onSurfaceVariant.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                    size: 20,
-                                  ),
-                              ],
+                              width: (widget.isMultiSelect && isSelected)
+                                  ? 1.8
+                                  : 1.0,
                             ),
                           ),
-                        ),
-                      );
-                    },
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () {
+                              if (widget.isPicker) {
+                                if (widget.isMultiSelect) {
+                                  setState(() {
+                                    if (_selectedExerciseIds.contains(
+                                      exercise.id,
+                                    )) {
+                                      _selectedExerciseIds.remove(exercise.id);
+                                      _selectedExercisesMap.remove(exercise.id);
+                                    } else {
+                                      _selectedExerciseIds.add(exercise.id);
+                                      _selectedExercisesMap[exercise.id] =
+                                          exercise;
+                                    }
+                                  });
+                                } else {
+                                  if (widget.onSelect != null) {
+                                    widget.onSelect!(exercise);
+                                  }
+                                  if (GoRouter.maybeOf(context) != null &&
+                                      context.canPop()) {
+                                    context.pop(exercise);
+                                  } else if (Navigator.of(context).canPop()) {
+                                    Navigator.of(context).pop(exercise);
+                                  }
+                                }
+                              } else {
+                                context.push('/exercise/${exercise.id}');
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  // Thumbnail Image
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(14),
+                                      color: const Color(0xFF1B1E2E),
+                                      border: Border.all(
+                                        color: colors.outlineVariant.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(13),
+                                      child: Image.network(
+                                        exercise.thumbnailUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                            ) => Center(
+                                              child: Icon(
+                                                Icons.fitness_center_rounded,
+                                                color: colors.primary,
+                                                size: 26,
+                                              ),
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+
+                                  // Exercise Info & Reusable Tags
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          exercise.name,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: -0.2,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          exercise.nameVi,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+
+                                        // Reusable Tags Row
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 4,
+                                          children: [
+                                            ExerciseTagChip.muscle(
+                                              label: exercise.primaryMuscle,
+                                            ),
+                                            ExerciseTagChip.equipment(
+                                              label: exercise.equipment.label,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 8),
+                                  // Favorite button
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(99),
+                                    onTap: () {
+                                      ref
+                                          .read(
+                                            favoriteExercisesProvider.notifier,
+                                          )
+                                          .toggleFavorite(exercise.id);
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: Icon(
+                                        favoriteIds.contains(exercise.id)
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: favoriteIds.contains(exercise.id)
+                                            ? colors.primary
+                                            : colors.onSurfaceVariant
+                                                  .withValues(alpha: 0.6),
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+
+                                  // Picker radio / checkbox / chevron action
+                                  if (widget.isPicker && widget.isMultiSelect)
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isSelected
+                                            ? colors.primary
+                                            : Colors.transparent,
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? colors.primary
+                                              : colors.outlineVariant
+                                                    .withValues(alpha: 0.6),
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                      child: isSelected
+                                          ? const Icon(
+                                              Icons.check_rounded,
+                                              color: Colors.white,
+                                              size: 18,
+                                            )
+                                          : null,
+                                    )
+                                  else if (widget.isPicker)
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: colors.primary,
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: colors.onSurfaceVariant.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      size: 20,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
           ),
         ],
       ),

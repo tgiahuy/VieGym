@@ -18,13 +18,13 @@ import 'package:viegym/shared/widgets/offline_view.dart';
 class _AuthenticatedAuthController extends AuthController {
   @override
   AuthState build() => const AuthState(
-        status: AuthStatus.authenticated,
-        user: AuthUser(
-          id: 'user_1',
-          email: 'giahuy@viegym.vn',
-          displayName: 'Gia Huy',
-        ),
-      );
+    status: AuthStatus.authenticated,
+    user: AuthUser(
+      id: 'user_1',
+      email: 'giahuy@viegym.vn',
+      displayName: 'Gia Huy',
+    ),
+  );
 }
 
 void main() {

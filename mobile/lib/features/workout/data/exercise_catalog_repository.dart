@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_provider.dart';
 import '../domain/exercise_api_models.dart';
 
-final exerciseCatalogRepositoryProvider = Provider<ExerciseCatalogRepository>((ref) {
+final exerciseCatalogRepositoryProvider = Provider<ExerciseCatalogRepository>((
+  ref,
+) {
   final dio = ref.watch(dioProvider);
   return ExerciseCatalogRepository(dio);
 });
@@ -51,7 +53,8 @@ class ExerciseCatalogRepository {
     );
 
     final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-    final content = (data['content'] as List<dynamic>?)
+    final content =
+        (data['content'] as List<dynamic>?)
             ?.map((e) => ExerciseApiSummary.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -76,7 +79,10 @@ class ExerciseCatalogRepository {
     return ExerciseApiDetail.fromJson(data);
   }
 
-  Future<List<ExerciseApiSummary>> getAlternatives(int id, {int limit = 5}) async {
+  Future<List<ExerciseApiSummary>> getAlternatives(
+    int id, {
+    int limit = 5,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/v1/exercises/$id/alternatives',
       queryParameters: {'limit': limit},
@@ -98,9 +104,7 @@ class ExerciseCatalogRepository {
   }
 
   Future<List<EquipmentItem>> getEquipment() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/api/v1/equipment',
-    );
+    final response = await _dio.get<Map<String, dynamic>>('/api/v1/equipment');
     final list = response.data?['data'] as List<dynamic>? ?? [];
     return list
         .map((e) => EquipmentItem.fromJson(e as Map<String, dynamic>))
@@ -112,10 +116,7 @@ class ExerciseCatalogRepository {
     int page = 0,
     int size = 20,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'size': size,
-    };
+    final queryParams = <String, dynamic>{'page': page, 'size': size};
     if (q != null && q.trim().isNotEmpty) {
       queryParams['q'] = q.trim();
     }
@@ -126,7 +127,8 @@ class ExerciseCatalogRepository {
     );
 
     final data = response.data?['data'] as Map<String, dynamic>? ?? {};
-    final content = (data['content'] as List<dynamic>?)
+    final content =
+        (data['content'] as List<dynamic>?)
             ?.map((e) => ExerciseApiSummary.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];

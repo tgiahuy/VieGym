@@ -30,8 +30,14 @@ public class ExerciseDatasetImportRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         Path resolvedPath = datasetPath;
         if (!java.nio.file.Files.exists(resolvedPath)) {
-            Path fallback1 = Path.of("datasets/exports/viegym_exercises_v1.json").toAbsolutePath().normalize();
-            Path fallback2 = Path.of("../datasets/exports/viegym_exercises_v1.json").toAbsolutePath().normalize();
+            Path fallback1 =
+                    Path.of("datasets/exports/viegym_exercises_v1.json")
+                            .toAbsolutePath()
+                            .normalize();
+            Path fallback2 =
+                    Path.of("../datasets/exports/viegym_exercises_v1.json")
+                            .toAbsolutePath()
+                            .normalize();
             if (java.nio.file.Files.exists(fallback1)) {
                 resolvedPath = fallback1;
             } else if (java.nio.file.Files.exists(fallback2)) {
@@ -49,7 +55,8 @@ public class ExerciseDatasetImportRunner implements ApplicationRunner {
                     result.insertedRecords(),
                     result.skippedRecords());
         } else {
-            LOGGER.warn("Exercise dataset file not found at: {}. Skipping auto-import.", datasetPath);
+            LOGGER.warn(
+                    "Exercise dataset file not found at: {}. Skipping auto-import.", datasetPath);
         }
     }
 }

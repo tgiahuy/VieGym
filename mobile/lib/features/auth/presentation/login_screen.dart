@@ -48,7 +48,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
         final healthProfile = ref.read(healthProfileProvider);
-        final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+        final equipmentCompleted = ref.read(
+          equipmentOnboardingCompletedProvider,
+        );
         final targetRoute = resolveOnboardingRoute(
           isAuthenticated: true,
           isHealthProfileCompleted: healthProfile.isCompleted,
@@ -65,7 +67,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         );
-        context.push('/otp', extra: {'email': email, 'purpose': OtpPurpose.register});
+        context.push(
+          '/otp',
+          extra: {'email': email, 'purpose': OtpPurpose.register},
+        );
       } else {
         final error = authState.errorMessage;
         ScaffoldMessenger.of(
@@ -370,12 +375,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               .read(authProvider.notifier)
                               .loginWithGoogle();
                           if (context.mounted && success) {
-                            final healthProfile = ref.read(healthProfileProvider);
-                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final healthProfile = ref.read(
+                              healthProfileProvider,
+                            );
+                            final equipmentCompleted = ref.read(
+                              equipmentOnboardingCompletedProvider,
+                            );
                             final targetRoute = resolveOnboardingRoute(
                               isAuthenticated: true,
-                              isHealthProfileCompleted: healthProfile.isCompleted,
-                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                              isHealthProfileCompleted:
+                                  healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted:
+                                  equipmentCompleted,
                             );
                             context.go(targetRoute);
                           }
@@ -392,12 +403,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               .read(authProvider.notifier)
                               .loginWithFacebook();
                           if (context.mounted && success) {
-                            final healthProfile = ref.read(healthProfileProvider);
-                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final healthProfile = ref.read(
+                              healthProfileProvider,
+                            );
+                            final equipmentCompleted = ref.read(
+                              equipmentOnboardingCompletedProvider,
+                            );
                             final targetRoute = resolveOnboardingRoute(
                               isAuthenticated: true,
-                              isHealthProfileCompleted: healthProfile.isCompleted,
-                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                              isHealthProfileCompleted:
+                                  healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted:
+                                  equipmentCompleted,
                             );
                             context.go(targetRoute);
                           }

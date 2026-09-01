@@ -36,7 +36,9 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
   Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(authProvider.notifier).changePassword(
+    final success = await ref
+        .read(authProvider.notifier)
+        .changePassword(
           currentPassword: _currentPasswordController.text,
           newPassword: _newPasswordController.text,
           confirmPassword: _confirmPasswordController.text,
@@ -121,7 +123,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu hiện tại',
-                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                        prefixIcon: const Icon(
+                          Icons.lock_outline_rounded,
+                          size: 20,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureCurrentPassword
@@ -131,7 +136,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _obscureCurrentPassword = !_obscureCurrentPassword;
+                              _obscureCurrentPassword =
+                                  !_obscureCurrentPassword;
                             });
                           },
                         ),
@@ -187,7 +193,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       onFieldSubmitted: (_) => _changePassword(),
                       decoration: InputDecoration(
                         labelText: 'Xác nhận mật khẩu mới',
-                        prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                        prefixIcon: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 20,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword
@@ -197,7 +206,8 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                           ),
                           onPressed: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                         ),
@@ -256,7 +266,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                 ),
               ),
               child: SwitchListTile(
-                secondary: Icon(Icons.fingerprint_rounded, color: colors.primary),
+                secondary: Icon(
+                  Icons.fingerprint_rounded,
+                  color: colors.primary,
+                ),
                 title: const Text(
                   'Mở khóa nhanh Face ID / Vân tay',
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
@@ -339,7 +352,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                     ),
                     title: const Text(
                       'iPhone 17 Pro Max (Thiết bị này)',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                     subtitle: const Text(
                       'Hồ Chí Minh, Việt Nam • Đang hoạt động',

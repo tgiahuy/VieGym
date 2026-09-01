@@ -92,15 +92,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'otp',
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>?;
-              final email = extra?['email'] as String? ??
+              final email =
+                  extra?['email'] as String? ??
                   state.uri.queryParameters['email'];
-              final purposeVal = extra?['purpose'] ??
-                  state.uri.queryParameters['purpose'];
+              final purposeVal =
+                  extra?['purpose'] ?? state.uri.queryParameters['purpose'];
               final purpose = purposeVal is OtpPurpose
                   ? purposeVal
                   : (purposeVal == 'passwordReset'
-                      ? OtpPurpose.passwordReset
-                      : OtpPurpose.register);
+                        ? OtpPurpose.passwordReset
+                        : OtpPurpose.register);
               return OtpScreen(email: email, purpose: purpose);
             },
           ),
@@ -109,7 +110,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'reset-password',
             builder: (context, state) {
               final extra = state.extra as Map<String, dynamic>?;
-              final email = extra?['email'] as String? ??
+              final email =
+                  extra?['email'] as String? ??
                   state.uri.queryParameters['email'];
               return ResetPasswordScreen(email: email);
             },

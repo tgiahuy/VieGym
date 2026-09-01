@@ -71,9 +71,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       final authState = ref.read(authProvider);
 
-      if (authState.status == AuthStatus.authenticated && authState.user != null) {
+      if (authState.status == AuthStatus.authenticated &&
+          authState.user != null) {
         final healthProfile = ref.read(healthProfileProvider);
-        final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+        final equipmentCompleted = ref.read(
+          equipmentOnboardingCompletedProvider,
+        );
         final targetRoute = resolveOnboardingRoute(
           isAuthenticated: true,
           isHealthProfileCompleted: healthProfile.isCompleted,
@@ -171,7 +174,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     ),
                     child: Column(
                       children: [
-                        Icon(Icons.wifi_off_rounded, color: colors.error, size: 28),
+                        Icon(
+                          Icons.wifi_off_rounded,
+                          color: colors.error,
+                          size: 28,
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           _errorMessage ?? 'Đã có lỗi xảy ra',

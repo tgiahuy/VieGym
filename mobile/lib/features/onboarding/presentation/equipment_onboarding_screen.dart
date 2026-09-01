@@ -129,7 +129,9 @@ class _EquipmentOnboardingScreenState
                   onTap: () {
                     notifier.clearAll();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã bỏ chọn tất cả thiết bị')),
+                      const SnackBar(
+                        content: Text('Đã bỏ chọn tất cả thiết bị'),
+                      ),
                     );
                   },
                   child: Text(

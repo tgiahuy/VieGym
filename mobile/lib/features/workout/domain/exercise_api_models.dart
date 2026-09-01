@@ -16,12 +16,21 @@ class ExerciseApiSummary {
   });
 
   factory ExerciseApiSummary.fromJson(Map<String, dynamic> json) {
-    final muscleGroupsList = (json['muscleGroups'] as List<dynamic>?)
-            ?.map((e) => ExerciseMuscleGroupApiItem.fromJson(e as Map<String, dynamic>))
+    final muscleGroupsList =
+        (json['muscleGroups'] as List<dynamic>?)
+            ?.map(
+              (e) => ExerciseMuscleGroupApiItem.fromJson(
+                e as Map<String, dynamic>,
+              ),
+            )
             .toList() ??
         [];
-    final equipmentList = (json['equipment'] as List<dynamic>?)
-            ?.map((e) => ExerciseEquipmentApiItem.fromJson(e as Map<String, dynamic>))
+    final equipmentList =
+        (json['equipment'] as List<dynamic>?)
+            ?.map(
+              (e) =>
+                  ExerciseEquipmentApiItem.fromJson(e as Map<String, dynamic>),
+            )
             .toList() ??
         [];
 
@@ -167,24 +176,36 @@ class ExerciseApiDetail {
   });
 
   factory ExerciseApiDetail.fromJson(Map<String, dynamic> json) {
-    final steps = (json['instructionSteps'] as List<dynamic>?)
+    final steps =
+        (json['instructionSteps'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         [];
-    final mistakes = (json['commonMistakes'] as List<dynamic>?)
+    final mistakes =
+        (json['commonMistakes'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         [];
-    final safety = (json['safetyNotes'] as List<dynamic>?)
+    final safety =
+        (json['safetyNotes'] as List<dynamic>?)
             ?.map((e) => e.toString())
             .toList() ??
         [];
-    final muscleGroupsList = (json['muscleGroups'] as List<dynamic>?)
-            ?.map((e) => ExerciseMuscleGroupApiItem.fromJson(e as Map<String, dynamic>))
+    final muscleGroupsList =
+        (json['muscleGroups'] as List<dynamic>?)
+            ?.map(
+              (e) => ExerciseMuscleGroupApiItem.fromJson(
+                e as Map<String, dynamic>,
+              ),
+            )
             .toList() ??
         [];
-    final equipmentList = (json['equipment'] as List<dynamic>?)
-            ?.map((e) => ExerciseEquipmentApiItem.fromJson(e as Map<String, dynamic>))
+    final equipmentList =
+        (json['equipment'] as List<dynamic>?)
+            ?.map(
+              (e) =>
+                  ExerciseEquipmentApiItem.fromJson(e as Map<String, dynamic>),
+            )
             .toList() ??
         [];
 

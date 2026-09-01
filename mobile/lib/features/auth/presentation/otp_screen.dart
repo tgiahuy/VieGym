@@ -9,11 +9,7 @@ import '../application/auth_controller.dart';
 import '../domain/auth_state.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
-  const OtpScreen({
-    super.key,
-    this.email,
-    this.purpose = OtpPurpose.register,
-  });
+  const OtpScreen({super.key, this.email, this.purpose = OtpPurpose.register});
 
   final String? email;
   final OtpPurpose purpose;
@@ -94,9 +90,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Xác thực thành công!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Xác thực thành công!')));
         if (_effectivePurpose == OtpPurpose.register) {
           context.go('/onboarding/health');
         } else if (_effectivePurpose == OtpPurpose.passwordReset) {
@@ -106,9 +102,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         }
       } else {
         final error = ref.read(authProvider).errorMessage;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error ?? 'Xác thực thất bại')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error ?? 'Xác thực thất bại')));
       }
     }
   }

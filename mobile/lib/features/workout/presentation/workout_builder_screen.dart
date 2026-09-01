@@ -191,7 +191,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Đã lưu giáo án "${_nameController.text.trim()}" thành công!'),
+        content: Text(
+          'Đã lưu giáo án "${_nameController.text.trim()}" thành công!',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -353,7 +355,10 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                          ),
                           tooltip: 'Xóa buổi này',
                           onPressed: () => _removeDay(_activeDayIndex),
                         ),
@@ -396,7 +401,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                         itemCount: currentDay.exercises.length,
                         onReorderItem: (oldIndex, newIndex) {
                           setState(() {
-                            final item = currentDay.exercises.removeAt(oldIndex);
+                            final item = currentDay.exercises.removeAt(
+                              oldIndex,
+                            );
                             currentDay.exercises.insert(newIndex, item);
                           });
                         },
@@ -425,7 +432,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                         icon: const Icon(Icons.close, size: 18),
                                         onPressed: () {
                                           setState(() {
-                                            currentDay.exercises.removeAt(exIndex);
+                                            currentDay.exercises.removeAt(
+                                              exIndex,
+                                            );
                                           });
                                         },
                                       ),
@@ -440,11 +449,15 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                           value: '${exModel.targetSets}',
                                           onDecrement: () {
                                             if (exModel.targetSets > 1) {
-                                              setState(() => exModel.targetSets--);
+                                              setState(
+                                                () => exModel.targetSets--,
+                                              );
                                             }
                                           },
                                           onIncrement: () {
-                                            setState(() => exModel.targetSets++);
+                                            setState(
+                                              () => exModel.targetSets++,
+                                            );
                                           },
                                         ),
                                       ),
@@ -455,14 +468,18 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                           value: '${exModel.targetRepsMin}',
                                           onDecrement: () {
                                             if (exModel.targetRepsMin > 1) {
-                                              setState(() => exModel.targetRepsMin--);
+                                              setState(
+                                                () => exModel.targetRepsMin--,
+                                              );
                                             }
                                           },
                                           onIncrement: () {
                                             setState(() {
                                               exModel.targetRepsMin++;
-                                              if (exModel.targetRepsMin > exModel.targetRepsMax) {
-                                                exModel.targetRepsMax = exModel.targetRepsMin;
+                                              if (exModel.targetRepsMin >
+                                                  exModel.targetRepsMax) {
+                                                exModel.targetRepsMax =
+                                                    exModel.targetRepsMin;
                                               }
                                             });
                                           },
@@ -474,12 +491,17 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                           label: 'Reps Max',
                                           value: '${exModel.targetRepsMax}',
                                           onDecrement: () {
-                                            if (exModel.targetRepsMax > exModel.targetRepsMin) {
-                                              setState(() => exModel.targetRepsMax--);
+                                            if (exModel.targetRepsMax >
+                                                exModel.targetRepsMin) {
+                                              setState(
+                                                () => exModel.targetRepsMax--,
+                                              );
                                             }
                                           },
                                           onIncrement: () {
-                                            setState(() => exModel.targetRepsMax++);
+                                            setState(
+                                              () => exModel.targetRepsMax++,
+                                            );
                                           },
                                         ),
                                       ),
@@ -538,7 +560,10 @@ class _ConfigBox extends StatelessWidget {
               ),
               Text(
                 value,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
               InkWell(
                 onTap: onIncrement,

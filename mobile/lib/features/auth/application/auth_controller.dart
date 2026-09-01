@@ -30,9 +30,12 @@ class AuthController extends Notifier<AuthState> {
     }
 
     // Lưu token theo chuẩn ADR-004: access token (memory), refresh token (secure storage)
-    await ref.read(tokenStorageProvider).saveTokens(
+    await ref
+        .read(tokenStorageProvider)
+        .saveTokens(
           accessToken: 'viegym_jwt_access_${email.trim().replaceAll('@', '_')}',
-          refreshToken: 'viegym_secure_refresh_${email.trim().replaceAll('@', '_')}',
+          refreshToken:
+              'viegym_secure_refresh_${email.trim().replaceAll('@', '_')}',
         );
 
     state = state.copyWith(
@@ -61,9 +64,12 @@ class AuthController extends Notifier<AuthState> {
     }
 
     const email = 'google.athlete@viegym.vn';
-    await ref.read(tokenStorageProvider).saveTokens(
+    await ref
+        .read(tokenStorageProvider)
+        .saveTokens(
           accessToken: 'viegym_jwt_access_google_${email.replaceAll('@', '_')}',
-          refreshToken: 'viegym_secure_refresh_google_${email.replaceAll('@', '_')}',
+          refreshToken:
+              'viegym_secure_refresh_google_${email.replaceAll('@', '_')}',
         );
 
     state = state.copyWith(
@@ -92,9 +98,12 @@ class AuthController extends Notifier<AuthState> {
     }
 
     const email = 'facebook.athlete@viegym.vn';
-    await ref.read(tokenStorageProvider).saveTokens(
+    await ref
+        .read(tokenStorageProvider)
+        .saveTokens(
           accessToken: 'viegym_jwt_access_fb_${email.replaceAll('@', '_')}',
-          refreshToken: 'viegym_secure_refresh_fb_${email.replaceAll('@', '_')}',
+          refreshToken:
+              'viegym_secure_refresh_fb_${email.replaceAll('@', '_')}',
         );
 
     state = state.copyWith(
@@ -159,7 +168,9 @@ class AuthController extends Notifier<AuthState> {
       }
 
       // Lưu token vào TokenStorage theo ADR-004
-      await ref.read(tokenStorageProvider).saveTokens(
+      await ref
+          .read(tokenStorageProvider)
+          .saveTokens(
             accessToken: 'viegym_jwt_access_${email.replaceAll('@', '_')}',
             refreshToken: 'viegym_secure_refresh_${email.replaceAll('@', '_')}',
           );
@@ -304,7 +315,9 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(status: AuthStatus.authenticating);
     await Future<void>.delayed(const Duration(milliseconds: 200));
 
-    if (currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
+    if (currentPassword.isEmpty ||
+        newPassword.isEmpty ||
+        confirmPassword.isEmpty) {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: 'Vui lòng điền đầy đủ các trường mật khẩu.',
@@ -358,15 +371,28 @@ class AuthController extends Notifier<AuthState> {
     }
 
     // Khôi phục access token vào memory
-    final restoredEmail = refreshToken.replaceFirst('viegym_secure_refresh_', '').replaceAll('_', '@');
-    await ref.read(tokenStorageProvider).updateAccessToken('viegym_jwt_access_${restoredEmail.replaceAll('@', '_')}');
+    final restoredEmail = refreshToken
+        .replaceFirst('viegym_secure_refresh_', '')
+        .replaceAll('_', '@');
+    await ref
+        .read(tokenStorageProvider)
+        .updateAccessToken(
+          'viegym_jwt_access_${restoredEmail.replaceAll('@', '_')}',
+        );
 
     state = state.copyWith(
       status: AuthStatus.authenticated,
       user: AuthUser(
         id: 'user_123',
-        email: restoredEmail.contains('@') ? restoredEmail : 'viegym.user@gmail.com',
-        displayName: (restoredEmail.contains('@') ? restoredEmail : 'viegym.user@gmail.com').split('@').first,
+        email: restoredEmail.contains('@')
+            ? restoredEmail
+            : 'viegym.user@gmail.com',
+        displayName:
+            (restoredEmail.contains('@')
+                    ? restoredEmail
+                    : 'viegym.user@gmail.com')
+                .split('@')
+                .first,
       ),
     );
     return true;

@@ -51,10 +51,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             content: Text('Đăng ký thành công! Vui lòng nhập mã OTP.'),
           ),
         );
-        context.push('/otp', extra: {
-          'email': email,
-          'purpose': OtpPurpose.register,
-        });
+        context.push(
+          '/otp',
+          extra: {'email': email, 'purpose': OtpPurpose.register},
+        );
       } else {
         final error = ref.read(authProvider).errorMessage;
         ScaffoldMessenger.of(
@@ -255,12 +255,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               .read(authProvider.notifier)
                               .loginWithGoogle();
                           if (context.mounted && success) {
-                            final healthProfile = ref.read(healthProfileProvider);
-                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final healthProfile = ref.read(
+                              healthProfileProvider,
+                            );
+                            final equipmentCompleted = ref.read(
+                              equipmentOnboardingCompletedProvider,
+                            );
                             final targetRoute = resolveOnboardingRoute(
                               isAuthenticated: true,
-                              isHealthProfileCompleted: healthProfile.isCompleted,
-                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                              isHealthProfileCompleted:
+                                  healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted:
+                                  equipmentCompleted,
                             );
                             context.go(targetRoute);
                           }
@@ -277,12 +283,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               .read(authProvider.notifier)
                               .loginWithFacebook();
                           if (context.mounted && success) {
-                            final healthProfile = ref.read(healthProfileProvider);
-                            final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+                            final healthProfile = ref.read(
+                              healthProfileProvider,
+                            );
+                            final equipmentCompleted = ref.read(
+                              equipmentOnboardingCompletedProvider,
+                            );
                             final targetRoute = resolveOnboardingRoute(
                               isAuthenticated: true,
-                              isHealthProfileCompleted: healthProfile.isCompleted,
-                              isEquipmentOnboardingCompleted: equipmentCompleted,
+                              isHealthProfileCompleted:
+                                  healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted:
+                                  equipmentCompleted,
                             );
                             context.go(targetRoute);
                           }

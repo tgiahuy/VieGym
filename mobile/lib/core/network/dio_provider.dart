@@ -47,10 +47,12 @@ final dioProvider = Provider<Dio>((ref) {
         data: {'refreshToken': refreshToken},
       );
       final data = res.data;
-      final newAccessToken = data?['accessToken'] as String? ??
+      final newAccessToken =
+          data?['accessToken'] as String? ??
           data?['data']?['accessToken'] as String? ??
           '';
-      final newRefreshToken = data?['refreshToken'] as String? ??
+      final newRefreshToken =
+          data?['refreshToken'] as String? ??
           data?['data']?['refreshToken'] as String?;
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
         await tokenStorage.rotateTokens(

@@ -15,6 +15,253 @@
     }
   ],
   "paths": {
+    "/api/v1/workout-schedules/{id}": {
+      "get": {
+        "tags": [
+          "workout-schedule-controller"
+        ],
+        "operationId": "getSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkoutScheduleResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "workout-schedule-controller"
+        ],
+        "operationId": "updateSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkoutScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkoutScheduleResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "workout-schedule-controller"
+        ],
+        "operationId": "cancelSchedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "cancelReason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workout-programs/{id}": {
+      "get": {
+        "tags": [
+          "workout-program-controller"
+        ],
+        "operationId": "getProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkoutProgramResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "workout-program-controller"
+        ],
+        "operationId": "updateProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkoutProgramRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkoutProgramResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "workout-program-controller"
+        ],
+        "operationId": "archiveProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weight-logs/{loggedDate}": {
+      "put": {
+        "tags": [
+          "weight-log-controller"
+        ],
+        "operationId": "upsert",
+        "parameters": [
+          {
+            "name": "loggedDate",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertWeightLogRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUpsertWeightLogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users/me": {
       "get": {
         "tags": [
@@ -164,7 +411,35 @@
         "tags": [
           "health-profile-controller"
         ],
-        "operationId": "get",
+        "operationId": "get_2",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseHealthProfileResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "health-profile-controller"
+        ],
+        "operationId": "update_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHealthProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -200,289 +475,6 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseHealthProfileResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "health-profile-controller"
-        ],
-        "operationId": "update",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateHealthProfileRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseHealthProfileResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/muscle-groups": {
-      "get": {
-        "tags": [
-          "exercise-catalog-controller"
-        ],
-        "operationId": "listMuscleGroups",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseListMuscleGroupDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/equipment": {
-      "get": {
-        "tags": [
-          "exercise-catalog-controller"
-        ],
-        "operationId": "listEquipment",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseListEquipmentDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/exercises": {
-      "get": {
-        "tags": [
-          "exercise-catalog-controller"
-        ],
-        "operationId": "searchExercises",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "muscleGroupId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "equipmentId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "difficulty",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "BEGINNER",
-                "INTERMEDIATE",
-                "ADVANCED"
-              ]
-            }
-          },
-          {
-            "name": "compatibleWithMyEquipment",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 0
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "name,asc"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponsePageResponseExerciseSummaryDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/exercises/{id}": {
-      "get": {
-        "tags": [
-          "exercise-catalog-controller"
-        ],
-        "operationId": "getExerciseDetail",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseExerciseDetailDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/exercises/{id}/alternatives": {
-      "get": {
-        "tags": [
-          "exercise-catalog-controller"
-        ],
-        "operationId": "getExerciseAlternatives",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 5
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseListExerciseSummaryDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/favorite-exercises": {
-      "get": {
-        "tags": [
-          "exercise-catalog-controller"
-        ],
-        "operationId": "listFavoriteExercises",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 0
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 20
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponsePageResponseExerciseSummaryDto"
                 }
               }
             }
@@ -550,234 +542,20 @@
         }
       }
     },
-    "/api/v1/workout-programs": {
-      "get": {
-        "tags": ["workout-program-controller"],
-        "operationId": "listPrograms",
-        "parameters": [
-          { "name": "status", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "default": 0 } },
-          { "name": "size", "in": "query", "required": false, "schema": { "type": "integer", "default": 20 } }
-        ],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePageResponseWorkoutProgramSummaryResponse" } } } }
-        }
-      },
-      "post": {
-        "tags": ["workout-program-controller"],
-        "operationId": "createProgram",
-        "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkoutProgramRequest" } } },
-          "required": true
-        },
-        "responses": {
-          "201": { "description": "Created", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutProgramResponse" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-programs/{id}": {
-      "get": {
-        "tags": ["workout-program-controller"],
-        "operationId": "getProgram",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutProgramResponse" } } } }
-        }
-      },
-      "put": {
-        "tags": ["workout-program-controller"],
-        "operationId": "updateProgram",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkoutProgramRequest" } } },
-          "required": true
-        },
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutProgramResponse" } } } }
-        }
-      },
-      "delete": {
-        "tags": ["workout-program-controller"],
-        "operationId": "archiveProgram",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-schedules": {
-      "get": {
-        "tags": ["workout-schedule-controller"],
-        "operationId": "listSchedules",
-        "parameters": [
-          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
-          { "name": "status", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "default": 0 } },
-          { "name": "size", "in": "query", "required": false, "schema": { "type": "integer", "default": 20 } }
-        ],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePageResponseWorkoutScheduleResponse" } } } }
-        }
-      },
-      "post": {
-        "tags": ["workout-schedule-controller"],
-        "operationId": "createSchedule",
-        "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkoutScheduleRequest" } } },
-          "required": true
-        },
-        "responses": {
-          "201": { "description": "Created", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutScheduleResponse" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-schedules/{id}": {
-      "get": {
-        "tags": ["workout-schedule-controller"],
-        "operationId": "getSchedule",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutScheduleResponse" } } } }
-        }
-      },
-      "put": {
-        "tags": ["workout-schedule-controller"],
-        "operationId": "updateSchedule",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkoutScheduleRequest" } } },
-          "required": true
-        },
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutScheduleResponse" } } } }
-        }
-      },
-      "delete": {
-        "tags": ["workout-schedule-controller"],
-        "operationId": "cancelSchedule",
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } },
-          { "name": "cancelReason", "in": "query", "required": false, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } } }
-        }
-      }
-    },
     "/api/v1/workout-sessions/{scheduleId}/start": {
       "post": {
-        "tags": ["workout-session-controller"],
-        "operationId": "startSession",
-        "parameters": [{ "name": "scheduleId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "201": { "description": "Created", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseStartSessionResponse" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-sessions/{id}/pause": {
-      "post": {
-        "tags": ["workout-session-controller"],
-        "operationId": "pauseSession",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePauseSessionResponse" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-sessions/{id}/resume": {
-      "post": {
-        "tags": ["workout-session-controller"],
-        "operationId": "resumeSession",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseResumeSessionResponse" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-sessions/{id}/finish": {
-      "post": {
-        "tags": ["workout-session-controller"],
-        "operationId": "finishSession",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FinishSessionRequest" } } },
-          "required": true
-        },
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseFinishSessionResponse" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-sessions/{id}/discard": {
-      "post": {
-        "tags": ["workout-session-controller"],
-        "operationId": "discardSession",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "requestBody": {
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DiscardSessionRequest" } } },
-          "required": false
-        },
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseVoid" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-logs": {
-      "get": {
-        "tags": ["workout-log-controller"],
-        "operationId": "listWorkoutLogs",
-        "parameters": [
-          { "name": "from", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
-          { "name": "to", "in": "query", "required": false, "schema": { "type": "string", "format": "date" } },
-          { "name": "exerciseId", "in": "query", "required": false, "schema": { "type": "integer", "format": "int64" } },
-          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "default": 0 } },
-          { "name": "size", "in": "query", "required": false, "schema": { "type": "integer", "default": 20 } }
-        ],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePageResponseWorkoutLogSummaryDto" } } } }
-        }
-      }
-    },
-    "/api/v1/workout-logs/{id}": {
-      "get": {
-        "tags": ["workout-log-controller"],
-        "operationId": "getWorkoutLogDetail",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponseWorkoutLogDetailDto" } } } }
-        }
-      }
-    },
-    "/api/v1/personal-records": {
-      "get": {
-        "tags": ["personal-record-controller"],
-        "operationId": "listPersonalRecords",
-        "parameters": [
-          { "name": "exerciseId", "in": "query", "required": false, "schema": { "type": "integer", "format": "int64" } },
-          { "name": "type", "in": "query", "required": false, "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "default": 0 } },
-          { "name": "size", "in": "query", "required": false, "schema": { "type": "integer", "default": 20 } }
-        ],
-        "responses": {
-          "200": { "description": "OK", "content": { "*/*": { "schema": { "$ref": "#/components/schemas/ApiResponsePageResponsePersonalRecordDto" } } } }
-        }
-      }
-    },
-    "/api/v1/dashboard": {
-      "get": {
         "tags": [
-          "dashboard-controller"
+          "workout-session-controller"
         ],
-        "operationId": "getDashboard",
+        "operationId": "startSession",
         "parameters": [
           {
-            "name": "date",
-            "in": "query",
-            "required": false,
+            "name": "scheduleId",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "string",
-              "format": "date"
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
@@ -787,7 +565,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseDashboardResponse"
+                  "$ref": "#/components/schemas/ApiResponseStartSessionResponse"
                 }
               }
             }
@@ -795,12 +573,155 @@
         }
       }
     },
-    "/api/v1/weight-logs": {
+    "/api/v1/workout-sessions/{id}/resume": {
+      "post": {
+        "tags": [
+          "workout-session-controller"
+        ],
+        "operationId": "resumeSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseResumeSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workout-sessions/{id}/pause": {
+      "post": {
+        "tags": [
+          "workout-session-controller"
+        ],
+        "operationId": "pauseSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePauseSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workout-sessions/{id}/finish": {
+      "post": {
+        "tags": [
+          "workout-session-controller"
+        ],
+        "operationId": "finishSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFinishSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workout-sessions/{id}/discard": {
+      "post": {
+        "tags": [
+          "workout-session-controller"
+        ],
+        "operationId": "discardSession",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscardSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workout-schedules": {
       "get": {
         "tags": [
-          "weight-log-controller"
+          "workout-schedule-controller"
         ],
-        "operationId": "list",
+        "operationId": "listSchedules",
         "parameters": [
           {
             "name": "from",
@@ -821,11 +742,20 @@
             }
           },
           {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
+              "format": "int32",
               "default": 0
             }
           },
@@ -835,6 +765,7 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "format": "int32",
               "default": 20
             }
           }
@@ -845,36 +776,23 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponsePageResponseWeightLogDto"
+                  "$ref": "#/components/schemas/ApiResponsePageResponseWorkoutScheduleResponse"
                 }
               }
             }
           }
         }
-      }
-    },
-    "/api/v1/weight-logs/{loggedDate}": {
-      "put": {
+      },
+      "post": {
         "tags": [
-          "weight-log-controller"
+          "workout-schedule-controller"
         ],
-        "operationId": "upsert",
-        "parameters": [
-          {
-            "name": "loggedDate",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          }
-        ],
+        "operationId": "createSchedule",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpsertWeightLogRequest"
+                "$ref": "#/components/schemas/WorkoutScheduleRequest"
               }
             }
           },
@@ -886,17 +804,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseUpsertWeightLogResponse"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Created",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseUpsertWeightLogResponse"
+                  "$ref": "#/components/schemas/ApiResponseWorkoutScheduleResponse"
                 }
               }
             }
@@ -904,20 +812,39 @@
         }
       }
     },
-    "/api/v1/weight-logs/trend": {
+    "/api/v1/workout-programs": {
       "get": {
         "tags": [
-          "weight-log-controller"
+          "workout-program-controller"
         ],
-        "operationId": "trend",
+        "operationId": "listPrograms",
         "parameters": [
           {
-            "name": "days",
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
             "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
-              "default": 30
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
             }
           }
         ],
@@ -927,7 +854,35 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponseWeightTrendResponse"
+                  "$ref": "#/components/schemas/ApiResponsePageResponseWorkoutProgramSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "workout-program-controller"
+        ],
+        "operationId": "createProgram",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkoutProgramRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkoutProgramResponse"
                 }
               }
             }
@@ -1264,10 +1219,918 @@
           }
         }
       }
+    },
+    "/api/v1/workout-logs": {
+      "get": {
+        "tags": [
+          "workout-log-controller"
+        ],
+        "operationId": "listWorkoutLogs",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "exerciseId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseWorkoutLogSummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workout-logs/{id}": {
+      "get": {
+        "tags": [
+          "workout-log-controller"
+        ],
+        "operationId": "getWorkoutLogDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWorkoutLogDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weight-logs": {
+      "get": {
+        "tags": [
+          "weight-log-controller"
+        ],
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseWeightLogDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/weight-logs/trend": {
+      "get": {
+        "tags": [
+          "weight-log-controller"
+        ],
+        "operationId": "trend",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWeightTrendResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/personal-records": {
+      "get": {
+        "tags": [
+          "personal-record-controller"
+        ],
+        "operationId": "listPersonalRecords",
+        "parameters": [
+          {
+            "name": "exerciseId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponsePersonalRecordDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/muscle-groups": {
+      "get": {
+        "tags": [
+          "exercise-catalog-controller"
+        ],
+        "operationId": "listMuscleGroups",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMuscleGroupDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/favorite-exercises": {
+      "get": {
+        "tags": [
+          "exercise-catalog-controller"
+        ],
+        "operationId": "listFavoriteExercises",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseExerciseSummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exercises": {
+      "get": {
+        "tags": [
+          "exercise-catalog-controller"
+        ],
+        "operationId": "searchExercises",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "muscleGroupId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "equipmentId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "compatibleWithMyEquipment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "name,asc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseExerciseSummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exercises/{id}": {
+      "get": {
+        "tags": [
+          "exercise-catalog-controller"
+        ],
+        "operationId": "getExerciseDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExerciseDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exercises/{id}/alternatives": {
+      "get": {
+        "tags": [
+          "exercise-catalog-controller"
+        ],
+        "operationId": "getExerciseAlternatives",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListExerciseSummaryDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/equipment": {
+      "get": {
+        "tags": [
+          "exercise-catalog-controller"
+        ],
+        "operationId": "listEquipment",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListEquipmentDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": [
+          "dashboard-controller"
+        ],
+        "operationId": "getDashboard",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDashboardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "WorkoutScheduleRequest": {
+        "type": "object",
+        "properties": {
+          "workoutProgramId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutDayId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduledTime": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseWorkoutScheduleResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WorkoutScheduleResponse"
+          }
+        }
+      },
+      "WorkoutScheduleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutProgramId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutDayId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduledTime": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "cancelReason": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activeSessionId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WorkoutDayRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dayNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutExerciseRequest"
+            }
+          }
+        }
+      },
+      "WorkoutExerciseRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetSets": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetRepsMin": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetRepsMax": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetDurationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "restSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkoutProgramRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "programType": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutDayRequest"
+            }
+          }
+        }
+      },
+      "ApiResponseWorkoutProgramResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WorkoutProgramResponse"
+          }
+        }
+      },
+      "WorkoutDayResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dayNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutExerciseResponse"
+            }
+          }
+        }
+      },
+      "WorkoutExerciseResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseName": {
+            "type": "string"
+          },
+          "exerciseSlug": {
+            "type": "string"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetSets": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetRepsMin": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetRepsMax": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "targetDurationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "restSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkoutProgramResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "programType": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutDayResponse"
+            }
+          }
+        }
+      },
+      "UpsertWeightLogRequest": {
+        "type": "object",
+        "properties": {
+          "weightKg": {
+            "type": "number",
+            "maximum": 9999.99,
+            "minimum": 0.01
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "weightKg"
+        ]
+      },
+      "ApiResponseUpsertWeightLogResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UpsertWeightLogResponse"
+          }
+        }
+      },
+      "Metrics": {
+        "type": "object",
+        "properties": {
+          "bmi": {
+            "type": "number"
+          },
+          "bmrKcal": {
+            "type": "number"
+          },
+          "tdeeKcal": {
+            "type": "number"
+          }
+        }
+      },
+      "UpsertWeightLogResponse": {
+        "type": "object",
+        "properties": {
+          "weightLog": {
+            "$ref": "#/components/schemas/WeightLogDto"
+          },
+          "metricsUpdated": {
+            "type": "boolean"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/Metrics"
+          },
+          "nutritionTargetChanged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WeightLogDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loggedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "note": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "UpdateUserRequest": {
         "type": "object",
         "properties": {
@@ -1512,78 +2375,6 @@
           }
         }
       },
-      "CreateHealthProfileRequest": {
-        "type": "object",
-        "properties": {
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date"
-          },
-          "gender": {
-            "type": "string",
-            "enum": [
-              "MALE",
-              "FEMALE",
-              "OTHER",
-              "UNSPECIFIED"
-            ]
-          },
-          "calculationSex": {
-            "type": "string",
-            "enum": [
-              "MALE",
-              "FEMALE",
-              "UNSPECIFIED"
-            ]
-          },
-          "heightCm": {
-            "type": "number",
-            "maximum": 999.99,
-            "minimum": 0.01
-          },
-          "currentWeightKg": {
-            "type": "number",
-            "maximum": 9999.99,
-            "minimum": 0.01
-          },
-          "activityLevel": {
-            "type": "string",
-            "enum": [
-              "SEDENTARY",
-              "LIGHT",
-              "MODERATE",
-              "ACTIVE",
-              "VERY_ACTIVE"
-            ]
-          },
-          "fitnessGoal": {
-            "type": "string",
-            "enum": [
-              "LOSE_WEIGHT",
-              "MAINTAIN_WEIGHT",
-              "GAIN_WEIGHT",
-              "GAIN_MUSCLE"
-            ]
-          },
-          "trainingExperience": {
-            "type": "string",
-            "enum": [
-              "BEGINNER",
-              "INTERMEDIATE",
-              "ADVANCED"
-            ]
-          }
-        },
-        "required": [
-          "activityLevel",
-          "currentWeightKg",
-          "dateOfBirth",
-          "fitnessGoal",
-          "gender",
-          "heightCm",
-          "trainingExperience"
-        ]
-      },
       "UpdateHealthProfileRequest": {
         "type": "object",
         "properties": {
@@ -1650,613 +2441,6 @@
           "trainingExperience"
         ]
       },
-      "UpsertWeightLogRequest": {
-        "type": "object",
-        "properties": {
-          "weightKg": {
-            "type": "number",
-            "maximum": 9999.99,
-            "minimum": 0.01
-          },
-          "note": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "weightKg"
-        ]
-      },
-      "WeightLogDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "loggedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "weightKg": {
-            "type": "number"
-          },
-          "note": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "UpsertWeightLogResponse": {
-        "type": "object",
-        "properties": {
-          "weightLog": {
-            "$ref": "#/components/schemas/WeightLogDto"
-          },
-          "metricsUpdated": {
-            "type": "boolean"
-          },
-          "metrics": {
-            "$ref": "#/components/schemas/HealthProfileResponse_Metrics"
-          },
-          "nutritionTargetChanged": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ApiResponseUpsertWeightLogResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/UpsertWeightLogResponse"
-          }
-        }
-      },
-      "PageResponseWeightLogDto": {
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WeightLogDto"
-            }
-          },
-          "page": {
-            "type": "integer"
-          },
-          "size": {
-            "type": "integer"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "totalPages": {
-            "type": "integer"
-          },
-          "hasNext": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ApiResponsePageResponseWeightLogDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PageResponseWeightLogDto"
-          }
-        }
-      },
-      "WeightTrendPoint": {
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "weightKg": {
-            "type": "number"
-          }
-        }
-      },
-      "WeightTrendResponse": {
-        "type": "object",
-        "properties": {
-          "days": {
-            "type": "integer"
-          },
-          "from": {
-            "type": "string",
-            "format": "date"
-          },
-          "to": {
-            "type": "string",
-            "format": "date"
-          },
-          "startWeightKg": {
-            "type": "number"
-          },
-          "currentWeightKg": {
-            "type": "number"
-          },
-          "changeKg": {
-            "type": "number"
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "UP",
-              "DOWN",
-              "STABLE"
-            ]
-          },
-          "sufficientData": {
-            "type": "boolean"
-          },
-          "points": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WeightTrendPoint"
-            }
-          }
-        }
-      },
-      "ApiResponseWeightTrendResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/WeightTrendResponse"
-          }
-        }
-      },
-      "MuscleGroupDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseListMuscleGroupDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MuscleGroupDto"
-            }
-          }
-        }
-      },
-      "EquipmentDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseListEquipmentDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EquipmentDto"
-            }
-          }
-        }
-      },
-      "ExerciseMuscleGroupDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "PRIMARY",
-              "SECONDARY"
-            ]
-          }
-        }
-      },
-      "ExerciseEquipmentDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "required": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ExerciseSummaryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "name": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          },
-          "difficulty": {
-            "type": "string",
-            "enum": [
-              "BEGINNER",
-              "INTERMEDIATE",
-              "ADVANCED"
-            ]
-          },
-          "description": {
-            "type": "string"
-          },
-          "muscleGroups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExerciseMuscleGroupDto"
-            }
-          },
-          "equipment": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExerciseEquipmentDto"
-            }
-          },
-          "media": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        }
-      },
-      "PageResponseExerciseSummaryDto": {
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExerciseSummaryDto"
-            }
-          },
-          "page": {
-            "type": "integer"
-          },
-          "size": {
-            "type": "integer"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "totalPages": {
-            "type": "integer"
-          },
-          "hasNext": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ApiResponsePageResponseExerciseSummaryDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PageResponseExerciseSummaryDto"
-          }
-        }
-      },
-      "ApiResponseListExerciseSummaryDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExerciseSummaryDto"
-            }
-          }
-        }
-      },
-      "ExerciseDetailDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "name": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          },
-          "difficulty": {
-            "type": "string",
-            "enum": [
-              "BEGINNER",
-              "INTERMEDIATE",
-              "ADVANCED"
-            ]
-          },
-          "description": {
-            "type": "string"
-          },
-          "instructionSteps": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "commonMistakes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "safetyNotes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "muscleGroups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExerciseMuscleGroupDto"
-            }
-          },
-          "equipment": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExerciseEquipmentDto"
-            }
-          },
-          "media": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          }
-        }
-      },
-      "ApiResponseExerciseDetailDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/ExerciseDetailDto"
-          }
-        }
-      },
-      "NutritionMacroSummary": {
-        "type": "object",
-        "properties": {
-          "caloriesKcal": {
-            "type": "integer"
-          },
-          "proteinG": {
-            "type": "number"
-          },
-          "carbsG": {
-            "type": "number"
-          },
-          "fatG": {
-            "type": "number"
-          }
-        }
-      },
-      "NutritionSection": {
-        "type": "object",
-        "properties": {
-          "target": {
-            "$ref": "#/components/schemas/NutritionMacroSummary"
-          },
-          "consumed": {
-            "$ref": "#/components/schemas/NutritionMacroSummary"
-          },
-          "remaining": {
-            "$ref": "#/components/schemas/NutritionMacroSummary"
-          },
-          "hasMealPlan": {
-            "type": "boolean"
-          }
-        }
-      },
-      "WorkoutCompletion": {
-        "type": "object",
-        "properties": {
-          "windowFrom": {
-            "type": "string",
-            "format": "date"
-          },
-          "windowTo": {
-            "type": "string",
-            "format": "date"
-          },
-          "scheduledEligible": {
-            "type": "integer"
-          },
-          "completedEligible": {
-            "type": "integer"
-          },
-          "rate": {
-            "type": "number"
-          }
-        }
-      },
-      "WorkoutSection": {
-        "type": "object",
-        "properties": {
-          "today": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "next": {
-            "type": "object"
-          },
-          "completion": {
-            "$ref": "#/components/schemas/WorkoutCompletion"
-          }
-        }
-      },
-      "BodySection": {
-        "type": "object",
-        "properties": {
-          "currentWeightKg": {
-            "type": "number"
-          },
-          "bmi": {
-            "type": "number"
-          },
-          "trend": {
-            "type": "string"
-          }
-        }
-      },
-      "DashboardResponse": {
-        "type": "object",
-        "properties": {
-          "date": {
-            "type": "string",
-            "format": "date"
-          },
-          "nutrition": {
-            "$ref": "#/components/schemas/NutritionSection"
-          },
-          "workout": {
-            "$ref": "#/components/schemas/WorkoutSection"
-          },
-          "body": {
-            "$ref": "#/components/schemas/BodySection"
-          },
-          "recommendations": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "missingData": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "generatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "ApiResponseDashboardResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/DashboardResponse"
-          }
-        }
-      },
       "ApiResponseHealthProfileResponse": {
         "type": "object",
         "properties": {
@@ -2294,20 +2478,6 @@
               "CALORIES_BELOW_SAFETY_THRESHOLD",
               "INVALID_MACRO_RESULT"
             ]
-          }
-        }
-      },
-      "Metrics": {
-        "type": "object",
-        "properties": {
-          "bmi": {
-            "type": "number"
-          },
-          "bmrKcal": {
-            "type": "number"
-          },
-          "tdeeKcal": {
-            "type": "number"
           }
         }
       },
@@ -2393,6 +2563,350 @@
             "format": "date-time"
           }
         }
+      },
+      "ApiResponseVoid": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        }
+      },
+      "ApiResponseStartSessionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StartSessionResponse"
+          }
+        }
+      },
+      "StartSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutScheduleId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalPausedSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutExerciseResponse"
+            }
+          }
+        }
+      },
+      "ApiResponseResumeSessionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ResumeSessionResponse"
+          }
+        }
+      },
+      "ResumeSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "totalPausedSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ApiResponsePauseSessionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PauseSessionResponse"
+          }
+        }
+      },
+      "PauseSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "pausedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalPausedSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FinishExerciseLogRequest": {
+        "type": "object",
+        "properties": {
+          "exerciseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinishSetLogRequest"
+            }
+          }
+        }
+      },
+      "FinishSessionRequest": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinishExerciseLogRequest"
+            }
+          }
+        }
+      },
+      "FinishSetLogRequest": {
+        "type": "object",
+        "properties": {
+          "setNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weightKg": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rpe": {
+            "type": "number",
+            "format": "double"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseFinishSessionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FinishSessionResponse"
+          }
+        }
+      },
+      "FinishSessionResponse": {
+        "type": "object",
+        "properties": {
+          "workoutLogId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutSessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalVolumeKg": {
+            "type": "number",
+            "format": "double"
+          },
+          "newPersonalRecords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalRecordDto"
+            }
+          }
+        }
+      },
+      "PersonalRecordDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseName": {
+            "type": "string"
+          },
+          "recordType": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "achievedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "workoutLogId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousValue": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "DiscardSessionRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateHealthProfileRequest": {
+        "type": "object",
+        "properties": {
+          "dateOfBirth": {
+            "type": "string",
+            "format": "date"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNSPECIFIED"
+            ]
+          },
+          "calculationSex": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "UNSPECIFIED"
+            ]
+          },
+          "heightCm": {
+            "type": "number",
+            "maximum": 999.99,
+            "minimum": 0.01
+          },
+          "currentWeightKg": {
+            "type": "number",
+            "maximum": 9999.99,
+            "minimum": 0.01
+          },
+          "activityLevel": {
+            "type": "string",
+            "enum": [
+              "SEDENTARY",
+              "LIGHT",
+              "MODERATE",
+              "ACTIVE",
+              "VERY_ACTIVE"
+            ]
+          },
+          "fitnessGoal": {
+            "type": "string",
+            "enum": [
+              "LOSE_WEIGHT",
+              "MAINTAIN_WEIGHT",
+              "GAIN_WEIGHT",
+              "GAIN_MUSCLE"
+            ]
+          },
+          "trainingExperience": {
+            "type": "string",
+            "enum": [
+              "BEGINNER",
+              "INTERMEDIATE",
+              "ADVANCED"
+            ]
+          }
+        },
+        "required": [
+          "activityLevel",
+          "currentWeightKg",
+          "dateOfBirth",
+          "fitnessGoal",
+          "gender",
+          "heightCm",
+          "trainingExperience"
+        ]
       },
       "RegisterRequest": {
         "type": "object",
@@ -2505,18 +3019,6 @@
           }
         }
       },
-      "ApiResponseVoid": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {}
-        }
-      },
       "ForgotPasswordRequest": {
         "type": "object",
         "properties": {
@@ -2613,384 +3115,896 @@
           }
         }
       },
-      "WorkoutExerciseRequest": {
+      "ApiResponsePageResponseWorkoutScheduleResponse": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "exerciseId": { "type": "integer", "format": "int64" },
-          "sortOrder": { "type": "integer" },
-          "targetSets": { "type": "integer" },
-          "targetRepsMin": { "type": "integer" },
-          "targetRepsMax": { "type": "integer" },
-          "targetDurationSeconds": { "type": "integer" },
-          "restSeconds": { "type": "integer" },
-          "note": { "type": "string" }
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResponseWorkoutScheduleResponse"
+          }
         }
       },
-      "WorkoutDayRequest": {
+      "PageResponseWorkoutScheduleResponse": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "dayNumber": { "type": "integer" },
-          "name": { "type": "string" },
-          "note": { "type": "string" },
-          "exercises": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutExerciseRequest" } }
-        }
-      },
-      "WorkoutProgramRequest": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string" },
-          "programType": { "type": "string" },
-          "description": { "type": "string" },
-          "status": { "type": "string" },
-          "days": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutDayRequest" } }
-        }
-      },
-      "WorkoutExerciseResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "exerciseId": { "type": "integer", "format": "int64" },
-          "exerciseName": { "type": "string" },
-          "exerciseSlug": { "type": "string" },
-          "hidden": { "type": "boolean" },
-          "sortOrder": { "type": "integer" },
-          "targetSets": { "type": "integer" },
-          "targetRepsMin": { "type": "integer" },
-          "targetRepsMax": { "type": "integer" },
-          "targetDurationSeconds": { "type": "integer" },
-          "restSeconds": { "type": "integer" },
-          "note": { "type": "string" }
-        }
-      },
-      "WorkoutDayResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "dayNumber": { "type": "integer" },
-          "name": { "type": "string" },
-          "note": { "type": "string" },
-          "exercises": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutExerciseResponse" } }
-        }
-      },
-      "WorkoutProgramResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
-          "programType": { "type": "string" },
-          "description": { "type": "string" },
-          "status": { "type": "string" },
-          "days": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutDayResponse" } }
-        }
-      },
-      "WorkoutProgramSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
-          "programType": { "type": "string" },
-          "description": { "type": "string" },
-          "status": { "type": "string" },
-          "totalDays": { "type": "integer" }
-        }
-      },
-      "ApiResponseWorkoutProgramResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/WorkoutProgramResponse" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutScheduleResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
         }
       },
       "ApiResponsePageResponseWorkoutProgramSummaryResponse": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
           "data": {
-            "type": "object",
-            "properties": {
-              "content": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutProgramSummaryResponse" } },
-              "page": { "type": "integer" },
-              "size": { "type": "integer" },
-              "totalElements": { "type": "integer", "format": "int64" },
-              "totalPages": { "type": "integer" },
-              "first": { "type": "boolean" },
-              "last": { "type": "boolean" }
+            "$ref": "#/components/schemas/PageResponseWorkoutProgramSummaryResponse"
+          }
+        }
+      },
+      "PageResponseWorkoutProgramSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutProgramSummaryResponse"
             }
           },
-          "error": { "$ref": "#/components/schemas/ApiError" }
-        }
-      },
-      "WorkoutScheduleRequest": {
-        "type": "object",
-        "properties": {
-          "workoutProgramId": { "type": "integer", "format": "int64" },
-          "workoutDayId": { "type": "integer", "format": "int64" },
-          "scheduledDate": { "type": "string", "format": "date" },
-          "scheduledTime": { "type": "string" },
-          "title": { "type": "string" }
-        }
-      },
-      "WorkoutScheduleResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "workoutProgramId": { "type": "integer", "format": "int64" },
-          "workoutDayId": { "type": "integer", "format": "int64" },
-          "scheduledDate": { "type": "string", "format": "date" },
-          "scheduledTime": { "type": "string" },
-          "title": { "type": "string" },
-          "status": { "type": "string" },
-          "cancelReason": { "type": "string" },
-          "completedAt": { "type": "string", "format": "date-time" },
-          "activeSessionId": { "type": "integer", "format": "int64" }
-        }
-      },
-      "ApiResponseWorkoutScheduleResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/WorkoutScheduleResponse" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
-        }
-      },
-      "ApiResponsePageResponseWorkoutScheduleResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": {
-            "type": "object",
-            "properties": {
-              "content": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutScheduleResponse" } },
-              "page": { "type": "integer" },
-              "size": { "type": "integer" },
-              "totalElements": { "type": "integer", "format": "int64" },
-              "totalPages": { "type": "integer" },
-              "first": { "type": "boolean" },
-              "last": { "type": "boolean" }
-            }
+          "page": {
+            "type": "integer",
+            "format": "int32"
           },
-          "error": { "$ref": "#/components/schemas/ApiError" }
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
         }
       },
-      "StartSessionResponse": {
+      "WorkoutProgramSummaryResponse": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "workoutScheduleId": { "type": "integer", "format": "int64" },
-          "status": { "type": "string" },
-          "startedAt": { "type": "string", "format": "date-time" },
-          "totalPausedSeconds": { "type": "integer" },
-          "exercises": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutExerciseResponse" } }
-        }
-      },
-      "ApiResponseStartSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/StartSessionResponse" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
-        }
-      },
-      "PauseSessionResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "status": { "type": "string" },
-          "pausedAt": { "type": "string", "format": "date-time" },
-          "totalPausedSeconds": { "type": "integer" }
-        }
-      },
-      "ApiResponsePauseSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/PauseSessionResponse" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
-        }
-      },
-      "ResumeSessionResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "status": { "type": "string" },
-          "totalPausedSeconds": { "type": "integer" }
-        }
-      },
-      "ApiResponseResumeSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/ResumeSessionResponse" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
-        }
-      },
-      "FinishSetLogRequest": {
-        "type": "object",
-        "properties": {
-          "setNumber": { "type": "integer" },
-          "reps": { "type": "integer" },
-          "weightKg": { "type": "number" },
-          "durationSeconds": { "type": "integer" },
-          "rpe": { "type": "number" },
-          "completed": { "type": "boolean" }
-        }
-      },
-      "FinishExerciseLogRequest": {
-        "type": "object",
-        "properties": {
-          "exerciseId": { "type": "integer", "format": "int64" },
-          "sortOrder": { "type": "integer" },
-          "durationSeconds": { "type": "integer" },
-          "completed": { "type": "boolean" },
-          "sets": { "type": "array", "items": { "$ref": "#/components/schemas/FinishSetLogRequest" } }
-        }
-      },
-      "FinishSessionRequest": {
-        "type": "object",
-        "properties": {
-          "note": { "type": "string" },
-          "exercises": { "type": "array", "items": { "$ref": "#/components/schemas/FinishExerciseLogRequest" } }
-        }
-      },
-      "PersonalRecordDto": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "exerciseId": { "type": "integer", "format": "int64" },
-          "exerciseName": { "type": "string" },
-          "recordType": { "type": "string" },
-          "value": { "type": "number" },
-          "achievedAt": { "type": "string", "format": "date-time" },
-          "workoutLogId": { "type": "integer", "format": "int64" },
-          "previousValue": { "type": "number" }
-        }
-      },
-      "FinishSessionResponse": {
-        "type": "object",
-        "properties": {
-          "workoutLogId": { "type": "integer", "format": "int64" },
-          "workoutSessionId": { "type": "integer", "format": "int64" },
-          "durationSeconds": { "type": "integer" },
-          "totalVolumeKg": { "type": "number" },
-          "newPersonalRecords": { "type": "array", "items": { "$ref": "#/components/schemas/PersonalRecordDto" } }
-        }
-      },
-      "ApiResponseFinishSessionResponse": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/FinishSessionResponse" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
-        }
-      },
-      "DiscardSessionRequest": {
-        "type": "object",
-        "properties": {
-          "reason": { "type": "string" }
-        }
-      },
-      "WorkoutSetLogDto": {
-        "type": "object",
-        "properties": {
-          "setNumber": { "type": "integer" },
-          "reps": { "type": "integer" },
-          "weightKg": { "type": "number" },
-          "durationSeconds": { "type": "integer" },
-          "rpe": { "type": "number" },
-          "completed": { "type": "boolean" }
-        }
-      },
-      "WorkoutExerciseLogDto": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "exerciseId": { "type": "integer", "format": "int64" },
-          "exerciseName": { "type": "string" },
-          "sortOrder": { "type": "integer" },
-          "durationSeconds": { "type": "integer" },
-          "exerciseVolumeKg": { "type": "number" },
-          "completed": { "type": "boolean" },
-          "sets": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutSetLogDto" } }
-        }
-      },
-      "WorkoutLogSummaryDto": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "workoutSessionId": { "type": "integer", "format": "int64" },
-          "workoutScheduleId": { "type": "integer", "format": "int64" },
-          "title": { "type": "string" },
-          "startedAt": { "type": "string", "format": "date-time" },
-          "completedAt": { "type": "string", "format": "date-time" },
-          "durationSeconds": { "type": "integer" },
-          "totalVolumeKg": { "type": "number" },
-          "totalExercises": { "type": "integer" },
-          "prCount": { "type": "integer" }
-        }
-      },
-      "WorkoutLogDetailDto": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "workoutSessionId": { "type": "integer", "format": "int64" },
-          "workoutScheduleId": { "type": "integer", "format": "int64" },
-          "title": { "type": "string" },
-          "startedAt": { "type": "string", "format": "date-time" },
-          "completedAt": { "type": "string", "format": "date-time" },
-          "durationSeconds": { "type": "integer" },
-          "totalVolumeKg": { "type": "number" },
-          "note": { "type": "string" },
-          "exercises": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutExerciseLogDto" } },
-          "personalRecords": { "type": "array", "items": { "$ref": "#/components/schemas/PersonalRecordDto" } }
-        }
-      },
-      "ApiResponseWorkoutLogDetailDto": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/WorkoutLogDetailDto" },
-          "error": { "$ref": "#/components/schemas/ApiError" }
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "programType": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "totalDays": {
+            "type": "integer",
+            "format": "int32"
+          }
         }
       },
       "ApiResponsePageResponseWorkoutLogSummaryDto": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
           "data": {
-            "type": "object",
-            "properties": {
-              "content": { "type": "array", "items": { "$ref": "#/components/schemas/WorkoutLogSummaryDto" } },
-              "page": { "type": "integer" },
-              "size": { "type": "integer" },
-              "totalElements": { "type": "integer", "format": "int64" },
-              "totalPages": { "type": "integer" },
-              "first": { "type": "boolean" },
-              "last": { "type": "boolean" }
+            "$ref": "#/components/schemas/PageResponseWorkoutLogSummaryDto"
+          }
+        }
+      },
+      "PageResponseWorkoutLogSummaryDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutLogSummaryDto"
             }
           },
-          "error": { "$ref": "#/components/schemas/ApiError" }
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkoutLogSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutSessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutScheduleId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalVolumeKg": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalExercises": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "prCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ApiResponseWorkoutLogDetailDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WorkoutLogDetailDto"
+          }
+        }
+      },
+      "WorkoutExerciseLogDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "exerciseName": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "exerciseVolumeKg": {
+            "type": "number",
+            "format": "double"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutSetLogDto"
+            }
+          }
+        }
+      },
+      "WorkoutLogDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutSessionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workoutScheduleId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalVolumeKg": {
+            "type": "number",
+            "format": "double"
+          },
+          "note": {
+            "type": "string"
+          },
+          "exercises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutExerciseLogDto"
+            }
+          },
+          "personalRecords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalRecordDto"
+            }
+          }
+        }
+      },
+      "WorkoutSetLogDto": {
+        "type": "object",
+        "properties": {
+          "setNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reps": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weightKg": {
+            "type": "number",
+            "format": "double"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rpe": {
+            "type": "number",
+            "format": "double"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponsePageResponseWeightLogDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResponseWeightLogDto"
+          }
+        }
+      },
+      "PageResponseWeightLogDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightLogDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseWeightTrendResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WeightTrendResponse"
+          }
+        }
+      },
+      "WeightTrendPoint": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "weightKg": {
+            "type": "number"
+          }
+        }
+      },
+      "WeightTrendResponse": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "startWeightKg": {
+            "type": "number"
+          },
+          "currentWeightKg": {
+            "type": "number"
+          },
+          "changeKg": {
+            "type": "number"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "STABLE"
+            ]
+          },
+          "sufficientData": {
+            "type": "boolean"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightTrendPoint"
+            }
+          }
         }
       },
       "ApiResponsePageResponsePersonalRecordDto": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
           "data": {
-            "type": "object",
-            "properties": {
-              "content": { "type": "array", "items": { "$ref": "#/components/schemas/PersonalRecordDto" } },
-              "page": { "type": "integer" },
-              "size": { "type": "integer" },
-              "totalElements": { "type": "integer", "format": "int64" },
-              "totalPages": { "type": "integer" },
-              "first": { "type": "boolean" },
-              "last": { "type": "boolean" }
+            "$ref": "#/components/schemas/PageResponsePersonalRecordDto"
+          }
+        }
+      },
+      "PageResponsePersonalRecordDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalRecordDto"
             }
           },
-          "error": { "$ref": "#/components/schemas/ApiError" }
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseListMuscleGroupDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MuscleGroupDto"
+            }
+          }
+        }
+      },
+      "MuscleGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponsePageResponseExerciseSummaryDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResponseExerciseSummaryDto"
+          }
+        }
+      },
+      "ExerciseEquipmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ExerciseMuscleGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "ExerciseSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "muscleGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExerciseMuscleGroupDto"
+            }
+          },
+          "equipment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExerciseEquipmentDto"
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "PageResponseExerciseSummaryDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExerciseSummaryDto"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseExerciseDetailDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExerciseDetailDto"
+          }
+        }
+      },
+      "ExerciseDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "instructionSteps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "commonMistakes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "safetyNotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "muscleGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExerciseMuscleGroupDto"
+            }
+          },
+          "equipment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExerciseEquipmentDto"
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "ApiResponseListExerciseSummaryDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExerciseSummaryDto"
+            }
+          }
+        }
+      },
+      "ApiResponseListEquipmentDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EquipmentDto"
+            }
+          }
+        }
+      },
+      "EquipmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseDashboardResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DashboardResponse"
+          }
+        }
+      },
+      "BodySection": {
+        "type": "object",
+        "properties": {
+          "currentWeightKg": {
+            "type": "number"
+          },
+          "bmi": {
+            "type": "number"
+          },
+          "trend": {
+            "type": "string"
+          }
+        }
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "nutrition": {
+            "$ref": "#/components/schemas/NutritionSection"
+          },
+          "workout": {
+            "$ref": "#/components/schemas/WorkoutSection"
+          },
+          "body": {
+            "$ref": "#/components/schemas/BodySection"
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {}
+          },
+          "missingData": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NutritionMacroSummary": {
+        "type": "object",
+        "properties": {
+          "caloriesKcal": {
+            "type": "number"
+          },
+          "proteinG": {
+            "type": "number"
+          },
+          "carbsG": {
+            "type": "number"
+          },
+          "fatG": {
+            "type": "number"
+          }
+        }
+      },
+      "NutritionSection": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "$ref": "#/components/schemas/NutritionMacroSummary"
+          },
+          "consumed": {
+            "$ref": "#/components/schemas/NutritionMacroSummary"
+          },
+          "remaining": {
+            "$ref": "#/components/schemas/NutritionMacroSummary"
+          },
+          "hasMealPlan": {
+            "type": "boolean"
+          }
+        }
+      },
+      "WorkoutCompletion": {
+        "type": "object",
+        "properties": {
+          "windowFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "windowTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduledEligible": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completedEligible": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rate": {
+            "type": "number"
+          }
+        }
+      },
+      "WorkoutSection": {
+        "type": "object",
+        "properties": {
+          "today": {
+            "type": "array",
+            "items": {}
+          },
+          "next": {},
+          "completion": {
+            "$ref": "#/components/schemas/WorkoutCompletion"
+          }
         }
       }
     },

@@ -35,7 +35,7 @@ abstract class TokenStorage {
 /// In-memory & secure storage implementation for mobile app.
 class DefaultTokenStorage implements TokenStorage {
   DefaultTokenStorage({Map<String, String>? initialSecureStore})
-      : _secureStore = initialSecureStore ?? <String, String>{};
+    : _secureStore = initialSecureStore ?? <String, String>{};
 
   // 1. Access Token is strictly in-memory per ADR-004
   String? _inMemoryAccessToken;

@@ -107,8 +107,9 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final success =
-          await container.read(authProvider.notifier).loginWithGoogle();
+      final success = await container
+          .read(authProvider.notifier)
+          .loginWithGoogle();
       expect(success, isTrue);
 
       final state = container.read(authProvider);
@@ -120,22 +121,26 @@ void main() {
       );
     });
 
-    test('loginWithFacebook completes authentication and saves tokens', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'loginWithFacebook completes authentication and saves tokens',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final success =
-          await container.read(authProvider.notifier).loginWithFacebook();
-      expect(success, isTrue);
+        final success = await container
+            .read(authProvider.notifier)
+            .loginWithFacebook();
+        expect(success, isTrue);
 
-      final state = container.read(authProvider);
-      expect(state.status, AuthStatus.authenticated);
-      expect(state.user?.displayName, 'Facebook Athlete');
-      expect(
-        await container.read(tokenStorageProvider).hasRefreshToken(),
-        isTrue,
-      );
-    });
+        final state = container.read(authProvider);
+        expect(state.status, AuthStatus.authenticated);
+        expect(state.user?.displayName, 'Facebook Athlete');
+        expect(
+          await container.read(tokenStorageProvider).hasRefreshToken(),
+          isTrue,
+        );
+      },
+    );
 
     test(
       'Register stores pending email and verifyOtp completes authentication',
@@ -204,20 +209,23 @@ void main() {
       expect(state.resendCooldownSeconds, 60);
     });
 
-    test('forgotPassword sets pending verification with passwordReset purpose', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'forgotPassword sets pending verification with passwordReset purpose',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final success = await container
-          .read(authProvider.notifier)
-          .forgotPassword('reset@viegym.vn');
+        final success = await container
+            .read(authProvider.notifier)
+            .forgotPassword('reset@viegym.vn');
 
-      expect(success, isTrue);
-      final state = container.read(authProvider);
-      expect(state.pendingEmail, 'reset@viegym.vn');
-      expect(state.pendingPurpose, OtpPurpose.passwordReset);
-      expect(state.isPendingVerification, isTrue);
-    });
+        expect(success, isTrue);
+        final state = container.read(authProvider);
+        expect(state.pendingEmail, 'reset@viegym.vn');
+        expect(state.pendingPurpose, OtpPurpose.passwordReset);
+        expect(state.isPendingVerification, isTrue);
+      },
+    );
 
     test('resetPassword validates matching and min length', () async {
       final container = ProviderContainer();
@@ -243,7 +251,10 @@ void main() {
             confirmPassword: '123',
           );
       expect(failShort, isFalse);
-      expect(container.read(authProvider).errorMessage, contains('ít nhất 6 ký tự'));
+      expect(
+        container.read(authProvider).errorMessage,
+        contains('ít nhất 6 ký tự'),
+      );
 
       // Success
       final success = await container
@@ -257,29 +268,32 @@ void main() {
       expect(container.read(authProvider).status, AuthStatus.unauthenticated);
     });
 
-    test('changePassword validates fields and updates authenticated state', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'changePassword validates fields and updates authenticated state',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final failEmpty = await container
-          .read(authProvider.notifier)
-          .changePassword(
-            currentPassword: '',
-            newPassword: 'password123',
-            confirmPassword: 'password123',
-          );
-      expect(failEmpty, isFalse);
+        final failEmpty = await container
+            .read(authProvider.notifier)
+            .changePassword(
+              currentPassword: '',
+              newPassword: 'password123',
+              confirmPassword: 'password123',
+            );
+        expect(failEmpty, isFalse);
 
-      final success = await container
-          .read(authProvider.notifier)
-          .changePassword(
-            currentPassword: 'oldPassword123',
-            newPassword: 'newPassword123',
-            confirmPassword: 'newPassword123',
-          );
-      expect(success, isTrue);
-      expect(container.read(authProvider).status, AuthStatus.authenticated);
-    });
+        final success = await container
+            .read(authProvider.notifier)
+            .changePassword(
+              currentPassword: 'oldPassword123',
+              newPassword: 'newPassword123',
+              confirmPassword: 'newPassword123',
+            );
+        expect(success, isTrue);
+        expect(container.read(authProvider).status, AuthStatus.authenticated);
+      },
+    );
   });
 
   group('HealthProfile calculation tests', () {
@@ -303,23 +317,26 @@ void main() {
       expect(profile.tdee, equals((1674 * 1.55).round() + 300));
     });
 
-    test('BMI Category correctly classifies underweight, normal, pre-obese, and obese', () {
-      // Underweight (< 18.5)
-      const underweight = HealthProfile(heightCm: 175, weightKg: 50);
-      expect(underweight.bmiCategory, 'Nhẹ cân');
+    test(
+      'BMI Category correctly classifies underweight, normal, pre-obese, and obese',
+      () {
+        // Underweight (< 18.5)
+        const underweight = HealthProfile(heightCm: 175, weightKg: 50);
+        expect(underweight.bmiCategory, 'Nhẹ cân');
 
-      // Normal (18.5 - 24.9)
-      const normal = HealthProfile(heightCm: 175, weightKg: 68);
-      expect(normal.bmiCategory, 'Bình thường');
+        // Normal (18.5 - 24.9)
+        const normal = HealthProfile(heightCm: 175, weightKg: 68);
+        expect(normal.bmiCategory, 'Bình thường');
 
-      // Pre-obese (25.0 - 29.9)
-      const preObese = HealthProfile(heightCm: 175, weightKg: 80);
-      expect(preObese.bmiCategory, 'Tiền béo phì');
+        // Pre-obese (25.0 - 29.9)
+        const preObese = HealthProfile(heightCm: 175, weightKg: 80);
+        expect(preObese.bmiCategory, 'Tiền béo phì');
 
-      // Obese (>= 30.0)
-      const obese = HealthProfile(heightCm: 175, weightKg: 100);
-      expect(obese.bmiCategory, 'Béo phì');
-    });
+        // Obese (>= 30.0)
+        const obese = HealthProfile(heightCm: 175, weightKg: 100);
+        expect(obese.bmiCategory, 'Béo phì');
+      },
+    );
 
     test('BMR calculations for Female and Non-binary / Other offsets', () {
       // Base: 10 * 60 + 6.25 * 165 - 5 * 25 = 600 + 1031.25 - 125 = 1506.25
@@ -353,13 +370,22 @@ void main() {
       final baseTdee = (baseProfile.bmr * 1.55).round();
 
       // Gain muscle (+300)
-      expect(baseProfile.copyWith(goal: FitnessGoal.gainMuscle).tdee, baseTdee + 300);
+      expect(
+        baseProfile.copyWith(goal: FitnessGoal.gainMuscle).tdee,
+        baseTdee + 300,
+      );
 
       // Lose fat (-400)
-      expect(baseProfile.copyWith(goal: FitnessGoal.loseFat).tdee, baseTdee - 400);
+      expect(
+        baseProfile.copyWith(goal: FitnessGoal.loseFat).tdee,
+        baseTdee - 400,
+      );
 
       // Build strength (+150)
-      expect(baseProfile.copyWith(goal: FitnessGoal.buildStrength).tdee, baseTdee + 150);
+      expect(
+        baseProfile.copyWith(goal: FitnessGoal.buildStrength).tdee,
+        baseTdee + 150,
+      );
 
       // Maintain (0)
       expect(baseProfile.copyWith(goal: FitnessGoal.maintain).tdee, baseTdee);
@@ -797,25 +823,24 @@ void main() {
       },
     );
 
-    testWidgets(
-      'OtpScreen supports passwordReset purpose variant',
-      (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: OtpScreen(
-                email: 'user@viegym.vn',
-                purpose: OtpPurpose.passwordReset,
-              ),
+    testWidgets('OtpScreen supports passwordReset purpose variant', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: OtpScreen(
+              email: 'user@viegym.vn',
+              purpose: OtpPurpose.passwordReset,
             ),
           ),
-        );
-        await tester.pumpAndSettle();
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text('Xác thực đặt lại mật khẩu'), findsOneWidget);
-        expect(find.textContaining('đặt lại mật khẩu mới'), findsOneWidget);
-      },
-    );
+      expect(find.text('Xác thực đặt lại mật khẩu'), findsOneWidget);
+      expect(find.textContaining('đặt lại mật khẩu mới'), findsOneWidget);
+    });
 
     testWidgets(
       'ForgotPasswordScreen renders email field and submits OTP request',
@@ -836,17 +861,14 @@ void main() {
             ),
             GoRoute(
               path: '/otp',
-              builder: (_, _) => const Scaffold(body: Text('OTP Screen Target')),
+              builder: (_, _) =>
+                  const Scaffold(body: Text('OTP Screen Target')),
             ),
           ],
         );
 
         await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp.router(
-              routerConfig: router,
-            ),
-          ),
+          ProviderScope(child: MaterialApp.router(routerConfig: router)),
         );
         await tester.pumpAndSettle();
 
@@ -891,11 +913,7 @@ void main() {
         );
 
         await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp.router(
-              routerConfig: router,
-            ),
-          ),
+          ProviderScope(child: MaterialApp.router(routerConfig: router)),
         );
         await tester.pumpAndSettle();
 
@@ -949,47 +967,53 @@ void main() {
         await tester.tap(switches.first);
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Đã tắt xác thực sinh trắc học'), findsOneWidget);
+        expect(
+          find.textContaining('Đã tắt xác thực sinh trắc học'),
+          findsOneWidget,
+        );
       },
     );
 
-    test('resolveOnboardingRoute directs users according to authoritative session & onboarding status', () {
-      expect(
-        resolveOnboardingRoute(
-          isAuthenticated: false,
-          isHealthProfileCompleted: false,
-          isEquipmentOnboardingCompleted: false,
-        ),
-        '/welcome',
-      );
+    test(
+      'resolveOnboardingRoute directs users according to authoritative session & onboarding status',
+      () {
+        expect(
+          resolveOnboardingRoute(
+            isAuthenticated: false,
+            isHealthProfileCompleted: false,
+            isEquipmentOnboardingCompleted: false,
+          ),
+          '/welcome',
+        );
 
-      expect(
-        resolveOnboardingRoute(
-          isAuthenticated: true,
-          isHealthProfileCompleted: false,
-          isEquipmentOnboardingCompleted: false,
-        ),
-        '/onboarding/health',
-      );
+        expect(
+          resolveOnboardingRoute(
+            isAuthenticated: true,
+            isHealthProfileCompleted: false,
+            isEquipmentOnboardingCompleted: false,
+          ),
+          '/onboarding/health',
+        );
 
-      expect(
-        resolveOnboardingRoute(
-          isAuthenticated: true,
-          isHealthProfileCompleted: true,
-          isEquipmentOnboardingCompleted: false,
-        ),
-        '/onboarding/equipment',
-      );
+        expect(
+          resolveOnboardingRoute(
+            isAuthenticated: true,
+            isHealthProfileCompleted: true,
+            isEquipmentOnboardingCompleted: false,
+          ),
+          '/onboarding/equipment',
+        );
 
-      expect(
-        resolveOnboardingRoute(
-          isAuthenticated: true,
-          isHealthProfileCompleted: true,
-          isEquipmentOnboardingCompleted: true,
-        ),
-        '/home',
-      );
-    });
+        expect(
+          resolveOnboardingRoute(
+            isAuthenticated: true,
+            isHealthProfileCompleted: true,
+            isEquipmentOnboardingCompleted: true,
+          ),
+          '/home',
+        );
+      },
+    );
 
     testWidgets(
       'EquipmentOnboardingScreen renders presets, clear all, and completes onboarding',
@@ -1010,17 +1034,14 @@ void main() {
             ),
             GoRoute(
               path: '/home',
-              builder: (_, _) => const Scaffold(body: Text('Home Target Screen')),
+              builder: (_, _) =>
+                  const Scaffold(body: Text('Home Target Screen')),
             ),
           ],
         );
 
         await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp.router(
-              routerConfig: router,
-            ),
-          ),
+          ProviderScope(child: MaterialApp.router(routerConfig: router)),
         );
         await tester.pumpAndSettle();
 
@@ -1036,7 +1057,10 @@ void main() {
         // Tap 'Bỏ chọn tất cả'
         await tester.tap(find.text('Bỏ chọn tất cả'));
         await tester.pumpAndSettle();
-        expect(find.textContaining('Đã bỏ chọn tất cả thiết bị'), findsOneWidget);
+        expect(
+          find.textContaining('Đã bỏ chọn tất cả thiết bị'),
+          findsOneWidget,
+        );
 
         // Tap 'Hoàn tất & Bắt đầu'
         await tester.tap(find.text('Hoàn tất & Bắt đầu'));
@@ -1046,105 +1070,98 @@ void main() {
       },
     );
 
-    testWidgets(
-      'OtpScreen handles invalid OTP error gracefully',
-      (tester) async {
-        tester.view.physicalSize = const Size(400, 900);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
+    testWidgets('OtpScreen handles invalid OTP error gracefully', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
 
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: OtpScreen(email: 'user@viegym.vn'),
-            ),
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(home: OtpScreen(email: 'user@viegym.vn')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Incomplete code -> tap 'Xác nhận mã OTP'
+      await tester.tap(find.text('Xác nhận mã OTP'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Vui lòng nhập đủ 6 chữ số'), findsOneWidget);
+    });
+
+    testWidgets('E2E Flow 1: Register -> OTP -> Health Profile transition', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 1100);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final router = GoRouter(
+        initialLocation: '/register',
+        routes: [
+          GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+          GoRoute(
+            path: '/otp',
+            builder: (_, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return OtpScreen(
+                email: extra?['email'] as String? ?? 'athlete@viegym.vn',
+                purpose:
+                    extra?['purpose'] as OtpPurpose? ?? OtpPurpose.register,
+              );
+            },
           ),
-        );
-        await tester.pumpAndSettle();
-
-        // Incomplete code -> tap 'Xác nhận mã OTP'
-        await tester.tap(find.text('Xác nhận mã OTP'));
-        await tester.pumpAndSettle();
-
-        expect(find.textContaining('Vui lòng nhập đủ 6 chữ số'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'E2E Flow 1: Register -> OTP -> Health Profile transition',
-      (tester) async {
-        tester.view.physicalSize = const Size(400, 1100);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-
-        final router = GoRouter(
-          initialLocation: '/register',
-          routes: [
-            GoRoute(
-              path: '/register',
-              builder: (_, _) => const RegisterScreen(),
-            ),
-            GoRoute(
-              path: '/otp',
-              builder: (_, state) {
-                final extra = state.extra as Map<String, dynamic>?;
-                return OtpScreen(
-                  email: extra?['email'] as String? ?? 'athlete@viegym.vn',
-                  purpose: extra?['purpose'] as OtpPurpose? ?? OtpPurpose.register,
-                );
-              },
-            ),
-            GoRoute(
-              path: '/onboarding/health',
-              builder: (_, _) => const HealthProfileOnboardingScreen(),
-            ),
-            GoRoute(
-              path: '/onboarding/equipment',
-              builder: (_, _) => const EquipmentOnboardingScreen(),
-            ),
-            GoRoute(
-              path: '/home',
-              builder: (_, _) => const Scaffold(body: Text('Initial Dashboard Target')),
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp.router(routerConfig: router),
+          GoRoute(
+            path: '/onboarding/health',
+            builder: (_, _) => const HealthProfileOnboardingScreen(),
           ),
-        );
-        await tester.pumpAndSettle();
+          GoRoute(
+            path: '/onboarding/equipment',
+            builder: (_, _) => const EquipmentOnboardingScreen(),
+          ),
+          GoRoute(
+            path: '/home',
+            builder: (_, _) =>
+                const Scaffold(body: Text('Initial Dashboard Target')),
+          ),
+        ],
+      );
 
-        // 1. Register step
-        expect(find.text('Đăng ký tài khoản'), findsAtLeast(1));
-        final fields = find.byType(TextFormField);
-        await tester.enterText(fields.at(0), 'athlete@viegym.vn');
-        await tester.enterText(fields.at(1), 'Password123');
-        await tester.enterText(fields.at(2), 'Password123');
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(FilledButton));
-        await tester.pumpAndSettle();
+      // 1. Register step
+      expect(find.text('Đăng ký tài khoản'), findsAtLeast(1));
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'athlete@viegym.vn');
+      await tester.enterText(fields.at(1), 'Password123');
+      await tester.enterText(fields.at(2), 'Password123');
+      await tester.pumpAndSettle();
 
-        // 2. OTP step
-        expect(find.text('Xác thực đăng ký'), findsOneWidget);
-        final pinFields = find.byType(TextField);
-        for (int i = 0; i < 6; i++) {
-          await tester.enterText(pinFields.at(i), '${i + 1}');
-        }
-        await tester.pumpAndSettle();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
 
-        // 3. Auto-verified on 6th digit -> Reached Health Profile Onboarding wizard
-        expect(find.text('Bước 1 / 11'), findsOneWidget);
-      },
-    );
+      // 2. OTP step
+      expect(find.text('Xác thực đăng ký'), findsOneWidget);
+      final pinFields = find.byType(TextField);
+      for (int i = 0; i < 6; i++) {
+        await tester.enterText(pinFields.at(i), '${i + 1}');
+      }
+      await tester.pumpAndSettle();
+
+      // 3. Auto-verified on 6th digit -> Reached Health Profile Onboarding wizard
+      expect(find.text('Bước 1 / 11'), findsOneWidget);
+    });
   });
 }
 

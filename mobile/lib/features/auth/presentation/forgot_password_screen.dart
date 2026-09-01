@@ -39,10 +39,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             content: Text('Đã gửi mã xác thực OTP đến email của bạn!'),
           ),
         );
-        context.push('/otp', extra: {
-          'email': email,
-          'purpose': OtpPurpose.passwordReset,
-        });
+        context.push(
+          '/otp',
+          extra: {'email': email, 'purpose': OtpPurpose.passwordReset},
+        );
       } else {
         final error = ref.read(authProvider).errorMessage;
         ScaffoldMessenger.of(context).showSnackBar(

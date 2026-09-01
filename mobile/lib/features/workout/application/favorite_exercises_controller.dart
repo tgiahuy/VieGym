@@ -7,8 +7,8 @@ import 'exercise_catalog_controller.dart';
 
 final favoriteExercisesProvider =
     NotifierProvider<FavoriteExercisesController, Set<String>>(
-  FavoriteExercisesController.new,
-);
+      FavoriteExercisesController.new,
+    );
 
 class FavoriteExercisesController extends Notifier<Set<String>> {
   @override

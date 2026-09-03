@@ -33,6 +33,8 @@ class ExerciseDefinition {
     required this.secondaryMuscles,
     required this.equipment,
     required this.description,
+    this.equipmentIds = const [],
+    this.equipmentCodes = const [],
     this.primaryMuscleKey = 'chest',
     this.thumbnailUrl =
         'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80',
@@ -48,6 +50,8 @@ class ExerciseDefinition {
   final String primaryMuscleKey;
   final List<String> secondaryMuscles;
   final EquipmentType equipment;
+  final List<int> equipmentIds;
+  final List<String> equipmentCodes;
   final String description;
   final String thumbnailUrl;
   final String? videoUrl;

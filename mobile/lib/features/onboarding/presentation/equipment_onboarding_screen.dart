@@ -17,6 +17,7 @@ class _EquipmentOnboardingScreenState
     extends ConsumerState<EquipmentOnboardingScreen> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -24,19 +25,47 @@ class _EquipmentOnboardingScreenState
     super.dispose();
   }
 
-  void _finish() {
-    ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Thiết lập hoàn tất! Chào mừng bạn đến với VieGym'),
-      ),
-    );
-    context.go('/home');
+  Future<void> _finish() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final selected = ref.read(userEquipmentProvider);
+      await ref
+          .read(equipmentOnboardingCompletedProvider.notifier)
+          .saveAndComplete(selected);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thiết lập hoàn tất! Chào mừng bạn đến với VieGym'),
+        ),
+      );
+      context.go('/home');
+    } catch (_) {
+      if (!mounted) return;
+      ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
+      context.go('/home');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
-  void _skip() {
-    ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
-    context.go('/home');
+  Future<void> _skip() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await ref
+          .read(equipmentOnboardingCompletedProvider.notifier)
+          .saveAndComplete({});
+    } catch (_) {
+      ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        context.go('/home');
+      }
+    }
   }
 
   @override
@@ -316,7 +345,7 @@ class _EquipmentOnboardingScreenState
             Expanded(
               flex: 1,
               child: OutlinedButton(
-                onPressed: _skip,
+                onPressed: _isSubmitting ? null : _skip,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(0, 52),
                   shape: RoundedRectangleBorder(
@@ -330,17 +359,26 @@ class _EquipmentOnboardingScreenState
             Expanded(
               flex: 2,
               child: FilledButton.icon(
-                onPressed: _finish,
+                onPressed: _isSubmitting ? null : _finish,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 52),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                icon: const Icon(Icons.check_circle_rounded, size: 20),
-                label: const Text(
-                  'Hoàn tất & Bắt đầu',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check_circle_rounded, size: 20),
+                label: Text(
+                  _isSubmitting ? 'Đang lưu...' : 'Hoàn tất & Bắt đầu',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ),

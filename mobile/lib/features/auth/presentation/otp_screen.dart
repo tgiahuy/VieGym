@@ -209,14 +209,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   );
                 }),
               ),
-              const SizedBox(height: 14),
-
-              Text(
-                '(Mẹo: Nhập 123456 hoặc 6 số bất kỳ để tiếp tục)',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
-              ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 32),
 
               // Submit Button
               FilledButton(

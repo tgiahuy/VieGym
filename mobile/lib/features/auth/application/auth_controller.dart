@@ -1,213 +1,172 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/network/token_storage.dart';
+import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
 
 class AuthController extends Notifier<AuthState> {
   @override
   AuthState build() => const AuthState();
 
+  AuthRepository get _repository => ref.read(authRepositoryProvider);
+  TokenStorage get _storage => ref.read(tokenStorageProvider);
+
   Future<bool> login({required String email, required String password}) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
     if (email.trim().isEmpty || password.isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Vui lòng điền đầy đủ email và mật khẩu.',
-      );
-      return false;
+      return _validationError('Vui lòng điền đầy đủ email và mật khẩu.');
     }
-
-    // Xử lý case tài khoản pending nếu email chứa 'pending' (demo/testing hook)
-    if (email.toLowerCase().contains('pending')) {
-      state = state.copyWith(
-        status: AuthStatus.pendingVerification,
-        pendingEmail: email.trim(),
-        pendingPurpose: OtpPurpose.register,
-        errorMessage: 'Tài khoản chưa kích hoạt. Vui lòng xác thực OTP.',
-      );
-      return false;
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final session = await _repository.login(email: email, password: password);
+      await _completeAuthentication(session);
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể kết nối đến máy chủ.');
     }
-
-    // Lưu token theo chuẩn ADR-004: access token (memory), refresh token (secure storage)
-    await ref
-        .read(tokenStorageProvider)
-        .saveTokens(
-          accessToken: 'viegym_jwt_access_${email.trim().replaceAll('@', '_')}',
-          refreshToken:
-              'viegym_secure_refresh_${email.trim().replaceAll('@', '_')}',
-        );
-
-    state = state.copyWith(
-      status: AuthStatus.authenticated,
-      user: AuthUser(
-        id: 'user_123',
-        email: email.trim(),
-        displayName: email.split('@').first,
-      ),
-    );
-    return true;
   }
 
-  /// Đăng nhập bằng Google ID Token
   Future<bool> loginWithGoogle({String? idToken}) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
-    final effectiveToken = idToken ?? 'mock_google_id_token';
-    if (effectiveToken.isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Xác thực Google thất bại.',
+    if (idToken == null || idToken.trim().isEmpty) {
+      return _validationError(
+        'Đăng nhập Google chưa được cấu hình trên thiết bị này.',
       );
-      return false;
     }
-
-    const email = 'google.athlete@viegym.vn';
-    await ref
-        .read(tokenStorageProvider)
-        .saveTokens(
-          accessToken: 'viegym_jwt_access_google_${email.replaceAll('@', '_')}',
-          refreshToken:
-              'viegym_secure_refresh_google_${email.replaceAll('@', '_')}',
-        );
-
-    state = state.copyWith(
-      status: AuthStatus.authenticated,
-      user: const AuthUser(
-        id: 'google_user_1',
-        email: email,
-        displayName: 'Google Athlete',
-      ),
-    );
-    return true;
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final session = await _repository.loginWithGoogle(idToken.trim());
+      await _completeAuthentication(session);
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể xác thực tài khoản Google.');
+    }
   }
 
-  /// Đăng nhập bằng Facebook Access Token
   Future<bool> loginWithFacebook({String? accessToken}) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
-    final effectiveToken = accessToken ?? 'mock_facebook_access_token';
-    if (effectiveToken.isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Xác thực Facebook thất bại.',
+    if (accessToken == null || accessToken.trim().isEmpty) {
+      return _validationError(
+        'Đăng nhập Facebook chưa được cấu hình trên thiết bị này.',
       );
-      return false;
     }
-
-    const email = 'facebook.athlete@viegym.vn';
-    await ref
-        .read(tokenStorageProvider)
-        .saveTokens(
-          accessToken: 'viegym_jwt_access_fb_${email.replaceAll('@', '_')}',
-          refreshToken:
-              'viegym_secure_refresh_fb_${email.replaceAll('@', '_')}',
-        );
-
-    state = state.copyWith(
-      status: AuthStatus.authenticated,
-      user: const AuthUser(
-        id: 'fb_user_1',
-        email: email,
-        displayName: 'Facebook Athlete',
-      ),
-    );
-    return true;
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final session = await _repository.loginWithFacebook(accessToken.trim());
+      await _completeAuthentication(session);
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể xác thực tài khoản Facebook.');
+    }
   }
 
   Future<bool> register({
+    String? displayName,
     required String email,
     required String password,
     required String confirmPassword,
   }) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
     if (email.trim().isEmpty || password.isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Vui lòng điền đầy đủ thông tin.',
-      );
-      return false;
+      return _validationError('Vui lòng điền đầy đủ thông tin.');
     }
-
     if (password != confirmPassword) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Mật khẩu xác nhận không khớp.',
-      );
-      return false;
+      return _validationError('Mật khẩu xác nhận không khớp.');
     }
-
-    // Backend tạo account pending -> Chờ xác thực OTP (MH06)
-    state = state.copyWith(
-      status: AuthStatus.pendingVerification,
-      pendingEmail: email.trim(),
-      pendingPurpose: OtpPurpose.register,
-    );
-    return true;
+    if (!_isStrongPassword(password)) {
+      return _validationError(
+        'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ và số.',
+      );
+    }
+    final effectiveName = displayName?.trim().isNotEmpty == true
+        ? displayName!.trim()
+        : email.trim().split('@').first;
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final challenge = await _repository.register(
+        displayName: effectiveName,
+        email: email,
+        password: password,
+      );
+      state = state.copyWith(
+        status: AuthStatus.pendingVerification,
+        pendingEmail: email.trim(),
+        pendingPurpose: OtpPurpose.register,
+        pendingChallengeId: challenge.challengeId,
+        resendCooldownSeconds: 60,
+      );
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể kết nối đến máy chủ.');
+    }
   }
 
   Future<bool> verifyOtp(String code, {OtpPurpose? purpose}) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
+    final challengeId = state.pendingChallengeId;
+    if (challengeId == null || challengeId.isEmpty) {
+      return _validationError('Phiên xác thực OTP không hợp lệ.');
+    }
+    if (code.length != 6) {
+      return _validationError('Mã OTP phải gồm 6 chữ số.');
+    }
     final targetPurpose = purpose ?? state.pendingPurpose;
-
-    if (code == '123456' || code.length == 6) {
-      final email = state.pendingEmail ?? 'user@viegym.vn';
-
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final session = await _repository.verifyOtp(
+        challengeId: challengeId,
+        purpose: _purposeCode(targetPurpose),
+        code: code,
+      );
       if (targetPurpose == OtpPurpose.passwordReset) {
+        if (session.resetProof == null || session.resetProof!.isEmpty) {
+          return _validationError(
+            'Máy chủ không trả về bằng chứng đặt lại mật khẩu.',
+          );
+        }
         state = state.copyWith(
           status: AuthStatus.unauthenticated,
-          pendingEmail: email,
+          resetProof: session.resetProof,
         );
-        return true;
+      } else {
+        await _completeAuthentication(session);
       }
-
-      // Lưu token vào TokenStorage theo ADR-004
-      await ref
-          .read(tokenStorageProvider)
-          .saveTokens(
-            accessToken: 'viegym_jwt_access_${email.replaceAll('@', '_')}',
-            refreshToken: 'viegym_secure_refresh_${email.replaceAll('@', '_')}',
-          );
-
-      // Xác thực đăng ký thành công -> Cấp session authenticated
-      state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: AuthUser(
-          id: 'user_123',
-          email: email,
-          displayName: email.split('@').first,
-        ),
-      );
       return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể xác thực OTP.');
     }
-
-    state = state.copyWith(
-      status: AuthStatus.error,
-      errorMessage: 'Mã OTP không chính xác hoặc đã hết hạn.',
-    );
-    return false;
   }
 
   Future<bool> resendOtp({String? email, OtpPurpose? purpose}) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
-    final targetEmail = email ?? state.pendingEmail ?? 'user@viegym.vn';
+    final challengeId = state.pendingChallengeId;
+    if (challengeId == null || challengeId.isEmpty) {
+      return _validationError('Phiên xác thực OTP không hợp lệ.');
+    }
     final targetPurpose = purpose ?? state.pendingPurpose;
-
-    state = state.copyWith(
-      status: AuthStatus.pendingVerification,
-      pendingEmail: targetEmail,
-      pendingPurpose: targetPurpose,
-      resendCooldownSeconds: 60,
-    );
-    return true;
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final challenge = await _repository.resendOtp(
+        challengeId: challengeId,
+        purpose: _purposeCode(targetPurpose),
+      );
+      state = state.copyWith(
+        status: AuthStatus.pendingVerification,
+        pendingEmail: email?.trim() ?? state.pendingEmail,
+        pendingPurpose: targetPurpose,
+        pendingChallengeId: challenge.challengeId,
+        resendCooldownSeconds: 60,
+      );
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể gửi lại mã OTP.');
+    }
   }
 
   void setPendingVerification({
@@ -222,49 +181,25 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<bool> forgotPassword(String email) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
     if (email.trim().isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Vui lòng nhập địa chỉ email.',
-      );
-      return false;
+      return _validationError('Vui lòng nhập địa chỉ email.');
     }
-
-    state = state.copyWith(
-      status: AuthStatus.pendingVerification,
-      pendingEmail: email.trim(),
-      pendingPurpose: OtpPurpose.passwordReset,
-    );
-    return true;
-  }
-
-  void updateDisplayName(String displayName) {
-    final current = state.user;
-    state = state.copyWith(
-      user: AuthUser(
-        id: current?.id ?? 'user_123',
-        email: current?.email ?? 'viegym.user@gmail.com',
-        displayName: displayName.trim(),
-        phoneNumber: current?.phoneNumber,
-        avatarUrl: current?.avatarUrl,
-      ),
-    );
-  }
-
-  void updateProfile({required String displayName, String? phoneNumber}) {
-    final current = state.user;
-    state = state.copyWith(
-      user: AuthUser(
-        id: current?.id ?? 'user_123',
-        email: current?.email ?? 'viegym.user@gmail.com',
-        displayName: displayName.trim(),
-        phoneNumber: phoneNumber?.trim(),
-        avatarUrl: current?.avatarUrl,
-      ),
-    );
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      final challenge = await _repository.forgotPassword(email.trim());
+      state = state.copyWith(
+        status: AuthStatus.pendingVerification,
+        pendingEmail: email.trim(),
+        pendingPurpose: OtpPurpose.passwordReset,
+        pendingChallengeId: challenge.challengeId,
+        resendCooldownSeconds: 60,
+      );
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể gửi yêu cầu đặt lại mật khẩu.');
+    }
   }
 
   Future<bool> resetPassword({
@@ -272,39 +207,32 @@ class AuthController extends Notifier<AuthState> {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
-    if (newPassword.isEmpty || confirmPassword.isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Vui lòng điền đầy đủ mật khẩu mới.',
-      );
-      return false;
-    }
-
     if (newPassword != confirmPassword) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Mật khẩu xác nhận không khớp.',
-      );
-      return false;
+      return _validationError('Mật khẩu xác nhận không khớp.');
     }
-
-    if (newPassword.length < 6) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+    if (!_isStrongPassword(newPassword)) {
+      return _validationError(
+        'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ và số.',
       );
-      return false;
     }
-
-    // Reset password success -> chuyển về unauthenticated để đăng nhập lại
-    state = state.copyWith(
-      status: AuthStatus.unauthenticated,
-      pendingEmail: null,
-    );
-    return true;
+    final proof = state.resetProof;
+    if (proof == null || proof.isEmpty) {
+      return _validationError('Phiên đặt lại mật khẩu đã hết hạn.');
+    }
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      await _repository.resetPassword(
+        resetProof: proof,
+        newPassword: newPassword,
+      );
+      await _storage.clearTokens();
+      state = const AuthState();
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể đặt lại mật khẩu.');
+    }
   }
 
   Future<bool> changePassword({
@@ -312,90 +240,175 @@ class AuthController extends Notifier<AuthState> {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    state = state.copyWith(status: AuthStatus.authenticating);
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
     if (currentPassword.isEmpty ||
         newPassword.isEmpty ||
         confirmPassword.isEmpty) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Vui lòng điền đầy đủ các trường mật khẩu.',
-      );
-      return false;
+      return _validationError('Vui lòng điền đầy đủ các trường mật khẩu.');
     }
-
     if (newPassword != confirmPassword) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Mật khẩu xác nhận không khớp.',
-      );
-      return false;
+      return _validationError('Mật khẩu xác nhận không khớp.');
     }
-
-    if (newPassword.length < 6) {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+    if (!_isStrongPassword(newPassword)) {
+      return _validationError(
+        'Mật khẩu phải có ít nhất 8 ký tự, gồm chữ và số.',
       );
-      return false;
     }
-
-    state = state.copyWith(status: AuthStatus.authenticated);
-    return true;
+    state = state.copyWith(status: AuthStatus.authenticating);
+    try {
+      await _repository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      await _storage.clearTokens();
+      state = const AuthState();
+      return true;
+    } on AuthApiException catch (error) {
+      return _apiError(error);
+    } catch (_) {
+      return _validationError('Không thể đổi mật khẩu.');
+    }
   }
 
-  Future<void> logout() async {
-    // Xóa sạch credential trên storage theo ADR-004
-    await ref.read(tokenStorageProvider).clearTokens();
+  void updateDisplayName(String displayName) {
+    final current = state.user;
+    if (current == null) return;
+    state = state.copyWith(
+      user: AuthUser(
+        id: current.id,
+        email: current.email,
+        displayName: displayName.trim(),
+        phoneNumber: current.phoneNumber,
+        avatarUrl: current.avatarUrl,
+      ),
+    );
+  }
+
+  void updateProfile({required String displayName, String? phoneNumber}) {
+    final current = state.user;
+    if (current == null) return;
+    state = state.copyWith(
+      user: AuthUser(
+        id: current.id,
+        email: current.email,
+        displayName: displayName.trim(),
+        phoneNumber: phoneNumber?.trim(),
+        avatarUrl: current.avatarUrl,
+      ),
+    );
+  }
+
+  Future<void> logout({bool revokeRemote = true}) async {
+    final refreshToken = await _storage.getRefreshToken();
+    if (revokeRemote && refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await _repository.logout(refreshToken);
+      } catch (_) {
+        // Local logout must always succeed when the server is unavailable.
+      }
+    }
+    await _storage.clearTokens();
     state = const AuthState();
   }
 
-  /// Bootstrap khôi phục phiên làm việc từ secure storage
   Future<bool> restoreSession() async {
-    // Nếu phiên đã được khởi tạo/xác thực sẵn trong bộ nhớ (ví dụ do test override hoặc in-memory state)
     if (state.status == AuthStatus.authenticated && state.user != null) {
       return true;
     }
 
-    final hasToken = await ref.read(tokenStorageProvider).hasRefreshToken();
-    if (!hasToken) {
+    try {
+      final refreshToken = await _storage.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        state = const AuthState();
+        return false;
+      }
+      state = state.copyWith(status: AuthStatus.authenticating);
+      final session = await _repository.refresh(refreshToken);
+      await _completeAuthentication(session);
+      return true;
+    } catch (_) {
+      try {
+        await _storage.clearTokens();
+      } catch (_) {
+        // Platform storage can be unavailable in tests or unsupported targets.
+      }
       state = const AuthState();
       return false;
     }
+  }
 
-    final refreshToken = await ref.read(tokenStorageProvider).getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) {
-      state = const AuthState();
-      return false;
+  Future<void> _completeAuthentication(AuthSession session) async {
+    final accessToken = session.accessToken;
+    final refreshToken = session.refreshToken;
+    if (accessToken == null ||
+        accessToken.isEmpty ||
+        refreshToken == null ||
+        refreshToken.isEmpty) {
+      throw const AuthApiException(
+        code: 'INVALID_SESSION',
+        message: 'Máy chủ trả về phiên đăng nhập không hợp lệ',
+      );
     }
-
-    // Khôi phục access token vào memory
-    final restoredEmail = refreshToken
-        .replaceFirst('viegym_secure_refresh_', '')
-        .replaceAll('_', '@');
-    await ref
-        .read(tokenStorageProvider)
-        .updateAccessToken(
-          'viegym_jwt_access_${restoredEmail.replaceAll('@', '_')}',
-        );
-
-    state = state.copyWith(
-      status: AuthStatus.authenticated,
-      user: AuthUser(
-        id: 'user_123',
-        email: restoredEmail.contains('@')
-            ? restoredEmail
-            : 'viegym.user@gmail.com',
-        displayName:
-            (restoredEmail.contains('@')
-                    ? restoredEmail
-                    : 'viegym.user@gmail.com')
-                .split('@')
-                .first,
-      ),
+    await _storage.saveTokens(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     );
-    return true;
+    try {
+      final profile = await _repository.getCurrentUser();
+      state = state.copyWith(
+        status: AuthStatus.authenticated,
+        user: AuthUser(
+          id: profile.id,
+          email: profile.email,
+          displayName: profile.displayName,
+          avatarUrl: profile.avatarUrl,
+          healthProfileCompleted: profile.healthProfileCompleted,
+          equipmentCompleted: profile.equipmentCompleted,
+        ),
+      );
+    } catch (_) {
+      await _storage.clearTokens();
+      rethrow;
+    }
+  }
+
+  bool _validationError(String message) {
+    state = state.copyWith(status: AuthStatus.error, errorMessage: message);
+    return false;
+  }
+
+  bool _apiError(AuthApiException error) {
+    state = state.copyWith(
+      status: AuthStatus.error,
+      errorMessage: _localizedMessage(error),
+    );
+    return false;
+  }
+
+  static bool _isStrongPassword(String password) {
+    return password.length >= 8 &&
+        RegExp(r'[A-Za-z]').hasMatch(password) &&
+        RegExp(r'[0-9]').hasMatch(password);
+  }
+
+  static String _purposeCode(OtpPurpose purpose) {
+    return purpose == OtpPurpose.passwordReset ? 'PASSWORD_RESET' : 'REGISTER';
+  }
+
+  static String _localizedMessage(AuthApiException error) {
+    return switch (error.code) {
+      'INVALID_CREDENTIALS' => 'Email hoặc mật khẩu không chính xác.',
+      'ACCOUNT_PENDING' => 'Tài khoản chưa được xác thực.',
+      'ACCOUNT_LOCKED' => 'Tài khoản đã bị khóa.',
+      'ACCOUNT_DISABLED' => 'Tài khoản đã bị vô hiệu hóa.',
+      'EMAIL_ALREADY_EXISTS' => 'Email này đã được đăng ký.',
+      'OTP_INVALID' => 'Mã OTP không chính xác.',
+      'OTP_EXPIRED' => 'Mã OTP đã hết hạn.',
+      'OTP_ATTEMPTS_EXCEEDED' => 'Bạn đã nhập sai OTP quá số lần cho phép.',
+      'TOKEN_EXPIRED' ||
+      'TOKEN_REVOKED' => 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+      'NETWORK_ERROR' => 'Không thể kết nối đến máy chủ.',
+      _ => error.message,
+    };
   }
 }
 

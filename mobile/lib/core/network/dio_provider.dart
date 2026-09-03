@@ -63,7 +63,7 @@ final dioProvider = Provider<Dio>((ref) {
       return newAccessToken;
     },
     onSessionExpired: () async {
-      ref.read(authProvider.notifier).logout();
+      await ref.read(authProvider.notifier).logout(revokeRemote: false);
     },
   );
 

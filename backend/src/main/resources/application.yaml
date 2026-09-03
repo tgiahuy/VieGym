@@ -4,6 +4,18 @@ server:
 spring:
   application:
     name: viegym-backend
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/viegym}
     username: ${SPRING_DATASOURCE_USERNAME:viegym_app}
@@ -63,3 +75,5 @@ viegym:
       enabled: ${VIEGYM_DATASET_EXERCISE_ENABLED:false}
       path: ${VIEGYM_DATASET_EXERCISE_PATH:../datasets/exports/viegym_exercises_v1.json}
 
+otp:
+  provider: ${MAIL_PROVIDER:fake}

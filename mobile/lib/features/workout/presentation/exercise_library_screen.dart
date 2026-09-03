@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
+import '../../../shared/widgets/loading_view.dart';
 import '../application/exercise_catalog_controller.dart';
 import '../application/favorite_exercises_controller.dart';
-import '../data/exercise_catalog.dart';
 import '../domain/workout_models.dart';
 import 'widgets/exercise_filter_modal.dart';
 
@@ -33,7 +34,7 @@ class ExerciseLibraryScreen extends ConsumerStatefulWidget {
 class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   String _searchQuery = '';
   Set<String> _selectedMuscles = {};
-  Set<EquipmentType> _selectedEquipment = {};
+  Set<int> _selectedEquipmentIds = {};
   bool _onlyFavorites = false;
   final Set<String> _selectedExerciseIds = {};
   final Map<String, ExerciseDefinition> _selectedExercisesMap = {};
@@ -51,13 +52,13 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       context,
       initialTab: initialTab,
       selectedMuscles: _selectedMuscles,
-      selectedEquipment: _selectedEquipment,
+      selectedEquipmentIds: _selectedEquipmentIds,
     );
 
     if (result != null) {
       setState(() {
         _selectedMuscles = result.selectedMuscles;
-        _selectedEquipment = result.selectedEquipment;
+        _selectedEquipmentIds = result.selectedEquipmentIds;
       });
     }
   }
@@ -66,7 +67,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     setState(() {
       _searchQuery = '';
       _selectedMuscles.clear();
-      _selectedEquipment.clear();
+      _selectedEquipmentIds.clear();
       _onlyFavorites = false;
     });
   }
@@ -78,14 +79,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     final catalogState = ref.watch(exerciseCatalogControllerProvider);
     final normalized = _searchQuery.toLowerCase().trim();
 
-    final List<ExerciseDefinition> displayExercises;
-    if (catalogState.rawSummaries.isNotEmpty) {
-      displayExercises = catalogState.exercises;
-    } else {
-      displayExercises = catalogState.exercises.isNotEmpty
-          ? catalogState.exercises
-          : exerciseCatalog;
-    }
+    final displayExercises = catalogState.exercises;
 
     final filtered = displayExercises.where((exercise) {
       // 0. Favorite Filter
@@ -116,15 +110,15 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
 
       // 3. Equipment Filter
       final matchesEquipment =
-          _selectedEquipment.isEmpty ||
-          _selectedEquipment.contains(exercise.equipment);
+          _selectedEquipmentIds.isEmpty ||
+          exercise.equipmentIds.any(_selectedEquipmentIds.contains);
 
       return matchesQuery && matchesMuscle && matchesEquipment;
     }).toList();
 
     final hasActiveFilters =
         _selectedMuscles.isNotEmpty ||
-        _selectedEquipment.isNotEmpty ||
+        _selectedEquipmentIds.isNotEmpty ||
         _onlyFavorites;
 
     return Scaffold(
@@ -209,8 +203,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                   _FilterActionButton(
                     icon: Icons.filter_alt_outlined,
                     label: 'Thiết bị',
-                    count: _selectedEquipment.length,
-                    isActive: _selectedEquipment.isNotEmpty,
+                    count: _selectedEquipmentIds.length,
+                    isActive: _selectedEquipmentIds.isNotEmpty,
                     onTap: () => _openFilterModal(2),
                   ),
                   const SizedBox(width: 12),
@@ -275,7 +269,15 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
           // 4. Exercise List
           Expanded(
             child: (catalogState.isLoading && catalogState.exercises.isEmpty)
-                ? const Center(child: CircularProgressIndicator())
+                ? const LoadingView(message: 'Đang tải danh sách bài tập...')
+                : (catalogState.error != null && catalogState.exercises.isEmpty)
+                ? ErrorView(
+                    message:
+                        'Không thể tải danh sách bài tập. Vui lòng kiểm tra kết nối đến máy chủ.',
+                    onRetry: () => ref
+                        .read(exerciseCatalogControllerProvider.notifier)
+                        .loadInitial(),
+                  )
                 : filtered.isEmpty
                 ? Center(
                     child: Padding(

@@ -33,6 +33,8 @@ class AuthUser {
     required this.displayName,
     this.phoneNumber,
     this.avatarUrl,
+    this.healthProfileCompleted = false,
+    this.equipmentCompleted = false,
   });
 
   final String id;
@@ -40,6 +42,8 @@ class AuthUser {
   final String displayName;
   final String? phoneNumber;
   final String? avatarUrl;
+  final bool healthProfileCompleted;
+  final bool equipmentCompleted;
 }
 
 enum AuthStatus {
@@ -58,6 +62,8 @@ class AuthState {
     this.pendingEmail,
     this.pendingPurpose = OtpPurpose.register,
     this.resendCooldownSeconds = 0,
+    this.pendingChallengeId,
+    this.resetProof,
   });
 
   final AuthStatus status;
@@ -66,6 +72,8 @@ class AuthState {
   final String? pendingEmail;
   final OtpPurpose pendingPurpose;
   final int resendCooldownSeconds;
+  final String? pendingChallengeId;
+  final String? resetProof;
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.authenticating;
@@ -90,6 +98,8 @@ class AuthState {
     String? pendingEmail,
     OtpPurpose? pendingPurpose,
     int? resendCooldownSeconds,
+    String? pendingChallengeId,
+    String? resetProof,
   }) {
     return AuthState(
       status: status ?? this.status,
@@ -99,6 +109,8 @@ class AuthState {
       pendingPurpose: pendingPurpose ?? this.pendingPurpose,
       resendCooldownSeconds:
           resendCooldownSeconds ?? this.resendCooldownSeconds,
+      pendingChallengeId: pendingChallengeId ?? this.pendingChallengeId,
+      resetProof: resetProof ?? this.resetProof,
     );
   }
 }

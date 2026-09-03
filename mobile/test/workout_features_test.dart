@@ -356,6 +356,11 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: [
+              exerciseCatalogControllerProvider.overrideWith(
+                _SeededExerciseCatalogController.new,
+              ),
+            ],
             child: MaterialApp(
               theme: AppTheme.darkTheme,
               home: const WorkoutTabScreen(),
@@ -894,8 +899,23 @@ void main() {
         });
 
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(home: ExerciseLibraryScreen()),
+          ProviderScope(
+            overrides: [
+              exerciseCatalogControllerProvider.overrideWith(
+                _SeededExerciseCatalogController.new,
+              ),
+              equipmentListProvider.overrideWith(
+                (ref) async => const [
+                  EquipmentItem(
+                    id: 7,
+                    code: 'RESISTANCE_BAND',
+                    name: 'Dây kháng lực từ DB',
+                    description: 'Thiết bị kiểm thử lấy từ API',
+                  ),
+                ],
+              ),
+            ],
+            child: const MaterialApp(home: ExerciseLibraryScreen()),
           ),
         );
         await tester.pumpAndSettle();
@@ -922,6 +942,11 @@ void main() {
         expect(find.text('TORSO (THÂN TRÊN)'), findsOneWidget);
         expect(find.text('Áp dụng bộ lọc'), findsOneWidget);
         expect(find.text('Đặt lại'), findsOneWidget);
+
+        // Equipment tab renders items supplied by the backend provider.
+        await tester.tap(find.text('Thiết bị').last);
+        await tester.pumpAndSettle();
+        expect(find.text('Dây kháng lực từ DB'), findsOneWidget);
 
         // Tap apply
         await tester.tap(find.text('Áp dụng bộ lọc'));
@@ -1476,7 +1501,7 @@ void main() {
     );
 
     test(
-      'ExerciseCatalogController handles search query, filtering and fallback',
+      'ExerciseCatalogController starts empty and handles search filters',
       () async {
         final container = ProviderContainer();
         addTearDown(container.dispose);
@@ -1485,10 +1510,7 @@ void main() {
           exerciseCatalogControllerProvider.notifier,
         );
         expect(
-          container
-              .read(exerciseCatalogControllerProvider)
-              .exercises
-              .isNotEmpty,
+          container.read(exerciseCatalogControllerProvider).exercises.isEmpty,
           isTrue,
         );
 
@@ -1563,6 +1585,8 @@ void main() {
         expect(def.primaryMuscle, 'Ngực');
         expect(def.secondaryMuscles, contains('Tay sau'));
         expect(def.equipment, EquipmentType.bodyweight);
+        expect(def.equipmentIds, [1]);
+        expect(def.equipmentCodes, ['BODYWEIGHT']);
 
         final detailJson = {
           'id': 102,
@@ -1598,6 +1622,7 @@ void main() {
 
         final detailDef = detail.toExerciseDefinition();
         expect(detailDef.instructions.length, 2);
+        expect(detailDef.equipmentIds, [1]);
         expect(detailDef.commonMistakes.first.mistake, 'Đung đưa người lấy đà');
       },
     );
@@ -1630,4 +1655,14 @@ class _TestWorkoutScheduleNotifier extends WorkoutScheduleController {
 
   @override
   WorkoutScheduleState build() => _initial;
+}
+
+class _SeededExerciseCatalogController extends ExerciseCatalogController {
+  @override
+  ExerciseCatalogState build() => ExerciseCatalogState(
+    exercises: List<ExerciseDefinition>.from(exerciseCatalog),
+  );
+
+  @override
+  Future<void> loadInitial() async {}
 }

@@ -48,13 +48,11 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đổi mật khẩu thành công!'),
+            content: Text('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'),
             backgroundColor: Colors.green,
           ),
         );
-        _currentPasswordController.clear();
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
+        context.go('/login');
       } else {
         final error = ref.read(authProvider).errorMessage;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -177,8 +175,12 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Vui lòng nhập mật khẩu mới';
                         }
-                        if (value.length < 6) {
-                          return 'Mật khẩu phải có ít nhất 6 ký tự';
+                        if (value.length < 8) {
+                          return 'Mật khẩu phải có ít nhất 8 ký tự';
+                        }
+                        if (!RegExp(r'[A-Za-z]').hasMatch(value) ||
+                            !RegExp(r'\d').hasMatch(value)) {
+                          return 'Mật khẩu phải gồm chữ và số';
                         }
                         return null;
                       },

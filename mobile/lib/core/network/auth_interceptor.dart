@@ -63,11 +63,42 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    // Public endpoints must not receive a stale bearer token: Spring's JWT
+    // filter can reject an invalid header before permitAll is evaluated.
+    if (_isPublicRequest(options)) {
+      options.headers.remove('Authorization');
+      return super.onRequest(options, handler);
+    }
+
     final token = await getAccessToken();
     if (token != null && token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
     }
     super.onRequest(options, handler);
+  }
+
+  static bool _isPublicRequest(RequestOptions options) {
+    final path = options.path;
+    if (options.method.toUpperCase() == 'GET') {
+      final isCatalog =
+          path == '/api/v1/exercises' ||
+          path.startsWith('/api/v1/exercises/') ||
+          path == '/api/v1/muscle-groups' ||
+          path.startsWith('/api/v1/muscle-groups/') ||
+          path == '/api/v1/equipment' ||
+          path.startsWith('/api/v1/equipment/');
+      if (isCatalog) return true;
+    }
+
+    if (options.method.toUpperCase() != 'POST') return false;
+    return path == '/api/v1/auth/register' ||
+        path == '/api/v1/auth/login' ||
+        path == '/api/v1/auth/google' ||
+        path == '/api/v1/auth/facebook' ||
+        path == '/api/v1/auth/refresh' ||
+        path.startsWith('/api/v1/auth/otp/') ||
+        path == '/api/v1/auth/password/forgot' ||
+        path == '/api/v1/auth/password/reset';
   }
 
   @override
@@ -80,9 +111,9 @@ class AuthInterceptor extends Interceptor {
     // Only handle 401 from backend business endpoints, not from the refresh endpoint
     // to avoid infinite recursion loops.
     final isUnauthorized = response?.statusCode == 401;
-    final isRefreshPath = err.requestOptions.path.contains('/auth/refresh');
+    final isPublicPath = _isPublicRequest(err.requestOptions);
 
-    if (!isUnauthorized || isRefreshPath) {
+    if (!isUnauthorized || isPublicPath) {
       return super.onError(err, handler);
     }
 

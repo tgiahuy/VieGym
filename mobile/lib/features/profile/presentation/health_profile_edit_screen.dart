@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../onboarding/application/health_profile_controller.dart';
+import '../../onboarding/data/health_profile_repository.dart';
 import '../../onboarding/domain/user_profile_models.dart';
 
 class HealthProfileEditScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _HealthProfileEditScreenState
   late FitnessGoal _goal;
   late ActivityLevel _activityLevel;
   late TrainingExperience _experience;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -38,7 +40,10 @@ class _HealthProfileEditScreenState
     _experience = profile.experience;
   }
 
-  void _save() {
+  Future<void> _save() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
     ref
         .read(healthProfileProvider.notifier)
         .updateProfile(
@@ -52,10 +57,32 @@ class _HealthProfileEditScreenState
           experience: _experience,
         );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã cập nhật chỉ số thể chất & mục tiêu!')),
-    );
-    context.pop();
+    try {
+      await ref.read(healthProfileProvider.notifier).saveEditedProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã cập nhật chỉ số thể chất & mục tiêu!'),
+        ),
+      );
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is HealthProfileApiException
+                ? e.message
+                : 'Không thể cập nhật hồ sơ. Vui lòng thử lại.',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -251,17 +278,26 @@ class _HealthProfileEditScreenState
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
         child: FilledButton(
-          onPressed: _save,
+          onPressed: _isSaving ? null : _save,
           style: FilledButton.styleFrom(
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          child: const Text(
-            'Cập nhật chỉ số',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  'Cập nhật chỉ số',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
         ),
       ),
     );

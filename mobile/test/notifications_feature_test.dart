@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:viegym/core/network/token_storage.dart';
 import 'package:viegym/core/router/app_router.dart';
 import 'package:viegym/features/notifications/application/notifications_controller.dart';
 import 'package:viegym/features/notifications/presentation/notifications_sheet.dart';
@@ -89,7 +90,11 @@ void main() {
     testWidgets('Every default notification opens a registered route', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(DefaultTokenStorage()),
+        ],
+      );
       addTearDown(container.dispose);
 
       await tester.pumpWidget(

@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/equipment_catalog.dart';
+import '../data/health_profile_repository.dart';
 import '../domain/user_profile_models.dart';
 
 class HealthProfileController extends Notifier<HealthProfile> {
   @override
   HealthProfile build() => const HealthProfile();
+
+  HealthProfileRepository get _repo =>
+      ref.read(healthProfileRepositoryProvider);
 
   void completeProfile() {
     state = state.copyWith(isCompleted: true);
@@ -23,7 +27,19 @@ class HealthProfileController extends Notifier<HealthProfile> {
   }
 
   void updateAge(int age) {
-    state = state.copyWith(age: age);
+    state = state.copyWith(
+      age: age,
+      dateOfBirth: DateTime(DateTime.now().year - age, 1, 1),
+    );
+  }
+
+  void updateDateOfBirth(DateTime dateOfBirth) {
+    final now = DateTime.now();
+    final calculatedAge = now.year - dateOfBirth.year;
+    state = state.copyWith(
+      dateOfBirth: dateOfBirth,
+      age: calculatedAge > 0 ? calculatedAge : state.age,
+    );
   }
 
   void updateHeight(int heightCm) {
@@ -62,6 +78,7 @@ class HealthProfileController extends Notifier<HealthProfile> {
     String? nickname,
     BiologicalGender? gender,
     int? age,
+    DateTime? dateOfBirth,
     int? heightCm,
     int? weightKg,
     int? targetWeightKg,
@@ -71,11 +88,19 @@ class HealthProfileController extends Notifier<HealthProfile> {
     int? workoutDaysPerWeek,
     int? sessionDurationMinutes,
     bool? isCompleted,
+    double? serverBmi,
+    int? serverBmr,
+    int? serverTdee,
+    int? targetCalories,
+    double? targetProtein,
+    double? targetCarbs,
+    double? targetFat,
   }) {
     state = state.copyWith(
       nickname: nickname,
       gender: gender,
       age: age,
+      dateOfBirth: dateOfBirth,
       heightCm: heightCm,
       weightKg: weightKg,
       targetWeightKg: targetWeightKg,
@@ -85,6 +110,51 @@ class HealthProfileController extends Notifier<HealthProfile> {
       workoutDaysPerWeek: workoutDaysPerWeek,
       sessionDurationMinutes: sessionDurationMinutes,
       isCompleted: isCompleted,
+      serverBmi: serverBmi,
+      serverBmr: serverBmr,
+      serverTdee: serverTdee,
+      targetCalories: targetCalories,
+      targetProtein: targetProtein,
+      targetCarbs: targetCarbs,
+      targetFat: targetFat,
+    );
+  }
+
+  Future<bool> loadProfileFromRemote() async {
+    try {
+      final remote = await _repo.getProfile();
+      if (remote != null) {
+        state = remote.copyWith(
+          nickname: state.nickname.isNotEmpty ? state.nickname : '',
+          isCompleted: true,
+        );
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> submitInitialProfile() async {
+    final created = await _repo.createProfile(state);
+    state = created.copyWith(
+      nickname: state.nickname.isNotEmpty ? state.nickname : created.nickname,
+      targetWeightKg: state.targetWeightKg,
+      workoutDaysPerWeek: state.workoutDaysPerWeek,
+      sessionDurationMinutes: state.sessionDurationMinutes,
+      isCompleted: true,
+    );
+  }
+
+  Future<void> saveEditedProfile() async {
+    final updated = await _repo.updateProfile(state);
+    state = updated.copyWith(
+      nickname: state.nickname.isNotEmpty ? state.nickname : updated.nickname,
+      targetWeightKg: state.targetWeightKg,
+      workoutDaysPerWeek: state.workoutDaysPerWeek,
+      sessionDurationMinutes: state.sessionDurationMinutes,
+      isCompleted: true,
     );
   }
 }
@@ -132,6 +202,16 @@ class EquipmentOnboardingNotifier extends Notifier<bool> {
 
   void complete() => state = true;
   void reset() => state = false;
+
+  Future<void> saveAndComplete(Set<String> selectedIds) async {
+    try {
+      await ref
+          .read(healthProfileRepositoryProvider)
+          .saveEquipmentPreferences(selectedIds);
+    } finally {
+      state = true;
+    }
+  }
 }
 
 final equipmentOnboardingCompletedProvider =

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Secure Token Storage interface following ADR-004:
 /// - Access Token: In-memory only (never written to disk/SharedPreferences/logs)
@@ -86,7 +87,60 @@ class DefaultTokenStorage implements TokenStorage {
   }
 }
 
+/// Production token storage. Access tokens stay in memory while refresh
+/// tokens are persisted by Keychain/Keystore through flutter_secure_storage.
+class SecureTokenStorage implements TokenStorage {
+  SecureTokenStorage({FlutterSecureStorage? secureStorage})
+    : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+
+  final FlutterSecureStorage _secureStorage;
+  String? _inMemoryAccessToken;
+  static const String _refreshTokenKey = 'viegym_secure_refresh_token';
+
+  @override
+  Future<String?> getAccessToken() async => _inMemoryAccessToken;
+
+  @override
+  Future<String?> getRefreshToken() =>
+      _secureStorage.read(key: _refreshTokenKey);
+
+  @override
+  Future<void> saveTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    _inMemoryAccessToken = accessToken;
+    await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
+  }
+
+  @override
+  Future<void> updateAccessToken(String newAccessToken) async {
+    _inMemoryAccessToken = newAccessToken;
+  }
+
+  @override
+  Future<void> rotateTokens({
+    required String newAccessToken,
+    required String newRefreshToken,
+  }) async {
+    _inMemoryAccessToken = newAccessToken;
+    await _secureStorage.write(key: _refreshTokenKey, value: newRefreshToken);
+  }
+
+  @override
+  Future<void> clearTokens() async {
+    _inMemoryAccessToken = null;
+    await _secureStorage.delete(key: _refreshTokenKey);
+  }
+
+  @override
+  Future<bool> hasRefreshToken() async {
+    final token = await getRefreshToken();
+    return token != null && token.isNotEmpty;
+  }
+}
+
 /// Provider for TokenStorage dependency injection
 final tokenStorageProvider = Provider<TokenStorage>((ref) {
-  return DefaultTokenStorage();
+  return SecureTokenStorage();
 }, name: 'tokenStorageProvider');

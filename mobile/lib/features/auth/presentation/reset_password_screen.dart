@@ -31,7 +31,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     super.dispose();
   }
 
-  bool get _hasMinLength => _newPasswordController.text.length >= 6;
+  bool get _hasMinLength => _newPasswordController.text.length >= 8;
   bool get _hasLetter =>
       RegExp(r'[a-zA-Z]').hasMatch(_newPasswordController.text);
   bool get _hasNumber => RegExp(r'[0-9]').hasMatch(_newPasswordController.text);
@@ -173,8 +173,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập mật khẩu mới';
                     }
-                    if (value.length < 6) {
-                      return 'Mật khẩu phải có ít nhất 6 ký tự';
+                    if (value.length < 8) {
+                      return 'Mật khẩu phải có ít nhất 8 ký tự';
                     }
                     return null;
                   },
@@ -254,7 +254,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       const SizedBox(height: 8),
                       _buildRequirementItem(
                         isMet: _hasMinLength,
-                        text: 'Tối thiểu 6 ký tự',
+                        text: 'Tối thiểu 8 ký tự',
                         colors: colors,
                       ),
                       _buildRequirementItem(

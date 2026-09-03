@@ -1,40 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/exercise_catalog_controller.dart';
+import '../../domain/exercise_api_models.dart';
 import '../../domain/muscle_models.dart';
-import '../../domain/workout_models.dart';
 import 'body_muscle_map.dart';
 
 class ExerciseFilterResult {
   const ExerciseFilterResult({
     required this.selectedMuscles,
-    required this.selectedEquipment,
+    required this.selectedEquipmentIds,
   });
 
   final Set<String> selectedMuscles;
-  final Set<EquipmentType> selectedEquipment;
+  final Set<int> selectedEquipmentIds;
 
-  bool get isEmpty => selectedMuscles.isEmpty && selectedEquipment.isEmpty;
+  bool get isEmpty => selectedMuscles.isEmpty && selectedEquipmentIds.isEmpty;
   bool get isNotEmpty => !isEmpty;
 }
 
-class ExerciseFilterModal extends StatefulWidget {
+class ExerciseFilterModal extends ConsumerStatefulWidget {
   const ExerciseFilterModal({
     super.key,
     required this.initialTab,
     required this.selectedMuscles,
-    required this.selectedEquipment,
+    required this.selectedEquipmentIds,
   });
 
   final int initialTab; // 0 = Tất cả, 1 = Nhóm cơ, 2 = Thiết bị
   final Set<String> selectedMuscles;
-  final Set<EquipmentType> selectedEquipment;
+  final Set<int> selectedEquipmentIds;
 
   static Future<ExerciseFilterResult?> show(
     BuildContext context, {
     int initialTab = 1,
     Set<String> selectedMuscles = const {},
-    Set<EquipmentType> selectedEquipment = const {},
+    Set<int> selectedEquipmentIds = const {},
   }) {
     return showModalBottomSheet<ExerciseFilterResult>(
       context: context,
@@ -43,19 +45,20 @@ class ExerciseFilterModal extends StatefulWidget {
       builder: (context) => ExerciseFilterModal(
         initialTab: initialTab,
         selectedMuscles: selectedMuscles,
-        selectedEquipment: selectedEquipment,
+        selectedEquipmentIds: selectedEquipmentIds,
       ),
     );
   }
 
   @override
-  State<ExerciseFilterModal> createState() => _ExerciseFilterModalState();
+  ConsumerState<ExerciseFilterModal> createState() =>
+      _ExerciseFilterModalState();
 }
 
-class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
+class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
   late int _currentTab; // 0 = Tất cả, 1 = Nhóm cơ, 2 = Thiết bị
   late Set<String> _selectedMuscles;
-  late Set<EquipmentType> _selectedEquipment;
+  late Set<int> _selectedEquipmentIds;
   String _searchQuery = '';
 
   @override
@@ -63,7 +66,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
     super.initState();
     _currentTab = widget.initialTab;
     _selectedMuscles = Set.from(widget.selectedMuscles);
-    _selectedEquipment = Set.from(widget.selectedEquipment);
+    _selectedEquipmentIds = Set.from(widget.selectedEquipmentIds);
   }
 
   void _toggleMuscle(String muscle) {
@@ -77,13 +80,13 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
     });
   }
 
-  void _toggleEquipment(EquipmentType equip) {
+  void _toggleEquipment(int equipmentId) {
     HapticFeedback.selectionClick();
     setState(() {
-      if (_selectedEquipment.contains(equip)) {
-        _selectedEquipment.remove(equip);
+      if (_selectedEquipmentIds.contains(equipmentId)) {
+        _selectedEquipmentIds.remove(equipmentId);
       } else {
-        _selectedEquipment.add(equip);
+        _selectedEquipmentIds.add(equipmentId);
       }
     });
   }
@@ -92,7 +95,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
     HapticFeedback.lightImpact();
     setState(() {
       _selectedMuscles.clear();
-      _selectedEquipment.clear();
+      _selectedEquipmentIds.clear();
     });
   }
 
@@ -101,7 +104,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
     Navigator.of(context).pop(
       ExerciseFilterResult(
         selectedMuscles: _selectedMuscles,
-        selectedEquipment: _selectedEquipment,
+        selectedEquipmentIds: _selectedEquipmentIds,
       ),
     );
   }
@@ -116,6 +119,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
+    final equipmentAsync = ref.watch(equipmentListProvider);
 
     return Container(
       height: size.height * 0.88,
@@ -223,13 +227,13 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
                 _buildSegmentTab(
                   0,
                   'Tất cả',
-                  count: _selectedMuscles.length + _selectedEquipment.length,
+                  count: _selectedMuscles.length + _selectedEquipmentIds.length,
                 ),
                 _buildSegmentTab(1, 'Nhóm cơ', count: _selectedMuscles.length),
                 _buildSegmentTab(
                   2,
                   'Thiết bị',
-                  count: _selectedEquipment.length,
+                  count: _selectedEquipmentIds.length,
                 ),
               ],
             ),
@@ -331,48 +335,14 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
 
                 if (_currentTab == 0 || _currentTab == 2) ...[
                   const SizedBox(height: 14),
-                  _buildSectionHeader('TẠ TỰ DO (FREE WEIGHTS)'),
-                  _buildEquipmentCard(
-                    title: 'Tạ đơn (Dumbbell)',
-                    subtitle: 'Dumbbell',
-                    type: EquipmentType.dumbbell,
-                    icon: Icons.fitness_center_rounded,
-                  ),
-                  _buildEquipmentCard(
-                    title: 'Tạ đòn (Barbell)',
-                    subtitle: 'Barbell',
-                    type: EquipmentType.barbell,
-                    icon: Icons.sports_gymnastics_rounded,
-                  ),
-
-                  const SizedBox(height: 12),
-                  _buildSectionHeader('TỰ THÂN (BODYWEIGHT)'),
-                  _buildEquipmentCard(
-                    title: 'Trọng lượng cơ thể',
-                    subtitle: 'Bodyweight',
-                    type: EquipmentType.bodyweight,
-                    icon: Icons.directions_run_rounded,
-                  ),
-
-                  const SizedBox(height: 12),
-                  _buildSectionHeader('MÁY TẬP & CÁP (MACHINES & CABLES)'),
-                  _buildEquipmentCard(
-                    title: 'Máy tập (Machine)',
-                    subtitle: 'Machine',
-                    type: EquipmentType.machine,
-                    icon: Icons.precision_manufacturing_rounded,
-                  ),
-                  _buildEquipmentCard(
-                    title: 'Máy kéo cáp (Cable)',
-                    subtitle: 'Cable Machine',
-                    type: EquipmentType.cable,
-                    icon: Icons.cable_rounded,
-                  ),
-                  _buildEquipmentCard(
-                    title: 'Ghế tập (Bench)',
-                    subtitle: 'Bench',
-                    type: EquipmentType.bench,
-                    icon: Icons.event_seat_rounded,
+                  _buildSectionHeader('THIẾT BỊ TỪ HỆ THỐNG'),
+                  equipmentAsync.when(
+                    data: _buildEquipmentList,
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(28),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (_, _) => _buildEquipmentError(),
                   ),
                 ],
               ],
@@ -678,19 +648,45 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
     );
   }
 
-  Widget _buildEquipmentCard({
-    required String title,
-    required String subtitle,
-    required EquipmentType type,
-    required IconData icon,
-  }) {
+  Widget _buildEquipmentList(List<EquipmentItem> equipment) {
+    if (equipment.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: Text('Chưa có thiết bị trong hệ thống')),
+      );
+    }
+
+    return Column(children: equipment.map(_buildEquipmentCard).toList());
+  }
+
+  Widget _buildEquipmentError() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          const Text('Không thể tải danh sách thiết bị'),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => ref.invalidate(equipmentListProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEquipmentCard(EquipmentItem equipment) {
+    final subtitle = equipment.description?.trim().isNotEmpty == true
+        ? equipment.description!
+        : equipment.code;
     if (_searchQuery.isNotEmpty &&
-        !title.toLowerCase().contains(_searchQuery) &&
+        !equipment.name.toLowerCase().contains(_searchQuery) &&
         !subtitle.toLowerCase().contains(_searchQuery)) {
       return const SizedBox.shrink();
     }
 
-    final isSelected = _selectedEquipment.contains(type);
+    final isSelected = _selectedEquipmentIds.contains(equipment.id);
     final colors = Theme.of(context).colorScheme;
 
     return Container(
@@ -709,7 +705,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _toggleEquipment(type),
+        onTap: () => _toggleEquipment(equipment.id),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
@@ -724,7 +720,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  icon,
+                  _equipmentIcon(equipment.code),
                   color: isSelected ? colors.primary : Colors.white70,
                   size: 22,
                 ),
@@ -736,7 +732,7 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      equipment.name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -772,5 +768,17 @@ class _ExerciseFilterModalState extends State<ExerciseFilterModal> {
         ),
       ),
     );
+  }
+
+  IconData _equipmentIcon(String code) {
+    final normalized = code.toUpperCase();
+    if (normalized.contains('BODYWEIGHT')) return Icons.directions_run_rounded;
+    if (normalized.contains('CABLE')) return Icons.cable_rounded;
+    if (normalized.contains('MACHINE')) {
+      return Icons.precision_manufacturing_rounded;
+    }
+    if (normalized.contains('BENCH')) return Icons.event_seat_rounded;
+    if (normalized.contains('TREADMILL')) return Icons.directions_run_rounded;
+    return Icons.fitness_center_rounded;
   }
 }

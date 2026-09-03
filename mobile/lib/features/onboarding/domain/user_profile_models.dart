@@ -10,6 +10,44 @@ enum BiologicalGender {
   const BiologicalGender(this.label, this.description);
   final String label;
   final String description;
+
+  String toBackendGender() {
+    switch (this) {
+      case BiologicalGender.male:
+        return 'MALE';
+      case BiologicalGender.female:
+        return 'FEMALE';
+      case BiologicalGender.other:
+        return 'OTHER';
+      case BiologicalGender.preferNotToSay:
+        return 'UNSPECIFIED';
+    }
+  }
+
+  String toBackendCalculationSex() {
+    switch (this) {
+      case BiologicalGender.male:
+        return 'MALE';
+      case BiologicalGender.female:
+        return 'FEMALE';
+      case BiologicalGender.other:
+      case BiologicalGender.preferNotToSay:
+        return 'UNSPECIFIED';
+    }
+  }
+
+  static BiologicalGender fromBackend(String? gender) {
+    switch (gender?.toUpperCase()) {
+      case 'MALE':
+        return BiologicalGender.male;
+      case 'FEMALE':
+        return BiologicalGender.female;
+      case 'OTHER':
+        return BiologicalGender.other;
+      default:
+        return BiologicalGender.preferNotToSay;
+    }
+  }
 }
 
 enum FitnessGoal {
@@ -38,6 +76,33 @@ enum FitnessGoal {
   final String label;
   final String description;
   final String badge;
+
+  String toBackend() {
+    switch (this) {
+      case FitnessGoal.gainMuscle:
+        return 'GAIN_MUSCLE';
+      case FitnessGoal.loseFat:
+        return 'LOSE_WEIGHT';
+      case FitnessGoal.buildStrength:
+        return 'GAIN_WEIGHT';
+      case FitnessGoal.maintain:
+        return 'MAINTAIN_WEIGHT';
+    }
+  }
+
+  static FitnessGoal fromBackend(String? goal) {
+    switch (goal?.toUpperCase()) {
+      case 'GAIN_MUSCLE':
+        return FitnessGoal.gainMuscle;
+      case 'LOSE_WEIGHT':
+        return FitnessGoal.loseFat;
+      case 'GAIN_WEIGHT':
+        return FitnessGoal.buildStrength;
+      case 'MAINTAIN_WEIGHT':
+      default:
+        return FitnessGoal.maintain;
+    }
+  }
 }
 
 enum ActivityLevel {
@@ -66,6 +131,34 @@ enum ActivityLevel {
   final String label;
   final String description;
   final double multiplier;
+
+  String toBackend() {
+    switch (this) {
+      case ActivityLevel.sedentary:
+        return 'SEDENTARY';
+      case ActivityLevel.light:
+        return 'LIGHT';
+      case ActivityLevel.active:
+        return 'ACTIVE';
+      case ActivityLevel.veryActive:
+        return 'VERY_ACTIVE';
+    }
+  }
+
+  static ActivityLevel fromBackend(String? level) {
+    switch (level?.toUpperCase()) {
+      case 'SEDENTARY':
+        return ActivityLevel.sedentary;
+      case 'LIGHT':
+        return ActivityLevel.light;
+      case 'VERY_ACTIVE':
+        return ActivityLevel.veryActive;
+      case 'MODERATE':
+      case 'ACTIVE':
+      default:
+        return ActivityLevel.active;
+    }
+  }
 }
 
 enum TrainingExperience {
@@ -89,6 +182,29 @@ enum TrainingExperience {
   final String label;
   final String description;
   final String badge;
+
+  String toBackend() {
+    switch (this) {
+      case TrainingExperience.beginner:
+        return 'BEGINNER';
+      case TrainingExperience.intermediate:
+        return 'INTERMEDIATE';
+      case TrainingExperience.advanced:
+        return 'ADVANCED';
+    }
+  }
+
+  static TrainingExperience fromBackend(String? experience) {
+    switch (experience?.toUpperCase()) {
+      case 'BEGINNER':
+        return TrainingExperience.beginner;
+      case 'ADVANCED':
+        return TrainingExperience.advanced;
+      case 'INTERMEDIATE':
+      default:
+        return TrainingExperience.intermediate;
+    }
+  }
 }
 
 class HealthProfile {
@@ -96,6 +212,7 @@ class HealthProfile {
     this.nickname = '',
     this.gender = BiologicalGender.male,
     this.age = 25,
+    this.dateOfBirth,
     this.heightCm = 170,
     this.weightKg = 65,
     this.targetWeightKg = 65,
@@ -105,11 +222,19 @@ class HealthProfile {
     this.workoutDaysPerWeek = 4,
     this.sessionDurationMinutes = 60,
     this.isCompleted = true,
+    this.serverBmi,
+    this.serverBmr,
+    this.serverTdee,
+    this.targetCalories,
+    this.targetProtein,
+    this.targetCarbs,
+    this.targetFat,
   });
 
   final String nickname;
   final BiologicalGender gender;
   final int age;
+  final DateTime? dateOfBirth;
   final int heightCm;
   final int weightKg;
   final int targetWeightKg;
@@ -120,7 +245,20 @@ class HealthProfile {
   final int sessionDurationMinutes;
   final bool isCompleted;
 
-  double get bmi => weightKg / ((heightCm / 100) * (heightCm / 100));
+  final double? serverBmi;
+  final int? serverBmr;
+  final int? serverTdee;
+  final int? targetCalories;
+  final double? targetProtein;
+  final double? targetCarbs;
+  final double? targetFat;
+
+  DateTime get effectiveDateOfBirth =>
+      dateOfBirth ?? DateTime(DateTime.now().year - age, 1, 1);
+
+  double get bmi =>
+      serverBmi ??
+      (heightCm > 0 ? weightKg / ((heightCm / 100) * (heightCm / 100)) : 0.0);
 
   String get bmiCategory {
     if (bmi < 18.5) return 'Nhẹ cân';
@@ -134,6 +272,7 @@ class HealthProfile {
 
   /// Mifflin-St Jeor equation for BMR
   int get bmr {
+    if (serverBmr != null) return serverBmr!;
     final base = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
     return switch (gender) {
       BiologicalGender.male => (base + 5).round(),
@@ -145,6 +284,7 @@ class HealthProfile {
 
   /// Total Daily Energy Expenditure
   int get tdee {
+    if (serverTdee != null) return serverTdee!;
     final baseTdee = (bmr * activityLevel.multiplier).round();
     return switch (goal) {
       FitnessGoal.gainMuscle => baseTdee + 300,
@@ -158,6 +298,7 @@ class HealthProfile {
     String? nickname,
     BiologicalGender? gender,
     int? age,
+    DateTime? dateOfBirth,
     int? heightCm,
     int? weightKg,
     int? targetWeightKg,
@@ -167,11 +308,19 @@ class HealthProfile {
     int? workoutDaysPerWeek,
     int? sessionDurationMinutes,
     bool? isCompleted,
+    double? serverBmi,
+    int? serverBmr,
+    int? serverTdee,
+    int? targetCalories,
+    double? targetProtein,
+    double? targetCarbs,
+    double? targetFat,
   }) {
     return HealthProfile(
       nickname: nickname ?? this.nickname,
       gender: gender ?? this.gender,
       age: age ?? this.age,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
       targetWeightKg: targetWeightKg ?? this.targetWeightKg,
@@ -182,6 +331,13 @@ class HealthProfile {
       sessionDurationMinutes:
           sessionDurationMinutes ?? this.sessionDurationMinutes,
       isCompleted: isCompleted ?? this.isCompleted,
+      serverBmi: serverBmi ?? this.serverBmi,
+      serverBmr: serverBmr ?? this.serverBmr,
+      serverTdee: serverTdee ?? this.serverTdee,
+      targetCalories: targetCalories ?? this.targetCalories,
+      targetProtein: targetProtein ?? this.targetProtein,
+      targetCarbs: targetCarbs ?? this.targetCarbs,
+      targetFat: targetFat ?? this.targetFat,
     );
   }
 }

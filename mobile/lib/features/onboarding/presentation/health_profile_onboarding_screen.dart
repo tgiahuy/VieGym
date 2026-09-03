@@ -8,6 +8,7 @@ import '../../../shared/widgets/ruler_picker.dart';
 import '../../../shared/widgets/selectable_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../application/health_profile_controller.dart';
+import '../data/health_profile_repository.dart';
 import '../domain/user_profile_models.dart';
 
 class HealthProfileOnboardingScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _HealthProfileOnboardingScreenState
   int _currentStep = 1;
   static const int _totalSteps = 11;
   static const int _currentYear = 2026;
+  bool _isSubmitting = false;
 
   late final TextEditingController _nicknameController;
   String? _nicknameError;
@@ -83,15 +85,38 @@ class _HealthProfileOnboardingScreenState
     _nextStep();
   }
 
-  void _finishHealthProfile() {
-    ref.read(healthProfileProvider.notifier).completeProfile();
-    final profile = ref.read(healthProfileProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Hồ sơ sức khỏe đã lưu! TDEE: ${profile.tdee} kcal/ngày'),
-      ),
-    );
-    context.push('/onboarding/equipment');
+  Future<void> _finishHealthProfile() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await ref.read(healthProfileProvider.notifier).submitInitialProfile();
+      if (!mounted) return;
+      final profile = ref.read(healthProfileProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Hồ sơ sức khỏe đã lưu! TDEE: ${profile.tdee} kcal/ngày',
+          ),
+        ),
+      );
+      context.push('/onboarding/equipment');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e is HealthProfileApiException
+                ? e.message
+                : 'Không thể lưu hồ sơ sức khỏe. Vui lòng thử lại.',
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   void _autoSelect(VoidCallback updateAction) {
@@ -1035,7 +1060,7 @@ class _HealthProfileOnboardingScreenState
               ] else if (_currentStep == 11) ...[
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: _finishHealthProfile,
+                  onPressed: _isSubmitting ? null : _finishHealthProfile,
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.primary,
                     foregroundColor: Colors.white,
@@ -1045,10 +1070,24 @@ class _HealthProfileOnboardingScreenState
                     ),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 20),
-                  label: const Text(
-                    'Tiếp tục: Chọn thiết bị tập',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.arrow_forward_rounded, size: 20),
+                  label: Text(
+                    _isSubmitting
+                        ? 'Đang lưu hồ sơ...'
+                        : 'Tiếp tục: Chọn thiết bị tập',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],

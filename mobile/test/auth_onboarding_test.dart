@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:viegym/core/network/token_storage.dart';
 import 'package:viegym/features/auth/application/auth_controller.dart';
+import 'package:viegym/features/auth/data/auth_repository.dart';
 import 'package:viegym/features/auth/domain/auth_state.dart';
 import 'package:viegym/features/auth/presentation/forgot_password_screen.dart';
 import 'package:viegym/features/auth/presentation/login_screen.dart';
@@ -22,6 +23,8 @@ import 'package:viegym/features/profile/presentation/account_security_screen.dar
 import 'package:viegym/shared/utils/greeting_utils.dart';
 import 'package:viegym/shared/widgets/brand_icons.dart';
 import 'package:viegym/shared/widgets/ruler_picker.dart';
+
+import 'helpers/fake_auth_repository.dart';
 
 void main() {
   group('Time-based greeting tests', () {
@@ -80,7 +83,7 @@ void main() {
   });
   group('AuthController tests', () {
     test('Initial state is unauthenticated', () {
-      final container = ProviderContainer();
+      final container = _createTestContainer();
       addTearDown(container.dispose);
 
       final state = container.read(authProvider);
@@ -89,7 +92,7 @@ void main() {
     });
 
     test('Login success updates user and authenticated status', () async {
-      final container = ProviderContainer();
+      final container = _createTestContainer();
       addTearDown(container.dispose);
 
       final success = await container
@@ -103,33 +106,67 @@ void main() {
       expect(state.isAuthenticated, isTrue);
     });
 
-    test('loginWithGoogle completes authentication and saves tokens', () async {
-      final container = ProviderContainer();
+    test('Unknown credentials are rejected by backend auth', () async {
+      final container = _createTestContainer();
       addTearDown(container.dispose);
 
       final success = await container
           .read(authProvider.notifier)
-          .loginWithGoogle();
-      expect(success, isTrue);
+          .login(email: 'unknown@viegym.vn', password: 'randomPassword123');
 
-      final state = container.read(authProvider);
-      expect(state.status, AuthStatus.authenticated);
-      expect(state.user?.displayName, 'Google Athlete');
+      expect(success, isFalse);
+      expect(container.read(authProvider).status, AuthStatus.error);
       expect(
-        await container.read(tokenStorageProvider).hasRefreshToken(),
-        isTrue,
+        container.read(authProvider).errorMessage,
+        'Email hoặc mật khẩu không chính xác.',
       );
     });
 
+    test('Social login cannot authenticate without provider tokens', () async {
+      final container = _createTestContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        await container.read(authProvider.notifier).loginWithGoogle(),
+        isFalse,
+      );
+      expect(
+        await container.read(authProvider.notifier).loginWithFacebook(),
+        isFalse,
+      );
+      expect(container.read(authProvider).isAuthenticated, isFalse);
+    });
+
     test(
-      'loginWithFacebook completes authentication and saves tokens',
+      'loginWithGoogle requires and exchanges a real provider token',
       () async {
-        final container = ProviderContainer();
+        final container = _createTestContainer();
         addTearDown(container.dispose);
 
         final success = await container
             .read(authProvider.notifier)
-            .loginWithFacebook();
+            .loginWithGoogle(idToken: 'google-id-token');
+        expect(success, isTrue);
+
+        final state = container.read(authProvider);
+        expect(state.status, AuthStatus.authenticated);
+        expect(state.user?.displayName, 'Google Athlete');
+        expect(
+          await container.read(tokenStorageProvider).hasRefreshToken(),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'loginWithFacebook completes authentication and saves tokens',
+      () async {
+        final container = _createTestContainer();
+        addTearDown(container.dispose);
+
+        final success = await container
+            .read(authProvider.notifier)
+            .loginWithFacebook(accessToken: 'facebook-access-token');
         expect(success, isTrue);
 
         final state = container.read(authProvider);
@@ -145,7 +182,7 @@ void main() {
     test(
       'Register stores pending email and verifyOtp completes authentication',
       () async {
-        final container = ProviderContainer();
+        final container = _createTestContainer();
         addTearDown(container.dispose);
 
         final registerSuccess = await container
@@ -170,7 +207,7 @@ void main() {
     );
 
     test('Register fails when passwords do not match', () async {
-      final container = ProviderContainer();
+      final container = _createTestContainer();
       addTearDown(container.dispose);
 
       final success = await container
@@ -195,8 +232,16 @@ void main() {
     });
 
     test('resendOtp updates cooldown seconds and pending parameters', () async {
-      final container = ProviderContainer();
+      final container = _createTestContainer();
       addTearDown(container.dispose);
+
+      await container
+          .read(authProvider.notifier)
+          .register(
+            email: 'test@viegym.vn',
+            password: 'password123',
+            confirmPassword: 'password123',
+          );
 
       final success = await container
           .read(authProvider.notifier)
@@ -212,7 +257,7 @@ void main() {
     test(
       'forgotPassword sets pending verification with passwordReset purpose',
       () async {
-        final container = ProviderContainer();
+        final container = _createTestContainer();
         addTearDown(container.dispose);
 
         final success = await container
@@ -228,7 +273,7 @@ void main() {
     );
 
     test('resetPassword validates matching and min length', () async {
-      final container = ProviderContainer();
+      final container = _createTestContainer();
       addTearDown(container.dispose);
 
       // Mismatched
@@ -253,8 +298,15 @@ void main() {
       expect(failShort, isFalse);
       expect(
         container.read(authProvider).errorMessage,
-        contains('ít nhất 6 ký tự'),
+        contains('ít nhất 8 ký tự'),
       );
+
+      await container
+          .read(authProvider.notifier)
+          .forgotPassword('user@viegym.vn');
+      await container
+          .read(authProvider.notifier)
+          .verifyOtp('123456', purpose: OtpPurpose.passwordReset);
 
       // Success
       final success = await container
@@ -271,7 +323,7 @@ void main() {
     test(
       'changePassword validates fields and updates authenticated state',
       () async {
-        final container = ProviderContainer();
+        final container = _createTestContainer();
         addTearDown(container.dispose);
 
         final failEmpty = await container
@@ -291,7 +343,7 @@ void main() {
               confirmPassword: 'newPassword123',
             );
         expect(success, isTrue);
-        expect(container.read(authProvider).status, AuthStatus.authenticated);
+        expect(container.read(authProvider).status, AuthStatus.unauthenticated);
       },
     );
   });
@@ -868,7 +920,13 @@ void main() {
         );
 
         await tester.pumpWidget(
-          ProviderScope(child: MaterialApp.router(routerConfig: router)),
+          ProviderScope(
+            overrides: [
+              tokenStorageProvider.overrideWithValue(DefaultTokenStorage()),
+              authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -912,8 +970,20 @@ void main() {
           ],
         );
 
+        final container = _createTestContainer();
+        addTearDown(container.dispose);
+        await container
+            .read(authProvider.notifier)
+            .forgotPassword('user@viegym.vn');
+        await container
+            .read(authProvider.notifier)
+            .verifyOtp('123456', purpose: OtpPurpose.passwordReset);
+
         await tester.pumpWidget(
-          ProviderScope(child: MaterialApp.router(routerConfig: router)),
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -921,7 +991,7 @@ void main() {
         expect(find.text('Mật khẩu mới'), findsOneWidget);
         expect(find.text('Xác nhận mật khẩu mới'), findsOneWidget);
         expect(find.text('Yêu cầu mật khẩu:'), findsOneWidget);
-        expect(find.text('Tối thiểu 6 ký tự'), findsOneWidget);
+        expect(find.text('Tối thiểu 8 ký tự'), findsOneWidget);
 
         // Enter new password & confirm
         final textFields = find.byType(TextFormField);
@@ -1136,12 +1206,19 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(child: MaterialApp.router(routerConfig: router)),
+        ProviderScope(
+          overrides: [
+            tokenStorageProvider.overrideWithValue(DefaultTokenStorage()),
+            authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
       );
       await tester.pumpAndSettle();
 
       // 1. Register step
       expect(find.text('Đăng ký tài khoản'), findsAtLeast(1));
+      expect(find.text('Tên hiển thị'), findsNothing);
       final fields = find.byType(TextFormField);
       await tester.enterText(fields.at(0), 'athlete@viegym.vn');
       await tester.enterText(fields.at(1), 'Password123');
@@ -1163,6 +1240,17 @@ void main() {
       expect(find.text('Bước 1 / 11'), findsOneWidget);
     });
   });
+}
+
+ProviderContainer _createTestContainer([FakeAuthRepository? repository]) {
+  return ProviderContainer(
+    overrides: [
+      tokenStorageProvider.overrideWithValue(DefaultTokenStorage()),
+      authRepositoryProvider.overrideWithValue(
+        repository ?? FakeAuthRepository(),
+      ),
+    ],
+  );
 }
 
 class _TestHealthProfileNotifier extends HealthProfileController {

@@ -16,11 +16,7 @@ final muscleGroupsProvider = FutureProvider<List<MuscleGroupItem>>((ref) async {
 
 final equipmentListProvider = FutureProvider<List<EquipmentItem>>((ref) async {
   final repo = ref.watch(exerciseCatalogRepositoryProvider);
-  try {
-    return await repo.getEquipment();
-  } catch (_) {
-    return const [];
-  }
+  return repo.getEquipment();
 });
 
 final exerciseDetailProvider =
@@ -119,10 +115,7 @@ class ExerciseCatalogState {
 class ExerciseCatalogController extends Notifier<ExerciseCatalogState> {
   @override
   ExerciseCatalogState build() {
-    return ExerciseCatalogState(
-      exercises: List<ExerciseDefinition>.from(exerciseCatalog),
-      isLoading: false,
-    );
+    return const ExerciseCatalogState();
   }
 
   Future<void> loadInitial() async {
@@ -143,13 +136,12 @@ class ExerciseCatalogController extends Notifier<ExerciseCatalogState> {
       final mapped = res.items.map((e) => e.toExerciseDefinition()).toList();
       state = state.copyWith(
         isLoading: false,
-        exercises: mapped.isNotEmpty ? mapped : state.exercises,
+        exercises: mapped,
         rawSummaries: res.items,
         page: 0,
         hasMore: !res.isLastPage,
       );
     } catch (err) {
-      // Keep local list on error
       state = state.copyWith(isLoading: false, error: err.toString());
     }
   }

@@ -129,7 +129,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
-                    hintText: 'Tối thiểu 6 ký tự',
+                    hintText: 'Tối thiểu 8 ký tự, gồm chữ và số',
                     prefixIcon: const Icon(
                       Icons.lock_outline_rounded,
                       size: 20,
@@ -149,8 +149,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     fillColor: colors.surfaceContainer,
                   ),
                   validator: (value) {
-                    if (value == null || value.length < 6) {
-                      return 'Mật khẩu phải có ít nhất 6 ký tự';
+                    if (value == null || value.length < 8) {
+                      return 'Mật khẩu phải có ít nhất 8 ký tự';
+                    }
+                    if (!RegExp(r'[A-Za-z]').hasMatch(value) ||
+                        !RegExp(r'[0-9]').hasMatch(value)) {
+                      return 'Mật khẩu phải gồm cả chữ và số';
                     }
                     return null;
                   },
@@ -269,6 +273,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   equipmentCompleted,
                             );
                             context.go(targetRoute);
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ref.read(authProvider).errorMessage ??
+                                      'Đăng nhập Google thất bại',
+                                ),
+                              ),
+                            );
                           }
                         },
                       ),
@@ -297,6 +310,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   equipmentCompleted,
                             );
                             context.go(targetRoute);
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ref.read(authProvider).errorMessage ??
+                                      'Đăng nhập Facebook thất bại',
+                                ),
+                              ),
+                            );
                           }
                         },
                       ),

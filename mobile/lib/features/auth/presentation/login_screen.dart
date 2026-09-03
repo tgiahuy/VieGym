@@ -31,6 +31,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  Future<String> _resolveTargetRoute() async {
+    final user = ref.read(authProvider).user;
+    var isHealthCompleted = user?.healthProfileCompleted ?? false;
+    if (isHealthCompleted) {
+      await ref.read(healthProfileProvider.notifier).loadProfileFromRemote();
+    } else {
+      isHealthCompleted = ref.read(healthProfileProvider).isCompleted;
+    }
+    final isEquipmentCompleted =
+        (user?.equipmentCompleted ?? false) ||
+        ref.read(equipmentOnboardingCompletedProvider);
+    return resolveOnboardingRoute(
+      isAuthenticated: true,
+      isHealthProfileCompleted: isHealthCompleted,
+      isEquipmentOnboardingCompleted: isEquipmentCompleted,
+    );
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -47,16 +65,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
-        final healthProfile = ref.read(healthProfileProvider);
-        final equipmentCompleted = ref.read(
-          equipmentOnboardingCompletedProvider,
-        );
-        final targetRoute = resolveOnboardingRoute(
-          isAuthenticated: true,
-          isHealthProfileCompleted: healthProfile.isCompleted,
-          isEquipmentOnboardingCompleted: equipmentCompleted,
-        );
-        context.go(targetRoute);
+        final targetRoute = await _resolveTargetRoute();
+        if (mounted) {
+          context.go(targetRoute);
+        }
       } else if (authState.isPendingVerification) {
         final email = _emailController.text.trim();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -172,20 +184,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     if (authenticated == true && mounted) {
-      final success = await ref
-          .read(authProvider.notifier)
-          .login(email: 'biometric.user@viegym.vn', password: 'demo');
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Xác thực Face ID / Vân tay thành công!'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          context.go('/home');
-        }
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sinh trắc học chưa được cấu hình với phiên đăng nhập thật.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -375,20 +381,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               .read(authProvider.notifier)
                               .loginWithGoogle();
                           if (context.mounted && success) {
-                            final healthProfile = ref.read(
-                              healthProfileProvider,
+                            final targetRoute = await _resolveTargetRoute();
+                            if (context.mounted) {
+                              context.go(targetRoute);
+                            }
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ref.read(authProvider).errorMessage ??
+                                      'Đăng nhập Google thất bại',
+                                ),
+                              ),
                             );
-                            final equipmentCompleted = ref.read(
-                              equipmentOnboardingCompletedProvider,
-                            );
-                            final targetRoute = resolveOnboardingRoute(
-                              isAuthenticated: true,
-                              isHealthProfileCompleted:
-                                  healthProfile.isCompleted,
-                              isEquipmentOnboardingCompleted:
-                                  equipmentCompleted,
-                            );
-                            context.go(targetRoute);
                           }
                         },
                       ),
@@ -403,20 +408,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               .read(authProvider.notifier)
                               .loginWithFacebook();
                           if (context.mounted && success) {
-                            final healthProfile = ref.read(
-                              healthProfileProvider,
+                            final targetRoute = await _resolveTargetRoute();
+                            if (context.mounted) {
+                              context.go(targetRoute);
+                            }
+                          } else if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ref.read(authProvider).errorMessage ??
+                                      'Đăng nhập Facebook thất bại',
+                                ),
+                              ),
                             );
-                            final equipmentCompleted = ref.read(
-                              equipmentOnboardingCompletedProvider,
-                            );
-                            final targetRoute = resolveOnboardingRoute(
-                              isAuthenticated: true,
-                              isHealthProfileCompleted:
-                                  healthProfile.isCompleted,
-                              isEquipmentOnboardingCompleted:
-                                  equipmentCompleted,
-                            );
-                            context.go(targetRoute);
                           }
                         },
                       ),

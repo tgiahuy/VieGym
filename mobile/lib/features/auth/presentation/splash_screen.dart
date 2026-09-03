@@ -73,15 +73,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       if (authState.status == AuthStatus.authenticated &&
           authState.user != null) {
-        final healthProfile = ref.read(healthProfileProvider);
-        final equipmentCompleted = ref.read(
-          equipmentOnboardingCompletedProvider,
-        );
+        final user = authState.user!;
+        var isHealthCompleted = user.healthProfileCompleted;
+        if (isHealthCompleted) {
+          await ref
+              .read(healthProfileProvider.notifier)
+              .loadProfileFromRemote();
+        } else {
+          isHealthCompleted = ref.read(healthProfileProvider).isCompleted;
+        }
+
+        final isEquipmentCompleted =
+            user.equipmentCompleted ||
+            ref.read(equipmentOnboardingCompletedProvider);
+
         final targetRoute = resolveOnboardingRoute(
           isAuthenticated: true,
-          isHealthProfileCompleted: healthProfile.isCompleted,
-          isEquipmentOnboardingCompleted: equipmentCompleted,
+          isHealthProfileCompleted: isHealthCompleted,
+          isEquipmentOnboardingCompleted: isEquipmentCompleted,
         );
+        if (!mounted) return;
         context.go(targetRoute);
       } else {
         // Chưa có phiên đăng nhập -> sang màn hình Welcome (MH02)

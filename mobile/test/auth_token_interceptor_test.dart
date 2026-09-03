@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:viegym/core/network/auth_interceptor.dart';
 import 'package:viegym/core/network/token_storage.dart';
 import 'package:viegym/features/auth/application/auth_controller.dart';
+import 'package:viegym/features/auth/data/auth_repository.dart';
 import 'package:viegym/features/auth/domain/auth_state.dart';
+
+import 'helpers/fake_auth_repository.dart';
 
 void main() {
   group('TokenStorage (ADR-004) Unit Tests', () {
@@ -104,6 +107,52 @@ void main() {
         expect(options.headers['Authorization'], 'Bearer my_bearer_token');
       },
     );
+
+    test(
+      'Does not attach bearer token to public exercise catalog GET',
+      () async {
+        final storage = DefaultTokenStorage();
+        await storage.saveTokens(
+          accessToken: 'invalid_or_expired_token',
+          refreshToken: 'refresh_token',
+        );
+
+        final interceptor = AuthInterceptor(
+          getAccessToken: storage.getAccessToken,
+          getRefreshToken: storage.getRefreshToken,
+          refreshAccessToken: (_) async => 'new_token',
+          onRefreshFailed: () async {},
+        );
+        final options = RequestOptions(path: '/api/v1/exercises');
+        final handler = _TestRequestInterceptorHandler();
+
+        await interceptor.onRequest(options, handler);
+
+        expect(options.headers.containsKey('Authorization'), isFalse);
+      },
+    );
+
+    test('Does not attach stale bearer token to public login POST', () async {
+      final storage = DefaultTokenStorage();
+      await storage.saveTokens(
+        accessToken: 'stale_token',
+        refreshToken: 'refresh_token',
+      );
+      final interceptor = AuthInterceptor(
+        getAccessToken: storage.getAccessToken,
+        getRefreshToken: storage.getRefreshToken,
+        refreshAccessToken: (_) async => 'new_token',
+        onRefreshFailed: () async {},
+      );
+      final options = RequestOptions(
+        path: '/api/v1/auth/login',
+        method: 'POST',
+      );
+
+      await interceptor.onRequest(options, _TestRequestInterceptorHandler());
+
+      expect(options.headers.containsKey('Authorization'), isFalse);
+    });
 
     test(
       'Single-Flight: 5 concurrent 401 requests trigger ONLY 1 refresh API call',
@@ -220,8 +269,12 @@ void main() {
   group('AuthController & TokenStorage Integration Tests', () {
     test('login saves tokens and logout clears tokens from storage', () async {
       final storage = DefaultTokenStorage();
+      final repository = FakeAuthRepository();
       final container = ProviderContainer(
-        overrides: [tokenStorageProvider.overrideWithValue(storage)],
+        overrides: [
+          tokenStorageProvider.overrideWithValue(storage),
+          authRepositoryProvider.overrideWithValue(repository),
+        ],
       );
       addTearDown(container.dispose);
 
@@ -251,13 +304,18 @@ void main() {
       'restoreSession restores authenticated user when refresh token exists in secure storage',
       () async {
         final storage = DefaultTokenStorage();
+        final repository = FakeAuthRepository()
+          ..currentEmail = 'testuser@viegym.vn';
         await storage.saveTokens(
           accessToken: 'cached_access',
-          refreshToken: 'viegym_secure_refresh_testuser@viegym.vn',
+          refreshToken: 'real-refresh-token',
         );
 
         final container = ProviderContainer(
-          overrides: [tokenStorageProvider.overrideWithValue(storage)],
+          overrides: [
+            tokenStorageProvider.overrideWithValue(storage),
+            authRepositoryProvider.overrideWithValue(repository),
+          ],
         );
         addTearDown(container.dispose);
 

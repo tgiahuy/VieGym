@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../application/notifications_controller.dart';
 import '../domain/notification_models.dart';
 
@@ -51,7 +52,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.82,
       decoration: BoxDecoration(
-        color: const Color(0xFF10131E),
+        color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.4)),
       ),
@@ -67,7 +68,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: AppColors.borderStrong,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -83,12 +84,12 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF2E54).withValues(alpha: 0.15),
+                      color: colors.primary.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_active_rounded,
-                      color: Color(0xFFFF2E54),
+                      color: colors.primary,
                       size: 19,
                     ),
                   ),
@@ -102,7 +103,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         Text(
@@ -112,7 +113,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                           style: TextStyle(
                             fontSize: 12,
                             color: state.hasUnread
-                                ? const Color(0xFFFF2E54)
+                                ? colors.primary
                                 : colors.onSurfaceVariant,
                             fontWeight: state.hasUnread
                                 ? FontWeight.w700
@@ -154,7 +155,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                   _TabButton(
                     label: 'Chưa đọc (${state.unreadCount})',
                     isSelected: _selectedTabIndex == 1,
-                    badgeColor: const Color(0xFFFF2E54),
+                    badgeColor: colors.primary,
                     showBadge: state.hasUnread,
                     onTap: () => setState(() => _selectedTabIndex = 1),
                   ),
@@ -162,7 +163,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            const Divider(height: 1, color: Colors.white12),
+            const Divider(height: 1, color: AppColors.borderSubtle),
 
             // Notifications List
             Expanded(
@@ -194,7 +195,7 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -271,7 +272,7 @@ class _TabButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? colors.primary.withValues(alpha: 0.16)
-              : const Color(0xFF181C28),
+              : AppColors.surfaceElevated,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
@@ -346,7 +347,7 @@ class _NotificationCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isUnread ? const Color(0xFF1B2030) : const Color(0xFF141722),
+            color: isUnread ? AppColors.surfaceElevated : AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isUnread
@@ -414,8 +415,8 @@ class _NotificationCard extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF2E54),
+                      decoration: BoxDecoration(
+                        color: colors.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -430,7 +431,7 @@ class _NotificationCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isUnread ? FontWeight.w800 : FontWeight.w700,
-                  color: isUnread ? Colors.white : colors.onSurface,
+                  color: isUnread ? AppColors.textPrimary : colors.onSurface,
                 ),
               ),
               const SizedBox(height: 4),

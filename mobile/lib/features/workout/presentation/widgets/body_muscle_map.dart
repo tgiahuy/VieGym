@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/muscle_models.dart';
 import 'body_muscle_regions_generated.dart';
 
@@ -14,6 +15,7 @@ class BodyMuscleMap extends StatelessWidget {
     required this.bodySide,
     this.primaryMuscles = const {},
     this.secondaryMuscles = const {},
+    this.muscleIntensities,
     this.focusedMuscle,
     this.isZoomed = false,
     this.autoZoom = true,
@@ -30,6 +32,7 @@ class BodyMuscleMap extends StatelessWidget {
   final BodySide bodySide;
   final Set<MuscleGroup> primaryMuscles;
   final Set<MuscleGroup> secondaryMuscles;
+  final Map<MuscleGroup, double>? muscleIntensities;
   final MuscleGroup? focusedMuscle;
   final bool isZoomed;
   final bool autoZoom;
@@ -138,7 +141,10 @@ class BodyMuscleMap extends StatelessWidget {
                 : math.min(availableWidth, targetAspectWidth));
 
         // Canvas base size strictly preserves exact anatomical aspect ratio (839 / 1555)
-        final canvasHeight = viewportHeight;
+        final aspectFitScale = viewportWidth > 0 && targetAspectWidth > 0
+            ? math.min(viewportWidth / targetAspectWidth, 1.0)
+            : 1.0;
+        final canvasHeight = viewportHeight * aspectFitScale;
         final canvasWidth = canvasHeight * referenceSize.aspectRatio;
         final containerRadius = borderRadius ?? BorderRadius.circular(16);
         final camera = _calculateCamera(
@@ -167,8 +173,10 @@ class BodyMuscleMap extends StatelessWidget {
             foregroundPainter: BodyMuscleHighlightPainter(
               bodySide: bodySide,
               primaryColor: colors.primary,
-              secondaryColor: const Color(0xFFFF6B8B),
+              secondaryColor: AppColors.muscleHighlight,
               highlightLevelResolver: _highlightLevel,
+              muscleIntensities: muscleIntensities,
+              focusedMuscle: focusedMuscle,
             ),
             child: Image.asset(
               bodySide == BodySide.front ? _frontBodyAsset : _backBodyAsset,
@@ -190,13 +198,11 @@ class BodyMuscleMap extends StatelessWidget {
               height: viewportHeight,
               decoration: BoxDecoration(
                 color: showContainerFrame
-                    ? (backgroundColor ?? const Color(0xFF171720))
+                    ? (backgroundColor ?? AppColors.surface)
                     : (backgroundColor ?? Colors.transparent),
                 borderRadius: containerRadius,
                 border: showContainerFrame
-                    ? Border.all(
-                        color: colors.outlineVariant.withValues(alpha: 0.3),
-                      )
+                    ? Border.all(color: AppColors.borderDefault)
                     : null,
               ),
               child: Stack(
@@ -286,12 +292,16 @@ class BodyMuscleHighlightPainter extends CustomPainter {
     required this.primaryColor,
     required this.secondaryColor,
     required this.highlightLevelResolver,
+    this.muscleIntensities,
+    this.focusedMuscle,
   });
 
   final BodySide bodySide;
   final Color primaryColor;
   final Color secondaryColor;
   final MuscleHighlightLevel Function(MuscleGroup) highlightLevelResolver;
+  final Map<MuscleGroup, double>? muscleIntensities;
+  final MuscleGroup? focusedMuscle;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -302,6 +312,147 @@ class BodyMuscleHighlightPainter extends CustomPainter {
       size.height / referenceSize.height,
     );
 
+    if (muscleIntensities != null) {
+      _paintIntensities(canvas);
+    } else {
+      _paintStandardLevels(canvas);
+    }
+
+    canvas.restore();
+  }
+
+  void _paintIntensities(Canvas canvas) {
+    final regions = _MuscleRegions.forSide(bodySide);
+
+    for (final entry in regions.entries) {
+      final muscle = entry.key;
+      var intensity = muscleIntensities?[muscle] ?? 0.0;
+
+      final isFocused = focusedMuscle == muscle;
+      final isDimmed = focusedMuscle != null && !isFocused;
+
+      // When focused, ensure it is clearly prominent even if previously 0%
+      if (isFocused && intensity < 0.35) {
+        intensity = 0.35;
+      }
+
+      // 0% -> neutral / uncolored
+      if (intensity <= 0.001) continue;
+
+      // Color intensity tiers defined in Rule 6:
+      // 0%: neutral / uncolored
+      // 1–10%: primary very light
+      // 11–20%: primary light
+      // 21–30%: primary medium
+      // >30%: primary prominent
+      double bloomAlpha;
+      double fillAlpha;
+      double strokeAlpha;
+      double strokeWidth;
+      bool showSpecular;
+
+      if (intensity > 0.30) {
+        bloomAlpha = 0.60;
+        fillAlpha = 0.88;
+        strokeAlpha = 0.95;
+        strokeWidth = 2.2;
+        showSpecular = true;
+      } else if (intensity > 0.20) {
+        bloomAlpha = 0.42;
+        fillAlpha = 0.70;
+        strokeAlpha = 0.82;
+        strokeWidth = 1.8;
+        showSpecular = false;
+      } else if (intensity > 0.10) {
+        bloomAlpha = 0.26;
+        fillAlpha = 0.48;
+        strokeAlpha = 0.62;
+        strokeWidth = 1.4;
+        showSpecular = false;
+      } else {
+        bloomAlpha = 0.14;
+        fillAlpha = 0.26;
+        strokeAlpha = 0.38;
+        strokeWidth = 1.0;
+        showSpecular = false;
+      }
+
+      if (isFocused) {
+        bloomAlpha = 0.72;
+        fillAlpha = 0.95;
+        strokeAlpha = 1.0;
+        strokeWidth = 2.5;
+        showSpecular = true;
+      }
+
+      final dim = isDimmed ? 0.28 : 1.0;
+
+      for (final path in entry.value) {
+        final bounds = path.getBounds();
+
+        // 1. Ambient Bloom / Outer Glow
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = primaryColor.withValues(alpha: bloomAlpha * dim)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+        );
+
+        // 2. Focused Core Glow
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = primaryColor.withValues(alpha: fillAlpha * 0.7 * dim)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        );
+
+        // 3. Depth-preserving 3D Muscle Fiber Fill
+        final center = bounds.center;
+        final radius = math.max(bounds.width, bounds.height) * 0.75;
+        final fillShader = RadialGradient(
+          center: Alignment.center,
+          radius: 0.9,
+          colors: [
+            primaryColor.withValues(alpha: fillAlpha * dim),
+            primaryColor.withValues(alpha: fillAlpha * 0.75 * dim),
+          ],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+        canvas.drawPath(
+          path,
+          Paint()
+            ..shader = fillShader
+            ..style = PaintingStyle.fill,
+        );
+
+        // 4. Inner Rim Highlight / Edge Glow Stroke
+        canvas.drawPath(
+          path,
+          Paint()
+            ..color = primaryColor.withValues(alpha: strokeAlpha * dim)
+            ..strokeWidth = strokeWidth
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round,
+        );
+
+        // 5. Specular accent for prominent/focused muscles
+        if (showSpecular && !isDimmed) {
+          canvas.drawPath(
+            path,
+            Paint()
+              ..color = Colors.white.withValues(alpha: isFocused ? 0.85 : 0.60)
+              ..strokeWidth = 0.9
+              ..style = PaintingStyle.stroke
+              ..strokeCap = StrokeCap.round
+              ..strokeJoin = StrokeJoin.round,
+          );
+        }
+      }
+    }
+  }
+
+  void _paintStandardLevels(Canvas canvas) {
     final pathLevels = Map<Path, MuscleHighlightLevel>.identity();
     for (final entry in _MuscleRegions.forSide(bodySide).entries) {
       final level = highlightLevelResolver(entry.key);
@@ -379,7 +530,6 @@ class BodyMuscleHighlightPainter extends CustomPainter {
         );
       }
     }
-    canvas.restore();
   }
 
   @override
@@ -387,7 +537,9 @@ class BodyMuscleHighlightPainter extends CustomPainter {
       oldDelegate.bodySide != bodySide ||
       oldDelegate.primaryColor != primaryColor ||
       oldDelegate.secondaryColor != secondaryColor ||
-      oldDelegate.highlightLevelResolver != highlightLevelResolver;
+      oldDelegate.highlightLevelResolver != highlightLevelResolver ||
+      oldDelegate.muscleIntensities != muscleIntensities ||
+      oldDelegate.focusedMuscle != focusedMuscle;
 }
 
 class _MuscleRegions {

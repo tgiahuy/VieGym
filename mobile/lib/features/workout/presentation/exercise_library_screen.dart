@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -35,7 +36,6 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   String _searchQuery = '';
   Set<String> _selectedMuscles = {};
   Set<int> _selectedEquipmentIds = {};
-  bool _onlyFavorites = false;
   final Set<String> _selectedExerciseIds = {};
   final Map<String, ExerciseDefinition> _selectedExercisesMap = {};
 
@@ -68,7 +68,6 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
       _searchQuery = '';
       _selectedMuscles.clear();
       _selectedEquipmentIds.clear();
-      _onlyFavorites = false;
     });
   }
 
@@ -82,11 +81,6 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     final displayExercises = catalogState.exercises;
 
     final filtered = displayExercises.where((exercise) {
-      // 0. Favorite Filter
-      if (_onlyFavorites && !favoriteIds.contains(exercise.id)) {
-        return false;
-      }
-
       // 1. Text Query Search
       final matchesQuery =
           normalized.isEmpty ||
@@ -117,9 +111,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     }).toList();
 
     final hasActiveFilters =
-        _selectedMuscles.isNotEmpty ||
-        _selectedEquipmentIds.isNotEmpty ||
-        _onlyFavorites;
+        _selectedMuscles.isNotEmpty || _selectedEquipmentIds.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -154,7 +146,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                     : null,
                 isDense: true,
                 filled: true,
-                fillColor: const Color(0xFF141724),
+                fillColor: AppColors.surfaceInput,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -176,19 +168,6 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  // Favorite Filter Button
-                  _FilterActionButton(
-                    icon: _onlyFavorites
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    label: 'Yêu thích',
-                    count: favoriteIds.length,
-                    isActive: _onlyFavorites,
-                    onTap: () =>
-                        setState(() => _onlyFavorites = !_onlyFavorites),
-                  ),
-                  const SizedBox(width: 8),
-
                   // Muscle Filter Button
                   _FilterActionButton(
                     icon: Icons.filter_alt_outlined,
@@ -225,7 +204,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                           fontWeight: FontWeight.w700,
                           color: hasActiveFilters
                               ? colors.primary
-                              : const Color(0xFF7E849E),
+                              : AppColors.textTertiary,
                         ),
                       ),
                     ),
@@ -246,7 +225,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF7E849E),
+                    color: AppColors.textTertiary,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -258,7 +237,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: colors.primary,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -399,7 +378,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                     height: 64,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(14),
-                                      color: const Color(0xFF1B1E2E),
+                                      color: AppColors.surfaceElevated,
                                       border: Border.all(
                                         color: colors.outlineVariant.withValues(
                                           alpha: 0.3,
@@ -419,7 +398,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                             ) => Center(
                                               child: Icon(
                                                 Icons.fitness_center_rounded,
-                                                color: colors.primary,
+                                                color: AppColors.iconSecondary,
                                                 size: 26,
                                               ),
                                             ),
@@ -531,7 +510,8 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: colors.primary,
+                                          color: colors.outlineVariant
+                                              .withValues(alpha: 0.6),
                                           width: 1.8,
                                         ),
                                       ),
@@ -674,7 +654,7 @@ class _FilterActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isActive
               ? colors.primary.withValues(alpha: 0.12)
-              : const Color(0xFF141724),
+              : colors.surfaceContainer,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isActive
@@ -691,7 +671,7 @@ class _FilterActionButton extends StatelessWidget {
               size: 14,
               color: isActive
                   ? colors.primary
-                  : colors.primary.withValues(alpha: 0.8),
+                  : colors.onSurfaceVariant.withValues(alpha: 0.7),
             ),
             const SizedBox(width: 6),
             Text(
@@ -699,7 +679,7 @@ class _FilterActionButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: isActive ? Colors.white : const Color(0xFFD4D8E8),
+                color: isActive ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ],

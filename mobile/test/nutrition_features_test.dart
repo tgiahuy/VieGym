@@ -358,21 +358,22 @@ void main() {
         expect(find.text('Kế hoạch'), findsOneWidget);
         expect(find.text('Lịch sử'), findsOneWidget);
 
-        // Verify Beginner Tips
+        // Verify Beginner Tips Button in AppBar and pop-up dialog
+        expect(find.text('Mẹo cho người mới'), findsOneWidget);
+        await tester.tap(find.text('Mẹo cho người mới'));
+        await tester.pumpAndSettle();
         expect(
-          find.text('Mẹo cho người mới: Cách theo dõi bữa ăn chuẩn gymmer'),
+          find.text('Cách theo dõi bữa ăn chuẩn gymmer'),
           findsOneWidget,
         );
+        expect(find.text('Ưu tiên nạp đủ Protein'), findsOneWidget);
+        await tester.tap(find.text('Đã hiểu'));
+        await tester.pumpAndSettle();
 
         // Verify AI Nutrition Assistant Card
         expect(find.text('Trợ lý AI Dinh dưỡng VieGym'), findsOneWidget);
         expect(find.text('Chat ngay'), findsOneWidget);
         expect(find.text('AI tạo món ăn'), findsOneWidget);
-
-        // Verify Water Tracking Card
-        expect(find.text('Nhật ký uống nước'), findsOneWidget);
-        expect(find.text('+250ml'), findsOneWidget);
-        expect(find.text('+500ml'), findsOneWidget);
 
         // Verify Meals Section
         expect(find.text('CÁC BỮA ĂN TRONG NGÀY'), findsOneWidget);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 /// Pixel-perfect, authentic Google 'G' multi-color vector logo matching official brand specifications.
 class GoogleLogo extends StatelessWidget {
   const GoogleLogo({super.key, this.size = 20});
@@ -225,7 +227,7 @@ class VieGymLogo extends StatelessWidget {
         boxShadow: showGlow
             ? [
                 BoxShadow(
-                  color: const Color(0xFFFF2E54).withValues(alpha: 0.35),
+                  color: AppColors.primary.withValues(alpha: 0.35),
                   blurRadius: size * 0.35,
                   spreadRadius: 1,
                   offset: const Offset(0, 2),
@@ -268,14 +270,14 @@ class _VieGymLogoPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTWH(0, 0, w, h), bgPaint);
 
     final neonPaint = Paint()
-      ..color = const Color(0xFFFF2E54)
+      ..color = AppColors.primary
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.05
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     final glowPaint = Paint()
-      ..color = const Color(0xFFFF2E54).withValues(alpha: 0.4)
+      ..color = AppColors.primary.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = w * 0.09
       ..strokeCap = StrokeCap.round

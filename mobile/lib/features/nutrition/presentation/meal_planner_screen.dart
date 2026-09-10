@@ -142,10 +142,10 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
                     ),
                     Text(
                       '$plannedCalories / $targetCal kcal',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
-                        color: colors.primary,
+                        color: AppColors.nutritionCalories,
                       ),
                     ),
                   ],
@@ -157,7 +157,9 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
                     value: ratio,
                     minHeight: 6,
                     backgroundColor: colors.surfaceContainerHighest,
-                    valueColor: AlwaysStoppedAnimation(colors.primary),
+                    valueColor: const AlwaysStoppedAnimation(
+                      AppColors.nutritionCalories,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -167,21 +169,21 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
                       'Protein',
                       plannedProtein,
                       state.targetProtein,
-                      AppColors.primary,
+                      AppColors.nutritionProtein,
                     ),
                     const SizedBox(width: 8),
                     _macroTag(
                       'Carb',
                       plannedCarbs,
                       state.targetCarbs,
-                      const Color(0xFF38BDF8),
+                      AppColors.nutritionCarbs,
                     ),
                     const SizedBox(width: 8),
                     _macroTag(
                       'Fat',
                       plannedFat,
                       state.targetFat,
-                      const Color(0xFFFBBF24),
+                      AppColors.nutritionFat,
                     ),
                   ],
                 ),
@@ -241,9 +243,7 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: mealCalories > 0
-                              ? colors.primary
-                              : colors.onSurfaceVariant,
+                          color: AppColors.nutritionCalories,
                         ),
                       ),
                     ],
@@ -314,8 +314,57 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 3),
-                                    Text(
-                                      '${entry.calories} kcal • P: ${entry.protein.toStringAsFixed(0)}g • C: ${entry.carbs.toStringAsFixed(0)}g • F: ${entry.fat.toStringAsFixed(0)}g',
+                                    Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: '${entry.calories} kcal',
+                                            style: const TextStyle(
+                                              color:
+                                                  AppColors.nutritionCalories,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: ' • ',
+                                            style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text:
+                                                'P: ${entry.protein.toStringAsFixed(0)}g',
+                                            style: const TextStyle(
+                                              color: AppColors.nutritionProtein,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: ' • ',
+                                            style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text:
+                                                'C: ${entry.carbs.toStringAsFixed(0)}g',
+                                            style: const TextStyle(
+                                              color: AppColors.nutritionCarbs,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: ' • ',
+                                            style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text:
+                                                'F: ${entry.fat.toStringAsFixed(0)}g',
+                                            style: const TextStyle(
+                                              color: AppColors.nutritionFat,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: colors.onSurfaceVariant,
@@ -340,21 +389,26 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
                       );
                     }),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
+                  FilledButton.icon(
                     onPressed: () {
                       ref
                           .read(nutritionProvider.notifier)
                           .selectDate(selectedDateStr);
                       context.push('/meal/search?mealType=${meal.code}');
                     },
-                    style: OutlinedButton.styleFrom(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 38),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text('Thêm món vào ${meal.label}'),
+                    label: Text(
+                      'Thêm món vào ${meal.label}',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ],
               ),
@@ -492,10 +546,10 @@ class _WeeklyDateSelector extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.calendar_today_rounded,
                       size: 14,
-                      color: colors.primary,
+                      color: AppColors.iconSecondary,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -520,13 +574,13 @@ class _WeeklyDateSelector extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelectedToday
-                        ? colors.surfaceContainerHigh
-                        : colors.primary.withValues(alpha: 0.15),
+                        ? AppColors.primarySoft
+                        : AppColors.surfaceNested,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelectedToday
-                          ? colors.outlineVariant.withValues(alpha: 0.5)
-                          : colors.primary.withValues(alpha: 0.4),
+                          ? AppColors.primaryBorder
+                          : AppColors.borderDefault,
                       width: 0.8,
                     ),
                   ),
@@ -537,8 +591,8 @@ class _WeeklyDateSelector extends StatelessWidget {
                         Icons.today_rounded,
                         size: 13,
                         color: isSelectedToday
-                            ? colors.onSurfaceVariant
-                            : colors.primary,
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -547,8 +601,8 @@ class _WeeklyDateSelector extends StatelessWidget {
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                           color: isSelectedToday
-                              ? colors.onSurfaceVariant
-                              : colors.primary,
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../application/workout_schedule_controller.dart';
 import '../domain/workout_models.dart';
 
@@ -258,7 +259,7 @@ class _WorkoutSwapScheduleScreenState
                         'Chuyển ngày giữa buổi tập hiện tại và một buổi tập sắp tới. Toàn bộ danh sách bài tập sẽ được bảo toàn.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey,
+                          color: AppColors.textSecondary,
                           height: 1.3,
                         ),
                       ),
@@ -280,7 +281,7 @@ class _WorkoutSwapScheduleScreenState
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.8,
-                  color: Colors.grey,
+                  color: AppColors.textTertiary,
                 ),
               ),
               if (sourceItem?.date == todayStr)
@@ -345,14 +346,14 @@ class _WorkoutSwapScheduleScreenState
                               const Icon(
                                 Icons.access_time_rounded,
                                 size: 14,
-                                color: Colors.grey,
+                                color: AppColors.textTertiary,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 sourceItem.time,
                                 style: const TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -370,7 +371,10 @@ class _WorkoutSwapScheduleScreenState
                     const SizedBox(height: 2),
                     Text(
                       sourceItem.targetMuscles,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -378,7 +382,7 @@ class _WorkoutSwapScheduleScreenState
                         const Icon(
                           Icons.timer_outlined,
                           size: 14,
-                          color: Colors.grey,
+                          color: AppColors.textTertiary,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -410,7 +414,7 @@ class _WorkoutSwapScheduleScreenState
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
-              color: Colors.grey,
+              color: AppColors.textTertiary,
             ),
           ),
           const SizedBox(height: 8),
@@ -427,13 +431,16 @@ class _WorkoutSwapScheduleScreenState
                   const Icon(
                     Icons.event_busy_rounded,
                     size: 36,
-                    color: Colors.grey,
+                    color: AppColors.textTertiary,
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     'Không tìm thấy buổi tập sắp tới nào khả dụng để hoán đổi.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton(
@@ -484,7 +491,7 @@ class _WorkoutSwapScheduleScreenState
                                   fontWeight: FontWeight.w700,
                                   color: isSelected
                                       ? colors.primary
-                                      : Colors.grey,
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                               Container(
@@ -498,14 +505,14 @@ class _WorkoutSwapScheduleScreenState
                                   border: Border.all(
                                     color: isSelected
                                         ? colors.primary
-                                        : Colors.grey,
+                                        : AppColors.borderDefault,
                                   ),
                                 ),
                                 child: isSelected
                                     ? const Icon(
                                         Icons.check_rounded,
                                         size: 14,
-                                        color: Colors.black,
+                                        color: AppColors.onPrimary,
                                       )
                                     : null,
                               ),
@@ -524,7 +531,7 @@ class _WorkoutSwapScheduleScreenState
                             target.targetMuscles,
                             style: const TextStyle(
                               fontSize: 12,
-                              color: Colors.grey,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],

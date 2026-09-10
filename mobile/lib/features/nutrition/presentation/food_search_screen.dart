@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/resilient_network_image.dart';
 import '../application/favorite_foods_controller.dart';
 import '../data/food_catalog.dart';
@@ -185,12 +186,46 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          color: colors.primary,
+                                          color: AppColors.nutritionCalories,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        'P: ${item.baseProtein}g  C: ${item.baseCarbs}g  F: ${item.baseFat}g',
+                                      Text.rich(
+                                        TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: 'P: ${item.baseProtein}g',
+                                              style: const TextStyle(
+                                                color:
+                                                    AppColors.nutritionProtein,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: '  ',
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: 'C: ${item.baseCarbs}g',
+                                              style: const TextStyle(
+                                                color: AppColors.nutritionCarbs,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: '  ',
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: 'F: ${item.baseFat}g',
+                                              style: const TextStyle(
+                                                color: AppColors.nutritionFat,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall
@@ -215,7 +250,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                         ? Icons.favorite_rounded
                                         : Icons.favorite_border_rounded,
                                     color: favoriteIds.contains(item.id)
-                                        ? const Color(0xFFFF2E54)
+                                        ? colors.primary
                                         : colors.onSurfaceVariant.withValues(
                                             alpha: 0.6,
                                           ),

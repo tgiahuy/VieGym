@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({super.key, this.errorMessage});
 
@@ -21,7 +23,7 @@ class NotFoundScreen extends StatelessWidget {
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -51,14 +53,14 @@ class NotFoundScreen extends StatelessWidget {
               const Text(
                 'Trang bạn tìm kiếm không tồn tại hoặc đã bị chuyển dời.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               if (errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Text(
                   errorMessage!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+                  style: const TextStyle(fontSize: 12, color: AppColors.error),
                 ),
               ],
               const SizedBox(height: 28),

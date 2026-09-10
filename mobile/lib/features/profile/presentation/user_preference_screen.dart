@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../application/user_preference_controller.dart';
 
 class UserPreferenceScreen extends ConsumerStatefulWidget {
@@ -81,7 +82,7 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                       Icon(
                         Icons.fitness_center_rounded,
                         size: 20,
-                        color: colors.primary,
+                        color: AppColors.iconSecondary,
                       ),
                       const SizedBox(width: 8),
                       const Text(
@@ -209,7 +210,7 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                         'Đã chọn: ${prefs.targetMusclesPriority.length}',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: Colors.grey,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -258,7 +259,7 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                       Icon(
                         Icons.restaurant_rounded,
                         size: 20,
-                        color: colors.primary,
+                        color: AppColors.iconSecondary,
                       ),
                       const SizedBox(width: 8),
                       const Text(
@@ -379,7 +380,7 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                       const Icon(
                         Icons.no_food_rounded,
                         size: 18,
-                        color: Colors.redAccent,
+                        color: AppColors.error,
                       ),
                       const SizedBox(width: 6),
                       const Text(
@@ -387,7 +388,7 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Colors.redAccent,
+                          color: AppColors.error,
                         ),
                       ),
                     ],
@@ -395,7 +396,10 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                   const SizedBox(height: 4),
                   const Text(
                     'AI Meal Planner sẽ loại bỏ tuyệt đối các nguyên liệu này.',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -421,8 +425,8 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                       OutlinedButton(
                         onPressed: _handleAddAllergy,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -441,18 +445,16 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
                           allergy,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.redAccent,
+                            color: AppColors.error,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        backgroundColor: Colors.redAccent.withValues(
-                          alpha: 0.1,
-                        ),
-                        side: const BorderSide(color: Colors.redAccent),
+                        backgroundColor: AppColors.error.withValues(alpha: 0.1),
+                        side: const BorderSide(color: AppColors.error),
                         deleteIcon: const Icon(
                           Icons.close_rounded,
                           size: 16,
-                          color: Colors.redAccent,
+                          color: AppColors.error,
                         ),
                         onDeleted: () => notifier.removeAllergy(allergy),
                       );

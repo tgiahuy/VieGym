@@ -230,9 +230,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1B1F30),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF282E44)),
+                border: Border.all(color: AppColors.borderDefault),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +291,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.1,
-                    color: Colors.white70,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 TextButton.icon(
@@ -331,9 +331,9 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B1F30),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF282E44)),
+                  border: Border.all(color: AppColors.borderDefault),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,7 +357,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                         IconButton(
                           icon: const Icon(
                             Icons.delete_outline,
-                            color: Colors.redAccent,
+                            color: AppColors.error,
                           ),
                           tooltip: 'Xóa buổi này',
                           onPressed: () => _removeDay(_activeDayIndex),
@@ -390,7 +390,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                           child: Text(
                             'Chưa có bài tập nào trong buổi này.\nNhấn "Thêm bài" để chọn từ thư viện.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
                       )
@@ -549,7 +549,10 @@ class _ConfigBox extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Colors.white70),
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

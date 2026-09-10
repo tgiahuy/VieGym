@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/muscle_models.dart';
 import 'body_muscle_map.dart';
 import 'muscle_zoom_focus_card.dart';
@@ -199,7 +200,7 @@ class _ExerciseMuscleVisualizerState extends State<ExerciseMuscleVisualizer> {
               final isSelected = _focusedMuscle == muscle;
               final chipColor = isPrimary
                   ? colors.primary
-                  : const Color(0xFFFF6B8B);
+                  : AppColors.muscleHighlight;
 
               return ChoiceChip(
                 label: Row(
@@ -249,8 +250,8 @@ class _ExerciseMuscleVisualizerState extends State<ExerciseMuscleVisualizer> {
             children: [
               _LegendItem(color: colors.primary, label: 'Cơ tác động chính'),
               if (_secondaryMuscles.isNotEmpty)
-                const _LegendItem(
-                  color: Color(0xFFFF6B8B),
+                _LegendItem(
+                  color: AppColors.muscleHighlight,
                   label: 'Cơ bổ trợ / Giữ ổn định',
                 ),
             ],

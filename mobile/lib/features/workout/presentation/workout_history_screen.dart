@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
 import '../application/workout_schedule_controller.dart';
 import '../domain/workout_models.dart';
@@ -190,9 +191,9 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               decoration: BoxDecoration(
-                color: const Color(0xFF141724),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF282E44), width: 1),
+                border: Border.all(color: AppColors.borderDefault, width: 1),
               ),
               child: Row(
                 children: [
@@ -212,7 +213,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
                     child: _MonthlyMetricColumn(
                       label: 'TỔNG VOLUME',
                       value: _formatVolumeSummary(totalVolumeKg),
-                      valueColor: const Color(0xFF10B981),
+                      valueColor: AppColors.success,
                     ),
                   ),
                 ],
@@ -225,9 +226,9 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF141724),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF282E44), width: 1),
+                border: Border.all(color: AppColors.borderDefault, width: 1),
               ),
               child: Column(
                 children: [
@@ -240,7 +241,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
                           Icon(
                             Icons.calendar_today_rounded,
                             size: 18,
-                            color: colors.primary,
+                            color: AppColors.iconSecondary,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -314,12 +315,12 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
             // 3. Search Bar
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF0F121E),
+                color: AppColors.surfaceInput,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _searchQuery.isNotEmpty
                       ? colors.primary.withValues(alpha: 0.6)
-                      : const Color(0xFF282E44),
+                      : AppColors.borderDefault,
                   width: 1.2,
                 ),
               ),
@@ -464,15 +465,15 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
                     height: 42,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF252A40)
+                          ? AppColors.surfaceElevated
                           : isToday
                           ? Colors.white.withValues(alpha: 0.05)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(14),
                       border: isToday && !isSelected
-                          ? Border.all(color: const Color(0xFF333A52), width: 1)
+                          ? Border.all(color: AppColors.borderDefault, width: 1)
                           : isSelected
-                          ? Border.all(color: const Color(0xFF434C6D), width: 1)
+                          ? Border.all(color: AppColors.borderStrong, width: 1)
                           : null,
                     ),
                     child: Column(
@@ -500,7 +501,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: hasWorkout
-                                ? const Color(0xFFFF2E54)
+                                ? AppColors.success
                                 : Colors.transparent,
                           ),
                         ),
@@ -533,9 +534,9 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF141724),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF282E44)),
+        border: Border.all(color: AppColors.borderDefault),
       ),
       child: Column(
         children: [
@@ -566,7 +567,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
               },
               style: OutlinedButton.styleFrom(
                 visualDensity: VisualDensity.compact,
-                side: const BorderSide(color: Color(0xFF333A52)),
+                side: BorderSide(color: AppColors.borderDefault),
               ),
               child: const Text('Xóa bộ lọc', style: TextStyle(fontSize: 12)),
             ),
@@ -660,9 +661,9 @@ class _WorkoutHistoryCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF141724),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF282E44), width: 1),
+        border: Border.all(color: AppColors.borderDefault, width: 1),
       ),
       child: Material(
         color: Colors.transparent,
@@ -752,7 +753,7 @@ class _WorkoutHistoryCard extends StatelessWidget {
                 ],
 
                 const SizedBox(height: 12),
-                const Divider(color: Color(0xFF222638), height: 1),
+                Divider(color: AppColors.borderDefault, height: 1),
                 const SizedBox(height: 10),
 
                 // Bottom Metrics Row: 55 phút • 4.420 kg • 12 sets • 1 PR

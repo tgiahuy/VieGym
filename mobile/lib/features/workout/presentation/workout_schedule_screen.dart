@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../application/workout_schedule_controller.dart';
 import '../domain/muscle_models.dart';
 import '../domain/workout_models.dart';
@@ -204,7 +205,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
             return Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               decoration: BoxDecoration(
-                color: const Color(0xFF10131E),
+                color: AppColors.surface,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
@@ -234,12 +235,12 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: colors.primary.withValues(alpha: 0.15),
+                            color: AppColors.surfaceNested,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.sync_alt_rounded,
-                            color: colors.primary,
+                            color: AppColors.iconSecondary,
                             size: 20,
                           ),
                         ),
@@ -260,7 +261,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                 'Hoán đổi lịch giữa hai buổi tập đã lên lịch',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF7E849E),
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
                             ],
@@ -281,7 +282,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? colors.primary.withValues(alpha: 0.12)
-                              : const Color(0xFF171A28),
+                              : AppColors.surfaceElevated,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
@@ -339,7 +340,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                           fontWeight: FontWeight.w700,
                                           color: isSelected
                                               ? colors.primary
-                                              : const Color(0xFF8E95AF),
+                                              : AppColors.textSecondary,
                                         ),
                                       ),
                                       const SizedBox(height: 2),
@@ -367,7 +368,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(0, 48),
-                              backgroundColor: const Color(0xFF1B1E2E),
+                              backgroundColor: AppColors.surfaceElevated,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -451,7 +452,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
             return Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               decoration: BoxDecoration(
-                color: const Color(0xFF10131E),
+                color: AppColors.surface,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
@@ -481,12 +482,12 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: colors.primary.withValues(alpha: 0.15),
+                            color: AppColors.surfaceNested,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.calendar_month_rounded,
-                            color: colors.primary,
+                            color: AppColors.iconSecondary,
                             size: 20,
                           ),
                         ),
@@ -507,7 +508,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                 'Chuyển buổi tập sang ngày trống',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF7E849E),
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
                             ],
@@ -526,7 +527,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? colors.primary.withValues(alpha: 0.12)
-                              : const Color(0xFF171A28),
+                              : AppColors.surfaceElevated,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
@@ -596,7 +597,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(0, 48),
-                              backgroundColor: const Color(0xFF1B1E2E),
+                              backgroundColor: AppColors.surfaceElevated,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -728,7 +729,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                       Icon(
                         Icons.calendar_month_rounded,
                         size: 18,
-                        color: colors.primary,
+                        color: AppColors.iconSecondary,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -750,10 +751,10 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.15),
+                        color: AppColors.surfaceElevated,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: colors.primary.withValues(alpha: 0.4),
+                          color: AppColors.borderDefault,
                           width: 0.8,
                         ),
                       ),
@@ -763,7 +764,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                           Icon(
                             Icons.today_rounded,
                             size: 13,
-                            color: colors.primary,
+                            color: AppColors.iconSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -771,7 +772,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: colors.primary,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ],
@@ -823,28 +824,17 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? colors.primary
-                                    : const Color(0xFF141724),
+                                    ? AppColors.primarySoft
+                                    : AppColors.surfaceInput,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected
-                                      ? colors.primary
+                                      ? AppColors.primaryBorder
                                       : colors.outlineVariant.withValues(
                                           alpha: 0.35,
                                         ),
                                   width: 1,
                                 ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: colors.primary.withValues(
-                                            alpha: 0.35,
-                                          ),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ]
-                                    : null,
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -855,7 +845,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: isSelected
-                                          ? colors.onPrimary
+                                          ? colors.primary
                                           : colors.onSurfaceVariant,
                                     ),
                                   ),
@@ -866,7 +856,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                       fontSize: 15,
                                       fontWeight: FontWeight.w900,
                                       color: isSelected
-                                          ? colors.onPrimary
+                                          ? Colors.white
                                           : colors.onSurface,
                                     ),
                                   ),
@@ -878,8 +868,8 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                       shape: BoxShape.circle,
                                       color: hasSchedule
                                           ? (isSelected
-                                                ? colors.onPrimary
-                                                : colors.primary)
+                                                ? colors.primary
+                                                : colors.onSurfaceVariant)
                                           : Colors.transparent,
                                     ),
                                   ),
@@ -913,7 +903,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1B1E2E),
+                          color: AppColors.surfaceElevated,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -976,7 +966,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE53935),
+                          color: AppColors.error,
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: InkWell(
@@ -1026,7 +1016,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF141724),
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
                             color: colors.outlineVariant.withValues(alpha: 0.4),
@@ -1069,7 +1059,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                         item.targetMuscles,
                                         style: const TextStyle(
                                           fontSize: 13,
-                                          color: Color(0xFF9096B0),
+                                          color: AppColors.textSecondary,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
@@ -1081,7 +1071,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                           Icon(
                                             Icons.layers_rounded,
                                             size: 17,
-                                            color: colors.primary,
+                                            color: AppColors.iconSecondary,
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
@@ -1096,7 +1086,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                           const Text(
                                             '•',
                                             style: TextStyle(
-                                              color: Color(0xFF636A84),
+                                              color: AppColors.textTertiary,
                                               fontSize: 14,
                                               fontWeight: FontWeight.w900,
                                             ),
@@ -1105,7 +1095,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                           Icon(
                                             Icons.access_time_filled_rounded,
                                             size: 16,
-                                            color: colors.primary,
+                                            color: AppColors.iconSecondary,
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
@@ -1143,7 +1133,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF7E849E),
+                                color: AppColors.textTertiary,
                                 letterSpacing: 0.8,
                               ),
                             ),
@@ -1158,10 +1148,10 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                   vertical: 11,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1B1F2E),
+                                  color: AppColors.surfaceElevated,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: const Color(0xFF262C40),
+                                    color: AppColors.borderDefault,
                                     width: 0.8,
                                   ),
                                 ),
@@ -1184,7 +1174,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                       style: const TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF8E95AF),
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -1201,7 +1191,8 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                     onPressed: () => _handleSwapWorkout(item),
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size(0, 44),
-                                      backgroundColor: const Color(0xFF181C2B),
+                                      backgroundColor:
+                                          AppColors.surfaceElevated,
                                       side: BorderSide(
                                         color: colors.outlineVariant.withValues(
                                           alpha: 0.4,
@@ -1214,7 +1205,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                     icon: Icon(
                                       Icons.sync_alt_rounded,
                                       size: 16,
-                                      color: colors.primary,
+                                      color: AppColors.iconSecondary,
                                     ),
                                     label: const Text(
                                       'Đổi buổi',
@@ -1232,7 +1223,8 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                     onPressed: () => _handleMoveDate(item),
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size(0, 44),
-                                      backgroundColor: const Color(0xFF181C2B),
+                                      backgroundColor:
+                                          AppColors.surfaceElevated,
                                       side: BorderSide(
                                         color: colors.outlineVariant.withValues(
                                           alpha: 0.4,
@@ -1245,7 +1237,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                     icon: Icon(
                                       Icons.calendar_month_outlined,
                                       size: 16,
-                                      color: colors.primary,
+                                      color: AppColors.iconSecondary,
                                     ),
                                     label: const Text(
                                       'Đổi ngày',

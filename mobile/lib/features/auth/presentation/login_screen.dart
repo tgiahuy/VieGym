@@ -50,6 +50,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    final isBypass = ref.read(devBypassAuthProvider);
+    if (isBypass) {
+      final emailInput = _emailController.text.trim();
+      final effectiveEmail = emailInput.isNotEmpty
+          ? emailInput
+          : 'athlete@viegym.vn';
+      final effectiveName = effectiveEmail.split('@').first;
+      ref
+          .read(authProvider.notifier)
+          .devBypassLogin(
+            email: effectiveEmail,
+            displayName: effectiveName.isNotEmpty
+                ? effectiveName
+                : 'VieGym Athlete',
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đăng nhập thành công (Bypass Auth)!')),
+        );
+      }
+      final targetRoute = await _resolveTargetRoute();
+      if (mounted) {
+        context.go(targetRoute);
+      }
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final success = await ref
@@ -93,6 +120,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleBiometricLogin() async {
+    final isBypass = ref.read(devBypassAuthProvider);
+    if (isBypass) {
+      ref
+          .read(authProvider.notifier)
+          .devBypassLogin(displayName: 'Biometric Athlete');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Xác thực Sinh trắc học thành công (Bypass Auth)!'),
+          ),
+        );
+      }
+      final targetRoute = await _resolveTargetRoute();
+      if (mounted) {
+        context.go(targetRoute);
+      }
+      return;
+    }
     final colors = Theme.of(context).colorScheme;
 
     final authenticated = await showModalBottomSheet<bool>(
@@ -302,7 +347,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                if (ref.watch(devBypassAuthProvider)) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: colors.primary.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.bolt_rounded,
+                          size: 20,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Bypass Auth đang bật: Bấm "Đăng nhập" để vào thẳng Onboarding mà không cần mật khẩu.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.onSurface,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // Login action row with Face ID / Biometrics button
                 Row(
@@ -334,10 +415,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       tooltip: 'Đăng nhập bằng Face ID / Vân tay',
                       icon: const Icon(Icons.fingerprint_rounded, size: 28),
                       backgroundColor: colors.surfaceContainer,
-                      color: colors.primary,
+                      color: colors.onSurface,
                       borderRadius: 16,
                       padding: const EdgeInsets.all(12),
-                      enableGlow: true,
+                      enableGlow: false,
                       onPressed: _handleBiometricLogin,
                     ),
                   ],
@@ -377,6 +458,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         label: 'Google',
                         icon: const GoogleLogo(size: 20),
                         onPressed: () async {
+                          if (ref.read(devBypassAuthProvider)) {
+                            ref
+                                .read(authProvider.notifier)
+                                .devBypassLogin(
+                                  email: 'google.athlete@viegym.vn',
+                                  displayName: 'Google Athlete',
+                                );
+                            final targetRoute = await _resolveTargetRoute();
+                            if (context.mounted) {
+                              context.go(targetRoute);
+                            }
+                            return;
+                          }
                           final success = await ref
                               .read(authProvider.notifier)
                               .loginWithGoogle();
@@ -404,6 +498,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         label: 'Facebook',
                         icon: const FacebookLogo(size: 20),
                         onPressed: () async {
+                          if (ref.read(devBypassAuthProvider)) {
+                            ref
+                                .read(authProvider.notifier)
+                                .devBypassLogin(
+                                  email: 'facebook.athlete@viegym.vn',
+                                  displayName: 'Facebook Athlete',
+                                );
+                            final targetRoute = await _resolveTargetRoute();
+                            if (context.mounted) {
+                              context.go(targetRoute);
+                            }
+                            return;
+                          }
                           final success = await ref
                               .read(authProvider.notifier)
                               .loginWithFacebook();

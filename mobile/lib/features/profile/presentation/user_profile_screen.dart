@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 
@@ -93,7 +94,7 @@ class UserProfileScreen extends ConsumerWidget {
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
-              color: Colors.grey,
+              color: AppColors.textTertiary,
             ),
           ),
           const SizedBox(height: 8),
@@ -113,7 +114,10 @@ class UserProfileScreen extends ConsumerWidget {
                   ),
                   title: const Text(
                     'Tên hiển thị',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   subtitle: Text(
                     displayName,
@@ -135,7 +139,10 @@ class UserProfileScreen extends ConsumerWidget {
                   ),
                   title: const Text(
                     'Email đăng nhập',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   subtitle: Text(
                     email,
@@ -150,7 +157,7 @@ class UserProfileScreen extends ConsumerWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
+                      color: AppColors.success.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -158,7 +165,7 @@ class UserProfileScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
-                        color: Colors.greenAccent,
+                        color: AppColors.success,
                       ),
                     ),
                   ),
@@ -175,7 +182,10 @@ class UserProfileScreen extends ConsumerWidget {
                   ),
                   title: const Text(
                     'Số điện thoại',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   subtitle: Text(
                     phoneNumber,
@@ -190,7 +200,7 @@ class UserProfileScreen extends ConsumerWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
+                      color: AppColors.success.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -198,7 +208,7 @@ class UserProfileScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
-                        color: Colors.greenAccent,
+                        color: AppColors.success,
                       ),
                     ),
                   ),
@@ -215,7 +225,10 @@ class UserProfileScreen extends ConsumerWidget {
                   ),
                   title: const Text(
                     'Phương thức đăng nhập',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   subtitle: const Text(
                     'Email & Mật khẩu',
@@ -234,7 +247,10 @@ class UserProfileScreen extends ConsumerWidget {
                   ),
                   title: const Text(
                     'Ngày gia nhập',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   subtitle: const Text(
                     'Tháng 8, 2026',

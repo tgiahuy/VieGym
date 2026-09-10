@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/muscle_models.dart';
 import 'body_muscle_map.dart';
 
@@ -20,7 +21,7 @@ class MuscleZoomFocusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final badgeColor = isPrimary ? colors.primary : const Color(0xFFFF6B8B);
+    final badgeColor = isPrimary ? colors.primary : AppColors.muscleHighlight;
 
     return Card(
       margin: EdgeInsets.zero,

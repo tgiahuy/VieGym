@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../application/progress_controller.dart';
 
 class PersonalRecordsScreen extends ConsumerWidget {
@@ -31,7 +32,7 @@ class PersonalRecordsScreen extends ConsumerWidget {
               gradient: LinearGradient(
                 colors: [
                   colors.primary.withValues(alpha: 0.18),
-                  Colors.amber.withValues(alpha: 0.08),
+                  AppColors.amber.withValues(alpha: 0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -46,12 +47,12 @@ class PersonalRecordsScreen extends ConsumerWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
+                    color: AppColors.amberSoft,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.emoji_events_rounded,
-                    color: Colors.amber,
+                    color: AppColors.amber,
                     size: 24,
                   ),
                 ),
@@ -68,7 +69,7 @@ class PersonalRecordsScreen extends ConsumerWidget {
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
-                              color: Colors.amber,
+                              color: AppColors.amber,
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -78,24 +79,25 @@ class PersonalRecordsScreen extends ConsumerWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: colors.primary.withValues(alpha: 0.15),
+                              color: AppColors.aiVioletSoft,
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.aiVioletBorder),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.auto_awesome_rounded,
                                   size: 10,
-                                  color: colors.primary,
+                                  color: AppColors.aiViolet,
                                 ),
-                                const SizedBox(width: 3),
+                                SizedBox(width: 3),
                                 Text(
                                   'AI AUTO-DETECT',
                                   style: TextStyle(
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.w900,
-                                    color: colors.primary,
+                                    color: AppColors.aiViolet,
                                   ),
                                 ),
                               ],
@@ -234,9 +236,7 @@ class PersonalRecordsScreen extends ConsumerWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.greenAccent.withValues(
-                                    alpha: 0.15,
-                                  ),
+                                  color: AppColors.successSoft,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -244,7 +244,7 @@ class PersonalRecordsScreen extends ConsumerWidget {
                                   style: const TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.greenAccent,
+                                    color: AppColors.success,
                                   ),
                                 ),
                               ),

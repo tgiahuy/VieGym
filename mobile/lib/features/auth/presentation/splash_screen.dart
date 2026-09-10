@@ -70,6 +70,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
 
       final authState = ref.read(authProvider);
+      final isBypass = ref.read(devBypassAuthProvider);
 
       if (authState.status == AuthStatus.authenticated &&
           authState.user != null) {
@@ -86,6 +87,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         final isEquipmentCompleted =
             user.equipmentCompleted ||
             ref.read(equipmentOnboardingCompletedProvider);
+
+        final targetRoute = resolveOnboardingRoute(
+          isAuthenticated: true,
+          isHealthProfileCompleted: isHealthCompleted,
+          isEquipmentOnboardingCompleted: isEquipmentCompleted,
+        );
+        if (!mounted) return;
+        context.go(targetRoute);
+      } else if (isBypass) {
+        // Tạm thời bật bypass: Khởi tạo phiên dev và vào thẳng Onboarding
+        ref.read(authProvider.notifier).devBypassLogin();
+        final isHealthCompleted = ref.read(healthProfileProvider).isCompleted;
+        final isEquipmentCompleted = ref.read(
+          equipmentOnboardingCompletedProvider,
+        );
 
         final targetRoute = resolveOnboardingRoute(
           isAuthenticated: true,

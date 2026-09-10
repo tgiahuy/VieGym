@@ -848,6 +848,53 @@ void main() {
       },
     );
 
+    test('devBypassLogin immediately authenticates with dummy user', () {
+      final container = _createTestContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(authProvider.notifier);
+      expect(container.read(authProvider).status, AuthStatus.unauthenticated);
+
+      controller.devBypassLogin(
+        email: 'testbypass@viegym.vn',
+        displayName: 'Test Bypass Athlete',
+      );
+
+      final state = container.read(authProvider);
+      expect(state.status, AuthStatus.authenticated);
+      expect(state.user?.email, 'testbypass@viegym.vn');
+      expect(state.user?.displayName, 'Test Bypass Athlete');
+    });
+
+    testWidgets(
+      'LoginScreen and RegisterScreen render dev bypass notice when bypass is active',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              devBypassAuthProvider.overrideWith(_ActiveBypassNotifier.new),
+            ],
+            child: const MaterialApp(home: LoginScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Bypass Auth đang bật'), findsOneWidget);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              devBypassAuthProvider.overrideWith(_ActiveBypassNotifier.new),
+            ],
+            child: const MaterialApp(home: RegisterScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Bypass Auth đang bật'), findsOneWidget);
+      },
+    );
+
     testWidgets(
       'OtpScreen renders 6 digits input, masked email, and cooldown button',
       (tester) async {
@@ -1259,4 +1306,9 @@ class _TestHealthProfileNotifier extends HealthProfileController {
 
   @override
   HealthProfile build() => _initial;
+}
+
+class _ActiveBypassNotifier extends DevBypassAuthNotifier {
+  @override
+  bool build() => true;
 }

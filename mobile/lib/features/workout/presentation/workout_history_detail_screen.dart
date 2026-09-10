@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
 import '../application/workout_schedule_controller.dart';
 import '../domain/muscle_models.dart';
@@ -77,9 +78,9 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF141724),
+                color: colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF282E44), width: 1),
+                border: Border.all(color: colors.outlineVariant, width: 1),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +169,7 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: 18),
-                  const Divider(color: Color(0xFF282E44), height: 1),
+                  Divider(color: colors.outlineVariant, height: 1),
                   const SizedBox(height: 16),
 
                   // 4 Core Metrics
@@ -185,17 +186,17 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                       Expanded(
                         child: _DetailMetricItem(
                           icon: Icons.fitness_center_rounded,
-                          iconColor: const Color(0xFF10B981),
+                          iconColor: AppColors.success,
                           label: 'Tổng Volume',
                           value:
                               '${historyItem.totalVolumeKg.toStringAsFixed(0)} kg',
-                          valueColor: const Color(0xFF10B981),
+                          valueColor: AppColors.success,
                         ),
                       ),
                       Expanded(
                         child: _DetailMetricItem(
                           icon: Icons.repeat_rounded,
-                          iconColor: const Color(0xFF3B82F6),
+                          iconColor: AppColors.info,
                           label: 'Tổng số hiệp',
                           value: '${historyItem.completedSetsCount}',
                         ),
@@ -224,10 +225,10 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141724),
+                      color: colors.surfaceContainer,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: const Color(0xFF282E44),
+                        color: colors.outlineVariant,
                         width: 1,
                       ),
                     ),
@@ -327,9 +328,9 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF141724),
+                  color: colors.surfaceContainer,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF282E44)),
+                  border: Border.all(color: colors.outlineVariant),
                 ),
                 child: Column(
                   children: [
@@ -366,12 +367,9 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141724),
+                    color: colors.surfaceContainer,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFF282E44),
-                      width: 1,
-                    ),
+                    border: Border.all(color: colors.outlineVariant, width: 1),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +424,7 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Divider(color: Color(0xFF282E44), height: 1),
+                      Divider(color: colors.outlineVariant, height: 1),
 
                       // Table Header
                       Container(
@@ -434,7 +432,7 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                           horizontal: 16,
                           vertical: 8,
                         ),
-                        color: const Color(0xFF1B1F30).withValues(alpha: 0.5),
+                        color: colors.surfaceContainerHigh,
                         child: const Row(
                           children: [
                             SizedBox(
@@ -491,10 +489,10 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                             horizontal: 16,
                             vertical: 10,
                           ),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
-                                color: Color(0xFF1F2436),
+                                color: colors.outlineVariant,
                                 width: 0.6,
                               ),
                             ),
@@ -558,7 +556,7 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                                     Icon(
                                       Icons.check_circle_rounded,
                                       size: 15,
-                                      color: Color(0xFF10B981),
+                                      color: AppColors.success,
                                     ),
                                     SizedBox(width: 4),
                                     Text(
@@ -566,7 +564,7 @@ class WorkoutHistoryDetailScreen extends ConsumerWidget {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF10B981),
+                                        color: AppColors.success,
                                       ),
                                     ),
                                   ],

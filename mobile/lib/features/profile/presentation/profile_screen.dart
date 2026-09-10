@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../../workout/domain/muscle_models.dart';
 import '../../workout/presentation/widgets/body_muscle_map.dart';
+import '../application/muscle_distribution_controller.dart';
 import '../application/progress_controller.dart';
+import '../domain/muscle_distribution_models.dart';
+import 'widgets/log_weight_dialog.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -17,51 +21,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  BodySide _bodySide = BodySide.front;
-
   void _showLogWeightDialog(BuildContext context) {
-    final healthProfile = ref.read(healthProfileProvider);
-    final weightController = TextEditingController(
-      text: healthProfile.weightKg > 0
-          ? healthProfile.weightKg.toStringAsFixed(1)
-          : '70.2',
-    );
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Ghi nhận cân nặng hôm nay'),
-          content: TextField(
-            controller: weightController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Cân nặng',
-              suffixText: 'kg',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Hủy'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final val = double.tryParse(weightController.text);
-                if (val != null) {
-                  ref.read(progressProvider.notifier).logWeight(val);
-                }
-                Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã ghi nhận cân nặng mới!')),
-                );
-              },
-              child: const Text('Lưu'),
-            ),
-          ],
-        );
-      },
-    );
+    showLogWeightModal(context, ref);
   }
 
   @override
@@ -129,10 +90,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ==========================================
           // 3. Muscle Group Distribution (ĐẶT BÊN DƯỚI CHỈ SỐ THỂ CHẤT)
           // ==========================================
-          _PersonalMuscleDistributionCard(
-            bodySide: _bodySide,
-            onBodySideChanged: (side) => setState(() => _bodySide = side),
-          ),
+          const _PersonalMuscleDistributionCard(),
           const SizedBox(height: 20),
 
           // ==========================================
@@ -212,16 +170,16 @@ class _UserInformationCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [colors.primary, const Color(0xFFFF5277)],
+                    colors: [colors.primary, AppColors.primaryLight],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                 ),
                 padding: const EdgeInsets.all(2.5),
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFF161922),
+                    color: AppColors.surface,
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -287,10 +245,10 @@ class _UserInformationCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.primary.withValues(alpha: 0.12),
+                            color: AppColors.orange.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: colors.primary.withValues(alpha: 0.35),
+                              color: AppColors.orange.withValues(alpha: 0.35),
                               width: 0.8,
                             ),
                           ),
@@ -301,10 +259,10 @@ class _UserInformationCard extends StatelessWidget {
                               const SizedBox(width: 3),
                               Text(
                                 '$streakDays ngày',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
-                                  color: colors.primary,
+                                  color: AppColors.orange,
                                 ),
                               ),
                             ],
@@ -399,14 +357,18 @@ class _PhysicalMetricsSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 child: Row(
                   children: [
-                    Icon(Icons.edit_outlined, size: 14, color: colors.primary),
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
-                    Text(
+                    const Text(
                       'Chỉnh sửa',
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -433,7 +395,7 @@ class _PhysicalMetricsSection extends StatelessWidget {
                   label: 'CÂN NẶNG',
                   value: '${weightKg.toStringAsFixed(1)} kg',
                   subtitle: '↓ 1.3 kg',
-                  subtitleColor: Colors.greenAccent,
+                  subtitleColor: AppColors.success,
                   icon: Icons.monitor_weight_outlined,
                 ),
               ),
@@ -461,8 +423,8 @@ class _PhysicalMetricsSection extends StatelessWidget {
                   label: 'BMI',
                   value: bmi.toStringAsFixed(1),
                   subtitle: 'Bình thường',
-                  subtitleColor: Colors.greenAccent,
-                  valueColor: Colors.greenAccent,
+                  subtitleColor: AppColors.success,
+                  valueColor: AppColors.success,
                   icon: Icons.speed_rounded,
                 ),
               ),
@@ -585,7 +547,7 @@ class _WeeklySummarySection extends StatelessWidget {
                 subtitle: 'Trung bình ~53 phút/buổi',
                 subtitleColor: colors.onSurfaceVariant,
                 icon: Icons.access_time_filled_rounded,
-                iconColor: colors.primary,
+                iconColor: AppColors.blue,
               ),
             ),
             const SizedBox(width: 10),
@@ -596,7 +558,7 @@ class _WeeklySummarySection extends StatelessWidget {
                 subtitle: 'Từ $completedWorkouts buổi hoàn thành',
                 subtitleColor: colors.onSurfaceVariant,
                 icon: Icons.bolt_rounded,
-                iconColor: Colors.orangeAccent,
+                iconColor: AppColors.orange,
               ),
             ),
           ],
@@ -643,16 +605,21 @@ class _PersonalMetricTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color: colors.onSurfaceVariant,
-                  letterSpacing: 0.4,
-                  height: 1.2,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: colors.onSurfaceVariant,
+                    letterSpacing: 0.4,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 4),
               Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
@@ -690,86 +657,98 @@ class _PersonalMetricTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. Muscle Group Distribution Card
+// 4. Muscle Group Distribution Card (Tái thiết kế trực quan theo Fitbod & VieGym)
 // ─────────────────────────────────────────────────────────────────────────────
-class _PersonalMuscleDistributionCard extends StatelessWidget {
-  const _PersonalMuscleDistributionCard({
-    required this.bodySide,
-    required this.onBodySideChanged,
-  });
-
-  final BodySide bodySide;
-  final ValueChanged<BodySide> onBodySideChanged;
+class _PersonalMuscleDistributionCard extends ConsumerWidget {
+  const _PersonalMuscleDistributionCard();
 
   @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final distState = ref.watch(muscleDistributionProvider);
+    final isFront = distState.bodySide == BodySide.front;
 
-    final primaryMuscles = {
-      MuscleGroup.chest,
-      MuscleGroup.upperChest,
-      MuscleGroup.quads,
-      MuscleGroup.glutes,
-      MuscleGroup.lats,
-    };
-    final secondaryMuscles = {
-      MuscleGroup.frontDelts,
-      MuscleGroup.sideDelts,
-      MuscleGroup.triceps,
-      MuscleGroup.biceps,
-      MuscleGroup.hamstrings,
-    };
+    // Symmetrical 4-muscle layouts around the human body
+    // Front: Left = Vai, Tay trước, Cơ bụng, Cơ liên sườn
+    // Front: Right = Ngực, Cẳng tay, Cơ đùi trước, Cơ khép đùi
+    // Back: Left = Cầu vai, Tay sau, Cơ mông, Bắp chân
+    // Back: Right = Lưng, Lưng dưới, Đùi sau, Vai sau
+    final leftMuscles = isFront
+        ? const [
+            MuscleGroup.frontDelts, // Vai
+            MuscleGroup.biceps, // Tay trước
+            MuscleGroup.abs, // Cơ bụng
+            MuscleGroup.obliques, // Cơ liên sườn
+          ]
+        : const [
+            MuscleGroup.traps, // Cầu vai
+            MuscleGroup.triceps, // Tay sau
+            MuscleGroup.glutes, // Cơ mông
+            MuscleGroup.calves, // Bắp chân
+          ];
+
+    final rightMuscles = isFront
+        ? const [
+            MuscleGroup.chest, // Ngực
+            MuscleGroup.forearms, // Cẳng tay
+            MuscleGroup.quads, // Cơ đùi trước
+            MuscleGroup.adductors, // Cơ khép đùi
+          ]
+        : const [
+            MuscleGroup.lats, // Lưng
+            MuscleGroup.lowerBack, // Lưng dưới
+            MuscleGroup.hamstrings, // Đùi sau
+            MuscleGroup.rearDelts, // Vai sau
+          ];
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.surfaceContainer,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: AppColors.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Title & Smart Front/Back Switcher
+          // 1. Header with Icon, Title, and Subtitle
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.pie_chart_outline_rounded,
-                  size: 17,
-                  color: colors.primary,
+                  size: 18,
+                  color: AppColors.primary,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 10),
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'PHÂN BỐ NHÓM CƠ',
+                      'Phân bố nhóm cơ',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: colors.onSurface,
-                        letterSpacing: 0.3,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.2,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    SizedBox(height: 1),
                     Text(
-                      'Mục tiêu tập luyện',
+                      'Dựa trên khối lượng tập luyện của bạn',
                       style: TextStyle(
-                        fontSize: 10,
-                        color: colors.onSurfaceVariant,
+                        fontSize: 10.5,
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
@@ -780,96 +759,192 @@ class _PersonalMuscleDistributionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+
+          // 2. Timeframe Filter Selector [7 ngày] [30 ngày] [3 tháng]
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(2.5),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
+              color: AppColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.borderDefault.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              children: TimeframeFilter.values.map((filter) {
+                final isSelected = distState.timeframe == filter;
+                return Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(9),
+                    onTap: () => ref
+                        .read(muscleDistributionProvider.notifier)
+                        .setTimeframe(filter),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.surface
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                        border: isSelected
+                            ? Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.6),
+                                width: 1,
+                              )
+                            : null,
+                      ),
+                      child: Text(
+                        filter.label,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // 3. Front / Back Toggle [Phía trước] | [Phía sau]
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated.withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Expanded(
-                  child: _PersonalSideBtn(
-                    label: 'Mặt trước',
-                    isSelected: bodySide == BodySide.front,
-                    onTap: () => onBodySideChanged(BodySide.front),
+                  child: _SideToggleBtn(
+                    label: 'Phía trước',
+                    isSelected: isFront,
+                    onTap: () => ref
+                        .read(muscleDistributionProvider.notifier)
+                        .setBodySide(BodySide.front),
                   ),
                 ),
                 Expanded(
-                  child: _PersonalSideBtn(
-                    label: 'Mặt sau',
-                    isSelected: bodySide == BodySide.back,
-                    onTap: () => onBodySideChanged(BodySide.back),
+                  child: _SideToggleBtn(
+                    label: 'Phía sau',
+                    isSelected: !isFront,
+                    onTap: () => ref
+                        .read(muscleDistributionProvider.notifier)
+                        .setBodySide(BodySide.back),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // Reusable Body Muscle Map (Centered, complete full body view from head to toes)
-          Center(
-            child: BodyMuscleMap(
-              bodySide: bodySide,
-              primaryMuscles: primaryMuscles,
-              secondaryMuscles: secondaryMuscles,
-              autoZoom: false,
-              isZoomed: false,
-              height: 340,
-            ),
+          // 4. Body Muscle Map with Left & Right Muscle Columns
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final maxWidth = constraints.maxWidth;
+              final bodyWidth = (maxWidth * 0.38).clamp(90.0, 142.0);
+              final bodyHeight = (bodyWidth * 1.85).clamp(180.0, 310.0);
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left Column (4 muscle items)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: leftMuscles.map((muscle) {
+                        final item = distState.items[muscle];
+                        final isSelected = distState.selectedMuscle == muscle;
+                        final isDimmed =
+                            distState.selectedMuscle != null && !isSelected;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: _MuscleDistributionLabelItem(
+                            name: item?.nameVi ?? muscle.nameVi,
+                            percentage: item?.percentage ?? 0,
+                            isSelected: isSelected,
+                            isDimmed: isDimmed,
+                            isLeft: true,
+                            onTap: () => ref
+                                .read(muscleDistributionProvider.notifier)
+                                .selectMuscle(muscle),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  // Center: Body Muscle Map
+                  SizedBox(
+                    width: bodyWidth,
+                    height: bodyHeight,
+                    child: BodyMuscleMap(
+                      bodySide: distState.bodySide,
+                      muscleIntensities: distState.muscleIntensities,
+                      focusedMuscle: distState.selectedMuscle,
+                      onMuscleTap: (muscle) => ref
+                          .read(muscleDistributionProvider.notifier)
+                          .selectMuscle(muscle),
+                      autoZoom: false,
+                      isZoomed: false,
+                      height: bodyHeight,
+                      width: bodyWidth,
+                    ),
+                  ),
+
+                  // Right Column (4 muscle items)
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: rightMuscles.map((muscle) {
+                        final item = distState.items[muscle];
+                        final isSelected = distState.selectedMuscle == muscle;
+                        final isDimmed =
+                            distState.selectedMuscle != null && !isSelected;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: _MuscleDistributionLabelItem(
+                            name: item?.nameVi ?? muscle.nameVi,
+                            percentage: item?.percentage ?? 0,
+                            isSelected: isSelected,
+                            isDimmed: isDimmed,
+                            isLeft: false,
+                            onTap: () => ref
+                                .read(muscleDistributionProvider.notifier)
+                                .selectMuscle(muscle),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
 
-          // Muscle Percentage List
-          Text(
-            'NHÓM CƠ TRỌNG TÂM:',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const _PersonalMusclePercentRow(
-            name: 'Ngực',
-            percent: 19,
-            color: Color(0xFFFF2E54),
-          ),
-          const SizedBox(height: 6),
-          const _PersonalMusclePercentRow(
-            name: 'Chân & Mông',
-            percent: 36,
-            color: Color(0xFFFF2E54),
-          ),
-          const SizedBox(height: 6),
-          const _PersonalMusclePercentRow(
-            name: 'Lưng',
-            percent: 29,
-            color: Color(0xFFFF2E54),
-          ),
-          const SizedBox(height: 6),
-          const _PersonalMusclePercentRow(
-            name: 'Vai',
-            percent: 8,
-            color: Color(0xFFFF6B8B),
-          ),
-          const SizedBox(height: 6),
-          const _PersonalMusclePercentRow(
-            name: 'Tay & Khác',
-            percent: 8,
-            color: Color(0xFFFF6B8B),
-          ),
+          // 5. Intensity Legend Bar
+          const _MuscleIntensityLegend(),
         ],
       ),
     );
   }
 }
 
-class _PersonalSideBtn extends StatelessWidget {
-  const _PersonalSideBtn({
+class _SideToggleBtn extends StatelessWidget {
+  const _SideToggleBtn({
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -881,31 +956,38 @@ class _PersonalSideBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 6.5),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary.withValues(alpha: 0.2)
-              : Colors.transparent,
+          color: isSelected ? AppColors.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? colors.primary.withValues(alpha: 0.5)
-                : Colors.transparent,
-            width: 0.8,
-          ),
+          border: isSelected
+              ? Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.7),
+                  width: 1.2,
+                )
+              : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: isSelected ? colors.primary : colors.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
           ),
         ),
       ),
@@ -913,53 +995,167 @@ class _PersonalSideBtn extends StatelessWidget {
   }
 }
 
-class _PersonalMusclePercentRow extends StatelessWidget {
-  const _PersonalMusclePercentRow({
+class _MuscleDistributionLabelItem extends StatelessWidget {
+  const _MuscleDistributionLabelItem({
     required this.name,
-    required this.percent,
-    required this.color,
+    required this.percentage,
+    required this.isSelected,
+    required this.isDimmed,
+    required this.isLeft,
+    required this.onTap,
   });
 
   final String name;
-  final int percent;
-  final Color color;
+  final int percentage;
+  final bool isSelected;
+  final bool isDimmed;
+  final bool isLeft;
+  final VoidCallback onTap;
+
+  Color _getPercentageColor(int pct) {
+    if (pct == 0) return AppColors.textDisabled;
+    if (pct <= 15) return AppColors.textSecondary;
+    if (pct <= 25) return AppColors.textPrimary;
+    return AppColors.primary;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final ratio = (percent / 100.0).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isDimmed ? 0.35 : 1.0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primarySoft
+                : AppColors.surfaceElevated.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primaryBorder
+                  : AppColors.borderDefault.withValues(alpha: 0.4),
+              width: isSelected ? 1.5 : 1.0,
             ),
-            Text(
-              '$percent%',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                color: color,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: isLeft
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: isLeft
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: LinearProgressIndicator(
-            value: ratio,
-            minHeight: 5,
-            backgroundColor: colors.surfaceContainerHighest,
-            valueColor: AlwaysStoppedAnimation(color),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: isLeft
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
+                child: Text(
+                  '$percentage%',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: isSelected
+                        ? AppColors.primary
+                        : _getPercentageColor(percentage),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _MuscleIntensityLegend extends StatelessWidget {
+  const _MuscleIntensityLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Ít tập (0%)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 75,
+                height: 4.5,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(99),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.textTertiary.withValues(alpha: 0.25),
+                      AppColors.primary.withValues(alpha: 0.35),
+                      AppColors.primary.withValues(alpha: 0.65),
+                      AppColors.primary,
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Nhiều tập (>30%)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1002,13 +1198,13 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.15),
+                      color: AppColors.blue.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.bar_chart_rounded,
                       size: 16,
-                      color: colors.primary,
+                      color: AppColors.blue,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1053,7 +1249,7 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.greenAccent.withValues(alpha: 0.15),
+                  color: AppColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
@@ -1061,7 +1257,7 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: Colors.greenAccent,
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -1166,7 +1362,7 @@ class _PersonalVolumeBar extends StatelessWidget {
           width: 32,
           height: maxBarHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF1E222F),
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.bottomCenter,
@@ -1176,7 +1372,7 @@ class _PersonalVolumeBar extends StatelessWidget {
                   height: filledHeight,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [colors.primary, const Color(0xFFFF5277)],
+                      colors: [AppColors.blue, AppColors.info],
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                     ),
@@ -1191,7 +1387,7 @@ class _PersonalVolumeBar extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: isToday ? FontWeight.w900 : FontWeight.w600,
-            color: isToday ? colors.primary : colors.onSurfaceVariant,
+            color: isToday ? AppColors.blue : colors.onSurfaceVariant,
           ),
         ),
       ],
@@ -1244,13 +1440,13 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.15),
+                      color: AppColors.cyan.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.trending_down_rounded,
                       size: 16,
-                      color: colors.primary,
+                      color: AppColors.cyan,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1295,7 +1491,7 @@ class _PersonalWeightTrendCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.greenAccent.withValues(alpha: 0.15),
+                  color: AppColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
@@ -1303,7 +1499,7 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    color: Colors.greenAccent,
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -1342,7 +1538,7 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                 painter: _PersonalWeightLineChartPainter(
                   logs: weightLogs,
                   targetWeight: targetWeightKg,
-                  lineColor: colors.primary,
+                  lineColor: AppColors.cyan,
                 ),
               ),
             ),
@@ -1362,10 +1558,10 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                 ),
                 Text(
                   'Mục tiêu: ${targetWeightKg.toStringAsFixed(0)} kg',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: colors.primary,
+                    color: AppColors.cyan,
                   ),
                 ),
                 Text(

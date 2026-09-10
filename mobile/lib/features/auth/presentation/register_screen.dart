@@ -33,6 +33,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
+    final isBypass = ref.read(devBypassAuthProvider);
+    if (isBypass) {
+      final emailInput = _emailController.text.trim();
+      final effectiveEmail = emailInput.isNotEmpty
+          ? emailInput
+          : 'newathlete@viegym.vn';
+      final effectiveName = effectiveEmail.split('@').first;
+      ref
+          .read(authProvider.notifier)
+          .devBypassLogin(
+            email: effectiveEmail,
+            displayName: effectiveName.isNotEmpty
+                ? effectiveName
+                : 'VieGym Athlete',
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đăng ký thành công (Bypass - Không cần OTP)!'),
+          ),
+        );
+      }
+      final healthProfile = ref.read(healthProfileProvider);
+      final equipmentCompleted = ref.read(equipmentOnboardingCompletedProvider);
+      final targetRoute = resolveOnboardingRoute(
+        isAuthenticated: true,
+        isHealthProfileCompleted: healthProfile.isCompleted,
+        isEquipmentOnboardingCompleted: equipmentCompleted,
+      );
+      if (mounted) {
+        context.go(targetRoute);
+      }
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     final success = await ref
@@ -204,7 +239,43 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                if (ref.watch(devBypassAuthProvider)) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: colors.primary.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.bolt_rounded,
+                          size: 20,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Bypass Auth đang bật: Bấm "Đăng ký tài khoản" để vào thẳng Onboarding không cần OTP.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.onSurface,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 FilledButton(
                   onPressed: authState.isLoading ? null : _handleRegister,
                   child: authState.isLoading
@@ -255,6 +326,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         label: 'Google',
                         icon: const GoogleLogo(size: 20),
                         onPressed: () async {
+                          if (ref.read(devBypassAuthProvider)) {
+                            ref
+                                .read(authProvider.notifier)
+                                .devBypassLogin(
+                                  email: 'google.athlete@viegym.vn',
+                                  displayName: 'Google Athlete',
+                                );
+                            final healthProfile = ref.read(
+                              healthProfileProvider,
+                            );
+                            final equipmentCompleted = ref.read(
+                              equipmentOnboardingCompletedProvider,
+                            );
+                            final targetRoute = resolveOnboardingRoute(
+                              isAuthenticated: true,
+                              isHealthProfileCompleted:
+                                  healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted:
+                                  equipmentCompleted,
+                            );
+                            if (context.mounted) {
+                              context.go(targetRoute);
+                            }
+                            return;
+                          }
                           final success = await ref
                               .read(authProvider.notifier)
                               .loginWithGoogle();
@@ -292,6 +388,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         label: 'Facebook',
                         icon: const FacebookLogo(size: 20),
                         onPressed: () async {
+                          if (ref.read(devBypassAuthProvider)) {
+                            ref
+                                .read(authProvider.notifier)
+                                .devBypassLogin(
+                                  email: 'facebook.athlete@viegym.vn',
+                                  displayName: 'Facebook Athlete',
+                                );
+                            final healthProfile = ref.read(
+                              healthProfileProvider,
+                            );
+                            final equipmentCompleted = ref.read(
+                              equipmentOnboardingCompletedProvider,
+                            );
+                            final targetRoute = resolveOnboardingRoute(
+                              isAuthenticated: true,
+                              isHealthProfileCompleted:
+                                  healthProfile.isCompleted,
+                              isEquipmentOnboardingCompleted:
+                                  equipmentCompleted,
+                            );
+                            if (context.mounted) {
+                              context.go(targetRoute);
+                            }
+                            return;
+                          }
                           final success = await ref
                               .read(authProvider.notifier)
                               .loginWithFacebook();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../application/progress_controller.dart';
@@ -59,7 +60,7 @@ class SettingsScreen extends ConsumerWidget {
           content: const Text(
             'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng VieGym?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13.5, color: Colors.grey),
+            style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
           ),
           actionsAlignment: MainAxisAlignment.center,
           actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
@@ -157,7 +158,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(
                     Icons.emoji_events_rounded,
-                    color: Colors.amber,
+                    color: AppColors.amber,
                   ),
                   title: const Text(
                     'Kỷ lục cá nhân (PR)',
@@ -174,7 +175,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(
                     Icons.fitness_center_rounded,
-                    color: Color(0xFFFF2E54),
+                    color: AppColors.iconSecondary,
                   ),
                   title: const Text(
                     'Thiết bị tập luyện',
@@ -191,7 +192,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(
                     Icons.tune_rounded,
-                    color: Colors.deepPurpleAccent,
+                    color: AppColors.violet,
                   ),
                   title: const Text(
                     'Tùy chọn & Ràng buộc cá nhân',
@@ -204,7 +205,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(
                     Icons.security_rounded,
-                    color: Colors.greenAccent,
+                    color: AppColors.success,
                   ),
                   title: const Text(
                     'Bảo mật tài khoản',
@@ -234,9 +235,9 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 SwitchListTile(
-                  secondary: Icon(
+                  secondary: const Icon(
                     Icons.auto_awesome_rounded,
-                    color: colors.primary,
+                    color: AppColors.aiViolet,
                   ),
                   title: const Text(
                     'Cá nhân hóa AI theo hồ sơ',
@@ -246,6 +247,8 @@ class SettingsScreen extends ConsumerWidget {
                     'Cho phép AI truy cập thể trạng & thiết bị để tư vấn bài tập chính xác nhất.',
                     style: TextStyle(fontSize: 12),
                   ),
+                  activeThumbColor: AppColors.aiViolet,
+                  activeTrackColor: AppColors.aiVioletSoft,
                   value: aiConsent,
                   onChanged: (val) {
                     ref.read(aiConsentProvider.notifier).setConsent(val);
@@ -369,8 +372,8 @@ class SettingsScreen extends ConsumerWidget {
           OutlinedButton.icon(
             onPressed: () => _confirmLogout(context, ref),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.redAccent,
-              side: const BorderSide(color: Colors.redAccent),
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),

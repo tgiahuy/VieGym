@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class WeeklyProgressCard extends StatelessWidget {
   const WeeklyProgressCard({
     super.key,
@@ -74,11 +76,9 @@ class WeeklyProgressCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF332014),
+                      color: AppColors.orangeSoft,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.4),
-                      ),
+                      border: Border.all(color: AppColors.orangeBorder),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -86,7 +86,7 @@ class WeeklyProgressCard extends StatelessWidget {
                         const Icon(
                           Icons.local_fire_department_rounded,
                           size: 15,
-                          color: Colors.orangeAccent,
+                          color: AppColors.orange,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -94,7 +94,7 @@ class WeeklyProgressCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: Colors.orangeAccent,
+                            color: AppColors.orange,
                           ),
                         ),
                       ],
@@ -168,11 +168,11 @@ class _DayIndicator extends StatelessWidget {
         width: 28,
         height: 28,
         decoration: BoxDecoration(
-          color: primaryColor,
+          color: AppColors.success,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withValues(alpha: 0.35),
+              color: AppColors.success.withValues(alpha: 0.25),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -187,7 +187,7 @@ class _DayIndicator extends StatelessWidget {
         width: 28,
         height: 28,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E212E),
+          color: AppColors.surfaceElevated,
           shape: BoxShape.circle,
           border: Border.all(color: primaryColor, width: 1.5),
         ),
@@ -207,15 +207,15 @@ class _DayIndicator extends StatelessWidget {
     return Container(
       width: 28,
       height: 28,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1B1E29),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
         shape: BoxShape.circle,
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           '•',
           style: TextStyle(
-            color: Color(0xFF43495D),
+            color: AppColors.textTertiary,
             fontSize: 14,
             fontWeight: FontWeight.w900,
           ),

@@ -49,15 +49,12 @@ class NotificationBellButton extends ConsumerWidget {
                     width: 9,
                     height: 9,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF2E54),
+                      color: colors.primary,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF0F1117),
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: colors.surface, width: 1.5),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF2E54).withValues(alpha: 0.6),
+                          color: colors.primary.withValues(alpha: 0.4),
                           blurRadius: 4,
                           spreadRadius: 0.5,
                         ),

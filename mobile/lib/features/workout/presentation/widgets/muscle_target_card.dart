@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import 'exercise_muscle_visualizer.dart';
 
 class MuscleTargetCard extends StatelessWidget {
@@ -35,12 +36,12 @@ class MuscleTargetCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
+                    color: AppColors.primarySoft,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.local_fire_department_rounded,
-                    color: Colors.amber,
+                    color: AppColors.primary,
                     size: 20,
                   ),
                 ),

@@ -217,15 +217,48 @@ class MealHistoryScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
                             fontSize: 14,
-                            color: colors.primary,
+                            color: AppColors.nutritionCalories,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     // Macro Summary Row
-                    Text(
-                      'P: ${dayProtein.toStringAsFixed(0)}g • C: ${dayCarbs.toStringAsFixed(0)}g • F: ${dayFat.toStringAsFixed(0)}g',
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'P: ${dayProtein.toStringAsFixed(0)}g',
+                            style: const TextStyle(
+                              color: AppColors.nutritionProtein,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' • ',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'C: ${dayCarbs.toStringAsFixed(0)}g',
+                            style: const TextStyle(
+                              color: AppColors.nutritionCarbs,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' • ',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'F: ${dayFat.toStringAsFixed(0)}g',
+                            style: const TextStyle(
+                              color: AppColors.nutritionFat,
+                            ),
+                          ),
+                        ],
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -240,7 +273,9 @@ class MealHistoryScreen extends ConsumerWidget {
                         value: ratio,
                         minHeight: 5,
                         backgroundColor: colors.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation(colors.primary),
+                        valueColor: AlwaysStoppedAnimation(
+                          AppColors.nutritionCalories,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -255,7 +290,7 @@ class MealHistoryScreen extends ConsumerWidget {
                               height: 6,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: colors.primary,
+                                color: AppColors.nutritionCalories,
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -275,7 +310,7 @@ class MealHistoryScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
-                                color: colors.onSurfaceVariant,
+                                color: AppColors.nutritionCalories,
                               ),
                             ),
                           ],

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../core/theme/app_theme.dart';
+
 /// Keeps one muted, looping video alive across the authentication and
 /// onboarding route group.
 class AuthVideoShell extends StatefulWidget {
@@ -67,16 +69,16 @@ class _AuthVideoShellState extends State<AuthVideoShell>
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF070910),
+      color: AppColors.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF171B2B), Color(0xFF070910)],
+                colors: [AppColors.surfaceElevated, AppColors.background],
               ),
             ),
           ),
@@ -92,18 +94,18 @@ class _AuthVideoShellState extends State<AuthVideoShell>
                 ),
               ),
             ),
-          const IgnorePointer(
+          IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0x99070A12),
-                    Color(0x66070A12),
-                    Color(0xE6070A12),
+                    AppColors.background.withValues(alpha: 0.6),
+                    AppColors.background.withValues(alpha: 0.4),
+                    AppColors.background.withValues(alpha: 0.9),
                   ],
-                  stops: [0, 0.48, 1],
+                  stops: const [0, 0.48, 1],
                 ),
               ),
             ),

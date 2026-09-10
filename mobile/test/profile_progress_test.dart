@@ -175,9 +175,9 @@ void main() {
       expect(find.text('CHIỀU CAO'), findsOneWidget);
       expect(find.text('THỐNG KÊ TUẦN NÀY'), findsOneWidget);
       expect(find.textContaining('THỜI LƯỢNG TẬP'), findsOneWidget);
-      expect(find.text('Mặt trước'), findsOneWidget);
-      expect(find.text('Mặt sau'), findsOneWidget);
-      expect(find.text('NHÓM CƠ TRỌNG TÂM:'), findsOneWidget);
+      expect(find.text('Phía trước'), findsOneWidget);
+      expect(find.text('Phía sau'), findsOneWidget);
+      expect(find.text('Phân bố nhóm cơ'), findsOneWidget);
       expect(find.textContaining('THEO NGÀY'), findsOneWidget);
       expect(find.text('Tổng cả tuần'), findsOneWidget);
       expect(find.textContaining('XU HƯỚNG CÂN NẶNG'), findsOneWidget);

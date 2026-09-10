@@ -8,6 +8,7 @@ import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
 import '../domain/workout_models.dart';
 import 'exercise_library_screen.dart';
+import 'widgets/exercise_thumbnail.dart';
 import 'widgets/flippable_muscle_card.dart';
 import 'widgets/today_workout_empty_state.dart';
 
@@ -133,15 +134,12 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                   ...candidates.map((candidate) {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.15),
-                        child: Icon(
-                          Icons.fitness_center_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 18,
-                        ),
+                      leading: ExerciseThumbnail(
+                        exerciseId: candidate.id,
+                        name: candidate.name,
+                        imageUrl: candidate.thumbnailUrl,
+                        size: 40,
+                        borderRadius: 10,
                       ),
                       title: Text(
                         candidate.name,
@@ -173,7 +171,7 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                     padding: EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       'Không tìm thấy bài tập thay thế phù hợp với thiết bị hiện có.',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
                   ),
                 Card(
@@ -298,7 +296,10 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
           content: Text(
             'Bạn có chắc muốn xóa "${exercise.name}" khỏi buổi tập này?',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13.5, color: Colors.grey),
+            style: const TextStyle(
+              fontSize: 13.5,
+              color: AppColors.textSecondary,
+            ),
           ),
           actionsAlignment: MainAxisAlignment.center,
           actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
@@ -733,30 +734,34 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
             Card(
               elevation: 0,
               margin: const EdgeInsets.only(top: 4, bottom: 8),
-              color: colors.surfaceContainerLow,
+              color: AppColors.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: colors.primary.withValues(alpha: 0.35),
-                  width: 1.2,
+                side: const BorderSide(
+                  color: AppColors.borderDefault,
+                  width: 1.0,
                 ),
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: _handleAddExercise,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_rounded, color: colors.primary, size: 20),
-                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.add_rounded,
+                        color: AppColors.textPrimary,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
                       Text(
                         'Thêm bài tập mới',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: colors.primary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -770,17 +775,8 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  colors: [
-                    colors.primary.withValues(alpha: 0.14),
-                    colors.surfaceContainer,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: colors.primary.withValues(alpha: 0.35),
-                ),
+                color: AppColors.surfaceElevated,
+                border: Border.all(color: AppColors.borderDefault),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -794,13 +790,13 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                         Container(
                           width: 48,
                           height: 48,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: colors.primary.withValues(alpha: 0.2),
+                            color: AppColors.aiVioletSoft,
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.auto_awesome_rounded,
-                            color: colors.primary,
+                            color: AppColors.aiViolet,
                             size: 24,
                           ),
                         ),
@@ -830,9 +826,9 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(
+                        const Icon(
                           Icons.arrow_forward_ios_rounded,
-                          color: colors.primary,
+                          color: AppColors.textTertiary,
                           size: 16,
                         ),
                       ],
@@ -1035,15 +1031,15 @@ class _SwipeableExerciseItemState extends State<_SwipeableExerciseItem>
                     horizontal: 16,
                     vertical: 4,
                   ),
-                  leading: CircleAvatar(
-                    backgroundColor: colors.primary.withValues(alpha: 0.15),
-                    child: Text(
-                      '${widget.index + 1}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: colors.primary,
-                      ),
-                    ),
+                  leading: ExerciseThumbnail(
+                    exerciseId: widget.exercise.exerciseId,
+                    name: widget.exercise.name,
+                    imageUrl: widget.exercise.thumbnailUrl,
+                    size: 48,
+                    borderRadius: 12,
+                    isCompleted:
+                        widget.completedSets >= widget.exercise.targetSets &&
+                        widget.exercise.targetSets > 0,
                   ),
                   title: Text(
                     widget.exercise.name,
@@ -1111,7 +1107,6 @@ class _Shortcut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
@@ -1121,7 +1116,7 @@ class _Shortcut extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
           child: Column(
             children: [
-              Icon(icon, color: colors.primary, size: 22),
+              Icon(icon, color: AppColors.iconPrimary, size: 22),
               const SizedBox(height: 6),
               Text(
                 label,

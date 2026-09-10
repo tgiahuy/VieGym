@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 enum ExerciseTagType { muscle, equipment, neutral, difficulty }
 
 /// A global reusable metadata tag/chip component for exercises across VieGym.
@@ -50,48 +52,40 @@ class ExerciseTagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     Color bgColor;
     Color textColor;
     Border? border;
 
     switch (type) {
       case ExerciseTagType.muscle:
-        bgColor = const Color(0xFF222636);
-        textColor = const Color(0xFFE4E7F2);
-        border = Border.all(color: const Color(0xFF333A52), width: 0.8);
+        bgColor = AppColors.surfaceElevated;
+        textColor = AppColors.textPrimary;
+        border = Border.all(color: AppColors.borderDefault, width: 0.8);
         break;
       case ExerciseTagType.equipment:
-        bgColor = colors.primary.withValues(alpha: 0.14);
-        textColor = colors.primary;
-        border = Border.all(
-          color: colors.primary.withValues(alpha: 0.35),
-          width: 0.8,
-        );
+        bgColor = AppColors.surfaceNested;
+        textColor = AppColors.textSecondary;
+        border = Border.all(color: AppColors.borderDefault, width: 0.8);
         break;
       case ExerciseTagType.difficulty:
-        bgColor = const Color(0xFF2A2218);
-        textColor = const Color(0xFFF59E0B);
+        bgColor = AppColors.warning.withValues(alpha: 0.12);
+        textColor = AppColors.warning;
         border = Border.all(
-          color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+          color: AppColors.warning.withValues(alpha: 0.3),
           width: 0.8,
         );
         break;
       case ExerciseTagType.neutral:
-        bgColor = colors.surfaceContainerHighest.withValues(alpha: 0.4);
-        textColor = colors.onSurfaceVariant;
-        border = Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.4),
-          width: 0.8,
-        );
+        bgColor = AppColors.surfaceNested;
+        textColor = AppColors.textSecondary;
+        border = Border.all(color: AppColors.borderDefault, width: 0.8);
         break;
     }
 
     if (isSelected) {
-      bgColor = colors.primary.withValues(alpha: 0.25);
-      border = Border.all(color: colors.primary, width: 1.2);
-      textColor = Colors.white;
+      bgColor = AppColors.primarySoft;
+      border = Border.all(color: AppColors.primaryBorder, width: 1.0);
+      textColor = AppColors.textPrimary;
     }
 
     final Widget content = Container(

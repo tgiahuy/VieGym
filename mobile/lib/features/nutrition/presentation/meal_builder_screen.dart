@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/resilient_network_image.dart';
 import '../application/nutrition_controller.dart';
 import '../data/food_catalog.dart';
@@ -136,13 +137,46 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                           food.name,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: Text(
-                          '${food.baseServingUnit} • ${food.baseCalories} kcal • P: ${food.baseProtein}g',
+                        subtitle: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: food.baseServingUnit,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' • ',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '${food.baseCalories} kcal',
+                                style: const TextStyle(
+                                  color: AppColors.nutritionCalories,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' • ',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'P: ${food.baseProtein}g',
+                                style: const TextStyle(
+                                  color: AppColors.nutritionProtein,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         trailing: isAdded
                             ? const Icon(
                                 Icons.check_circle_rounded,
-                                color: Colors.greenAccent,
+                                color: AppColors.success,
                               )
                             : const Icon(Icons.add_circle_outline_rounded),
                         onTap: () {
@@ -303,12 +337,9 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.12),
+              color: colors.surfaceContainer,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: colors.primary.withValues(alpha: 0.5),
-                width: 1,
-              ),
+              border: Border.all(color: colors.outlineVariant, width: 1),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +352,7 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
-                        color: colors.primary,
+                        color: AppColors.textPrimary,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -330,7 +361,7 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        color: colors.primary,
+                        color: AppColors.nutritionCalories,
                       ),
                     ),
                   ],
@@ -342,17 +373,17 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                     _SmallMacro(
                       label: 'Protein',
                       value: '${totalProtein.toStringAsFixed(1)}g',
-                      color: Colors.blueAccent,
+                      color: AppColors.nutritionProtein,
                     ),
                     _SmallMacro(
                       label: 'Carbs',
                       value: '${totalCarbs.toStringAsFixed(1)}g',
-                      color: Colors.amber,
+                      color: AppColors.nutritionCarbs,
                     ),
                     _SmallMacro(
                       label: 'Fat',
                       value: '${totalFat.toStringAsFixed(1)}g',
-                      color: Colors.pinkAccent,
+                      color: AppColors.nutritionFat,
                     ),
                   ],
                 ),
@@ -372,27 +403,41 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              TextButton.icon(
+              FilledButton.icon(
                 onPressed: () => _showAddFoodModal(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Thêm món'),
+                label: const Text(
+                  'Thêm món',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
+          // Items List
           if (currentMealEntries.isEmpty)
             Card(
               margin: EdgeInsets.zero,
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 36),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 32,
+                  horizontal: 16,
+                ),
                 child: Center(
                   child: Column(
                     children: [
                       const Icon(
                         Icons.add_shopping_cart_rounded,
                         size: 44,
-                        color: Colors.grey,
+                        color: AppColors.textSecondary,
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -457,13 +502,49 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                                 '${entry.servingUnit} • ${entry.calories} kcal',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: colors.primary,
+                                  color: AppColors.nutritionCalories,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                'P: ${entry.protein.toStringAsFixed(1)}g • C: ${entry.carbs.toStringAsFixed(1)}g • F: ${entry.fat.toStringAsFixed(1)}g',
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          'P: ${entry.protein.toStringAsFixed(1)}g',
+                                      style: const TextStyle(
+                                        color: AppColors.nutritionProtein,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: ' • ',
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          'C: ${entry.carbs.toStringAsFixed(1)}g',
+                                      style: const TextStyle(
+                                        color: AppColors.nutritionCarbs,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: ' • ',
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          'F: ${entry.fat.toStringAsFixed(1)}g',
+                                      style: const TextStyle(
+                                        color: AppColors.nutritionFat,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 style: Theme.of(
                                   context,
                                 ).textTheme.bodySmall?.copyWith(fontSize: 11),
@@ -479,7 +560,7 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                         IconButton(
                           icon: const Icon(
                             Icons.delete_outline_rounded,
-                            color: Colors.redAccent,
+                            color: AppColors.error,
                             size: 18,
                           ),
                           tooltip: 'Xóa món',

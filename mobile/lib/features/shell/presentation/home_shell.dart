@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 class HomeShell extends StatelessWidget {
   const HomeShell({required this.navigationShell, super.key});
 
@@ -49,17 +51,14 @@ class HomeShell extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xFF141724).withValues(alpha: 0.96),
+            color: AppColors.backgroundDeep.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: colors.outlineVariant.withValues(alpha: 0.8),
-              width: 1.2,
-            ),
+            border: Border.all(color: AppColors.borderDefault, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -84,27 +83,12 @@ class HomeShell extends StatelessWidget {
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colors.primary.withValues(alpha: 0.22),
-                            colors.primary.withValues(alpha: 0.10),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: AppColors.primarySoft,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: colors.primary.withValues(alpha: 0.45),
+                          color: AppColors.primaryBorder,
                           width: 1.2,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.primary.withValues(alpha: 0.28),
-                            blurRadius: 12,
-                            spreadRadius: 0.5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -195,7 +179,7 @@ class _NavBarItem extends StatelessWidget {
                 child: Icon(
                   isSelected ? destination.activeIcon : destination.icon,
                   size: 22,
-                  color: isSelected ? primaryColor : const Color(0xFF7E849A),
+                  color: isSelected ? primaryColor : AppColors.textTertiary,
                 ),
               ),
               const SizedBox(height: 3),
@@ -206,7 +190,9 @@ class _NavBarItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected ? Colors.white : const Color(0xFF7E849A),
+                  color: isSelected
+                      ? AppColors.textPrimary
+                      : AppColors.textTertiary,
                   letterSpacing: -0.1,
                 ),
               ),

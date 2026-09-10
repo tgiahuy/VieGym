@@ -20,6 +20,7 @@ import 'package:viegym/features/workout/presentation/exercise_library_screen.dar
 import 'package:viegym/features/workout/presentation/favorite_exercises_screen.dart';
 import 'package:viegym/features/workout/presentation/widgets/body_muscle_map.dart';
 import 'package:viegym/features/workout/presentation/widgets/exercise_muscle_visualizer.dart';
+import 'package:viegym/features/workout/presentation/widgets/exercise_thumbnail.dart';
 import 'package:viegym/features/workout/presentation/widgets/favorite_exercises_section.dart';
 import 'package:viegym/features/workout/presentation/widgets/rest_timer_overlay.dart';
 import 'package:viegym/features/workout/presentation/widgets/today_workout_empty_state.dart';
@@ -1417,6 +1418,31 @@ void main() {
           find.text('Bạn chưa biết tập gì? Hãy để VieGym giúp đỡ bạn !'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'WorkoutTabScreen and WorkoutSessionScreen render exercise illustration thumbnails instead of numbers',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        // 1. Verify WorkoutTabScreen renders ExerciseThumbnail for today\'s workout exercises
+        await tester.pumpWidget(
+          const ProviderScope(child: MaterialApp(home: WorkoutTabScreen())),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ExerciseThumbnail), findsWidgets);
+
+        // 2. Verify WorkoutSessionScreen renders ExerciseThumbnail in exercise selector
+        await tester.pumpWidget(
+          const ProviderScope(child: MaterialApp(home: WorkoutSessionScreen())),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ExerciseThumbnail), findsWidgets);
       },
     );
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../application/workout_schedule_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../domain/workout_models.dart';
@@ -59,22 +60,22 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                   width: 90,
                   height: 90,
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.15),
+                    color: AppColors.successSoft,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.greenAccent.withValues(alpha: 0.5),
+                      color: AppColors.successBorder,
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.greenAccent.withValues(alpha: 0.3),
+                        color: AppColors.success.withValues(alpha: 0.25),
                         blurRadius: 30,
                       ),
                     ],
                   ),
                   child: const Icon(
                     Icons.check_circle_rounded,
-                    color: Colors.greenAccent,
+                    color: AppColors.success,
                     size: 52,
                   ),
                 ),
@@ -119,6 +120,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                               label: 'THỜI GIAN',
                               value: duration,
                               icon: Icons.timer_outlined,
+                              valueColor: AppColors.cyan,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -127,7 +129,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                               label: 'TỔNG KHỐI LƯỢNG',
                               value: volume,
                               icon: Icons.fitness_center_rounded,
-                              valueColor: Colors.greenAccent,
+                              valueColor: AppColors.success,
                             ),
                           ),
                         ],
@@ -148,7 +150,7 @@ class WorkoutSummaryScreen extends ConsumerWidget {
                               label: 'KỶ LỤC MỚI (PR)',
                               value: '$prs PR',
                               icon: Icons.emoji_events_rounded,
-                              valueColor: Colors.amber,
+                              valueColor: AppColors.amber,
                             ),
                           ),
                         ],

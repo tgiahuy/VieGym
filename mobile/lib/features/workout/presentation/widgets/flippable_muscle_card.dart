@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/muscle_models.dart';
 import 'body_muscle_map.dart';
 
@@ -161,13 +162,11 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
             return Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               decoration: BoxDecoration(
-                color: const Color(0xFF10131E),
+                color: AppColors.surface,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28),
                 ),
-                border: Border.all(
-                  color: colors.outlineVariant.withValues(alpha: 0.4),
-                ),
+                border: Border.all(color: AppColors.borderDefault),
               ),
               child: SafeArea(
                 top: false,
@@ -178,7 +177,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: AppColors.borderStrong,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -206,7 +205,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                               style: TextStyle(
                                 fontSize: 16.5,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],
@@ -261,7 +260,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                           height: 240,
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF161925),
+                            color: AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: colors.primary.withValues(alpha: 0.3),
@@ -290,11 +289,9 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF161924),
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: colors.outlineVariant.withValues(alpha: 0.3),
-                        ),
+                        border: Border.all(color: AppColors.borderDefault),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +302,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                                 width: 8,
                                 height: 8,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFFFF2E54),
+                                  color: AppColors.musclePrimary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -315,7 +312,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ],
@@ -328,7 +325,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                                   width: 8,
                                   height: 8,
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFFF6B8B),
+                                    color: AppColors.muscleHighlight,
                                     shape: BoxShape.circle,
                                   ),
                                 ),

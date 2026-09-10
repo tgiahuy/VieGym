@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:viegym/shared/widgets/brand_icons.dart';
+import '../application/auth_controller.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -80,7 +82,14 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
                       FilledButton(
-                        onPressed: () => context.push('/register'),
+                        onPressed: () {
+                          if (ref.read(devBypassAuthProvider)) {
+                            ref.read(authProvider.notifier).devBypassLogin();
+                            context.go('/onboarding/health');
+                          } else {
+                            context.push('/register');
+                          }
+                        },
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(double.infinity, 54),
                           shape: RoundedRectangleBorder(

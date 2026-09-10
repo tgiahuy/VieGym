@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/ai_models.dart';
 
 class AIRecommendationCard extends StatelessWidget {
@@ -26,27 +27,27 @@ class AIRecommendationCard extends StatelessWidget {
       RecommendationType.recovery => (
         Icons.monitor_heart_outlined,
         'PHỤC HỒI NHÓM CƠ',
-        Colors.tealAccent,
+        AppColors.cyan,
       ),
       RecommendationType.fatigueDeload => (
         Icons.battery_charging_full_rounded,
         'GIẢM TẢI / NGHỈ NGƠI',
-        Colors.amber,
+        AppColors.amber,
       ),
       RecommendationType.trainingBalance => (
         Icons.balance_rounded,
         'CÂN BẰNG TẬP LUYỆN',
-        Colors.blueAccent,
+        AppColors.blue,
       ),
       RecommendationType.schedule => (
         Icons.calendar_month_rounded,
         'ĐIỀU CHỈNH LỊCH',
-        Colors.purpleAccent,
+        AppColors.violet,
       ),
       RecommendationType.nutrition => (
         Icons.restaurant_rounded,
         'DINH DƯỠNG',
-        Colors.orangeAccent,
+        AppColors.orange,
       ),
     };
 
@@ -143,31 +144,31 @@ class AIRecommendationCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
+              color: colors.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colors.outlineVariant.withValues(alpha: 0.25),
+                color: AppColors.aiVioletBorder,
               ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
+                const Icon(
                   Icons.auto_awesome_rounded,
                   size: 15,
-                  color: colors.primary,
+                  color: AppColors.aiViolet,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(
+                        const TextSpan(
                           text: 'Lý do: ',
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w900,
-                            color: colors.primary,
+                            color: AppColors.aiViolet,
                           ),
                         ),
                         TextSpan(

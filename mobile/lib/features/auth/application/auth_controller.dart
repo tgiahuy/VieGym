@@ -1,8 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
 import '../../../core/network/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
+
+/// Controller quản lý cờ tạm thời bypass xác thực trong môi trường Development.
+/// Mặc định: false — auth luôn bật. Gọi setEnabled(true) hoặc toggle() khi cần bypass.
+class DevBypassAuthNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    return false;
+  }
+
+  void toggle() => state = !state;
+  void setEnabled(bool value) => state = value;
+}
+
+final devBypassAuthProvider = NotifierProvider<DevBypassAuthNotifier, bool>(
+  DevBypassAuthNotifier.new,
+);
 
 class AuthController extends Notifier<AuthState> {
   @override
@@ -10,6 +27,26 @@ class AuthController extends Notifier<AuthState> {
 
   AuthRepository get _repository => ref.read(authRepositoryProvider);
   TokenStorage get _storage => ref.read(tokenStorageProvider);
+
+  /// Đăng nhập giả lập tức thì để bypass qua Onboarding/Dashboard khi test giao diện
+  void devBypassLogin({
+    String email = 'athlete@viegym.vn',
+    String displayName = 'VieGym Athlete',
+    bool healthProfileCompleted = false,
+    bool equipmentCompleted = false,
+  }) {
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      errorMessage: null,
+      user: AuthUser(
+        id: 'dev_user_bypass_1',
+        email: email,
+        displayName: displayName,
+        healthProfileCompleted: healthProfileCompleted,
+        equipmentCompleted: equipmentCompleted,
+      ),
+    );
+  }
 
   Future<bool> login({required String email, required String password}) async {
     if (email.trim().isEmpty || password.isEmpty) {

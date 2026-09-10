@@ -147,7 +147,7 @@ class FavoriteExercisesScreen extends ConsumerWidget {
                             Container(
                               height: 140,
                               width: double.infinity,
-                              color: const Color(0xFF1B1E2E),
+                              color: colors.surfaceContainerHighest,
                               child: Image.network(
                                 exercise.thumbnailUrl,
                                 fit: BoxFit.cover,
@@ -190,11 +190,11 @@ class FavoriteExercisesScreen extends ConsumerWidget {
                                         )
                                         .toggleFavorite(exercise.id);
                                   },
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
                                     child: Icon(
                                       Icons.favorite_rounded,
-                                      color: Color(0xFFFF2E54),
+                                      color: colors.primary,
                                       size: 20,
                                     ),
                                   ),

@@ -982,13 +982,13 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentAmber.withValues(alpha: 0.16),
+                    decoration: const BoxDecoration(
+                      color: AppColors.aiVioletSoft,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.auto_awesome_rounded,
-                      color: AppColors.accentAmber,
+                      color: AppColors.aiViolet,
                       size: 20,
                     ),
                   ),
@@ -1017,7 +1017,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF7E849E),
+                    color: AppColors.textTertiary,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -1041,7 +1041,10 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                         ),
                       ),
                     ),
-                    const Text(' • ', style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      ' • ',
+                      style: TextStyle(color: AppColors.textTertiary),
+                    ),
                     InkWell(
                       borderRadius: BorderRadius.circular(8),
                       onTap: _selectAllMeals,
@@ -1114,7 +1117,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF7E849E),
+                          color: AppColors.textTertiary,
                           letterSpacing: 0.6,
                         ),
                       ),
@@ -1146,7 +1149,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           label: 'Calo còn lại',
                           value: '$remainingKcal',
                           unit: 'kcal',
-                          color: AppColors.accentAmber,
+                          color: AppColors.nutritionCalories,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1155,7 +1158,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           label: 'Protein thiếu',
                           value: remainingProtein.toStringAsFixed(0),
                           unit: 'g',
-                          color: AppColors.accentBlue,
+                          color: AppColors.nutritionProtein,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1164,7 +1167,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           label: 'Carb thiếu',
                           value: remainingCarbs.toStringAsFixed(0),
                           unit: 'g',
-                          color: AppColors.accentEmerald,
+                          color: AppColors.nutritionCarbs,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1173,7 +1176,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           label: 'Fat thiếu',
                           value: remainingFat.toStringAsFixed(0),
                           unit: 'g',
-                          color: const Color(0xFFF97316),
+                          color: AppColors.nutritionFat,
                         ),
                       ),
                     ],
@@ -1189,7 +1192,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF7E849E),
+                color: AppColors.textTertiary,
                 letterSpacing: 0.8,
               ),
             ),
@@ -1283,7 +1286,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF7E849E),
+                color: AppColors.textSecondary,
                 letterSpacing: 0.8,
               ),
             ),
@@ -1304,7 +1307,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                     : null,
                 isDense: true,
                 filled: true,
-                fillColor: const Color(0xFF141724),
+                fillColor: AppColors.surfaceInput,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -1430,17 +1433,10 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colors.primary.withValues(alpha: 0.15),
-                        colors.surfaceContainer,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: colors.surfaceContainer,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.4),
+                      color: AppColors.aiVioletBorder,
                       width: 1.5,
                     ),
                   ),
@@ -1468,7 +1464,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.accentAmber,
+                              color: AppColors.nutritionCalories,
                             ),
                           ),
                         ],
@@ -1568,7 +1564,7 @@ class _MacroBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
@@ -1578,7 +1574,7 @@ class _MacroBadge extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E)),
+            style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
           ),
           const SizedBox(height: 3),
           Text(
@@ -1616,10 +1612,7 @@ class _GeneratedMealCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: colors.primary.withValues(alpha: 0.4),
-          width: 1.5,
-        ),
+        border: Border.all(color: AppColors.aiVioletBorder, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1628,7 +1621,7 @@ class _GeneratedMealCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.1),
+              color: AppColors.surfaceElevated,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
@@ -1637,7 +1630,7 @@ class _GeneratedMealCard extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.auto_awesome_rounded,
-                  color: AppColors.accentAmber,
+                  color: AppColors.aiViolet,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -1646,7 +1639,7 @@ class _GeneratedMealCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
-                    color: colors.primary,
+                    color: AppColors.aiViolet,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -1686,7 +1679,7 @@ class _GeneratedMealCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141724),
+                    color: AppColors.surfaceElevated,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: colors.outlineVariant.withValues(alpha: 0.4),
@@ -1700,7 +1693,7 @@ class _GeneratedMealCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.accentAmber,
+                          color: AppColors.nutritionCalories,
                         ),
                       ),
                       Text(
@@ -1708,7 +1701,7 @@ class _GeneratedMealCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.accentBlue,
+                          color: AppColors.nutritionProtein,
                         ),
                       ),
                       Text(
@@ -1716,7 +1709,7 @@ class _GeneratedMealCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.accentEmerald,
+                          color: AppColors.nutritionCarbs,
                         ),
                       ),
                       Text(
@@ -1724,7 +1717,7 @@ class _GeneratedMealCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFFF97316),
+                          color: AppColors.nutritionFat,
                         ),
                       ),
                     ],
@@ -1738,7 +1731,7 @@ class _GeneratedMealCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF7E849E),
+                    color: AppColors.textTertiary,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -1771,7 +1764,7 @@ class _GeneratedMealCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: colors.onSurfaceVariant,
+                            color: AppColors.nutritionCalories,
                           ),
                         ),
                       ],
@@ -1784,11 +1777,9 @@ class _GeneratedMealCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.06),
+                    color: AppColors.aiVioletSoft,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.2),
-                    ),
+                    border: Border.all(color: AppColors.aiVioletBorder),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1798,7 +1789,7 @@ class _GeneratedMealCard extends StatelessWidget {
                           Icon(
                             Icons.psychology_alt_rounded,
                             size: 16,
-                            color: colors.primary,
+                            color: AppColors.aiViolet,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -1806,7 +1797,7 @@ class _GeneratedMealCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: colors.primary,
+                              color: AppColors.aiViolet,
                             ),
                           ),
                         ],

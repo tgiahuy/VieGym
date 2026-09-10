@@ -47,6 +47,8 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
         targetSets: 3,
         targetReps: 10,
         weightKg: 40,
+        thumbnailUrl:
+            'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80',
       ),
       SessionExercise(
         exerciseId: 'ex2',
@@ -56,6 +58,8 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
         targetSets: 3,
         targetReps: 12,
         weightKg: 15,
+        thumbnailUrl:
+            'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&auto=format&fit=crop&q=80',
       ),
       SessionExercise(
         exerciseId: 'ex3',
@@ -65,6 +69,8 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
         targetSets: 3,
         targetReps: 10,
         weightKg: 25,
+        thumbnailUrl:
+            'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80',
       ),
       SessionExercise(
         exerciseId: 'ex4',
@@ -74,6 +80,8 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
         targetSets: 3,
         targetReps: 15,
         weightKg: 20,
+        thumbnailUrl:
+            'https://images.unsplash.com/photo-1530822847156-5df684ec5ee1?w=400&auto=format&fit=crop&q=80',
       ),
     ];
 
@@ -250,6 +258,7 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
       weightKg: definition.equipment == EquipmentType.bodyweight
           ? 0
           : original.weightKg,
+      thumbnailUrl: definition.thumbnailUrl,
     );
     final updatedExercises = [...state.exercises]..[index] = replacement;
 
@@ -283,6 +292,7 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
         weightKg: definition.equipment == EquipmentType.bodyweight
             ? 0
             : weightKg,
+        thumbnailUrl: definition.thumbnailUrl,
       );
       state = WorkoutSessionState(
         id: 'session_${DateTime.now().millisecondsSinceEpoch}',
@@ -305,6 +315,7 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
       targetSets: targetSets,
       targetReps: targetReps,
       weightKg: definition.equipment == EquipmentType.bodyweight ? 0 : weightKg,
+      thumbnailUrl: definition.thumbnailUrl,
     );
 
     final updatedExercises = [...state.exercises, newExercise];

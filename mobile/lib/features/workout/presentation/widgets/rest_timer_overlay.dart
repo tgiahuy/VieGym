@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../application/rest_timer_controller.dart';
 
 class RestTimerOverlay extends ConsumerWidget {
@@ -108,7 +109,7 @@ class RestTimerOverlay extends ConsumerWidget {
     // Fullscreen Overlay Mode
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withValues(alpha: 0.88),
+        color: AppColors.backgroundDeep.withValues(alpha: 0.94),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: SafeArea(
           child: Column(
@@ -123,7 +124,7 @@ class RestTimerOverlay extends ConsumerWidget {
                     tooltip: 'Đóng thời gian nghỉ',
                     icon: const Icon(
                       Icons.close_rounded,
-                      color: Colors.white70,
+                      color: AppColors.textSecondary,
                       size: 28,
                     ),
                   ),
@@ -172,7 +173,7 @@ class RestTimerOverlay extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 72,
                       fontWeight: FontWeight.w900,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       letterSpacing: -2,
                     ),
                   ),
@@ -180,7 +181,10 @@ class RestTimerOverlay extends ConsumerWidget {
                   const Text(
                     'Hãy hít thở đều, uống nước và sẵn sàng cho hiệp tiếp theo.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -189,8 +193,8 @@ class RestTimerOverlay extends ConsumerWidget {
                       OutlinedButton(
                         onPressed: () => notifier.adjustTime(-15),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white24),
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: AppColors.borderStrong),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 10,
@@ -205,8 +209,8 @@ class RestTimerOverlay extends ConsumerWidget {
                       OutlinedButton(
                         onPressed: () => notifier.adjustTime(15),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white24),
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: AppColors.borderStrong),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 10,
@@ -246,7 +250,10 @@ class RestTimerOverlay extends ConsumerWidget {
                     onPressed: () => notifier.setMinimized(true),
                     child: const Text(
                       'Xem chi tiết bài tập trong lúc nghỉ',
-                      style: TextStyle(color: Colors.white60, fontSize: 12),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../../onboarding/data/equipment_catalog.dart';
 
@@ -19,10 +20,7 @@ class _EquipmentPreferenceScreenState
 
   (Color, List<Color>) _getCategoryVisuals(String category) {
     if (category.contains('Tạ tự do')) {
-      return (
-        const Color(0xFFFF2E54),
-        [const Color(0xFFFF2E54), const Color(0xFFFF5277)],
-      );
+      return (AppColors.primary, [AppColors.primary, AppColors.primaryLight]);
     } else if (category.contains('Ghế') || category.contains('Khung')) {
       return (Colors.purpleAccent, [Colors.deepPurple, Colors.purpleAccent]);
     } else if (category.contains('Máy') || category.contains('cáp')) {

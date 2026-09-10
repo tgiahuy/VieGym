@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../domain/workout_models.dart';
 
 class CommonMistakesCard extends StatelessWidget {
@@ -21,7 +22,7 @@ class CommonMistakesCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.amber.withValues(alpha: 0.35)),
+        side: BorderSide(color: AppColors.warning.withValues(alpha: 0.35)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -34,12 +35,12 @@ class CommonMistakesCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
+                    color: AppColors.warning.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.amber,
+                    color: AppColors.warning,
                     size: 20,
                   ),
                 ),
@@ -85,7 +86,7 @@ class CommonMistakesCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.cancel_rounded,
-                          color: Colors.redAccent,
+                          color: AppColors.error,
                           size: 16,
                         ),
                         const SizedBox(width: 8),
@@ -96,7 +97,7 @@ class CommonMistakesCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.redAccent,
+                                color: AppColors.error,
                               ),
                               children: [
                                 TextSpan(
@@ -121,7 +122,7 @@ class CommonMistakesCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.check_circle_rounded,
-                          color: Colors.greenAccent,
+                          color: AppColors.success,
                           size: 16,
                         ),
                         const SizedBox(width: 8),
@@ -132,7 +133,7 @@ class CommonMistakesCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.greenAccent,
+                                color: AppColors.success,
                               ),
                               children: [
                                 TextSpan(
@@ -159,7 +160,7 @@ class CommonMistakesCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.12),
+                          color: AppColors.amberSoft,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -167,7 +168,7 @@ class CommonMistakesCard extends StatelessWidget {
                             const Icon(
                               Icons.shield_outlined,
                               size: 13,
-                              color: Colors.amber,
+                              color: AppColors.amber,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -176,7 +177,7 @@ class CommonMistakesCard extends StatelessWidget {
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.amber,
+                                  color: AppColors.amber,
                                 ),
                               ),
                             ),

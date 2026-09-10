@@ -155,5 +155,44 @@ void main() {
         expect(find.text('Áp dụng'), findsNWidgets(2));
       },
     );
+
+    testWidgets(
+      'AiTabScreen tapping "Áp dụng" opens Smart AI Apply Bottom Sheet with "Áp dụng ngay" and "Hủy"',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const ProviderScope(child: MaterialApp(home: AiTabScreen())),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap on the first 'Áp dụng' button
+        await tester.tap(find.text('Áp dụng').first);
+        await tester.pumpAndSettle();
+
+        // Verify Smart Bottom Sheet content is rendered
+        expect(find.text('ĐỀ XUẤT BUỔI TẬP'), findsAtLeast(1));
+        expect(find.text('Lý do từ AI Coach'), findsOneWidget);
+        expect(
+          find.text('Tự động mở màn hình tương ứng sau khi áp dụng'),
+          findsOneWidget,
+        );
+
+        // Verify "Áp dụng ngay" and "Hủy" buttons
+        expect(find.text('Áp dụng ngay'), findsOneWidget);
+        expect(find.text('Hủy'), findsOneWidget);
+
+        // Test tapping "Hủy" dismisses the bottom sheet cleanly
+        await tester.tap(find.text('Hủy'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Áp dụng ngay'), findsNothing);
+      },
+    );
   });
 }

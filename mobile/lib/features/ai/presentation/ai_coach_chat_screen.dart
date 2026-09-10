@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../application/ai_coach_controller.dart';
 import '../domain/ai_models.dart';
 
@@ -94,7 +95,7 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
             ),
             Text(
               'Hỏi đáp & Hỗ trợ thông minh',
-              style: TextStyle(fontSize: 10, color: Colors.grey),
+              style: TextStyle(fontSize: 10, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -286,7 +287,18 @@ class _ReplacementProposalCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.swap_horiz_rounded),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: AppColors.aiVioletSoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 16,
+                    color: AppColors.aiViolet,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -297,6 +309,8 @@ class _ReplacementProposalCard extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
+                          color: AppColors.aiViolet,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       Text(
@@ -476,13 +490,13 @@ class _MealProposalCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.withValues(alpha: 0.15),
+                    color: AppColors.aiVioletSoft,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.restaurant_rounded,
                     size: 16,
-                    color: Colors.greenAccent,
+                    color: AppColors.aiViolet,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -514,9 +528,33 @@ class _MealProposalCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      '${item.calories} kcal • ${item.protein}g đạm',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${item.calories} kcal',
+                            style: const TextStyle(
+                              color: AppColors.nutritionCalories,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' • ',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '${item.protein}g đạm',
+                            style: const TextStyle(
+                              color: AppColors.nutritionProtein,
+                            ),
+                          ),
+                        ],
+                      ),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -539,8 +577,30 @@ class _MealProposalCard extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  Text(
-                    '${proposal.totalCalories} kcal • ${proposal.totalProtein.toStringAsFixed(1)}g Protein',
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${proposal.totalCalories} kcal',
+                          style: const TextStyle(
+                            color: AppColors.nutritionCalories,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' • ',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        TextSpan(
+                          text:
+                              '${proposal.totalProtein.toStringAsFixed(1)}g Protein',
+                          style: const TextStyle(
+                            color: AppColors.nutritionProtein,
+                          ),
+                        ),
+                      ],
+                    ),
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w900,
@@ -604,7 +664,7 @@ class _WorkoutProposalCard extends ConsumerWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.primary.withValues(alpha: 0.35)),
+        side: const BorderSide(color: AppColors.aiVioletBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -615,14 +675,14 @@ class _WorkoutProposalCard extends ConsumerWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.15),
+                  decoration: const BoxDecoration(
+                    color: AppColors.aiVioletSoft,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.fitness_center_rounded,
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
                     size: 16,
-                    color: colors.primary,
+                    color: AppColors.aiViolet,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -786,10 +846,19 @@ class _GeneratingBubble extends StatelessWidget {
             SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.aiViolet,
+              ),
             ),
             SizedBox(width: 9),
-            Text('AI Coach đang phân tích yêu cầu...'),
+            Text(
+              'AI Coach đang phân tích yêu cầu...',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),

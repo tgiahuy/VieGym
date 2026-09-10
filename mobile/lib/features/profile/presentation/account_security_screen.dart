@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 
 /// MH53 — Account Security & Change Password Screen
@@ -49,7 +51,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         context.go('/login');
@@ -58,7 +60,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error ?? 'Đổi mật khẩu thất bại'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -101,7 +103,10 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.lock_reset_rounded, color: colors.primary),
+                        Icon(
+                          Icons.lock_reset_rounded,
+                          color: AppColors.iconSecondary,
+                        ),
                         const SizedBox(width: 8),
                         const Text(
                           'Đổi mật khẩu',
@@ -270,7 +275,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
               child: SwitchListTile(
                 secondary: Icon(
                   Icons.fingerprint_rounded,
-                  color: colors.primary,
+                  color: AppColors.iconSecondary,
                 ),
                 title: const Text(
                   'Mở khóa nhanh Face ID / Vân tay',
@@ -287,7 +292,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                     SnackBar(
                       content: Text(
                         val
-                            ? 'Đã bật xác thực sinh trắc học'
+                            ? 'Đã bật xác thực Face ID / Vân tay'
                             : 'Đã tắt xác thực sinh trắc học',
                       ),
                     ),
@@ -350,7 +355,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                   ListTile(
                     leading: const Icon(
                       Icons.phone_iphone_rounded,
-                      color: Colors.greenAccent,
+                      color: AppColors.success,
                     ),
                     title: const Text(
                       'iPhone 17 Pro Max (Thiết bị này)',
@@ -367,7 +372,7 @@ class _AccountSecurityScreenState extends ConsumerState<AccountSecurityScreen> {
                       width: 8,
                       height: 8,
                       decoration: const BoxDecoration(
-                        color: Colors.greenAccent,
+                        color: AppColors.success,
                         shape: BoxShape.circle,
                       ),
                     ),

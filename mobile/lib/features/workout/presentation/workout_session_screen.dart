@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../profile/application/progress_controller.dart';
 import '../application/rest_timer_controller.dart';
 import '../application/workout_schedule_controller.dart';
@@ -13,6 +14,7 @@ import '../data/exercise_catalog.dart';
 import '../domain/muscle_models.dart';
 import '../domain/workout_models.dart';
 import 'widgets/body_muscle_map.dart';
+import 'widgets/exercise_thumbnail.dart';
 import 'widgets/rest_timer_overlay.dart';
 
 class WorkoutSessionScreen extends ConsumerStatefulWidget {
@@ -101,21 +103,9 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
           onPressed: () => _confirmExit(context),
           icon: const Icon(Icons.close_rounded),
         ),
-        title: Column(
-          children: [
-            Text(
-              'Bài ${session.currentExerciseIndex + 1}/${session.exercises.length}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            Text(
-              '${session.completedSets}/${session.totalSets} hiệp hoàn thành',
-              style: TextStyle(
-                fontSize: 12,
-                color: colors.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+        title: Text(
+          'Bài ${session.currentExerciseIndex + 1}/${session.exercises.length}',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
         actions: [
           Container(
@@ -124,6 +114,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
               onPressed: controller.togglePause,
               style: TextButton.styleFrom(
                 backgroundColor: colors.surfaceContainer,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -133,11 +124,14 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                     ? Icons.play_arrow_rounded
                     : Icons.pause_rounded,
                 size: 18,
-                color: colors.primary,
+                color: Colors.white,
               ),
               label: Text(
                 _formattedTime,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
@@ -148,47 +142,28 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
           ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
             children: [
-              // Exercise Title & Info Icon
+              // Exercise Title
               InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => context.push('/exercise/${exercise.exerciseId}'),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            exercise.name,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${exercise.primaryMuscle} • ${exercise.equipment.label}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colors.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      exercise.name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.info_outline_rounded,
-                        color: colors.primary,
-                        size: 22,
+                    const SizedBox(height: 3),
+                    Text(
+                      '${exercise.primaryMuscle} • ${exercise.equipment.label}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -203,7 +178,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141724),
+                    color: colors.surfaceContainer,
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: colors.outlineVariant.withValues(alpha: 0.4),
@@ -224,7 +199,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                         height: 120,
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F121C),
+                          color: AppColors.backgroundDeep,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: colors.outlineVariant.withValues(alpha: 0.3),
@@ -314,7 +289,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                               'Mục tiêu: ${exercise.weightKg.toStringAsFixed(0)}kg × ${exercise.targetReps} reps',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF8E95AF),
+                                color: AppColors.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -379,7 +354,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? colors.primary.withValues(alpha: 0.15)
-                              : const Color(0xFF141724),
+                              : colors.surfaceContainer,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isSelected
@@ -390,37 +365,14 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? colors.primary
-                                    : (isItemAllDone
-                                          ? Colors.greenAccent.withValues(
-                                              alpha: 0.2,
-                                            )
-                                          : const Color(0xFF1B1E2E)),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: isItemAllDone
-                                    ? const Icon(
-                                        Icons.check_rounded,
-                                        size: 16,
-                                        color: Colors.greenAccent,
-                                      )
-                                    : Text(
-                                        '${index + 1}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 12,
-                                          color: isSelected
-                                              ? colors.onPrimary
-                                              : Colors.white70,
-                                        ),
-                                      ),
-                              ),
+                            ExerciseThumbnail(
+                              exerciseId: item.exerciseId,
+                              name: item.name,
+                              imageUrl: item.thumbnailUrl,
+                              size: 34,
+                              borderRadius: 10,
+                              isSelected: isSelected,
+                              isCompleted: isItemAllDone,
                             ),
                             const SizedBox(width: 10),
                             Column(
@@ -429,12 +381,10 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                               children: [
                                 Text(
                                   item.name,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w800,
-                                    color: isSelected
-                                        ? colors.primary
-                                        : Colors.white,
+                                    color: Colors.white,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -444,10 +394,8 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: isItemAllDone
-                                        ? Colors.greenAccent
-                                        : (isSelected
-                                              ? colors.primary
-                                              : const Color(0xFF8E95AF)),
+                                        ? AppColors.success
+                                        : AppColors.textTertiary,
                                   ),
                                 ),
                               ],
@@ -481,7 +429,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.15),
+                          color:
+                              completedSetsCount == totalSetsCount &&
+                                  totalSetsCount > 0
+                              ? AppColors.success.withValues(alpha: 0.15)
+                              : AppColors.surfaceNested,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -489,7 +441,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
-                            color: colors.primary,
+                            color:
+                                completedSetsCount == totalSetsCount &&
+                                    totalSetsCount > 0
+                                ? AppColors.success
+                                : AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -533,7 +489,7 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                       padding: const EdgeInsets.only(right: 20),
                       alignment: Alignment.centerRight,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE53935),
+                        color: AppColors.error,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Row(
@@ -603,15 +559,19 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                   controller.addSet(exercise.exerciseId);
                 },
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(
+                    color: colors.outlineVariant.withValues(alpha: 0.6),
+                  ),
                   minimumSize: const Size(0, 44),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                icon: const Icon(Icons.add_rounded),
+                icon: const Icon(Icons.add_rounded, color: Colors.white),
                 label: const Text(
                   'Thêm hiệp cho bài này',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 12),
@@ -624,6 +584,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                           ? null
                           : controller.previousExercise,
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white38,
+                        side: BorderSide(
+                          color: colors.outlineVariant.withValues(alpha: 0.6),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -637,6 +602,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _showReplacements(context, session),
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white38,
+                        side: BorderSide(
+                          color: colors.outlineVariant.withValues(alpha: 0.6),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -654,6 +624,11 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
                           ? null
                           : controller.nextExercise,
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        disabledForegroundColor: Colors.white38,
+                        side: BorderSide(
+                          color: colors.outlineVariant.withValues(alpha: 0.6),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -667,7 +642,10 @@ class _WorkoutSessionScreenState extends ConsumerState<WorkoutSessionScreen> {
               const SizedBox(height: 10),
               TextButton.icon(
                 onPressed: () => context.push('/ai/chat'),
-                icon: const Icon(Icons.auto_awesome_rounded),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.aiViolet,
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                 label: const Text('Đang đau hoặc khó chịu? Hỏi AI Coach'),
               ),
             ],
@@ -1025,12 +1003,12 @@ class _SetRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDone
-            ? colors.primary.withValues(alpha: 0.08)
-            : const Color(0xFF141724),
+            ? AppColors.success.withValues(alpha: 0.08)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDone
-              ? colors.primary.withValues(alpha: 0.4)
+              ? AppColors.success.withValues(alpha: 0.35)
               : colors.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
@@ -1040,17 +1018,17 @@ class _SetRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: isDone ? colors.primary : const Color(0xFF1B1E2E),
+              color: isDone ? AppColors.success : AppColors.surfaceElevated,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 '${set.number}',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
-                  color: isDone ? colors.onPrimary : Colors.white,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -1098,7 +1076,7 @@ class _SetRow extends StatelessWidget {
             scale: 1.15,
             child: Checkbox(
               value: set.completed,
-              activeColor: colors.primary,
+              activeColor: AppColors.success,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),

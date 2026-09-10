@@ -1,30 +1,32 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 enum NotificationType {
   aiRecommendation(
     label: 'GỢI Ý AI',
     icon: Icons.auto_awesome_rounded,
-    color: Color(0xFFFF2E54),
+    color: AppColors.aiViolet,
   ),
   workoutReminder(
     label: 'LUYỆN TẬP',
     icon: Icons.fitness_center_rounded,
-    color: Color(0xFF00E5FF),
+    color: AppColors.primary,
   ),
   recoveryAlert(
     label: 'PHỤC HỒI',
     icon: Icons.battery_charging_full_rounded,
-    color: Color(0xFF00E676),
+    color: AppColors.cyan,
   ),
   nutritionSuggestion(
     label: 'DINH DƯỠNG',
     icon: Icons.restaurant_menu_rounded,
-    color: Color(0xFFFFB300),
+    color: AppColors.amber,
   ),
   system(
     label: 'HỆ THỐNG',
     icon: Icons.notifications_rounded,
-    color: Color(0xFF8C9EFF),
+    color: AppColors.info,
   );
 
   const NotificationType({

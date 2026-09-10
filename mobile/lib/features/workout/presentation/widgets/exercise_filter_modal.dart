@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../application/exercise_catalog_controller.dart';
 import '../../domain/exercise_api_models.dart';
 import '../../domain/muscle_models.dart';
@@ -124,7 +125,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
     return Container(
       height: size.height * 0.88,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F121C),
+        color: AppColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
           color: colors.outlineVariant.withValues(alpha: 0.5),
@@ -202,7 +203,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                 IconButton.filledTonal(
                   onPressed: () => Navigator.of(context).pop(),
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E2232),
+                    backgroundColor: AppColors.surfaceElevated,
                     foregroundColor: Colors.white70,
                   ),
                   icon: const Icon(Icons.close_rounded, size: 18),
@@ -216,7 +217,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFF161926),
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: colors.outlineVariant.withValues(alpha: 0.4),
@@ -353,7 +354,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
             decoration: BoxDecoration(
-              color: const Color(0xFF141724),
+              color: AppColors.surface,
               border: Border(
                 top: BorderSide(
                   color: colors.outlineVariant.withValues(alpha: 0.4),
@@ -377,7 +378,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                         horizontal: 14,
                         vertical: 10,
                       ),
-                      fillColor: const Color(0xFF1B1E2E),
+                      fillColor: AppColors.surfaceInput,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
@@ -395,7 +396,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                           onPressed: _resetFilters,
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size(0, 48),
-                            backgroundColor: const Color(0xFF1A1D2C),
+                            backgroundColor: AppColors.surfaceElevated,
                             side: BorderSide(
                               color: colors.outlineVariant.withValues(
                                 alpha: 0.5,
@@ -458,7 +459,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF282D42) : Colors.transparent,
+            color: isSelected ? AppColors.surfaceElevated : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
@@ -516,7 +517,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
-          color: Color(0xFF7E849E),
+          color: AppColors.textTertiary,
           letterSpacing: 0.8,
         ),
       ),
@@ -543,7 +544,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
       decoration: BoxDecoration(
         color: isSelected
             ? colors.primary.withValues(alpha: 0.12)
-            : const Color(0xFF151824),
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
@@ -564,7 +565,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1D2130),
+                  color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
@@ -694,7 +695,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
       decoration: BoxDecoration(
         color: isSelected
             ? colors.primary.withValues(alpha: 0.12)
-            : const Color(0xFF151824),
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
@@ -716,7 +717,7 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? colors.primary.withValues(alpha: 0.2)
-                      : const Color(0xFF1D2130),
+                      : AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../workout/application/workout_schedule_controller.dart';
 import '../../workout/domain/workout_models.dart';
 import '../application/progress_controller.dart';
@@ -211,7 +212,7 @@ class _ConsistencyHeroCard extends StatelessWidget {
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: Colors.grey,
+                        color: AppColors.textTertiary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -261,7 +262,7 @@ class _ConsistencyHeroCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -330,7 +331,7 @@ class _ConsistencyHeroCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -345,7 +346,9 @@ class _ConsistencyHeroCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        color: isToday ? colors.primary : Colors.grey,
+                        color: isToday
+                            ? colors.primary
+                            : AppColors.textTertiary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -409,9 +412,9 @@ class _VolumeProgressionCard extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     final volumeBreakdown = [
-      ('Đẩy (Push: Ngực, Vai, Tay sau)', 8500, const Color(0xFFFF2E54)),
-      ('Kéo (Pull: Lưng xô, Tay trước)', 9200, const Color(0xFFFF5277)),
-      ('Chân & Mông (Legs & Glutes)', 10800, const Color(0xFFFF7A00)),
+      ('Đẩy (Push: Ngực, Vai, Tay sau)', 8500, AppColors.chartPrimary),
+      ('Kéo (Pull: Lưng xô, Tay trước)', 9200, AppColors.chartBlue),
+      ('Chân & Mông (Legs & Glutes)', 10800, AppColors.chartCyan),
     ];
 
     final displayTotal = totalVolumeKg.toInt();
@@ -455,7 +458,7 @@ class _VolumeProgressionCard extends StatelessWidget {
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: Colors.grey,
+                        color: AppColors.textTertiary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -498,7 +501,7 @@ class _VolumeProgressionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
+              color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -510,7 +513,10 @@ class _VolumeProgressionCard extends StatelessWidget {
                     children: [
                       const Text(
                         'TỔNG KHỐI LƯỢNG NÂNG',
-                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textTertiary,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -531,7 +537,10 @@ class _VolumeProgressionCard extends StatelessWidget {
                   children: [
                     const Text(
                       'TRUNG BÌNH BUỔI',
-                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -556,7 +565,7 @@ class _VolumeProgressionCard extends StatelessWidget {
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
-              color: Colors.grey,
+              color: AppColors.textTertiary,
             ),
           ),
           const SizedBox(height: 10),
@@ -710,7 +719,7 @@ class _MuscleRecoveryMatrixCard extends StatelessWidget {
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: Colors.grey,
+                        color: AppColors.textTertiary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -739,7 +748,7 @@ class _MuscleRecoveryMatrixCard extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF161922),
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -851,7 +860,7 @@ class _StrengthProgressionCard extends StatelessWidget {
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
-                        color: Colors.grey,
+                        color: AppColors.textTertiary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -881,7 +890,7 @@ class _StrengthProgressionCard extends StatelessWidget {
           if (personalRecords.isEmpty)
             const Text(
               'Chưa có kỷ lục nào được ghi nhận.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             )
           else
             ...personalRecords.take(3).map((pr) {
@@ -889,7 +898,7 @@ class _StrengthProgressionCard extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161922),
+                  color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -985,7 +994,7 @@ class _WorkoutActivitySection extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0.8,
-                color: Colors.grey,
+                color: AppColors.textTertiary,
               ),
             ),
             TextButton(
@@ -1006,7 +1015,7 @@ class _WorkoutActivitySection extends StatelessWidget {
             child: const Center(
               child: Text(
                 'Chưa có buổi tập nào hoàn thành trong tuần này.',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ),
           )

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../../onboarding/data/health_profile_repository.dart';
 import '../../onboarding/domain/user_profile_models.dart';
@@ -151,13 +152,13 @@ class _HealthProfileEditScreenState
                         label: 'BMR',
                         value: '${tempProfile.bmr}',
                         subLabel: 'kcal/ngày',
-                        color: Colors.blueAccent,
+                        color: AppColors.nutritionCalories,
                       ),
                       _MetricBox(
                         label: 'TDEE (Mục tiêu)',
                         value: '${tempProfile.tdee}',
                         subLabel: 'kcal/ngày',
-                        color: Colors.orange,
+                        color: AppColors.nutritionCalories,
                       ),
                     ],
                   ),
@@ -356,8 +357,8 @@ class _GoalIllustrationCard extends StatelessWidget {
       case FitnessGoal.gainMuscle:
         return (
           Icons.fitness_center_rounded,
-          const Color(0xFFFF2E54),
-          [const Color(0xFFFF2E54), const Color(0xFFFF5277)],
+          AppColors.primary,
+          [AppColors.primary, AppColors.primaryLight],
         );
       case FitnessGoal.loseFat:
         return (

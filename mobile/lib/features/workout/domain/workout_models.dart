@@ -68,6 +68,7 @@ class SessionExercise {
     required this.targetSets,
     required this.targetReps,
     required this.weightKg,
+    this.thumbnailUrl,
   });
 
   final String exerciseId;
@@ -77,6 +78,7 @@ class SessionExercise {
   final int targetSets;
   final int targetReps;
   final double weightKg;
+  final String? thumbnailUrl;
 
   SessionExercise copyWith({
     String? exerciseId,
@@ -86,6 +88,7 @@ class SessionExercise {
     int? targetSets,
     int? targetReps,
     double? weightKg,
+    String? thumbnailUrl,
   }) {
     return SessionExercise(
       exerciseId: exerciseId ?? this.exerciseId,
@@ -95,6 +98,7 @@ class SessionExercise {
       targetSets: targetSets ?? this.targetSets,
       targetReps: targetReps ?? this.targetReps,
       weightKg: weightKg ?? this.weightKg,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 }

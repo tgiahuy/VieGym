@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
 import '../application/exercise_catalog_controller.dart';
 import '../application/favorite_exercises_controller.dart';
@@ -134,8 +135,8 @@ class ExerciseDetailScreen extends ConsumerWidget {
               exercise.nameVi,
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: colors.primary,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -179,12 +180,12 @@ class ExerciseDetailScreen extends ConsumerWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.15),
+                    color: AppColors.infoSoft,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.menu_book_rounded,
-                    color: Colors.blue,
+                    color: AppColors.info,
                     size: 18,
                   ),
                 ),
@@ -201,7 +202,10 @@ class ExerciseDetailScreen extends ConsumerWidget {
                     ),
                     Text(
                       'Các bước chuẩn form kỹ thuật',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -231,15 +235,19 @@ class ExerciseDetailScreen extends ConsumerWidget {
                           height: 22,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: colors.primary.withValues(alpha: 0.2),
+                            color: AppColors.surfaceNested,
+                            border: Border.all(
+                              color: AppColors.borderDefault,
+                              width: 1,
+                            ),
                           ),
                           child: Center(
                             child: Text(
                               '$index',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                color: colors.primary,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
                               ),
                             ),
                           ),

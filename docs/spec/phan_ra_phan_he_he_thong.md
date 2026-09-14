@@ -3,8 +3,8 @@
 > Mô tả cách VieGym được phân rã thành các phân hệ, trách nhiệm, dữ liệu
 > sở hữu, API boundary và quan hệ phụ thuộc.
 >
-> **Nguồn:** `specs.md` v3.2 và `bussiness_mainflow.md` v3.2
-> **Phiên bản:** 3.2 — 2026-08-31
+> **Nguồn:** `specs.md` v3.3 và `bussiness_mainflow.md`
+> **Phiên bản:** 3.3 — 2026-09-14
 
 ---
 
@@ -37,7 +37,7 @@ Nguyên tắc xuyên suốt:
 > Backend executes.**
 
 - Spring Boot Backend là business authority và source of truth.
-- Flutter chỉ gọi Backend qua `/api/v1`, không gọi trực tiếp AI Service.
+- Flutter USER App và Web Admin chỉ gọi Backend qua `/api/v1`, không gọi trực tiếp AI Service.
 - AI Service không truy cập PostgreSQL và không tự mutation dữ liệu.
 - Mỗi entity có một subsystem owner; module khác dùng qua service/API
   hoặc context được kiểm soát.
@@ -59,14 +59,14 @@ identity cho toàn hệ thống nhưng không sở hữu dữ liệu nghiệp v�
 | Entity | Mô tả |
 |---|---|
 | `User` | Email, password hash, provider, role và trạng thái |
-| `RefreshToken` | Phiên có expiry, revoke và bắt buộc rotation khi refresh |
+| `RefreshToken` | Phiên có audience/client channel, expiry, revoke và bắt buộc rotation khi refresh |
 | `OtpCode` | OTP theo purpose, expiry, attempts và cooldown |
 
 ### Chức năng chính
 
 - Đăng ký local, email duy nhất và password hash — P0.
 - Register + OTP: account `PENDING` → verify → activate → cấp token — P0.
-- Login, logout, refresh và revoke session — P0.
+- USER login/logout/refresh trên Mobile và ADMIN login/logout/refresh trên Web Admin riêng — P0.
 - Google/Facebook Login verify server-side — P0.
 - Forgot/Reset Password bằng OTP purpose riêng — P0.
 - Biometric chỉ mở local session/token trong secure storage — P0.
@@ -84,6 +84,10 @@ identity cho toàn hệ thống nhưng không sở hữu dữ liệu nghiệp v�
 | POST | `/api/v1/auth/facebook` | Facebook Login server-side |
 | POST | `/api/v1/auth/refresh` | Làm mới/rotation token |
 | POST | `/api/v1/auth/logout` | Revoke phiên |
+| POST | `/api/v1/admin/auth/login` | Đăng nhập Web Admin local-only |
+| POST | `/api/v1/admin/auth/refresh` | Rotation Admin cookie session |
+| POST | `/api/v1/admin/auth/logout` | Revoke Admin session |
+| GET | `/api/v1/admin/auth/session` | Bootstrap Web Admin session |
 | POST | `/api/v1/auth/password/forgot` | Khởi tạo reset password |
 | POST | `/api/v1/auth/password/reset` | Đặt mật khẩu mới |
 
@@ -101,9 +105,11 @@ Identity & Auth
 ### Business rules
 
 - Account chưa verify không được cấp token nghiệp vụ.
+- `/auth/**` chỉ cấp audience `MOBILE_USER` cho USER; ADMIN nhận `ADMIN_WEB_ONLY` và không có token.
+- `/admin/auth/**` chỉ cấp cookie session audience `ADMIN_WEB` cho ADMIN active đã provision; P0 không có Admin register/social login.
 - Không làm lộ email tồn tại qua lỗi OTP/reset.
 - Không log password, refresh token, OTP hoặc credential plaintext.
-- Private API yêu cầu JWT; ADMIN chỉ truy cập API được cấp phép.
+- Admin API kiểm tra account active + role `ADMIN` + audience `ADMIN_WEB`; mutation dùng cookie yêu cầu CSRF.
 
 ---
 
@@ -493,7 +499,8 @@ DISMISS: Ownership → PENDING Check → DISMISSED + optional feedback
 
 Quản trị dữ liệu dùng chung và audit thao tác quan trọng. Exercise/Food
 và audit tối thiểu là UC-19/P0 baseline theo business flow; UC-20 và các
-khả năng Admin mở rộng vẫn là P1 theo SRS.
+khả năng Admin mở rộng vẫn là P1 theo SRS. UI của PH8 chỉ nằm trong React
+Web Admin riêng; Flutter không chứa Admin feature.
 
 ### Entities
 
@@ -506,6 +513,7 @@ khả năng Admin mở rộng vẫn là P1 theo SRS.
 
 ### Chức năng chính
 
+- Web Admin Login/shell và channel/session guard — P0 baseline.
 - CRUD/ẩn hiện Exercise, Food tối thiểu — P0 baseline.
 - Audit mutation nhạy cảm và Apply — P0 baseline.
 - User management/deactivate — P1.
@@ -527,7 +535,8 @@ khả năng Admin mở rộng vẫn là P1 theo SRS.
 
 ### Business rules
 
-- Chỉ ADMIN hợp lệ được gọi API quản trị.
+- Chỉ ADMIN active với session audience `ADMIN_WEB` được gọi API quản trị; mutation dùng cookie yêu cầu CSRF.
+- USER không đăng nhập Web Admin; Flutter không cấp hoặc lưu ADMIN session.
 - Không xem/log password, token, OTP, API key hoặc raw context thừa.
 - Import phải preview/validate trước commit và rollback khi thất bại.
 - Exercise/Food dùng soft delete để bảo toàn lịch sử.
@@ -744,7 +753,7 @@ cuối cùng và mọi mutation vẫn thuộc Spring Boot Backend.
 | Dashboard | UC-11 | FT-DB-001..005/007; MH03 | PH6 | P0 |
 | AI Consent/Coach | UC-12/17 | FT-AI-001..007/014; MH28/MH29/MH55 | PH7 | P0 |
 | Recommendation/Apply/Dismiss | UC-13/14 | FT-AI-008..010; MH30/MH31 | PH7 + domain | P0 |
-| Admin Exercise/Food/Audit | UC-19 | FT-AD-003/004/008; MH45/46/47/51 | PH8 | P0 baseline |
+| Web Admin Login + Exercise/Food/Audit | UC-19 | FT-ID-002/010; FT-AD-003/004/008; MH58/45/46/47/51 | PH1/PH8 | P0 baseline |
 | Exercise/Food media | UC-21 | FT-MD-001..003 | PH9 | P0 baseline |
 | Weekly Review/Plan Adjustment | UC-15/16 | FT-AI-011/012; MH32 | PH7 | P1 |
 | Admin User/Import/Rule/Prompt | UC-20 | FT-AD-002/005/006/007; MH48/MH49/MH50 | PH8 | P1 |

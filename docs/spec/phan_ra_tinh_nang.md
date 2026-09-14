@@ -1,16 +1,16 @@
 # Phân Rã Tính Năng Hệ Thống — VieGym
 
-> **Phiên bản:** 3.2
-> **Ngày cập nhật:** 2026-08-31
+> **Phiên bản:** 3.3
+> **Ngày cập nhật:** 2026-09-14
 > **Trạng thái:** Baseline triển khai MVP
 
 ## 1. Mục đích và nguồn tham chiếu
 
 Tài liệu phân rã yêu cầu VieGym thành các feature có thể thiết kế, triển khai và kiểm thử. Nguồn tham chiếu, theo thứ tự ưu tiên khi có xung đột:
 
-1. `specs.md` v3.2 — Source of Truth về yêu cầu và phạm vi.
-2. `bussiness_mainflow.md` v3.2 — luồng nghiệp vụ end-to-end.
-3. `phan_ra_phan_he_he_thong.md` v3.2 — subsystem owner và boundary.
+1. `specs.md` v3.3 — Source of Truth về yêu cầu và phạm vi.
+2. `bussiness_mainflow.md` — luồng nghiệp vụ end-to-end.
+3. `phan_ra_phan_he_he_thong.md` — subsystem owner và boundary.
 4. Tài liệu này — feature breakdown phục vụ triển khai.
 
 Nguyên tắc xuyên suốt:
@@ -18,7 +18,7 @@ Nguyên tắc xuyên suốt:
 > **Backend calculates. AI interprets and recommends. User decides. Backend executes.**
 
 - Spring Boot Backend là business authority và source of truth.
-- Mobile không tự tính metric authoritative và không gọi trực tiếp AI Service.
+- Flutter USER App và Web Admin không tự tính metric authoritative và không gọi trực tiếp AI Service.
 - AI Service không truy cập database và không tự mutation dữ liệu nghiệp vụ.
 - Mỗi feature có một subsystem owner; subsystem khác chỉ là consumer.
 - Private resource phải kiểm tra authentication, authorization và ownership tại Backend.
@@ -76,7 +76,9 @@ Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản
 
 #### FT-ID-002/003 — Đăng nhập local, Google và Facebook
 
-- Backend kiểm tra credential và account status trước khi cấp token.
+- Flutter Mobile chỉ phục vụ USER. `/auth/**` chỉ cấp session audience `MOBILE_USER`; credential ADMIN hợp lệ trả `ADMIN_WEB_ONLY` mà không cấp token.
+- Web Admin dùng `/admin/auth/**`; P0 chỉ hỗ trợ local email/password cho ADMIN đã provision và cấp cookie session audience `ADMIN_WEB` cùng CSRF protection.
+- Backend kiểm tra credential, account status, role và client audience trước khi cấp session.
 - Account pending, locked hoặc disabled bị từ chối bằng lỗi chuẩn.
 - Google credential và Facebook access token phải được verify server-side trước khi liên kết/tạo account.
 - Với Facebook, Backend chỉ tin `user_id`, `app_id`, expiry và email lấy từ Meta sau khi token hợp lệ; không tin profile/email do Mobile tự gửi.
@@ -85,8 +87,9 @@ Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản
 
 #### FT-ID-004/005 — Logout và refresh
 
-- Logout revoke refresh token/session tương ứng.
-- Refresh chỉ chấp nhận token còn hạn, chưa revoke và đúng account; mỗi lần refresh bắt buộc rotation. Reuse token cũ phải revoke token family theo policy.
+- Logout revoke refresh token/session đúng kênh tương ứng.
+- Refresh chỉ chấp nhận credential còn hạn, chưa revoke, đúng account và đúng audience; mỗi lần refresh bắt buộc rotation. Reuse token cũ phải revoke token family theo policy.
+- Admin session dùng cookie `HttpOnly`, `Secure`, `SameSite=Strict`; token không được trả cho JavaScript hoặc lưu trong Web Storage. Admin mutation yêu cầu CSRF.
 - Password, OTP, access token và refresh token không được ghi log plaintext.
 
 #### FT-ID-006/007/008 — Password và OTP lifecycle
@@ -99,7 +102,8 @@ Quản lý account, xác thực, token, OTP, role và trạng thái tài khoản
 #### FT-ID-009/010/011 — Local unlock, authorization và session
 
 - Biometric chỉ mở token/session trong secure storage; không gửi dữ liệu sinh trắc lên Backend.
-- Role tối thiểu: `USER`, `ADMIN`; private API kiểm tra JWT, role và ownership.
+- Role tối thiểu: `USER`, `ADMIN`; private API kiểm tra session, audience, role và ownership.
+- Admin API yêu cầu account active + role `ADMIN` + audience `ADMIN_WEB`; CORS không thay thế authorization.
 - Xem thiết bị/remote logout là P1.
 
 **Dependencies:** Không phụ thuộc domain khác. **Consumers:** PH2–PH10.
@@ -482,11 +486,13 @@ Quản trị catalog và truy vết thao tác nhạy cảm.
 
 ### 9.2. Business rules
 
-- P0: CRUD/hide Exercise và Food đủ cho seed/demo; audit tối thiểu cho admin action và recommendation APPLY.
+- P0: Web Admin Login riêng, CRUD/hide Exercise và Food đủ cho seed/demo; audit tối thiểu cho admin action và recommendation APPLY.
 - P1: User Management, dashboard, import, AI Rule/Prompt và metrics.
 - Import phải preview/validate trước commit và báo lỗi theo dòng.
 - Exercise/Food đã có history nên ưu tiên hide/soft-delete.
 - Audit ghi actor, action, target, time, result và metadata tối thiểu; không chứa credential hoặc raw personal context thừa.
+- Flutter không chứa Admin route/UI/API client; Web Admin không dùng USER login/session.
+- P0 không có Admin register/social login; Admin session và mutation tuân thủ [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md).
 
 UC-19 là P0 baseline đúng theo SRS: Admin quản lý Exercise/Food và xem Audit Log tối thiểu.
 User Management, Admin Dashboard, Import và AI Rule/Prompt thuộc UC-20/P1 và không được gộp vào UC-19.
@@ -590,7 +596,7 @@ PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P0 local/in-app)
 | Dashboard | UC-11 | FT-DB-001..005/007 | PH6 | P0 |
 | AI Consent/Coach | UC-12/17 | FT-AI-001..007/014 | PH7 | P0 |
 | Recommendation/Apply/Dismiss | UC-13/14 | FT-AI-008..010 | PH7 + domain | P0 |
-| Admin Exercise/Food/Audit | UC-19 | FT-AD-003/004/008 | PH8 | P0 baseline |
+| Web Admin Login + Exercise/Food/Audit | UC-19 | FT-ID-002/004/005/010; FT-AD-003/004/008 | PH1/PH8 | P0 baseline |
 | Exercise/Food media | UC-21 | FT-MD-001..003 | PH9 | P0 baseline |
 | Weekly Review/Plan Adjustment | UC-15/16 | FT-AI-011/012 | PH7 | P1 |
 | Admin mở rộng | UC-20 | FT-AD-001/002/005..007/009 | PH8 | P1 |
@@ -630,7 +636,7 @@ PH3/PH4/PH5/PH7 events ──→ PH10 Notification (P0 local/in-app)
 | AC-16 | DISMISS chỉ đổi status/feedback, không mutation domain data |
 | AC-17 | Mutation sau APPLY do domain owner thực hiện và có audit |
 | AC-18 | Media P0 hiển thị asset hợp lệ và enforce quyền/validation |
-| AC-19 | Audit không chứa password, token, OTP, API key hoặc personal context thừa |
+| AC-19 | ADMIN chỉ tạo phiên qua Web Admin; Mobile không cấp ADMIN session; Admin API enforce role + `ADMIN_WEB` audience + CSRF; audit không chứa secret/context thừa |
 | AC-20 | Favorite Exercise/Food đúng ownership, add/remove idempotent, chỉ tham chiếu catalog item hợp lệ và được persist qua Backend |
 | AC-21 | Notification đúng ownership; read/preference idempotent; reminder tôn trọng timezone, preference, AI Consent và không rollback domain transaction |
 

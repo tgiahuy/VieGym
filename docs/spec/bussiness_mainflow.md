@@ -1,9 +1,9 @@
 # Luồng Nghiệp Vụ Chính — VieGym
 
-> Tài liệu mô tả các luồng nghiệp vụ end-to-end của VieGym, rút gọn từ `specs.md` v3.2 để phục vụ thiết kế, triển khai, kiểm thử và demo.
+> Tài liệu mô tả các luồng nghiệp vụ end-to-end của VieGym, rút gọn từ `specs.md` v3.3 để phục vụ thiết kế, triển khai, kiểm thử và demo.
 >
-> **Phiên bản:** 3.2
-> **Ngày cập nhật:** 2026-08-31
+> **Phiên bản:** 3.3
+> **Ngày cập nhật:** 2026-09-14
 >
 > **Cập nhật v3.2:** đưa Favorite Exercise, Favorite Food và Notification local/in-app vào P0; push/automation vẫn là P2.
 
@@ -46,7 +46,7 @@ Guest
                                       └── User Preference
 
 Admin
-  └── Quản trị dữ liệu hệ thống
+  └── Đăng nhập Web Admin riêng → Quản trị dữ liệu hệ thống
         ├── Bài tập / món ăn / Audit Log [P0]
         ├── User Management [P1]
         └── AI Rule / Prompt [P1]
@@ -88,7 +88,8 @@ flowchart TD
     Settings --> EquipmentSettings[Equipment Preference]
     Settings --> Preference[User Preference]
 
-    Admin[Admin] --> AdminPanel[Quản trị dữ liệu hệ thống]
+    Admin[Admin] --> AdminLogin[Đăng nhập Web Admin riêng]
+    AdminLogin --> AdminPanel[Quản trị dữ liệu hệ thống]
     AdminPanel --> AdminData[Bài tập / món ăn P0]
     AdminPanel --> Audit[Audit Log P0]
     AdminPanel --> AdminUser[User Management P1]
@@ -99,7 +100,8 @@ Nguyên tắc tổng quát:
 
 - `HealthProfile` và `NutritionTarget` là dữ liệu nền cho Dashboard, Meal Planner và AI Coach.
 - Backend Spring Boot là business authority và source of truth.
-- Mobile App chỉ giao tiếp với Backend qua REST API/HTTPS.
+- Flutter USER App và Web Admin chỉ giao tiếp với Backend qua REST API/HTTPS.
+- Flutter chỉ dành cho USER; Admin đăng nhập/vận hành trên Web Admin riêng theo [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md).
 - AI Service không truy cập database trực tiếp.
 - AI chỉ nhận context cần thiết do Backend authorize, consent-check và lọc theo whitelist.
 - Backend tính các metric authoritative; AI chỉ diễn giải và đề xuất.
@@ -216,6 +218,7 @@ Business rules:
 - Không tự động liên kết social account với account hiện có chỉ dựa trên email.
 - Biometric unlock chỉ dùng để mở khóa local session/token đã lưu an toàn trên thiết bị.
 - Tài khoản bị khóa hoặc vô hiệu hóa không được đăng nhập.
+- Luồng Mobile `/auth/**` không cấp session cho ADMIN; credential ADMIN hợp lệ nhận `ADMIN_WEB_ONLY` và phải chuyển sang Web Admin.
 - Nếu thiếu dữ liệu bắt buộc, hệ thống không tính TDEE và yêu cầu user hoàn thiện hồ sơ.
 - Backend là nơi tính BMI, BMR, TDEE, calories và macro authoritative.
 
@@ -1277,9 +1280,13 @@ Business rules:
 Admin baseline là phạm vi P0 cho các dữ liệu cần phục vụ demo và vận hành tối thiểu: quản lý bài tập, món ăn Việt Nam và audit log. User Management, Admin Dashboard, Import CSV/Excel, AI Rule và Prompt Version là P1, chỉ triển khai sau khi P0 ổn định.
 
 ```text
-Admin đăng nhập
+Admin mở Web Admin riêng
   ↓
-Backend xác thực JWT và role ADMIN
+`POST /admin/auth/login` bằng local email/password
+  ↓
+Backend xác thực account ACTIVE + role ADMIN
+  ↓
+Cấp cookie session audience ADMIN_WEB + CSRF token
   ↓
 Admin truy cập màn quản trị
   ├── Quản lý người dùng            [P1]
@@ -1304,10 +1311,11 @@ Sơ đồ trực quan:
 
 ```mermaid
 flowchart TD
-    Login[Admin đăng nhập] --> Auth[Backend xác thực JWT]
-    Auth --> Role{Role = ADMIN?}
-    Role -- Không --> Deny[Từ chối truy cập]
-    Role -- Có --> Panel[Màn quản trị]
+    Login[Admin đăng nhập Web Admin] --> Auth[POST /admin/auth/login]
+    Auth --> Role{ACTIVE + ADMIN?}
+    Role -- Không --> Deny[Từ chối, không cấp cookie]
+    Role -- Có --> Session[Cấp ADMIN_WEB session + CSRF]
+    Session --> Panel[Màn quản trị]
 
     Panel --> Users[Quản lý người dùng P1]
     Panel --> Exercises[Quản lý bài tập P0]
@@ -1341,6 +1349,9 @@ Kết quả:
 Business rules:
 
 - Admin baseline P0 gồm quản lý bài tập, món ăn và audit log; User Management và các phần mở rộng còn lại là P1.
+- Flutter Mobile không chứa Admin route/UI/API client; `/auth/**` không cấp ADMIN session.
+- Mọi Admin API yêu cầu account active, role `ADMIN`, audience `ADMIN_WEB`; mutation dùng cookie yêu cầu CSRF.
+- Admin token không được trả trong JSON hoặc lưu trong Web Storage; P0 không có Admin register/social login.
 - Admin không được xem mật khẩu, refresh token hoặc API key.
 - Import CSV/Excel phải có preview và validation trước khi lưu.
 - Xóa dữ liệu chính nên dùng soft delete.
@@ -1393,13 +1404,13 @@ Client gọi API riêng tư
   ↓
 Backend kiểm tra Access Token
   ↓
-Xác định userId và role
+Xác định subject, role và session audience
   ↓
 Kiểm tra quyền truy cập tài nguyên
   ├── USER
   │     └── Chỉ truy cập dữ liệu thuộc chính mình
   └── ADMIN
-        └── Truy cập API quản trị theo role
+        └── Chỉ truy cập API quản trị khi audience = ADMIN_WEB
   ↓
 Nếu hợp lệ
   └── Xử lý nghiệp vụ
@@ -1414,7 +1425,7 @@ Sơ đồ trực quan:
 flowchart TD
     Request[Client gọi API riêng tư] --> Token{JWT hợp lệ?}
     Token -- Không --> Unauthorized[401 Unauthorized]
-    Token -- Có --> Identity[Xác định userId và role]
+    Token -- Có --> Identity[Xác định subject, role và audience]
 
     Identity --> Resource{Truy cập tài nguyên nào?}
     Resource --> OwnData[Dữ liệu cá nhân]
@@ -1425,7 +1436,7 @@ flowchart TD
     Owner -- Không --> Forbidden[403 Forbidden]
     Owner -- Có --> Process[Xử lý nghiệp vụ]
 
-    AdminAPI --> IsAdmin{Role ADMIN?}
+    AdminAPI --> IsAdmin{ACTIVE + ADMIN + ADMIN_WEB?}
     IsAdmin -- Không --> Forbidden
     IsAdmin -- Có --> Process
 
@@ -1436,6 +1447,7 @@ flowchart TD
 Business rules:
 
 - API private bắt buộc có JWT hợp lệ.
+- Admin mutation dùng cookie bắt buộc có CSRF token hợp lệ.
 - Backend phải kiểm tra authorization, không chỉ ẩn nút hoặc màn hình ở frontend.
 - User không được xem `HealthProfile`, `MealPlan`, `WorkoutLog`, `WeightLog` hoặc dữ liệu cá nhân của user khác.
 - AI Provider API key, JWT secret và credential chỉ lưu server-side.
@@ -1624,7 +1636,7 @@ Bảng này dùng để đối chiếu luồng nghiệp vụ với SRS, feature 
 | Weight Tracking | UC-10 | FT-HP-005..007 | MH43 | Health Profile & Body Tracking | P0 |
 | AI Consent / Coach | UC-12 / UC-17 | FT-AI-001..007 / 014 | MH28 / MH29 / MH55 | AI Coach | P0 |
 | Daily Recommendation + Apply / Dismiss | UC-13 / UC-14 | FT-AI-008..010 | MH30 / MH31 | AI Coach | P0 |
-| Admin baseline + Audit | UC-19 | FT-AD-003 / 004 / 008 | MH45 / MH46 / MH47 / MH51 | Admin & Audit | P0 baseline |
+| Web Admin login + Admin baseline + Audit | UC-19 | FT-ID-002 / 010; FT-AD-003 / 004 / 008 | MH58 / MH45 / MH46 / MH47 / MH51 | Identity; Admin & Audit | P0 baseline |
 | Media / Storage baseline | UC-21 | FT-MD-001..003 | Admin Exercise/Food media fields | Media / Storage | P0 baseline |
 | Notification Center / Reminder | UC-22 | FT-NT-001..004 | MH41 | Notification | P0 |
 | AI Weekly Review / Plan Adjustment | UC-15 / UC-16 | FT-AI-011 / 012 | MH32 | AI Coach | P1 |
@@ -1666,6 +1678,7 @@ Tài liệu này bao phủ các luồng MVP chính:
 - Backend mới được mutation sau khi User APPLY.
 - Ownership và Security baseline.
 - Media/Storage baseline cho Exercise/Food.
+- Admin đăng nhập/vận hành trên Web Admin riêng; Mobile không cấp ADMIN session.
 - Admin baseline P0 quản lý bài tập, món ăn và Audit Log.
 - Notification Center, read state, preference và workout/meal/weight reminder local/in-app.
 - User Management, Admin Dashboard, Import CSV/Excel và AI Rule/Prompt ở phạm vi P1.

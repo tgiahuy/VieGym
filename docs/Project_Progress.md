@@ -1,11 +1,11 @@
 # Kế hoạch và theo dõi tiến độ triển khai VieGym
 
-> **Phiên bản:** 2.4
-> **Ngày cập nhật:** 2026-08-31
+> **Phiên bản:** 2.5
+> **Ngày cập nhật:** 2026-09-14
 > **Loại dự án:** Đồ án tốt nghiệp
-> **Phạm vi:** MVP P0 theo SRS v3.2
-> **Thời gian kế hoạch:** 25 tuần
-> **Trạng thái tổng thể:** M2 đang thực hiện; UI prototype của M3–M6 đang được triển khai song song, chưa đạt Definition of Done full-stack
+> **Phạm vi:** MVP P0 theo SRS v3.3
+> **Thời gian kế hoạch:** 26 tuần
+> **Trạng thái tổng thể:** M5 đang thực hiện; M7 đã được lập lại kế hoạch để tách Web Admin khỏi Flutter theo ADR-008
 
 ## 1. Cách sử dụng tài liệu
 
@@ -30,7 +30,8 @@ Quy ước trạng thái công việc:
 
 Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to-end, demo và nghiệm thu. Sản phẩm gồm:
 
-- Flutter Mobile App cho USER và Admin P0.
+- Flutter Mobile App chỉ dành cho USER.
+- React Web Admin riêng cho đăng nhập và nghiệp vụ Admin P0.
 - Spring Boot Backend cung cấp REST API `/api/v1`.
 - PostgreSQL là nguồn dữ liệu authoritative và được quản lý bằng Flyway.
 - FastAPI AI Service stateless, chỉ nhận context do Backend cung cấp.
@@ -47,7 +48,7 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - Mobile không gọi FastAPI hoặc AI Provider trực tiếp.
 - Mọi private resource phải kiểm tra authentication, role và ownership tại Backend.
 - Mỗi thay đổi phải truy vết được qua `AC → UC → FT → MH → API → DB → Test`.
-- Không đưa Redis, microservice, Kubernetes, web admin riêng hoặc tính năng P1 vào đường găng MVP.
+- Không đưa Redis, microservice, Kubernetes hoặc tính năng P1 vào đường găng MVP; Web Admin riêng là P0 theo [ADR-008](ADR-008_ADMIN_WEB_ONLY.md).
 
 ## 4. Bảng điều khiển tiến độ
 
@@ -61,8 +62,8 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [x] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 28/28
 - [ ] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 0/23
 - [ ] **M6 — AI Coach và Recommendation** — Tuần 16–19 — Tiến độ: 0/28
-- [ ] **M7 — Admin, Media, Notification và Audit** — Tuần 20–22 — Tiến độ: 0/26
-- [ ] **M8 — Hardening, UAT và Release** — Tuần 23–25 — Tiến độ: 0/29
+- [ ] **M7 — Web Admin, Media, Notification và Audit** — Tuần 20–23 — Tiến độ: 0/26
+- [ ] **M8 — Hardening, UAT và Release** — Tuần 24–26 — Tiến độ: 0/29
 
 **Tiến độ tổng:** 123/229 công việc — 53,7%
 **Milestone hiện tại:** M5
@@ -491,26 +492,26 @@ conversation archive và account auto-lock vẫn là P1.
 
 ---
 
-## 12. M7 — Admin, Media, Notification và Audit
+## 12. M7 — Web Admin, Media, Notification và Audit
 
-**Thời gian:** Tuần 20–22
+**Thời gian:** Tuần 20–23
 **Phụ thuộc:** M4, M5 và M6  
-**Phạm vi:** UC-19/21/22; FT-AD-003/004/008; FT-MD-001..003; FT-NT-001..004
-**Màn hình:** MH41/45/46/47/51
+**Phạm vi:** UC-19/21/22; FT-ID-002/004/005/010 (Admin Web flow); FT-AD-003/004/008; FT-MD-001..003; FT-NT-001..004
+**Màn hình:** MH41 (Mobile USER); MH58/45/46/47/51 (Web Admin)
 **Trạng thái:** Chưa bắt đầu  
 **Tiến độ:** 0/26
 
 ### Admin và Audit
 
-- [ ] **M7-01** — Tạo Admin shell/route riêng và role guard trên Flutter.
-- [ ] **M7-02** — Enforce ADMIN role trên toàn bộ admin API tại Backend.
-- [ ] **M7-03** — Triển khai Admin Exercise list/create/update/hide.
-- [ ] **M7-04** — Triển khai Admin Food list/create/update/hide.
-- [ ] **M7-05** — Giữ lịch sử khi Exercise/Food bị hide hoặc soft-delete.
-- [ ] **M7-06** — Tạo/hoàn thiện Audit Log schema và service dùng chung.
-- [ ] **M7-07** — Ghi audit cho admin mutation và AI Apply.
-- [ ] **M7-08** — Redact password, token, OTP, API key và context không cần thiết khỏi audit.
-- [ ] **M7-09** — Triển khai Audit Log read-only list/filter/detail cho Admin.
+- [ ] **M7-01** — Khởi tạo `admin-web/` bằng React + TypeScript + Vite; pin Node/dependency, lockfile, lint/test/build và cấu hình môi trường.
+- [ ] **M7-02** — Bổ sung migration session audience/CSRF metadata và triển khai `/admin/auth/login|refresh|logout|session` với local ADMIN account, cookie `HttpOnly/Secure/SameSite=Strict`, rotation/revocation và CSRF.
+- [ ] **M7-03** — Hoàn thiện MH58 Admin Login, MH45 Web Admin shell, session bootstrap, route guard và logout; không lưu token trong Web Storage.
+- [ ] **M7-04** — Tách session audience: `/auth/**` chỉ cấp `MOBILE_USER`, từ chối ADMIN bằng `ADMIN_WEB_ONLY`; `/admin/**` enforce account active + role ADMIN + `ADMIN_WEB` audience + CSRF.
+- [ ] **M7-05** — Triển khai Admin Exercise list/create/update/hide full-stack trên Web Admin.
+- [ ] **M7-06** — Triển khai Admin Food list/create/update/hide full-stack trên Web Admin.
+- [ ] **M7-07** — Giữ lịch sử khi Exercise/Food bị hide hoặc soft-delete.
+- [ ] **M7-08** — Tạo/hoàn thiện Audit Log schema/service, ghi audit cho admin mutation và AI Apply, redact password/token/OTP/API key/context thừa.
+- [ ] **M7-09** — Triển khai Audit Log read-only list/filter/detail trên Web Admin.
 
 ### Media
 
@@ -522,11 +523,11 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **M7-15** — Triển khai delete/hide metadata và xử lý object theo policy.
 - [ ] **M7-16** — Tích hợp media cho Exercise và Food P0.
 
-### Flutter và kiểm thử
+### Web Admin và kiểm thử
 
-- [ ] **M7-17** — Hoàn thiện Manage Exercise, Manage Food và Audit Log UI.
-- [ ] **M7-18** — Hoàn thiện media picker/upload/progress/error/retry UI.
-- [ ] **M7-19** — Viết test cho role, ownership, MIME/size, audit redaction và history preservation.
+- [ ] **M7-17** — Hoàn thiện responsive/accessibility/loading/empty/error/conflict state cho MH45/46/47/51/58 trên Web Admin.
+- [ ] **M7-18** — Hoàn thiện media picker/upload/progress/error/retry UI trên Web Admin.
+- [ ] **M7-19** — Viết Backend/Web test cho channel login, audience, cookie/CSRF, role, ownership, MIME/size, audit redaction và history preservation.
 
 ### Notification local/in-app
 
@@ -542,7 +543,8 @@ conversation archive và account auto-lock vẫn là P1.
 
 - [ ] E2E 7 chạy được: Admin thêm Exercise/Food + media → User đọc catalog mới.
 - [ ] E2E 8 chạy được: reminder/event → Notification Center → mark read → deep link; preference OFF không tạo reminder tương ứng.
-- [ ] USER không truy cập được admin API hoặc admin route.
+- [ ] ADMIN không thể nhận session từ Mobile; USER không thể đăng nhập Web Admin hoặc truy cập admin API/route.
+- [ ] Admin session không xuất hiện trong response body/Web Storage; cookie flag, rotation/revocation và CSRF đều đạt.
 - [ ] Hide Exercise/Food không phá Workout/Meal history.
 - [ ] AC-18 và AC-19 đạt.
 - [ ] AC-21 đạt.
@@ -556,7 +558,7 @@ conversation archive và account auto-lock vẫn là P1.
 
 ## 13. M8 — Hardening, UAT và Release
 
-**Thời gian:** Tuần 23–25
+**Thời gian:** Tuần 24–26
 **Phụ thuộc:** M0..M7  
 **Mục tiêu:** chuyển bản feature-complete thành sản phẩm có thể cài đặt, demo và nghiệm thu.  
 **Trạng thái:** Chưa bắt đầu  
@@ -572,13 +574,13 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **M8-06** — Chạy E2E 6 với happy path và failure branch.
 - [ ] **M8-07** — Chạy E2E 7 với happy path và failure branch.
 - [ ] **M8-08** — Chạy E2E 8 Notification với happy path, preference OFF, ownership/deep-link failure branch.
-- [ ] **M8-09** — Chạy regression toàn bộ API và Mobile sau khi sửa lỗi.
+- [ ] **M8-09** — Chạy regression toàn bộ API, Mobile USER App và Web Admin sau khi sửa lỗi.
 
 ### Security, reliability và performance
 
-- [ ] **M8-10** — Kiểm tra authentication, role và ownership matrix cho toàn bộ API P0.
+- [ ] **M8-10** — Kiểm tra authentication, session audience, CSRF, role và ownership matrix cho toàn bộ API P0.
 - [ ] **M8-11** — Kiểm tra secret scan, dependency vulnerability và cấu hình production.
-- [ ] **M8-12** — Kiểm tra rate limit cho OTP/login và validation input/file.
+- [ ] **M8-12** — Kiểm tra rate limit cho USER/Admin login, OTP và validation input/file.
 - [ ] **M8-13** — Kiểm tra log/audit không chứa secret hoặc dữ liệu cá nhân dư thừa.
 - [ ] **M8-14** — Đo API latency baseline và review slow query/index.
 - [ ] **M8-15** — Kiểm tra AI timeout, retry, quota/budget và fallback.
@@ -588,19 +590,19 @@ conversation archive và account auto-lock vẫn là P1.
 
 ### UX và chất lượng bản build
 
-- [ ] **M8-19** — Review loading, empty, error, offline và unknown-result trên toàn bộ màn hình P0.
-- [ ] **M8-20** — Review navigation, deep link, session, onboarding và role guard.
+- [ ] **M8-19** — Review loading, empty, error, offline và unknown-result trên toàn bộ màn hình Mobile/Web P0.
+- [ ] **M8-20** — Review Mobile navigation/deep link/onboarding và Web Admin session/route guard.
 - [ ] **M8-21** — Review accessibility: touch target, contrast, font scale và semantic label.
 - [ ] **M8-22** — Kiểm tra timezone, locale, date và unit trên toàn ứng dụng.
-- [ ] **M8-23** — Kiểm tra APK trên emulator và ít nhất một thiết bị Android thật.
+- [ ] **M8-23** — Kiểm tra APK trên emulator/thiết bị Android thật và Web Admin trên browser desktop mục tiêu.
 - [ ] **M8-24** — Đóng băng feature; chỉ nhận bug fix và tài liệu release.
 
 ### UAT và bàn giao
 
 - [ ] **M8-25** — Đối chiếu và ghi bằng chứng cho đủ 21 Acceptance Criteria cấp MVP.
-- [ ] **M8-26** — Chuẩn bị seed data, demo account và demo script 20 bước.
+- [ ] **M8-26** — Chuẩn bị seed data, USER/Admin demo account và demo script 21 bước gồm Web Admin login.
 - [ ] **M8-27** — Hoàn thiện README, OpenAPI, runbook, kiến trúc và hướng dẫn cài đặt.
-- [ ] **M8-28** — Build APK Release Candidate và Docker images được pin version.
+- [ ] **M8-28** — Build APK, Web Admin static image và Backend/AI Docker images Release Candidate được pin version.
 - [ ] **M8-29** — Thực hiện UAT cuối, lập biên bản lỗi/chấp nhận và đóng milestone.
 
 ### Cổng nghiệm thu M8 — MVP Done
@@ -641,9 +643,9 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **E2E-06** — Apply recommendation → domain mutation + audit; Dismiss → không mutation.
   - [ ] Apply happy path đạt.
   - [ ] Expired/double request/ownership branch đạt.
-- [ ] **E2E-07** — Admin Exercise/Food + media → User đọc catalog mới.
+- [ ] **E2E-07** — MH58 Web Admin login → Exercise/Food + media → Audit/logout → User đọc catalog mới.
   - [ ] Happy path đạt.
-  - [ ] USER role/MIME invalid/hidden history branch đạt.
+  - [ ] ADMIN-on-Mobile, USER-on-Web, sai audience/CSRF, MIME invalid và hidden-history branch đạt.
 - [ ] **E2E-08** — Domain reminder/event → Notification Center → mark read → deep link đúng resource.
   - [ ] Happy path đạt.
   - [ ] Preference OFF/ownership/AI Consent OFF branch đạt.
@@ -668,7 +670,7 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **AC-16** — Dismiss không mutation domain data.
 - [ ] **AC-17** — Apply mutation qua domain owner và có audit.
 - [ ] **AC-18** — Media hiển thị hợp lệ và enforce quyền/validation.
-- [ ] **AC-19** — Audit không chứa secret hoặc personal context thừa.
+- [ ] **AC-19** — Admin chỉ có Web session đúng audience/CSRF; Mobile không cấp ADMIN session; audit không chứa secret/context thừa.
 - [ ] **AC-20** — Favorite Exercise/Food đúng ownership, idempotent, persist qua Backend và không làm lộ catalog item hidden.
 - [ ] **AC-21** — Notification đúng ownership, preference/timezone/consent, read idempotent và failure không rollback domain.
 
@@ -720,6 +722,7 @@ Một công việc/vertical slice chỉ được đánh dấu `[x]` khi:
 - **2026-08-19 — PLAN-005:** Chấp nhận ADR-001..ADR-007; pin runtime/build tool; tạo 20 story và xác nhận 49/49 ticket M1/M2 READY.
 - **2026-08-28 — PLAN-006:** Mở rộng FT-ID-003 thành Social Login Google/Facebook P0; thêm contract `/auth/facebook`, provider `FACEBOOK`, trust boundary Meta và M2-28; tổng M1/M2 là 50/50 ticket READY.
 - **2026-08-31 — PLAN-007:** Promote FT-WO-010 Favorite Exercise, FT-MP-007 Favorite Food và FT-NT-001..004 Notification local/in-app vào P0; thêm MH56/MH57, chuyển MH41 sang P0, thêm AC-20/21 và E2E-08; backlog thành 229 công việc trong 25 tuần. Push/automation vẫn P2.
+- **2026-09-14 — PLAN-008:** Chấp nhận [ADR-008](ADR-008_ADMIN_WEB_ONLY.md): Flutter chỉ dành cho USER; Web Admin React riêng trở thành P0; thêm MH58 (baseline hiện tại 51 UI), tách `/admin/auth/**`, session audience/cookie/CSRF và cập nhật M7/M8. Tổng số ticket giữ nguyên 229 vì thay thế kế hoạch Admin-on-Flutter chưa triển khai; kế hoạch tăng từ 25 lên 26 tuần để dành một tuần cho bootstrap, CI và hardening boundary Web Admin.
 
 ## 20. Nhật ký triển khai
 

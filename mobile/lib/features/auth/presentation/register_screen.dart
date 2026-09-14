@@ -276,6 +276,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 24),
                 FilledButton(
                   onPressed: authState.isLoading ? null : _handleRegister,
                   child: authState.isLoading

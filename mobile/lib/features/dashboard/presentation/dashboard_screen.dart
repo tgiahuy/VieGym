@@ -403,16 +403,16 @@ class _DashboardWeightTrendCard extends StatelessWidget {
               ),
               // Action Button "Cập nhật cân nặng"
               InkWell(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 onTap: onLogWeight,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
+                    horizontal: 12,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.cyan.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                     border: Border.all(
                       color: AppColors.cyan.withValues(alpha: 0.3),
                       width: 1,
@@ -422,11 +422,11 @@ class _DashboardWeightTrendCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.add_rounded, size: 14, color: AppColors.cyan),
-                      SizedBox(width: 3),
+                      SizedBox(width: 4),
                       Text(
                         'Cập nhật',
                         style: TextStyle(
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: AppColors.cyan,
                         ),

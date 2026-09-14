@@ -10,10 +10,10 @@
 
 Server VieGym phải giữ đúng các boundary đã chốt:
 
-1. Flutter chỉ gọi Spring Boot qua REST API `/api/v1`.
+1. Flutter USER App và React Web Admin chỉ gọi Spring Boot qua REST API `/api/v1`.
 2. Spring Boot là business authority: authentication, authorization, calculation, validation và domain mutation.
 3. PostgreSQL là source of truth duy nhất cho business state.
-4. FastAPI AI Service là stateless internal service, không có database credential và không được Mobile gọi trực tiếp.
+4. FastAPI AI Service là stateless internal service, không có database credential và không được client gọi trực tiếp.
 5. Object storage giữ binary media; PostgreSQL chỉ giữ metadata/object key.
 6. Redis là tùy chọn; core business phải hoạt động khi không có Redis.
 7. AI chỉ trả nội dung/proposal. User quyết định và Spring Boot validate trước khi thực thi.
@@ -27,13 +27,13 @@ Các thành phần không thuộc P0: RabbitMQ/message broker, Kubernetes, servi
 ### 2.1. Local và Demo — Docker Compose
 
 ```text
-Flutter App (emulator/device)
-        │
-        │ HTTP/REST :8080/api/v1
-        ▼
+Flutter USER App (emulator/device) ──┐
+React Web Admin :4173 ───────────────┤ HTTP/REST :8080/api/v1
+                                     ▼
 ┌────────────────────────────────────────────────────────────┐
 │ Docker Compose                                             │
 │                                                            │
+│  React Web Admin :4173                                     │
 │  Spring Boot Backend :8080                                 │
 │    ├── JDBC ───────────────► PostgreSQL :5432              │
 │    ├── internal HTTP ──────► FastAPI AI Service :8000      │
@@ -45,7 +45,7 @@ Flutter App (emulator/device)
 └────────────────────────────────────────────────────────────┘
 ```
 
-- Chỉ Backend và endpoint object storage cần cho direct upload/download được expose ra host trong local/demo.
+- Chỉ Web Admin, Backend và endpoint object storage cần cho direct upload/download được expose ra host trong local/demo.
 - PostgreSQL, Redis và FastAPI chỉ ở internal network.
 - Object storage console chỉ expose trong profile phục vụ development, không phải runtime demo bắt buộc.
 - Flutter Android emulator thường gọi host bằng `10.0.2.2`; iOS simulator có thể dùng `localhost`; thiết bị vật lý dùng IP LAN hoặc tunnel HTTPS phù hợp.
@@ -54,10 +54,9 @@ Flutter App (emulator/device)
 ### 2.2. Production ban đầu
 
 ```text
-Flutter Mobile
-    │ HTTPS
-    ▼
-DNS / WAF / Load Balancer / API Gateway
+Flutter USER App ────────────────┐
+                                 ├── HTTPS ──► DNS / WAF / Load Balancer / API Gateway
+Browser ──► React Web Admin ─────┘
     │
     ▼
 Spring Boot Backend xN
@@ -70,7 +69,7 @@ Observability ── logs / metrics / alerts
 Backup system ── database backups + object versioning/lifecycle
 ```
 
-- Load balancer là public ingress duy nhất; Backend, AI Service, database và Redis nằm trong private network.
+- Load balancer là public ingress duy nhất cho Web Admin static assets và API; Backend, AI Service, database và Redis nằm trong private network.
 - Backend và AI Service có thể scale ngang vì session/business state đã externalize vào PostgreSQL; AI Service hoàn toàn stateless.
 - Không public expose Swagger UI, Actuator chi tiết, FastAPI docs, database, Redis hoặc object storage admin console.
 - Database pool, AI provider quota/cost và object-storage bandwidth phải được đo trước khi tăng instance.
@@ -80,8 +79,10 @@ Backup system ── database backups + object versioning/lifecycle
 | Nguồn | Đích | Cho phép | Ghi chú |
 |---|---|---:|---|
 | Mobile | Load balancer/Backend | Có | HTTPS `/api/v1/**` |
+| Browser/Web Admin | Load balancer/Backend | Có | HTTPS; `/admin/auth/**`, `/admin/**`, cookie + CSRF |
 | Mobile | Object storage | Có điều kiện | Chỉ presigned URL TTL ngắn |
 | Mobile | FastAPI | Không | Không có public route |
+| Web Admin | FastAPI | Không | Không có public route |
 | Backend | PostgreSQL | Có | TLS ở production, least-privilege credential |
 | Backend | FastAPI | Có | Internal auth + correlation ID |
 | Backend | Object storage | Có | Sign URL, HEAD/verify/delete object |
@@ -99,6 +100,18 @@ Ví dụ dưới đây là blueprint cho local/demo. Image do project build và 
 name: viegym
 
 services:
+  admin-web:
+    build:
+      context: ./admin-web
+      dockerfile: Dockerfile
+    ports:
+      - "4173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-net
+
   backend:
     build:
       context: ./backend
@@ -120,6 +133,8 @@ services:
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-PT15M}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-P7D}
+      ADMIN_WEB_ORIGIN: ${ADMIN_WEB_ORIGIN:-http://localhost:4173}
+      ADMIN_COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:-true}
       AI_SERVICE_BASE_URL: http://ai-service:8000
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?set AI_SERVICE_TOKEN}
       STORAGE_ENDPOINT: http://minio:9000
@@ -131,7 +146,7 @@ services:
       STORAGE_PATH_STYLE_ACCESS: "true"
       STORAGE_UPLOAD_TTL: ${STORAGE_UPLOAD_TTL:-PT5M}
       STORAGE_ACCESS_TTL: ${STORAGE_ACCESS_TTL:-PT5M}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4173}
       APP_DEFAULT_TIMEZONE: Asia/Ho_Chi_Minh
     networks:
       - app-net
@@ -279,6 +294,9 @@ Bucket `viegym-media` phải được một bootstrap job/script idempotent tạ
 | `JWT_SIGNING_KEY` hoặc key pair | Backend | Có | Ký/verify access token; production ưu tiên key rotation được quản lý |
 | `JWT_ACCESS_TTL` | Backend | Có | Mặc định contract `PT15M` |
 | `JWT_REFRESH_TTL` | Backend | Có | Mặc định contract `P7D` |
+| `ADMIN_WEB_ORIGIN` | Backend/Web Admin | Có | Origin duy nhất được phép dùng credentialed Admin flow theo môi trường |
+| `ADMIN_COOKIE_SECURE` | Backend | Có | Luôn `true`; local Admin flow dùng HTTPS dev proxy/certificate phù hợp |
+| `ADMIN_SESSION_TTL` | Backend | Có | TTL ngắn cho Admin access session; pin cùng security config |
 | `GOOGLE_CLIENT_ID` | Backend | Khi bật Google Login | Audience dùng verify token |
 | `FACEBOOK_APP_ID` | Backend | Khi bật Facebook Login | App ID bắt buộc khớp token do Meta cấp |
 | `FACEBOOK_APP_SECRET` | Backend | Khi bật Facebook Login | Secret dùng server-side để xác minh token; không đưa vào Mobile |
@@ -295,11 +313,11 @@ Bucket `viegym-media` phải được một bootstrap job/script idempotent tạ
 | `STORAGE_ACCESS_KEY/SECRET_KEY` | Backend | Khi bật upload | Storage credential |
 | `STORAGE_UPLOAD_TTL/ACCESS_TTL` | Backend | Có | TTL ngắn, đề xuất `PT5M` baseline |
 | `MEDIA_MAX_*_BYTES` | Backend | Có | ADR-006: image 5 MiB, Exercise video 50 MiB; không GIF P0 |
-| `CORS_ALLOWED_ORIGINS` | Backend/storage | Khi có browser client | Allowlist cụ thể, không wildcard với credential |
+| `CORS_ALLOWED_ORIGINS` | Backend/storage | Có với Web Admin | Allowlist cụ thể gồm Admin origin; không wildcard với credential |
 | `REDIS_URL` | Backend | Không | Chỉ khi profile Redis được bật |
 | `LOG_LEVEL` | Cả hai | Có | Không bật debug payload ở production |
 
-Các giá trị này tuân theo ADR-002..ADR-006 và vẫn phải cấu hình server-side; Mobile không hard-code policy.
+Các giá trị này tuân theo ADR-002..ADR-006 và [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md); client không hard-code security policy.
 
 ### 4.2. Spring Boot `application.yml`
 
@@ -584,7 +602,7 @@ External AI/storage side effect dùng trạng thái retry/fallback (`ai_requests
 - Browser/device chỉ dùng presigned PUT/GET sau Backend authorization.
 - CDN chỉ đặt trước object public hợp lệ; private avatar/media vẫn qua access policy và signed access.
 - Bật server-side encryption, versioning/lifecycle và access logging theo khả năng provider production.
-- CORS object storage chỉ allow origin/method/header thực sự dùng. Flutter native không dựa vào browser CORS, nhưng web/admin tương lai vẫn cần allowlist đúng.
+- CORS object storage chỉ allow origin/method/header thực sự dùng. Flutter native không dựa vào browser CORS; Web Admin P0 phải nằm trong allowlist tường minh.
 
 ### 8.2. Object key
 
@@ -823,15 +841,15 @@ Audit không thay thế application log và không trở thành kho raw PII/cont
 ```text
 Lint / Format
       ↓
-Unit Test: Flutter + Backend + AI Service
+Unit Test: Flutter + Web Admin + Backend + AI Service
       ↓
-Generate OpenAPI `dart-dio` client + fail on uncommitted diff
+Generate OpenAPI `dart-dio` + `typescript-fetch` clients + fail on uncommitted diff
       ↓
 Integration Test: PostgreSQL + Object Storage
       ↓
 Security/dependency scan + secret scan
       ↓
-Build APK + immutable Backend/AI images
+Build APK + immutable Web Admin/Backend/AI images
       ↓
 Flyway migration check + OpenAPI compatibility check
       ↓
@@ -848,8 +866,9 @@ Provider thật không được gọi trong CI mặc định. Testcontainers dù
 2. Deploy FastAPI version tương thích cả Backend cũ/mới nếu internal schema đổi.
 3. Deploy Backend bằng rolling/blue-green strategy.
 4. Chạy health/smoke/metric check.
-5. Phát hành Mobile sau khi API tương thích được xác nhận.
-6. Contract cleanup chỉ thực hiện ở release sau khi client cũ hết support window.
+5. Deploy Web Admin sau khi Backend tương thích được xác nhận.
+6. Phát hành Mobile sau khi API tương thích được xác nhận.
+7. Contract cleanup chỉ thực hiện ở release sau khi client cũ hết support window.
 
 ### 14.3. Rollback
 
@@ -917,6 +936,8 @@ Một máy dev/demo khoảng 4 vCPU, 8 GB RAM và disk đủ media thường thu
 - [ ] Facebook token verify app/user/expiry/data-access expiry server-side; không tin profile client và không auto-link chỉ bằng email.
 - [ ] Secret lấy từ secret manager/workload identity; có rotation runbook.
 - [ ] Rate limit login/OTP/forgot-password theo subject/IP/device phù hợp, chống enumeration.
+- [ ] Mobile từ chối ADMIN login; Admin session enforce `ADMIN_WEB` audience, cookie HttpOnly/Secure/SameSite=Strict, rotation/revocation và CSRF.
+- [ ] Admin token không xuất hiện trong response body, browser log hoặc Web Storage; CORS credential không dùng wildcard.
 
 ### Authorization và privacy
 

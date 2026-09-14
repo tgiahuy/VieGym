@@ -16,7 +16,7 @@ Development: http://localhost:8080/api/v1
 Production:  https://api.viegym.example.com/api/v1
 ```
 
-- Mobile chỉ gọi Spring Boot qua HTTPS; không gọi FastAPI AI Service hoặc AI provider trực tiếp.
+- Flutter USER App và Web Admin chỉ gọi Spring Boot qua HTTPS; không gọi FastAPI AI Service hoặc AI provider trực tiếp.
 - Breaking change phải tạo API version mới. Field bổ sung trong `v1` phải backward-compatible.
 - Các path bên dưới đã bỏ prefix `/api/v1` cho ngắn gọn.
 
@@ -38,19 +38,24 @@ timezone chỉ dùng hiển thị và không tự thay đổi nghĩa dữ liệu
 
 ### 1.3. Authentication, session và authorization
 
-- Endpoint private nhận `Authorization: Bearer <accessToken>`.
-- Access token JWT ngắn hạn; refresh token được rotation/revoke và chỉ lưu an toàn trên thiết bị.
+- Endpoint private của USER App nhận `Authorization: Bearer <accessToken>` với audience `MOBILE_USER`.
+- Admin API dùng Admin session cookie có audience `ADMIN_WEB`; JavaScript không đọc hoặc lưu Admin token.
+- Access token/session ngắn hạn; refresh credential được rotation/revoke và lưu theo cơ chế an toàn của từng client.
 - OTP, password, access/refresh token và presigned URL còn hiệu lực không được ghi log.
 - Role `USER` và `ADMIN` không thay thế ownership check. Resource riêng tư luôn được scope theo subject trong JWT.
 - Admin không mặc định được đọc Health, Meal, Workout, conversation hoặc recommendation riêng tư của user.
 - Google ID token và Facebook access token chỉ được Backend verify server-side; dữ liệu identity/profile từ client không phải nguồn tin cậy.
+- `/auth/**` không cấp session cho role `ADMIN`. `/admin/auth/**` không cấp session cho role `USER`.
+- Admin mutation dùng cookie phải có CSRF token hợp lệ. CORS chỉ allowlist Web Admin origin và không thay thế authorization.
 
 ### 1.4. Request headers
 
 | Header | Bắt buộc | Mô tả |
 |---|:---:|---|
-| `Authorization` | Private API | `Bearer <JWT>` |
+| `Authorization` | USER private API | `Bearer <JWT>` audience `MOBILE_USER` |
+| `Cookie` | Admin private API | HttpOnly Admin session/refresh cookie do browser quản lý |
 | `Content-Type` | Request có body | `application/json` |
+| `X-CSRF-Token` | Admin mutation dùng cookie | Token khớp Admin session; không áp dụng cho USER Bearer flow |
 | `Accept-Language` | Không | Ưu tiên `vi-VN` |
 | `X-Correlation-Id` | Không | Client có thể gửi UUID; server sinh nếu thiếu và echo lại |
 | `Idempotency-Key` | Apply recommendation, khuyến nghị cho create/action | Chuỗi duy nhất tối đa 100 ký tự |
@@ -144,7 +149,7 @@ top-level hoặc mảng trần thay cho cấu trúc này.
 |---|---:|---|
 | `VALIDATION_ERROR` | 400 | Field/query không hợp lệ |
 | `UNAUTHENTICATED`, `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`, `INVALID_PROVIDER_TOKEN` | 401 | Credential/session/provider token không hợp lệ |
-| `ACCESS_DENIED`, `ACCOUNT_PENDING`, `ACCOUNT_LOCKED`, `ACCOUNT_DISABLED`, `AI_CONSENT_REQUIRED` | 403 | Không đủ quyền/trạng thái không cho phép |
+| `ACCESS_DENIED`, `ADMIN_WEB_ONLY`, `SESSION_AUDIENCE_INVALID`, `CSRF_INVALID`, `ACCOUNT_PENDING`, `ACCOUNT_LOCKED`, `ACCOUNT_DISABLED`, `AI_CONSENT_REQUIRED` | 403 | Không đủ quyền, sai kênh/session audience hoặc trạng thái không cho phép |
 | `RESOURCE_NOT_FOUND`, `EXERCISE_NOT_FOUND`, `FOOD_NOT_FOUND`, `RESOURCE_HIDDEN` | 404 | Không tồn tại hoặc không tiết lộ |
 | `EMAIL_ALREADY_EXISTS`, `ACCOUNT_LINK_REQUIRED`, `ACTIVE_PROGRAM_EXISTS`, `ACTIVE_SESSION_EXISTS`, `INVALID_STATE_TRANSITION`, `SCHEDULE_NO_LONGER_PLANNED`, `DAY_HAS_PLANNED_SCHEDULES`, `RECOMMENDATION_NOT_PENDING`, `RECOMMENDATION_EXPIRED`, `IDEMPOTENCY_CONFLICT` | 409 | Duplicate/stale/conflict; social email trùng account cần flow liên kết có xác thực |
 | `OTP_INVALID`, `OTP_EXPIRED` | 400 | OTP sai/hết hạn |
@@ -166,6 +171,7 @@ không parse `message`. Output safety `BLOCKED` không tạo recommendation nên
 | Enum | Values |
 |---|---|
 | `UserRole` | `USER`, `ADMIN` |
+| `SessionAudience` | `MOBILE_USER`, `ADMIN_WEB` |
 | `AccountStatus` | `PENDING`, `ACTIVE`, `LOCKED`, `DISABLED` |
 | `AuthProvider` | `LOCAL`, `GOOGLE`, `FACEBOOK` |
 | `OtpPurpose` | `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` reserved ngoài P0 |
@@ -192,6 +198,10 @@ không parse `message`. Output safety `BLOCKED` không tạo recommendation nên
 ---
 
 ## 2. Identity & Authentication
+
+Phần `/auth/**` là contract của Flutter USER App và chỉ tạo session audience
+`MOBILE_USER`. Admin account được provision riêng và không đăng ký, social login
+hoặc tạo session qua các endpoint này.
 
 ### `POST /auth/register` 🔓
 
@@ -247,6 +257,7 @@ Email được lowercase/trim. Password policy do cấu hình server công bố;
       "accessToken": "eyJ...",
       "refreshToken": "rt_...",
       "tokenType": "Bearer",
+      "audience": "MOBILE_USER",
       "expiresIn": 900,
       "user": {
         "id": 12,
@@ -285,7 +296,7 @@ Với `PASSWORD_RESET`, `session` là `null` và response có `resetProof`.
 }
 ```
 
-**200:** trả `AuthSession` như trên. Sai email hoặc password luôn dùng `INVALID_CREDENTIALS`; account pending có thể kèm challenge để tiếp tục verify nhưng không cấp token.
+**200:** chỉ trả `AuthSession` audience `MOBILE_USER` cho role `USER`. Sai email hoặc password luôn dùng `INVALID_CREDENTIALS`; account pending có thể kèm challenge để tiếp tục verify nhưng không cấp token. Credential hợp lệ thuộc role `ADMIN` trả `403 ADMIN_WEB_ONLY` và tuyệt đối không cấp access/refresh token.
 
 ### `POST /auth/google` 🔓
 
@@ -296,7 +307,7 @@ Với `PASSWORD_RESET`, `session` là `null` và response có `resetProof`.
 }
 ```
 
-Backend verify issuer, audience, signature, expiry và subject. **200/201:** trả `AuthSession`; user mới có onboarding flags bằng `false`.
+Backend verify issuer, audience, signature, expiry và subject. **200/201:** chỉ trả `AuthSession` audience `MOBILE_USER`; user mới có onboarding flags bằng `false`. Social login không phải luồng Admin P0.
 
 ### `POST /auth/facebook` 🔓
 
@@ -307,7 +318,7 @@ Backend verify issuer, audience, signature, expiry và subject. **200/201:** tr�
 }
 ```
 
-Backend xác minh token với Meta, tối thiểu gồm app ID, user ID, expiry và data-access expiry; sau đó tự lấy provider subject và profile/email cần thiết từ Meta. Backend không tin email, tên hoặc Facebook user ID do Mobile tự gửi. **200/201:** trả `AuthSession`; user mới có onboarding flags bằng `false`.
+Backend xác minh token với Meta, tối thiểu gồm app ID, user ID, expiry và data-access expiry; sau đó tự lấy provider subject và profile/email cần thiết từ Meta. Backend không tin email, tên hoặc Facebook user ID do Mobile tự gửi. **200/201:** trả `AuthSession` audience `MOBILE_USER`; user mới có onboarding flags bằng `false`.
 
 Token sai app, hết hạn hoặc không hợp lệ trả `401 INVALID_PROVIDER_TOKEN`. Nếu Facebook không cung cấp email bắt buộc, trả `422 SOCIAL_EMAIL_REQUIRED`. Nếu email đã thuộc account khác, trả `409 ACCOUNT_LINK_REQUIRED`; P0 không tự động liên kết chỉ dựa trên email.
 
@@ -317,7 +328,7 @@ Token sai app, hết hạn hoặc không hợp lệ trả `401 INVALID_PROVIDER_
 { "refreshToken": "rt_...", "deviceInfo": "VieGym Android 1.0" }
 ```
 
-**200:** rotation token cũ và trả access/refresh token mới. Reuse token đã rotate phải revoke token family theo policy.
+**200:** rotation token cũ và trả access/refresh token USER mới. Endpoint từ chối refresh credential có role/audience Admin. Reuse token đã rotate phải revoke token family theo policy.
 
 ### `POST /auth/logout` 🔒
 
@@ -1137,7 +1148,52 @@ Không tin MIME client khai báo. Complete lặp lại với object đã `READY`
 
 ## 8. Admin & Audit
 
-Tất cả endpoint trong phần này yêu cầu role `ADMIN`. Mutation ghi audit đã redact.
+Web Admin là client duy nhất trong sản phẩm sử dụng phần này. Ngoại trừ các endpoint
+`/admin/auth/**`, mọi endpoint yêu cầu account `ACTIVE`, role `ADMIN` và session
+audience `ADMIN_WEB`. Mutation dùng cookie yêu cầu CSRF token và ghi audit đã redact.
+Origin/CORS chỉ là lớp browser policy, không thay thế các guard này.
+
+### Admin web authentication
+
+#### `POST /admin/auth/login` 🔓
+
+```json
+{
+  "email": "admin@viegym.example.com",
+  "password": "StrongAdminPassword!"
+}
+```
+
+P0 chỉ hỗ trợ local email/password cho account ADMIN đã được provision. Thành công
+trả metadata tối thiểu và đặt Admin session/refresh cookie `HttpOnly`, `Secure`,
+`SameSite=Strict`; response không trả token trong JSON hoặc cho phép lưu token ở
+`localStorage`/`sessionStorage`. USER hoặc credential sai đều trả
+`401 INVALID_CREDENTIALS` để tránh tiết lộ role.
+
+```json
+{
+  "success": true,
+  "data": {
+    "admin": { "id": 1, "email": "admin@viegym.example.com", "role": "ADMIN" },
+    "expiresIn": 900,
+    "csrfToken": "csrf_opaque_value"
+  }
+}
+```
+
+#### `POST /admin/auth/refresh` 🔓
+
+Rotation Admin refresh cookie và cấp lại session cookie audience `ADMIN_WEB` cùng
+CSRF token mới. Reuse phải revoke session family. Không nhận refresh token qua JSON.
+
+#### `POST /admin/auth/logout` 👑
+
+Yêu cầu CSRF token, revoke Admin session và xóa cookie kể cả khi session đã hết hạn.
+
+#### `GET /admin/auth/session` 👑
+
+Trả identity/role/session expiry tối thiểu để Web Admin bootstrap. Không trả token,
+password hash hoặc dữ liệu USER riêng tư.
 
 ### Admin Exercise CRUD 👑
 
@@ -1317,6 +1373,9 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 ### API/security test P0 tối thiểu
 
 - JWT invalid/expired/revoked; USER gọi Admin API.
+- ADMIN gọi `/auth/login` hoặc `/auth/refresh` của USER App phải nhận `ADMIN_WEB_ONLY`/`SESSION_AUDIENCE_INVALID` và không có token.
+- USER đăng nhập `/admin/auth/login`, token audience `MOBILE_USER` gọi `/admin/**`, Admin mutation thiếu/sai CSRF và origin không allowlist đều bị từ chối.
+- Admin login/refresh/logout/session kiểm tra cookie `HttpOnly`, `Secure`, `SameSite=Strict`, rotation/revocation và không trả token trong JSON.
 - User A đọc/sửa resource Health, Workout, Meal, AI hoặc Media private của user B.
 - OTP sai purpose, expired, vượt attempts, resend cooldown và chống email enumeration.
 - Register/login/refresh/logout; Google/Facebook token sai app/audience, subject hoặc expiry; Facebook thiếu email và account-link conflict.
@@ -1334,7 +1393,8 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 
 | Nhóm | Endpoint chính | Scope |
 |---|---|---|
-| Identity | `/auth/**` | P0 |
+| USER Identity | `/auth/**` | P0, chỉ `MOBILE_USER` |
+| Admin Identity | `/admin/auth/**` | P0, chỉ `ADMIN_WEB` |
 | Profile/Preference | `/users/me`, `/preferences/**` | P0 |
 | Health/Body | `/health/**`, `/weight-logs/**` | P0 |
 | Workout | `/exercises/**`, `/workout-programs/**`, `/workout-schedules/**`, `/workout-sessions/**`, `/workout-logs/**` | P0 |
@@ -1343,7 +1403,7 @@ Spring Boot vẫn phải parse và chạy schema/business/safety validation. Fas
 | Favorite Food | `/favorite-foods/**` | P0 |
 | Dashboard | `/dashboard` | P0 |
 | AI Coach | `/ai/**` | P0 |
-| Admin baseline | `/admin/exercises/**`, `/admin/foods/**`, `/admin/audit-logs` | P0 |
+| Admin baseline | `/admin/exercises/**`, `/admin/foods/**`, `/admin/audit-logs` | P0, Web Admin only |
 | Media | `/media/**` | P0 |
 | Admin mở rộng | `/admin/dashboard`, `/admin/users/**`, `/admin/imports/**`, `/admin/ai-rules/**`, `/admin/prompts/**` | P1 |
 | Notification | `/notifications/**` | P0 local/in-app |

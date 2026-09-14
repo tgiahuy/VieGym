@@ -1,10 +1,10 @@
 # Phân Rã Màn Hình — VieGym
 
-> **Phiên bản:** 3.2
-> **Ngày cập nhật:** 2026-08-31
+> **Phiên bản:** 3.3
+> **Ngày cập nhật:** 2026-09-14
 > **Trạng thái:** Baseline triển khai UI/UX MVP
-> **Nền tảng chính:** Flutter Mobile App (Android)
-> **Phạm vi:** User App và Admin UI tối thiểu phục vụ MVP/demo
+> **Nền tảng chính:** Flutter USER App (Android) + React Web Admin
+> **Phạm vi:** USER App và Web Admin riêng phục vụ MVP/demo
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### 1.1. Mục đích
 
-Tài liệu này chuyển các yêu cầu nghiệp vụ của VieGym thành cấu trúc giao diện có thể dùng trực tiếp cho thiết kế, phát triển Flutter, tích hợp Backend và kiểm thử.
+Tài liệu này chuyển các yêu cầu nghiệp vụ của VieGym thành cấu trúc giao diện có thể dùng trực tiếp cho thiết kế, phát triển Flutter USER App và React Web Admin, tích hợp Backend và kiểm thử.
 
 Tài liệu phải trả lời được cho từng UI unit:
 
@@ -30,10 +30,10 @@ Mục tiêu cuối cùng là bảo đảm UI không tự tạo business rule, kh
 
 Khi có khác biệt, áp dụng thứ tự ưu tiên sau:
 
-1. `specs.md` v3.2 — source of truth cấp yêu cầu và phạm vi.
-2. `bussiness_mainflow.md` v3.2 — luồng nghiệp vụ end-to-end.
-3. `phan_ra_phan_he_he_thong.md` v3.2 — owner, API boundary và dependency.
-4. `phan_ra_tinh_nang.md` v3.2 — feature ID, priority và acceptance criteria triển khai.
+1. `specs.md` v3.3 — source of truth cấp yêu cầu và phạm vi.
+2. `bussiness_mainflow.md` — luồng nghiệp vụ end-to-end.
+3. `phan_ra_phan_he_he_thong.md` — owner, API boundary và dependency.
+4. `phan_ra_tinh_nang.md` — feature ID, priority và acceptance criteria triển khai.
 5. Tài liệu này — đặc tả cách thể hiện trên UI.
 
 Tài liệu màn hình không được dùng để thay đổi yêu cầu ở tài liệu có mức ưu tiên cao hơn.
@@ -49,7 +49,7 @@ Bao gồm:
 - Dashboard tổng hợp.
 - User Profile, Equipment và User Preference.
 - AI Consent, General Knowledge Mode, Personalized Chat, conversation history, Daily Recommendation và Apply/Dismiss.
-- Admin Exercise/Food/Audit baseline và các màn hình Admin P1.
+- Web Admin Login/Exercise/Food/Audit baseline và các màn hình Admin P1.
 - Media Exercise/Food ở P0; Profile avatar chỉ hiển thị/upload khi FT-UP-002 P1 được bật.
 - Global states, security, privacy và accessibility.
 
@@ -69,7 +69,7 @@ Các tài liệu nguồn hiện có một số tham chiếu lịch sử chưa đ
 - Dashboard giữ ID `MH03`; các bảng nguồn ghi Dashboard là `MH10` được xem là tham chiếu cũ.
 - Equipment Onboarding là `MH10`, Equipment Settings là `MH37`; không sử dụng `MH39` cho Equipment.
 - `MH39` trước đây là một bản sao của AI Consent. Bản này chỉ có một route AI Consent là `MH28`; `MH39` được giữ như alias deprecated để tránh hiểu nhầm khi đọc tài liệu cũ.
-- Admin P0 baseline gồm Admin shell, Manage Exercise, Manage Food và Audit Log tối thiểu. Admin analytics Dashboard, User Management, Import và AI Rule/Prompt là P1 theo feature/subsystem breakdown mới nhất.
+- Admin chỉ đăng nhập/vận hành trên Web Admin riêng theo [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md). Flutter không chứa Admin route/UI/API client. P0 gồm Admin Login, shell, Manage Exercise, Manage Food và Audit Log; Admin analytics Dashboard, User Management, Import và AI Rule/Prompt là P1.
 - Workout Session dùng `DISCARDED` khi user hủy buổi đã bắt đầu; `CANCELLED` chỉ thuộc Workout Schedule. UI có thể dùng nhãn `Hủy buổi tập` nhưng phải gửi action `discard` và render enum Backend trả về.
 - Offline queue/cache nâng cao là P2. P0 chỉ hiển thị trạng thái mất kết nối và không giả lập mutation thành công.
 
@@ -128,7 +128,7 @@ Mỗi màn hình được mô tả theo cấu trúc:
 
 > **Backend calculates. AI interprets and recommends. User decides. Backend executes.**
 
-- Flutter chỉ giao tiếp với Spring Boot Backend qua `/api/v1`.
+- Flutter USER App và Web Admin chỉ giao tiếp với Spring Boot Backend qua `/api/v1`.
 - Flutter không gọi trực tiếp FastAPI AI Service hoặc AI Provider.
 - Mobile không tự tính lại BMI, BMR, TDEE, calories target, macro target, nutrition summary, volume, completion rate, PR hoặc weight trend authoritative.
 - AI output chỉ là response/proposal cho đến khi Backend validation hoàn tất.
@@ -138,8 +138,9 @@ Mỗi màn hình được mô tả theo cấu trúc:
 
 - Ẩn nút trên frontend không thay thế authorization ở Backend.
 - User chỉ truy cập Health, Weight, Meal, Workout, AI và Preference resource của chính mình.
-- Admin route yêu cầu JWT hợp lệ và role `ADMIN`.
-- Với `401`, app thử refresh session theo contract. Nếu không thể phục hồi, clear session local an toàn và điều hướng về Login.
+- Mobile `/auth/**` chỉ cấp session audience `MOBILE_USER`; credential ADMIN nhận `ADMIN_WEB_ONLY` và không có token.
+- Web Admin route yêu cầu account active, role `ADMIN` và session audience `ADMIN_WEB`; mutation dùng cookie phải có CSRF hợp lệ.
+- Với `401`, client thử refresh đúng contract của kênh. Nếu không thể phục hồi, clear state local an toàn và điều hướng về Login tương ứng.
 - Với `403`, hiển thị thông báo không có quyền; không tự động đổi role hoặc thử endpoint khác.
 - Không hiển thị password, refresh token, OTP, AI API key, system prompt hoặc raw personal context.
 
@@ -203,7 +204,7 @@ Quy tắc:
 
 - Mỗi tab giữ navigation stack và trạng thái lọc/scroll hợp lý.
 - Settings nằm trong Profile, không là tab thứ sáu.
-- Deep link phải chạy qua session, role, ownership và onboarding guard trước khi mở nội dung.
+- Deep link Mobile phải chạy qua session, ownership và onboarding guard trước khi mở nội dung.
 - Back từ child screen quay về context trước đó; back từ tab root không nhảy sang tab khác ngoài quy ước hệ điều hành.
 
 ### 4.2. Authentication và onboarding guard
@@ -213,11 +214,9 @@ MH01 Splash
 ├── Không có phiên phục hồi được → MH02 Welcome → MH04 Login / MH05 Register
 ├── Có local session + biometric bật → MH08 Biometric
 └── Session hợp lệ
-    ├── ADMIN → MH45 Admin Home
-    └── USER
-        ├── Health Profile thiếu → MH09
-        ├── Equipment chưa thiết lập → MH10
-        └── Đầy đủ → MH03 Dashboard
+    ├── Health Profile thiếu → MH09
+    ├── Equipment chưa thiết lập → MH10
+    └── Đầy đủ → MH03 Dashboard
 
 Register: MH05 → MH06 OTP Verification → MH09
 Forgot:   MH52 Forgot Request → MH06 OTP Verification → MH07 Reset Password → MH04
@@ -274,7 +273,8 @@ MH33 Profile
 ### 4.4. Admin sitemap
 
 ```text
-MH45 Admin Home/Shell
+Web Admin origin → MH58 Admin Login
+└── ADMIN_WEB session hợp lệ → MH45 Admin Home/Shell
 ├── MH46 Manage Exercise [P0 baseline]
 ├── MH47 Manage Food [P0 baseline]
 ├── MH51 Audit Log [P0 baseline]
@@ -284,7 +284,7 @@ MH45 Admin Home/Shell
 └── MH50 AI Rule/Prompt [P1]
 ```
 
-Admin UI tách khỏi bottom navigation của USER. Route guard phải được Backend thực thi, không chỉ dựa vào menu.
+Web Admin là ứng dụng riêng tại `admin-web/`, không phải route của Flutter. Frontend guard chỉ hỗ trợ UX; Backend vẫn enforce account status + role + audience + CSRF.
 
 ---
 
@@ -294,7 +294,7 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 
 | ID | Tên | Actor | Loại | Feature chính |
 |---|---|---|---|---|
-| MH01 | Splash / Session Bootstrap | USER, ADMIN | Screen | FT-ID-005, FT-ID-009, FT-ID-010 |
+| MH01 | Splash / Session Bootstrap | USER | Screen | FT-ID-005, FT-ID-009, FT-ID-010 |
 | MH02 | Welcome | Guest | Screen | Entry UX |
 | MH03 | Dashboard | USER | Screen | FT-DB-001..005, FT-DB-007 |
 | MH04 | Login | Guest | Screen | FT-ID-002, FT-ID-003, FT-ID-010 |
@@ -333,7 +333,7 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH41 | Notification Center & Settings | USER | Sheet/Screen | FT-NT-001..004 |
 | MH42 | Health Profile View/Edit | USER | Screen | FT-HP-001..004 |
 | MH43 | Weight Tracking | USER | Screen + Sheet | FT-HP-005..007 |
-| MH44 | Logout | USER, ADMIN | Dialog | FT-ID-004 |
+| MH44 | Mobile Logout | USER | Dialog | FT-ID-004 |
 | MH52 | Forgot Password Request | Guest | Screen | FT-ID-006, FT-ID-008 |
 | MH53 | Account Security / Change Password | USER | Screen | FT-ID-007 |
 | MH54 | Meal History & Template | USER | Screen | FT-MP-009 |
@@ -341,10 +341,11 @@ Admin UI tách khỏi bottom navigation của USER. Route guard phải được 
 | MH56 | Favorite Exercises | USER | Screen | FT-WO-010 |
 | MH57 | Favorite Foods | USER | Screen | FT-MP-007 |
 
-### 5.2. P0 Admin UI
+### 5.2. P0 Web Admin UI
 
 | ID | Tên | Actor | Loại | Feature chính |
 |---|---|---|---|---|
+| MH58 | Admin Login | ADMIN | Web screen | FT-ID-002, FT-ID-010 |
 | MH45 | Admin Home/Shell | ADMIN | Screen | Navigation baseline; analytics FT-AD-001 là P1 |
 | MH46 | Manage Exercise | ADMIN | Screen + Form | FT-AD-003, FT-MD-001/003 |
 | MH47 | Manage Food | ADMIN | Screen + Form | FT-AD-004, FT-MD-002/003 |
@@ -374,6 +375,7 @@ P1 Recent Food (`FT-MP-008`), Preference Memory (`FT-UP-006`, `FT-AI-013`) và c
 | MH55 | Route mới cho AI Conversation History |
 | MH56 | Route P0 cho Favorite Exercises |
 | MH57 | Route P0 cho Favorite Foods |
+| MH58 | Route P0 mới cho Admin Login trên Web Admin |
 
 ---
 
@@ -381,7 +383,7 @@ P1 Recent Food (`FT-MP-008`), Preference Memory (`FT-UP-006`, `FT-AI-013`) và c
 
 ### MH01 — Splash / Session Bootstrap
 
-**Actor:** USER, ADMIN
+**Actor:** USER
 **Priority:** P0
 **Type:** Screen
 **Feature:** FT-ID-005, FT-ID-009, FT-ID-010
@@ -389,7 +391,7 @@ P1 Recent Food (`FT-MP-008`), Preference Memory (`FT-UP-006`, `FT-AI-013`) và c
 
 #### Mục tiêu
 
-Khởi tạo ứng dụng, phục hồi phiên nếu có thể và điều hướng qua đúng role/onboarding guard mà không để user nhìn thấy màn hình trung gian sai.
+Khởi tạo Flutter USER App, phục hồi phiên USER nếu có thể và điều hướng qua đúng onboarding guard mà không để user nhìn thấy màn hình trung gian sai.
 
 #### Entry và nội dung
 
@@ -405,7 +407,7 @@ Khởi tạo ứng dụng, phục hồi phiên nếu có thể và điều hư�
 → Có refresh token:
    ├── Biometric local bật: MH08 trước khi mở token
    └── Không bật: gọi refresh
-→ Refresh thành công: role/onboarding guard
+→ Refresh thành công: onboarding guard
 → Token expired/revoked/invalid: clear local session → MH04/MH02
 ```
 
@@ -426,7 +428,7 @@ Khởi tạo ứng dụng, phục hồi phiên nếu có thể và điều hư�
 #### Acceptance
 
 - Không vào private route khi chưa có session hợp lệ.
-- USER và ADMIN được điều hướng đúng shell.
+- USER được điều hướng đúng onboarding hoặc USER shell; ADMIN session không tồn tại trên Mobile.
 - Refresh lỗi không làm lộ token hoặc lỗi kỹ thuật.
 
 ### MH02 — Welcome
@@ -480,6 +482,7 @@ Giới thiệu ngắn gọn ba giá trị: luyện tập, dinh dưỡng món Vi�
 - Sai credential: thông báo chung, không xác nhận email có tồn tại.
 - Account pending: điều hướng MH06 theo `REGISTER` nếu Backend cho phép tiếp tục verify.
 - Account locked/disabled: thông báo trạng thái chuẩn từ Backend, không cấp token.
+- Credential thuộc ADMIN: hiển thị `Tài khoản quản trị chỉ đăng nhập tại Web Admin`, không lưu token và không điều hướng tới route quản trị.
 - Rate limited: hiển thị thời gian chờ nếu Backend cung cấp.
 - Network/server error: Retry, giữ email nhưng không giữ password nếu policy yêu cầu xóa.
 
@@ -488,7 +491,6 @@ Giới thiệu ngắn gọn ba giá trị: luyện tập, dinh dưỡng món Vi�
 - Health Profile thiếu → MH09.
 - Health Profile đủ nhưng Equipment onboarding chưa hoàn tất → MH10.
 - USER đầy đủ → MH03.
-- ADMIN → MH45.
 
 #### Data/API
 
@@ -691,7 +693,7 @@ OTP hoặc reset proof được truyền bằng flow state an toàn; không hi�
 
 ### MH44 — Logout
 
-**Actor:** USER, ADMIN
+**Actor:** USER
 **Priority:** P0
 **Type:** Confirmation dialog
 **Feature:** FT-ID-004
@@ -706,7 +708,7 @@ Phiên hiện tại trên thiết bị này sẽ kết thúc.
 [ Hủy ] [ Đăng xuất ]
 ```
 
-- Confirm → gọi logout/revoke, clear local credential và về MH02/MH04.
+- Confirm → gọi logout/revoke USER session, clear local credential và về MH02/MH04.
 - Request thất bại do mạng: không tuyên bố revoke server thành công; vẫn áp dụng local cleanup theo security policy và giải thích ngắn gọn nếu cần.
 
 #### Data/API
@@ -2249,11 +2251,44 @@ Display conversion không sửa dữ liệu gốc hoặc metric Backend. Storage
 
 ### 13.1. Phạm vi Admin
 
-Admin UI không nằm trong 5-tab USER shell.
+Admin UI là React Web Admin riêng, không nằm trong Flutter hoặc 5-tab USER shell.
 
-- P0 baseline: shell/navigation, CRUD/hide Exercise, CRUD/hide Food và Audit Log tối thiểu.
+- P0 baseline: Admin Login, shell/navigation, CRUD/hide Exercise, CRUD/hide Food và Audit Log tối thiểu.
 - P1: analytics dashboard, User Management, Import CSV/Excel, AI Rule/Prompt và recommendation metrics.
-- Mọi route yêu cầu role `ADMIN`; frontend guard chỉ hỗ trợ UX, Backend guard là bắt buộc.
+- Mọi private route yêu cầu account active, role `ADMIN` và audience `ADMIN_WEB`; mutation dùng cookie yêu cầu CSRF. Frontend guard chỉ hỗ trợ UX, Backend guard là bắt buộc.
+- P0 không có Admin register/social login. Admin account được provision theo runbook.
+
+### MH58 — Admin Login
+
+**Actor:** ADMIN
+
+**Priority:** P0
+
+**Type:** Web screen
+
+**Feature:** FT-ID-002, FT-ID-010
+
+**Owner:** PH1 Identity & Auth
+
+#### Components và actions
+
+- Email, password và show/hide password.
+- `Đăng nhập quản trị`.
+- Không hiển thị đăng ký, Google/Facebook Login hoặc link vào USER App.
+
+#### Rules và states
+
+- Gọi `POST /api/v1/admin/auth/login`; không dùng `/auth/login` của Mobile.
+- USER hoặc credential sai cùng nhận lỗi xác thực chung; không tiết lộ role/account.
+- Thành công nhận metadata tối thiểu + CSRF token và cookie Admin; token không xuất hiện trong response body hoặc Web Storage.
+- Loading, invalid credential, locked/disabled, rate limit và network error có state riêng.
+- Session bootstrap gọi `GET /api/v1/admin/auth/session`; refresh dùng cookie qua `/api/v1/admin/auth/refresh`.
+- Session không hợp lệ/hết hạn → MH58 và xóa client state không nhạy cảm.
+
+#### Success navigation
+
+- ADMIN hợp lệ → MH45.
+- Mọi role khác → giữ ở MH58 với lỗi xác thực chung.
 
 ### MH45 — Admin Home/Shell
 
@@ -2269,7 +2304,7 @@ Admin UI không nằm trong 5-tab USER shell.
 - Navigation tới MH46 Manage Exercise.
 - Navigation tới MH47 Manage Food.
 - Navigation tới MH51 Audit Log.
-- Logout → MH44.
+- Logout gọi `POST /api/v1/admin/auth/logout`, xóa client state và về MH58.
 
 #### P1 content
 
@@ -2281,6 +2316,8 @@ Admin UI không nằm trong 5-tab USER shell.
 - P1 cards/menu không xuất hiện như dead-end ở P0.
 - Không hiển thị PII/raw AI context không cần thiết trong aggregate.
 - USER truy cập route → 403 UX, không redirect giả sang Dashboard rồi che lỗi.
+- Không có session hoặc session hết hạn → MH58; không dùng Mobile refresh token.
+- Admin mutation gửi CSRF token; không lưu access/refresh token trong `localStorage` hoặc `sessionStorage`.
 - Analytics dùng aggregate API; UI không scan toàn bộ list để tự tính.
 
 #### Data/API
@@ -2494,7 +2531,9 @@ Chọn CSV/Excel
 
 ### 13.2. Media UI contract dùng chung
 
-Media không cần một screen độc lập trong P0; nó được nhúng tại MH13, MH22, MH35, MH46 và MH47.
+Media không cần một screen độc lập trong P0; USER App hiển thị media tại MH13/MH22,
+còn thao tác chọn/upload quản trị được nhúng tại MH46/MH47 trên Web Admin. Avatar
+MH35 chỉ bật khi FT-UP-002 P1 được triển khai.
 
 #### Upload flow
 
@@ -2565,7 +2604,7 @@ Ví dụ chuẩn:
 | Category | Hành vi UI |
 |---|---|
 | Validation | Gắn lỗi vào field/action; giữ dữ liệu nhập hợp lệ |
-| Unauthenticated/session expired | Thử refresh theo contract; thất bại thì Login |
+| Unauthenticated/session expired | Thử refresh theo đúng kênh; thất bại thì MH04 (Mobile) hoặc MH58 (Web Admin) |
 | Forbidden/ownership | Thông báo không có quyền; không retry vô hạn |
 | Not found/hidden | Safe empty/not available; không lộ resource user khác |
 | Conflict/stale state | Refresh resource và yêu cầu user review lại |
@@ -2664,7 +2703,7 @@ Exit/Back không được bỏ qua OTP hoặc Health Profile bắt buộc. Nếu
 ```text
 MH01
 ├── biometric local cần thiết → MH08
-├── refresh thành công → role/onboarding guard
+├── refresh thành công → onboarding guard
 └── không phục hồi được → MH04
 ```
 
@@ -2759,14 +2798,17 @@ Consent ENABLED + đủ dữ liệu
 ### 16.9. Admin baseline
 
 ```text
-ADMIN login
+Web Admin → MH58
+→ POST /admin/auth/login
+→ ADMIN_WEB cookie + CSRF
 → MH45
 ├── MH46 Exercise + Media
 ├── MH47 Food + Media
 └── MH51 Audit
 ```
 
-P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
+Mobile `/auth/**` phải từ chối credential ADMIN mà không cấp token. P1 route chỉ
+được thêm sau P0 và vẫn dùng role + audience + CSRF guard/audit.
 
 ---
 
@@ -2777,15 +2819,15 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | Feature | UI representation | Priority |
 |---|---|---|
 | FT-ID-001 Register + OTP | MH05, MH06 | P0 |
-| FT-ID-002 Local Login | MH04 | P0 |
+| FT-ID-002 Local Login | MH04 USER Login; MH58 Admin Login qua contract riêng | P0 |
 | FT-ID-003 Social Login Google/Facebook | Action tại MH02/MH04/MH05; server-side flow | P0 |
-| FT-ID-004 Logout/revoke | MH44 | P0 |
-| FT-ID-005 Refresh token | MH01 và global session handling; không cần screen riêng | P0 |
+| FT-ID-004 Logout/revoke | MH44 USER logout; action logout tại MH45 cho Admin | P0 |
+| FT-ID-005 Refresh token | MH01 USER session; MH58/MH45 Admin web session handling | P0 |
 | FT-ID-006 Forgot/Reset Password | MH52, MH06, MH07 | P0 |
 | FT-ID-007 Change Password | MH53 | P0 |
 | FT-ID-008 OTP lifecycle | States/rules tại MH06, MH52, MH07 | P0 |
 | FT-ID-009 Biometric local | MH01, MH08 | P0 |
-| FT-ID-010 Role/account/authorization | MH04 states, route guards, MH45 | P0 |
+| FT-ID-010 Role/account/authorization | MH04 `ADMIN_WEB_ONLY`; MH58/MH45 Admin role + audience guard | P0 |
 | FT-ID-011 Device/session list | MH53 extension | P1 |
 | FT-UP-001 Basic Profile | MH34, MH35 | P0 |
 | FT-UP-002 Avatar/media | MH34, MH35 + PH9 media states | P1 |
@@ -2891,7 +2933,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 
 | Business flow | Use Case | Screens/UI | Owner | Priority |
 |---|---|---|---|---|
-| Register/Login/OTP | UC-01 | MH04/05/06/07/52; MH01/08/44/53 | PH1 | P0 |
+| USER Register/Login/OTP | UC-01 | MH04/05/06/07/52; MH01/08/44/53 | PH1 | P0 |
 | Health onboarding/recalculation | UC-02/03 | MH09, MH42 | PH3 | P0 |
 | Equipment/Exercise/Favorite | UC-04 | MH10/37, MH12/13/56 | PH2/PH4 | P0 |
 | Program/Schedule | UC-05/06 | MH14/15/16 | PH4 | P0 |
@@ -2902,7 +2944,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | AI Coach/Consent | UC-12/17 | MH27/28/29/55 | PH7 | P0 |
 | Recommendation/Apply/Dismiss | UC-13/14 | MH30/31 | PH7 + domain owner | P0 |
 | User Preference | UC-18 | MH37/38 | PH2 | P0 |
-| Admin baseline | UC-19 | MH45/46/47/51 | PH8 | P0 baseline |
+| Web Admin login + baseline | UC-19 | MH58/45/46/47/51 | PH1/PH8 | P0 baseline |
 | Media baseline | UC-21 | MH13/22/46/47 + shared media states | PH9 | P0 baseline |
 | Notification Center/Reminder | UC-22 | MH03/MH41 | PH10 | P0 |
 | Weekly/Plan Adjustment | UC-15/16 | MH32/31 | PH7 | P1 |
@@ -2925,7 +2967,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 | AC-14 | MH30 | 1–3 recommendation PENDING khi đủ điều kiện |
 | AC-15/AC-16/AC-17 | MH31 | Apply/Dismiss state, ownership, mutation và audit |
 | AC-18 | MH13, MH22, MH46, MH47 | Exercise/Food media P0 |
-| AC-19 | MH51 | Audit read-only; redaction kiểm tra ở Backend |
+| AC-19 | MH58, MH45, MH46, MH47, MH51 | Admin web-only login, audience/cookie/CSRF guard; audit redaction kiểm tra ở Backend |
 | AC-20 | MH12/13/21/22/56/57 | Favorite ownership/idempotency/visibility; Backend test authoritative |
 | AC-21 | MH03/MH41 | Notification ownership, preference, consent, read/deep-link và failure isolation |
 
@@ -2943,7 +2985,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 - AI: MH28–MH31, MH55.
 - Profile/Preference: MH34, MH35, MH37, MH38.
 - Notification: MH41.
-- Admin baseline: MH45 shell, MH46, MH47, MH51.
+- Web Admin baseline: MH58 Login, MH45 shell, MH46, MH47, MH51.
 - Global loading/empty/error/security/accessibility states.
 
 ### 18.2. P1 sau khi P0 ổn định
@@ -2971,8 +3013,9 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 ### 19.1. Navigation và scope
 
 - [ ] 5 USER tabs hoạt động và giữ stack hợp lý.
-- [ ] ADMIN dùng shell riêng; USER không vào Admin route.
-- [ ] Deep link chạy qua session/role/ownership/onboarding guard.
+- [ ] Flutter không chứa Admin route/screen/API client; credential ADMIN không nhận Mobile session.
+- [ ] Web Admin dùng MH58/MH45 riêng; USER không đăng nhập hoặc vào Admin route.
+- [ ] Deep link chạy qua guard đúng kênh: Mobile session/ownership/onboarding, Web Admin role/audience/CSRF.
 - [ ] Không có dead-end hoặc menu P1 giả trong P0.
 - [ ] `MH39` không được triển khai như screen trùng MH28.
 
@@ -2985,6 +3028,7 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 - [ ] Change Password P0 hoạt động cho local account.
 - [ ] Biometric chỉ mở local session và có password fallback.
 - [ ] Logout revoke theo contract và clear local credential.
+- [ ] Admin login/refresh/logout chỉ dùng `/admin/auth/**`; token không nằm trong response body/Web Storage.
 
 ### 19.3. Health và Profile
 
@@ -3028,7 +3072,8 @@ P1 route chỉ được thêm sau P0 và vẫn dùng role guard/audit.
 
 ### 19.7. Admin và Media
 
-- [ ] P0 Admin chỉ gồm shell + Exercise/Food/Audit baseline.
+- [ ] P0 Admin chỉ gồm Web Login + shell + Exercise/Food/Audit baseline.
+- [ ] Admin cookie có `HttpOnly`, `Secure`, `SameSite=Strict`; mutation thiếu/sai CSRF bị từ chối.
 - [ ] User Management/Admin analytics/Import/Rule/Prompt được gắn P1.
 - [ ] Exercise/Food dùng hide/soft-delete để bảo toàn history.
 - [ ] Upload validate file và không lưu binary trong PostgreSQL.
@@ -3114,7 +3159,7 @@ Tài liệu này hoàn thiện khi:
 18. Apply hoặc Dismiss
 19. MH03 Dashboard cập nhật
 20. MH37/MH38 chỉnh Preference
-21. MH46/MH47/MH51 Admin baseline nếu cần demo quản trị
+21. MH58 → MH45 → MH46/MH47/MH51 Web Admin baseline nếu cần demo quản trị
 ```
 
 Flow phải chứng minh được:

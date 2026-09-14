@@ -75,8 +75,8 @@ abstract final class AppColors {
   static const textPrimary = neutral50; // #F5F5F6
   static const textSoft = neutral100; // #E3E4E7
   static const textSecondary = neutral300; // #A7A9AE
-  static const textMuted = neutral500; // #62656B
-  static const textTertiary = neutral500; // #62656B
+  static const textMuted = neutral400; // #8A8D93 (WCAG AA compliant)
+  static const textTertiary = neutral400; // #8A8D93 (WCAG AA compliant)
   static const textDisabled = neutral600; // #34363B
   static const textInverse = neutral950; // #0B0C0E
   static const onPrimary = Color(0xFFFFFFFF);
@@ -366,4 +366,39 @@ class AppTheme {
       ),
     );
   }
+}
+
+/// VieGym canonical border radius tokens according to AI_RULES.md.
+abstract final class AppRadius {
+  /// Badges, chips, small tags (8px)
+  static const double xs = 8;
+  static final BorderRadius xsBorderRadius = BorderRadius.circular(xs);
+
+  /// Small buttons, inner nested items (12px)
+  static const double sm = 12;
+  static final BorderRadius smBorderRadius = BorderRadius.circular(sm);
+
+  /// Standard inputs (14px)
+  static const double input = 14;
+  static final BorderRadius inputBorderRadius = BorderRadius.circular(input);
+
+  /// Standard buttons, dialogs, bottom sheets (16px)
+  static const double md = 16;
+  static final BorderRadius mdBorderRadius = BorderRadius.circular(md);
+
+  /// Standard cards according to AI_RULES.md (18px)
+  static const double card = 18;
+  static final BorderRadius cardBorderRadius = BorderRadius.circular(card);
+
+  /// Large hero cards, prominent containers (20px)
+  static const double lg = 20;
+  static final BorderRadius lgBorderRadius = BorderRadius.circular(lg);
+
+  /// Full modal sheets, prominent dialogs (24px)
+  static const double xl = 24;
+  static final BorderRadius xlBorderRadius = BorderRadius.circular(xl);
+
+  /// Pill / Circular
+  static const double full = 999;
+  static final BorderRadius fullBorderRadius = BorderRadius.circular(full);
 }

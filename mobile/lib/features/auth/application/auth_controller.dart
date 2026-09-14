@@ -10,7 +10,7 @@ import '../domain/auth_state.dart';
 class DevBypassAuthNotifier extends Notifier<bool> {
   @override
   bool build() {
-    return false;
+    return true;
   }
 
   void toggle() => state = !state;

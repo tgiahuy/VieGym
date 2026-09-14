@@ -3,9 +3,9 @@
 > Thiết kế dữ liệu quan hệ cho ứng dụng quản lý sức khỏe, luyện tập, dinh
 > dưỡng và AI Coach cá nhân hóa VieGym.
 >
-> **Phiên bản tài liệu:** 1.2 — 2026-08-31
+> **Phiên bản tài liệu:** 1.3 — 2026-09-14
 > **Hệ quản trị:** PostgreSQL 16+
-> **Nguồn yêu cầu:** [SRS v3.2](../spec/specs.md),
+> **Nguồn yêu cầu:** [SRS v3.3](../spec/specs.md),
 > [phân rã phân hệ](../spec/phan_ra_phan_he_he_thong.md),
 > [luồng nghiệp vụ](../spec/bussiness_mainflow.md),
 > [System Architecture](../kientruchethong/sa.md) và
@@ -126,6 +126,7 @@ dễ mở rộng, thay vì PostgreSQL native enum:
 | `auth_provider` | `LOCAL`, `GOOGLE`, `FACEBOOK` |
 | `otp_purpose` | `REGISTER`, `PASSWORD_RESET`; `LOGIN_VERIFY` dành cho P1 nếu bổ sung MFA |
 | `token_status` | `ACTIVE`, `REVOKED`, `EXPIRED` |
+| `session_audience` | `MOBILE_USER`, `ADMIN_WEB` |
 | `gender` | `MALE`, `FEMALE`, `OTHER`, `UNSPECIFIED` |
 | `calculation_sex` | `MALE`, `FEMALE`, `UNSPECIFIED` |
 | `activity_level` | `SEDENTARY`, `LIGHT`, `MODERATE`, `ACTIVE`, `VERY_ACTIVE` |
@@ -196,13 +197,26 @@ Constraints/index chính:
 | `id` | BIGINT | PK, IDENTITY | Token record |
 | `user_id` | BIGINT | FK → `users(id)`, NOT NULL | Chủ phiên |
 | `token_hash` | VARCHAR(255) | NOT NULL, UNIQUE | Chỉ lưu hash, không lưu token plaintext |
+| `audience` | VARCHAR(30) | NOT NULL | `MOBILE_USER` hoặc `ADMIN_WEB`; không cho refresh chéo kênh |
 | `status` | VARCHAR(20) | NOT NULL, DEFAULT `ACTIVE` | ACTIVE/REVOKED/EXPIRED |
 | `expires_at` | TIMESTAMPTZ | NOT NULL | Hết hạn |
 | `revoked_at` | TIMESTAMPTZ | NULLABLE | Thời điểm revoke |
 | `replaced_by_token_id` | BIGINT | FK → `refresh_tokens(id)`, NULLABLE | Chuỗi rotation |
 | `device_info` | VARCHAR(255) | NULLABLE | Metadata thiết bị tối thiểu |
+| `csrf_secret_hash` | VARCHAR(255) | NULLABLE | Bắt buộc cho `ADMIN_WEB` nếu CSRF secret được lưu server-side; không lưu plaintext |
 | `ip_address` | INET | NULLABLE | IP phát hành phiên |
 | `created_at` | TIMESTAMPTZ | NOT NULL | Thời điểm phát hành |
+
+Constraints/index chính:
+
+- `CHECK (audience IN ('MOBILE_USER', 'ADMIN_WEB'))`.
+- `ADMIN_WEB` session chỉ được phát hành cho `users.role='ADMIN'` và account
+  `ACTIVE`; invariant liên bảng được enforce trong Identity service/transaction.
+- `MOBILE_USER` session chỉ được phát hành cho `users.role='USER'`; ADMIN login
+  qua `/auth/**` không tạo row/token.
+- Index `(user_id, audience, status, expires_at)` phục vụ revoke/list session.
+- Rotation giữ nguyên audience; refresh chéo audience bị từ chối và audit như
+  security event phù hợp.
 
 ### 4.3. `otp_codes`
 
@@ -1334,7 +1348,7 @@ Nguyên tắc:
 
 | Database domain | Phân hệ | Yêu cầu/luồng chính |
 |---|---|---|
-| Identity & Profile | PH1, PH2 | Register + OTP, Login/Refresh/Logout, Profile, Preference, Equipment |
+| Identity & Profile | PH1, PH2 | USER Mobile và ADMIN Web session tách audience; Register + OTP, Login/Refresh/Logout, Profile, Preference, Equipment |
 | Health & Body | PH3 | Health Profile recalculation, Weight Tracking, target review |
 | Workout | PH4 | Exercise Library, Builder, Schedule, Session lifecycle, Log/PR |
 | Nutrition | PH5 | Food Database, Meal Plan, serving snapshot, daily summary |

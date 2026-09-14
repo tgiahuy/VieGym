@@ -1,12 +1,12 @@
-# VieGym — Software Requirements Specification (SRS) v3.2
+# VieGym — Software Requirements Specification (SRS) v3.3
 
-> **Mục đích:** Source of Truth cấp yêu cầu cho VieGym Mobile App, Backend và AI Service trong phạm vi đồ án tốt nghiệp.
+> **Mục đích:** Source of Truth cấp yêu cầu cho VieGym USER App, Web Admin, Backend và AI Service trong phạm vi đồ án tốt nghiệp.
 >
-> **Phiên bản:** 3.2
-> **Ngày cập nhật:** 2026-08-31
-> **Nền tảng MVP:** Flutter Mobile App + Spring Boot Backend + PostgreSQL + Python FastAPI AI Service
+> **Phiên bản:** 3.3
+> **Ngày cập nhật:** 2026-09-14
+> **Nền tảng MVP:** Flutter USER App + React Web Admin + Spring Boot Backend + PostgreSQL + Python FastAPI AI Service
 >
-> **Cập nhật đồng bộ:** đưa Favorite Exercise, Favorite Food và Notification local/in-app vào P0; push/automation vẫn là P2.
+> **Cập nhật đồng bộ:** Admin chỉ đăng nhập/vận hành trên Web Admin riêng; Flutter Mobile chỉ dành cho USER. Xem [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md).
 
 ---
 
@@ -55,7 +55,7 @@ VieGym kết hợp ba nhóm chức năng:
 
 | Phân hệ | Chức năng |
 |---|---|
-| Authentication | Đăng ký, đăng nhập, JWT, Google/Facebook Login, refresh token, OTP, quên mật khẩu, biometric unlock local |
+| Authentication | USER đăng ký/OTP/đăng nhập local hoặc Google/Facebook trên Mobile; ADMIN đăng nhập local trên Web Admin riêng; session phân biệt theo client audience |
 | Health Profile | Thông tin sức khỏe, mục tiêu, mức vận động |
 | Health Calculation | BMI, BMR, TDEE, calories/macro target |
 | Dashboard | Calories, macro, workout, weight, AI recommendation |
@@ -73,7 +73,7 @@ VieGym kết hợp ba nhóm chức năng:
 | AI Coach Chat | Chat cá nhân hóa |
 | AI Daily Recommendation | 1–3 recommendation/ngày |
 | Recommendation Apply/Dismiss | User quyết định trước khi thay đổi dữ liệu |
-| Admin & Audit baseline | Admin quản lý/hide Exercise, Food và xem Audit Log tối thiểu |
+| Admin & Audit baseline | Web Admin riêng cho đăng nhập, quản lý/hide Exercise, Food và xem Audit Log tối thiểu |
 | Media baseline | Ảnh/video Exercise và ảnh Food qua URL/asset hoặc object storage hợp lệ |
 | Notification baseline | Notification Center local/in-app, workout/meal/weight reminder, preference và read/delete state |
 
@@ -93,7 +93,7 @@ VieGym kết hợp ba nhóm chức năng:
 | P0 | Favorite Exercise/Food và Notification local/in-app | Lưu lựa chọn thường dùng, nhắc việc và điều hướng về đúng resource |
 | P0 | AI Consent, AI Context, AI Coach, Daily Recommendation | Chứng minh AI personalization an toàn |
 | P0 | Recommendation Apply/Dismiss, Ownership, Security baseline | Chứng minh AI không tự mutation và dữ liệu được bảo vệ |
-| P0 baseline | Admin quản lý Exercise/Food và Audit Log | Đủ dữ liệu catalog và truy vết cho demo |
+| P0 baseline | Web Admin riêng, quản lý Exercise/Food và Audit Log | Tách kênh quản trị khỏi USER App, đủ dữ liệu catalog và truy vết cho demo |
 | P1 | Weekly Review, Plan Adjustment, Preference Memory, Admin mở rộng, Water Tracker và app settings | Chỉ triển khai khi P0 ổn định |
 | P2 | Push automation, offline queue nâng cao, media cleanup | Không bắt buộc cho demo MVP |
 
@@ -117,7 +117,7 @@ VieGym kết hợp ba nhóm chức năng:
 | Actor | Vai trò |
 |---|---|
 | USER | Người dùng luyện tập, dinh dưỡng và sử dụng AI |
-| ADMIN | Quản trị dữ liệu, AI rule/prompt và audit |
+| ADMIN | Quản trị dữ liệu và audit trên Web Admin riêng; không đăng nhập Flutter USER App |
 | AI PROVIDER | Provider LLM bên ngoài; chỉ được gọi bởi AI Service |
 
 ## 3.2. Persona demo
@@ -150,6 +150,7 @@ Persona phục vụ thiết kế, seed data và demo; hệ thống không hard-c
 
 ### Account/Auth
 - `UserRole`: USER, ADMIN
+- `SessionAudience`: MOBILE_USER, ADMIN_WEB
 - `AuthProvider`: LOCAL, GOOGLE, FACEBOOK
 - `OtpPurpose`: REGISTER, PASSWORD_RESET; `LOGIN_VERIFY` reserved P1/MFA
 - `TokenStatus`: ACTIVE, REVOKED, EXPIRED
@@ -431,10 +432,15 @@ Preference về dị ứng/ràng buộc được ưu tiên hơn recommendation t
 
 Phạm vi Admin được chia theo priority:
 
-- **P0 baseline:** quản lý/hide Exercise, quản lý/hide Food và xem Audit Log tối thiểu.
+- **P0 baseline:** đăng nhập trên Web Admin riêng, quản lý/hide Exercise, quản lý/hide Food và xem Audit Log tối thiểu.
 - **P1:** quản lý User, Admin Dashboard, import CSV/Excel qua preview/validation, quản lý AI Rule, prompt version và xem AI recommendation metrics cơ bản.
 
 Exercise/Food đã có history nên ưu tiên hide/soft-delete. Mọi thao tác quản trị quan trọng phải được phân quyền và ghi audit mà không lưu credential hoặc personal context dư thừa.
+
+Flutter Mobile chỉ dành cho USER và không chứa route/UI/API client quản trị. Luồng
+đăng nhập USER không cấp session cho role `ADMIN`; Web Admin dùng luồng
+`/admin/auth/**` và session audience `ADMIN_WEB`. Mọi Admin API phải kiểm tra cả
+role, account status và audience theo [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md).
 
 Shop/Order/Payment không thuộc MVP.
 
@@ -1046,7 +1052,7 @@ Baseline riêng cho môi trường đồ án tốt nghiệp:
 
 | ID | Use Case | Priority |
 |---|---|---|
-| UC-01 | Đăng ký/đăng nhập | P0 |
+| UC-01 | USER đăng ký/đăng nhập trên Mobile | P0 |
 | UC-02 | Hoàn thiện Health Profile | P0 |
 | UC-03 | Tính và xem Health Metrics | P0 |
 | UC-04 | Exercise Library + Equipment Preference | P0 |
@@ -1079,10 +1085,10 @@ Baseline riêng cho môi trường đồ án tốt nghiệp:
 
 1. Guest đăng ký local; Backend validate, hash password, tạo account PENDING và gửi OTP.
 2. Guest verify OTP hợp lệ; Backend kích hoạt account rồi mới cấp access token + refresh token.
-3. Hoặc Guest đăng nhập local/Google/Facebook; Backend xác thực credential/provider token và account status trước khi cấp token.
+3. Hoặc Guest đăng nhập local/Google/Facebook; Backend xác thực credential/provider token và account status trước khi cấp token USER.
 4. Mobile lưu session credential được phép bằng secure storage.
 
-**Luồng thay thế:** Email trùng, sai credential, OTP hết hạn, Google/Facebook token không hợp lệ, Facebook không cấp email bắt buộc, xung đột liên kết account hoặc rate limit → lỗi chuẩn.
+**Luồng thay thế:** Email trùng, sai credential, OTP hết hạn, Google/Facebook token không hợp lệ, Facebook không cấp email bắt buộc, xung đột liên kết account hoặc rate limit → lỗi chuẩn. Credential thuộc role `ADMIN` → `403 ADMIN_WEB_ONLY`, không cấp token và hướng dẫn dùng Web Admin.
 
 **Hậu điều kiện:** User có phiên hợp lệ.
 
@@ -1212,10 +1218,12 @@ User xem/cập nhật món không thích, ràng buộc/dị ứng tự khai báo
 
 ### UC-19 — Admin Exercise/Food/Audit baseline
 
-1. Backend xác thực JWT và role ADMIN.
-2. Admin tạo/sửa/hide Exercise hoặc Food phục vụ catalog demo.
-3. Backend validate dữ liệu, media và reference history.
-4. Backend ghi Audit Log cho thao tác quan trọng.
+1. Admin mở Web Admin riêng và đăng nhập bằng local email/password.
+2. Backend chỉ cấp Admin session cookie khi account `ACTIVE`, role `ADMIN`; session có audience `ADMIN_WEB` và CSRF protection.
+3. Backend xác thực role + audience + CSRF trên Admin API.
+4. Admin tạo/sửa/hide Exercise hoặc Food phục vụ catalog demo.
+5. Backend validate dữ liệu, media và reference history.
+6. Backend ghi Audit Log cho thao tác quan trọng.
 
 User Management, Admin Dashboard, Import và AI Rule/Prompt không thuộc slice P0 này.
 
@@ -1260,7 +1268,7 @@ PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp v�
 | AC-16 | DISMISS chỉ đổi status/feedback, không mutation domain data |
 | AC-17 | Mutation sau APPLY do domain owner thực hiện atomically và có audit |
 | AC-18 | Media P0 hiển thị asset hợp lệ và enforce role/ownership/MIME/size validation |
-| AC-19 | Audit/log không chứa password, token, OTP, API key hoặc personal context dư thừa |
+| AC-19 | ADMIN chỉ tạo phiên qua Web Admin; Mobile không cấp ADMIN session; Admin API enforce role + `ADMIN_WEB` audience + CSRF; audit/log không chứa secret hoặc personal context dư thừa |
 | AC-20 | Favorite Exercise/Food thuộc đúng user, add/remove idempotent, chỉ tham chiếu catalog item hợp lệ và được khôi phục sau khi mở lại app |
 | AC-21 | Notification chỉ trả dữ liệu của đúng user; read/preference idempotent, reminder tôn trọng preference/timezone/consent và lỗi notification không rollback domain transaction |
 
@@ -1293,13 +1301,14 @@ PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp v�
 # 19. Kiến trúc hệ thống cấp cao
 
 ```text
-┌───────────────────────────────┐
-│       Flutter Mobile App      │
-│ Auth / Health / Workout /     │
-│ Nutrition / Dashboard / AI    │
-└───────────────┬───────────────┘
-                │ REST API
-                ▼
+┌───────────────────────────────┐   ┌───────────────────────────────┐
+│       Flutter USER App        │   │       React Web Admin         │
+│ Auth / Health / Workout /     │   │ Login / Exercise / Food /     │
+│ Nutrition / Dashboard / AI    │   │ Audit                         │
+└───────────────┬───────────────┘   └───────────────┬───────────────┘
+                │ REST + USER JWT                   │ HTTPS + cookie/CSRF
+                └────────────────────┬──────────────┘
+                                     ▼
 ┌───────────────────────────────┐
 │        Spring Boot API        │
 │ Auth / Business Logic /       │
@@ -1325,7 +1334,8 @@ PostgreSQL chỉ lưu metadata/object key; không lưu binary media nghiệp v�
 
 | Component | Responsibility |
 |---|---|
-| Flutter | UI, local state, secure token storage, presentation |
+| Flutter USER App | UI USER, local state, secure token storage và presentation; không chứa Admin feature |
+| React Web Admin | UI quản trị riêng, session cookie/CSRF client flow; không lưu Admin token trong JavaScript storage |
 | Spring Boot | Business authority, calculation, authorization, ownership, context, rule, validation, mutation |
 | PostgreSQL | Business data source of truth |
 | FastAPI AI Service | AI orchestration/stateless decision support |
@@ -1373,8 +1383,9 @@ Database schema chi tiết, field-level validation và index được quản lý
 
 # 21. API và Integration Boundary
 
-- Mobile giao tiếp với Spring Boot qua REST API version `/api/v1`.
-- Spring Boot là API chính cho Mobile.
+- Mobile USER và Web Admin giao tiếp với Spring Boot qua REST API version `/api/v1`.
+- `/auth/**` chỉ cấp USER session; `/admin/auth/**` chỉ cấp ADMIN_WEB session.
+- `/admin/**` yêu cầu account active, role `ADMIN`, audience `ADMIN_WEB` và CSRF cho mutation dùng cookie.
 - AI Service không được Mobile gọi trực tiếp trong MVP.
 - AI provider credential chỉ nằm server-side.
 - API private yêu cầu authentication/authorization.
@@ -1450,9 +1461,9 @@ Test Plan chi tiết được quản lý riêng.
 MVP demo có thể triển khai bằng Docker Compose:
 
 ```text
-Flutter App
-     ↓
-Spring Boot
+Flutter USER App ───────┐
+                       ├──→ Spring Boot
+React Web Admin ────────┘
      ├── PostgreSQL
      └── FastAPI AI Service
               ↓
@@ -1542,7 +1553,8 @@ VieGym MVP được xem là đạt mức demo khi:
 - Recommendation APPLY/DISMISS có Backend authorization.
 - AI không tự mutation.
 - Private resources có ownership check.
-- Admin quản lý Exercise/Food và xem Audit Log ở mức P0 baseline.
+- Admin chỉ đăng nhập trên Web Admin riêng; Mobile từ chối cấp ADMIN session.
+- Web Admin quản lý Exercise/Food và xem Audit Log ở mức P0 baseline.
 - Exercise/Food media hợp lệ, có kiểm tra quyền và validation tối thiểu.
 - Các acceptance criteria AC-01..AC-21 có test tương ứng ở đúng tầng.
 - Demo flow chạy end-to-end.

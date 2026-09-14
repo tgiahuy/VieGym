@@ -351,10 +351,10 @@ class _PhysicalMetricsSection extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             InkWell(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
               onTap: onEdit,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 child: Row(
                   children: [
                     Icon(

@@ -1,12 +1,12 @@
 # VieGym — Master Technical Design
 
-> **Phiên bản:** 1.2
+> **Phiên bản:** 1.3
 >
-> **Ngày cập nhật:** 2026-08-31
+> **Ngày cập nhật:** 2026-09-14
 >
 > **Trạng thái:** Baseline thiết kế triển khai MVP
 >
-> **Phạm vi:** Flutter Mobile App, Spring Boot Backend, PostgreSQL, FastAPI AI Service và hạ tầng hỗ trợ
+> **Phạm vi:** Flutter USER App, React Web Admin, Spring Boot Backend, PostgreSQL, FastAPI AI Service và hạ tầng hỗ trợ
 
 ---
 
@@ -14,11 +14,11 @@
 
 Tài liệu này là bản thiết kế kỹ thuật tổng hợp của VieGym. Nó mô tả cách các
 yêu cầu, use case và feature được hiện thực hóa thành những luồng hoàn chỉnh
-trên Mobile, Backend, Database và AI Service.
+trên Mobile USER, Web Admin, Backend, Database và AI Service.
 
 Tài liệu phục vụ các nhóm sau:
 
-- Mobile dùng để xác định screen, API, client state và trạng thái lỗi cần xử lý.
+- Mobile USER và Web Admin dùng để xác định screen, API, client state và trạng thái lỗi cần xử lý.
 - Backend dùng để xác định use case, module owner, transaction và business rule.
 - AI Service dùng để xác định input contract, trust boundary và output validation.
 - QA dùng để truy vết requirement, flow, API, dữ liệu và acceptance criteria.
@@ -38,7 +38,7 @@ hoặc cấu hình triển khai chi tiết đã có tài liệu chuyên trách.
 - Food Database, Meal Planner, nutrition summary và meal history/template.
 - Dashboard tổng hợp dữ liệu authoritative.
 - AI Consent, Context, Coach Chat, Daily Recommendation và Apply/Dismiss.
-- Admin quản lý Exercise/Food và Audit Log ở mức P0 baseline.
+- Admin đăng nhập/vận hành trên Web Admin riêng và quản lý Exercise/Food/Audit Log ở mức P0 baseline.
 - Media cho Exercise và Food ở mức P0 baseline; avatar Profile là P1.
 - Notification local/in-app, workout/meal/weight reminder, preference và read/delete state ở P0.
 - Push notification/automation, Weekly Review và các phần mở rộng được đánh dấu P1/P2.
@@ -61,7 +61,7 @@ hoặc cấu hình triển khai chi tiết đã có tài liệu chuyên trách.
 
 Khi có khác biệt, áp dụng thứ tự ưu tiên sau:
 
-1. [SRS v3.2](./spec/specs.md) — source of truth về yêu cầu và phạm vi.
+1. [SRS v3.3](./spec/specs.md) — source of truth về yêu cầu và phạm vi.
 2. [Luồng nghiệp vụ](./spec/bussiness_mainflow.md) — hành vi end-to-end.
 3. [Phân rã phân hệ](./spec/phan_ra_phan_he_he_thong.md) — owner và boundary.
 4. [Phân rã tính năng](./spec/phan_ra_tinh_nang.md) — feature ID, priority và AC.
@@ -121,29 +121,33 @@ và traceability trong cùng change.
    mutation nghiệp vụ từ client hoặc AI proposal.
 2. PostgreSQL là source of truth của account, health, workout, nutrition,
    consent, recommendation và audit.
-3. Flutter chỉ gọi public API `/api/v1` của Backend; không gọi FastAPI hoặc AI
+3. Flutter USER App và Web Admin chỉ gọi public API `/api/v1` của Backend; không gọi FastAPI hoặc AI
    Provider trực tiếp.
 4. FastAPI AI Service không có database credential và không đọc PostgreSQL.
 5. AI output luôn là dữ liệu chưa tin cậy cho đến khi Backend hoàn tất schema,
    safety và business validation.
 6. Apply recommendation cần hành động rõ ràng của User; AI không được tự Apply.
-7. Mọi private resource phải được kiểm tra role và ownership tại Backend.
+7. Mọi private resource phải được kiểm tra session audience, role và ownership tại Backend.
 8. Dashboard là read model tổng hợp; không sở hữu dữ liệu mutation.
 9. Mỗi entity có đúng một module owner. Module khác không ghi trực tiếp
    repository của owner.
-10. Mobile có thể kiểm tra để cải thiện UX nhưng không thay thế Backend guard.
+10. Client có thể kiểm tra để cải thiện UX nhưng không thay thế Backend guard.
+11. Flutter chỉ dành cho USER. Admin chỉ tạo session audience `ADMIN_WEB` qua
+    Web Admin riêng theo [ADR-008](ADR-008_ADMIN_WEB_ONLY.md).
 
 ---
 
 ## 4. Tổng quan thiết kế hệ thống
 
 ```text
-┌──────────────────────────────────────────────────────────────────┐
-│                       Flutter Mobile App                         │
-│ Auth · Health · Workout · Nutrition · Dashboard · AI · Admin    │
-└──────────────────────────────┬───────────────────────────────────┘
-                               │ HTTPS / REST /api/v1 + JWT
-                               ▼
+┌────────────────────────────────┐  ┌──────────────────────────────┐
+│       Flutter USER App         │  │       React Web Admin        │
+│ Auth · Health · Workout ·      │  │ Login · Exercise · Food ·    │
+│ Nutrition · Dashboard · AI     │  │ Audit                        │
+└───────────────┬────────────────┘  └──────────────┬───────────────┘
+                │ USER JWT                         │ Admin cookie + CSRF
+                └────────────────────┬──────────────┘
+                                     ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                 Spring Boot Modular Monolith                     │
 │ Identity · Preference · Health · Workout · Nutrition · Dashboard│
@@ -166,14 +170,14 @@ và traceability trong cùng change.
 
 ```text
 UI event
-  → Mobile validation cơ bản
-  → API request + access token + correlation metadata
+  → Client validation cơ bản
+  → API request + credential đúng kênh + correlation metadata
   → Controller parse và validate cú pháp
   → Application service kiểm tra identity/role/ownership
   → Domain service áp dụng business rule
   → Repository/external port trong transaction phù hợp
   → Response DTO/error contract
-  → Mobile cập nhật state từ response authoritative
+  → Client cập nhật state từ response authoritative
 ```
 
 ### 4.2. Nguyên tắc đồng bộ
@@ -189,12 +193,12 @@ UI event
 
 ## 5. Component responsibility và ownership
 
-### 5.1. Flutter Mobile
+### 5.1. Flutter USER App
 
 Chịu trách nhiệm:
 
 - Render UI và quản lý client/application state.
-- Điều hướng theo authentication, onboarding và role.
+- Điều hướng theo USER authentication và onboarding; không có Admin route.
 - Secure storage cho credential được phép lưu trên thiết bị.
 - Form validation cơ bản và trạng thái loading/empty/error/offline.
 - Gọi API, refresh session và map error thành thông báo phù hợp.
@@ -205,6 +209,21 @@ Không chịu trách nhiệm:
 - Kiểm tra ownership cuối cùng.
 - Tạo business state độc lập với Backend.
 - Lưu AI Provider key hoặc gọi AI Service trực tiếp.
+
+### 5.1A. React Web Admin
+
+Chịu trách nhiệm:
+
+- MH58 Admin Login, MH45 shell, Exercise/Food/Media/Audit UI.
+- Bootstrap/refresh/logout Admin session qua `/admin/auth/**` và gửi CSRF token
+  cho mutation.
+- Render loading/empty/error/conflict và accessibility state trên desktop web.
+
+Không chịu trách nhiệm:
+
+- Lưu Admin token trong `localStorage`/`sessionStorage` hoặc đọc HttpOnly cookie.
+- Tự quyết định authorization, role hoặc audience.
+- Truy cập dữ liệu Health/Workout/Meal/AI riêng tư của USER nếu không có policy.
 
 ### 5.2. Spring Boot Backend
 
@@ -277,13 +296,26 @@ mobile/lib/
     ├── nutrition/
     ├── dashboard/
     ├── ai_coach/
-    ├── admin/
     ├── media/
     └── notifications/
 ```
 
 Mỗi feature chỉ tách `data`, `domain`, `presentation` khi cần thiết. Mobile dùng
 `flutter_riverpod` thống nhất theo [ADR-001](../checkM0/ADR-001_FLUTTER_STATE_MANAGEMENT.md).
+
+### 6.1A. React Web Admin theo feature
+
+```text
+admin-web/src/
+├── app/                    # router, providers, authenticated shell
+├── core/                   # HTTP, CSRF, error, shared UI
+└── features/
+    ├── auth/
+    ├── exercises/
+    ├── foods/
+    ├── media/
+    └── audit/
+```
 
 ### 6.2. Spring Boot theo business capability
 
@@ -555,12 +587,14 @@ Concurrency và audit:
 
 ### 7.7. Admin Exercise/Food, Media và Audit
 
-**Trace:** UC-19, UC-21; FT-AD-003, FT-AD-004, FT-AD-008,
-FT-MD-001..003; MH45, MH46, MH47 và MH51.
+**Trace:** UC-19, UC-21; FT-ID-002/010, FT-AD-003, FT-AD-004, FT-AD-008,
+FT-MD-001..003; MH58, MH45, MH46, MH47 và MH51.
 
 ```text
-Admin tạo/sửa Exercise hoặc Food
-  → Backend kiểm tra role ADMIN
+Admin đăng nhập MH58 trên Web Admin
+  → Backend cấp cookie session audience ADMIN_WEB + CSRF
+  → Admin tạo/sửa Exercise hoặc Food
+  → Backend kiểm tra account active + role ADMIN + audience + CSRF
   → tạo resource `HIDDEN` trước
   → nếu có media: init upload theo owner + role + sort và cấp presigned contract
   → client upload binary trực tiếp vào Object Storage
@@ -571,7 +605,8 @@ Admin tạo/sửa Exercise hoặc Food
 
 Quy tắc:
 
-- UI Admin không thay thế role check ở Backend.
+- Flutter không chứa Admin route/UI/API client và `/auth/**` không cấp ADMIN session.
+- UI Web Admin không thay thế role/audience/CSRF check ở Backend.
 - Backend không proxy toàn bộ binary nếu dùng presigned upload.
 - Object key do server kiểm soát; validate owner type, MIME, extension và size.
 - Xóa/hide catalog không làm mất khả năng đọc lịch sử có snapshot/reference hợp lệ.
@@ -643,7 +678,7 @@ Backend kiểm tra:
 
 ### 9.1. Authentication và session
 
-- Access token gửi qua `Authorization: Bearer` theo API contract.
+- USER access token gửi qua `Authorization: Bearer` và có audience `MOBILE_USER`.
 - Refresh token được rotate/revoke và lưu server-side ở dạng an toàn.
 - Logout revoke session tương ứng; password reset/change có thể revoke session
   theo security policy canonical.
@@ -652,19 +687,23 @@ Backend kiểm tra:
   Meta. Mobile assertion hoặc profile tự gửi không tạo account trust.
 - Không tự động liên kết social account với account hiện có chỉ dựa trên email;
   xung đột phải qua flow liên kết có xác thực.
+- Admin chỉ đăng nhập qua `/admin/auth/**`; session audience `ADMIN_WEB` nằm trong
+  cookie `HttpOnly`, `Secure`, `SameSite=Strict` và mutation yêu cầu CSRF.
+- Admin token không được trả trong JSON hoặc lưu trong Web Storage. P0 không có
+  Admin register/social login.
 
 ### 9.2. Authorization và ownership
 
 Thứ tự guard khuyến nghị:
 
 ```text
-Authenticate → account status → role → resource lookup scoped by owner
+Authenticate → account status → session audience → role → resource lookup scoped by owner
 → state/precondition → mutation
 ```
 
 - Query private resource ưu tiên scope bằng `user_id` thay vì load rồi kiểm tra muộn.
 - Response forbidden/not-found tuân theo API policy để tránh resource enumeration.
-- Admin endpoint tách route và policy rõ ràng.
+- Admin endpoint tách route và policy rõ ràng; token USER/sai audience luôn bị từ chối.
 
 ### 9.3. Validation và error
 
@@ -699,7 +738,7 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 ### 9.7. Observability và audit
 
-- Request có correlation ID xuyên Mobile-facing Backend và internal AI call.
+- Request có correlation ID xuyên client-facing Backend và internal AI call.
 - Log structured gồm service, operation, outcome và latency phù hợp.
 - Metric tối thiểu: API latency/error, DB pool, AI latency/error/schema rejection,
   OTP rate-limit và media failure.
@@ -730,7 +769,7 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 - Public API version `/api/v1`; internal AI API có boundary riêng.
 - Request/response DTO ổn định và độc lập với JPA entity.
-- OpenAPI sinh hoặc kiểm tra từ contract đã chốt; Flutter client dùng generator `dart-dio` được pin và CI no-diff.
+- OpenAPI sinh hoặc kiểm tra từ contract đã chốt; Flutter dùng `dart-dio`, Web Admin dùng `typescript-fetch` và cả hai có CI no-diff.
 - Pagination, filter, status và error dùng convention chung.
 - Breaking change cần versioning/migration plan, không sửa âm thầm contract P0.
 
@@ -757,18 +796,19 @@ Authenticate → account status → role → resource lookup scoped by owner
 
 Docker Compose khởi chạy tối thiểu:
 
+- React Web Admin.
 - Spring Boot Backend.
 - PostgreSQL.
 - FastAPI AI Service.
 - S3-compatible Object Storage khi media upload được bật.
 - Redis chỉ trong optional profile nếu đã có quyết định sử dụng.
 
-Flutter/emulator gọi Backend qua địa chỉ môi trường được cấu hình. Chỉ Backend
+Flutter/emulator và Web Admin origin được allowlist gọi Backend qua địa chỉ môi trường được cấu hình. Chỉ Backend
 được phép gọi internal AI endpoint và truy cập database credential.
 
 ### 11.2. Runtime boundary
 
-- Public ingress đi tới Backend; FastAPI và PostgreSQL nằm trong private network.
+- Public ingress phục vụ Web Admin static app và định tuyến API tới Backend; FastAPI và PostgreSQL nằm trong private network.
 - TLS bắt buộc ngoài local.
 - Secret lấy từ environment/secret manager, không commit vào source.
 - Readiness phản ánh khả năng nhận traffic; liveness không phụ thuộc mù quáng
@@ -781,8 +821,9 @@ Flutter/emulator gọi Backend qua địa chỉ môi trường được cấu h�
 2. Database migration tương thích ngược.
 3. AI Service nếu internal contract thay đổi tương thích.
 4. Backend.
-5. Mobile release sau khi API tương thích đã sẵn sàng.
-6. Smoke test các vertical slice P0.
+5. Web Admin deploy sau Backend tương thích.
+6. Mobile release sau khi API tương thích đã sẵn sàng.
+7. Smoke test các vertical slice P0.
 
 Chi tiết container, proxy, backup, rollback và production hardening thuộc
 `server.md`.
@@ -803,6 +844,7 @@ Chi tiết container, proxy, backup, rollback và production hardening thuộc
 ### 12.2. Integration/API test
 
 - Auth/OTP/session lifecycle và rate limit.
+- Admin web login/session audience/cookie/CSRF; Mobile từ chối ADMIN login.
 - Ownership cho toàn bộ private resource.
 - Unique constraint, transaction rollback và concurrent state transition.
 - Meal Plan GET read-only; mutation đầu lazy-create plan với immutable target snapshot và input-unit snapshot.
@@ -811,13 +853,19 @@ Chi tiết container, proxy, backup, rollback và production hardening thuộc
 - Media init/complete và metadata verification.
 - Flyway migration trên PostgreSQL sạch.
 
-### 12.3. Mobile test
+### 12.3. Mobile USER test
 
-- Router guard theo auth/onboarding/role.
+- Router guard theo USER auth/onboarding; không có Admin route/API client.
 - Loading, empty, validation, server error và offline state.
 - Token refresh single-flight và logout khi refresh thất bại.
 - Form mapping đúng API unit/enum.
 - Apply/Dismiss chống double tap và refresh state từ Backend.
+
+### 12.3A. Web Admin test
+
+- MH58 login, session bootstrap/refresh/logout và private route guard.
+- Cookie/CSRF behavior, không lưu token trong Web Storage.
+- Exercise/Food/Audit form, list, loading/error/conflict và accessibility state.
 
 ### 12.4. E2E P0
 
@@ -827,7 +875,7 @@ Chi tiết container, proxy, backup, rollback và production hardening thuộc
 4. Weight Log → metric/progress refresh.
 5. AI consent enable → personalized chat → daily recommendation.
 6. Apply recommendation → domain mutation + audit; Dismiss không mutation.
-7. Admin Exercise/Food + media baseline → User đọc catalog mới.
+7. MH58 Web Admin login → Exercise/Food + media → Audit → logout; USER App đọc catalog mới.
 
 Mỗi E2E cần có ít nhất một failure branch quan trọng, không chỉ happy path.
 
@@ -882,7 +930,7 @@ SRS Requirement / Acceptance Criteria
 
 ### 14.2. Traceability theo capability
 
-- Identity/Auth: UC-01; FT-ID; MH01/MH02/MH04..MH08/MH52/MH53;
+- Identity/Auth: UC-01/UC-19; FT-ID; MH01/MH02/MH04..MH08/MH52/MH53/MH58;
   Identity API và Identity/Profile database domain.
 - Health/Profile: UC-02, UC-03, UC-10; FT-UP, FT-HP; MH09, MH10, MH33..MH38,
   MH42, MH43; Profile/Health API và Health database domain.
@@ -891,7 +939,7 @@ SRS Requirement / Acceptance Criteria
 - Dashboard: UC-11; FT-DB; MH03; Dashboard API và cross-domain read model.
 - AI: UC-12..UC-14, UC-17; FT-AI; MH27..MH32, MH55; AI public/internal API và
   AI Coach database domain.
-- Admin/Media: UC-19, UC-21; FT-AD, FT-MD; MH45..MH51; Admin/Media API,
+- Admin/Media: UC-19, UC-21; FT-AD, FT-MD; MH58/MH45..MH51; Admin/Media API,
   Media và Audit database domain.
 - Notification: UC-22; FT-NT-001..004; MH41; local/in-app thuộc P0, FT-NT-005 push/automation thuộc P2.
 
@@ -910,6 +958,7 @@ Tài liệu và implementation được xem là đồng bộ khi:
 - Enum, state machine, API và database không mâu thuẫn nhau.
 - Mỗi P0 vertical slice có owner, main flow, failure flow và transaction boundary.
 - Mỗi private mutation có authentication, authorization và ownership guard.
+- Admin chỉ có Web session đúng audience; Mobile không cấp hoặc lưu ADMIN session.
 - Mỗi AI flow có consent gate, context policy, output validation và fallback.
 - Apply/Dismiss giữ quyền quyết định của User và mutation của Backend.
 - Dashboard không trở thành owner của business data.
@@ -931,7 +980,7 @@ Khi bắt đầu một feature:
 5. Đọc entity/constraint/transaction trong Database Schema.
 6. Đọc screen state/navigation trong Screen Breakdown.
 7. Kiểm tra quyết định mở; tạo ADR nếu implementation phụ thuộc vào lựa chọn đó.
-8. Triển khai theo lát cắt Mobile → API → Domain → Data → Test.
+8. Triển khai theo lát cắt client phù hợp (Mobile USER hoặc Web Admin) → API → Domain → Data → Test.
 9. Chạy test và cập nhật traceability nếu contract thay đổi.
 
 `design.md` là bản đồ triển khai xuyên hệ thống. Tài liệu chuyên trách vẫn là

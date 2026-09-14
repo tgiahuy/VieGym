@@ -1,6 +1,6 @@
 # Tech Stack — VieGym
 
-> Kế hoạch công nghệ cho VieGym Mobile App, Spring Boot Backend, AI Service, dữ liệu và hạ tầng triển khai MVP.
+> Kế hoạch công nghệ cho VieGym Flutter USER App, React Web Admin, Spring Boot Backend, AI Service, dữ liệu và hạ tầng triển khai MVP.
 >
 > Tài liệu này chỉ được tổng hợp từ [SRS](../spec/specs.md), [phân rã phân hệ](../spec/phan_ra_phan_he_he_thong.md), [luồng nghiệp vụ](../spec/bussiness_mainflow.md), [phân rã tính năng](../spec/phan_ra_tinh_nang.md) và [phân rã màn hình](../spec/phan_ra_man_hinh.md). `docs/design.md` không được dùng làm nguồn cho tài liệu này.
 
@@ -34,9 +34,13 @@ Quy ước trong tài liệu:
 │                         VIEGYM TECH STACK                            │
 │                                                                     │
 │  ┌─────────────────┐   HTTPS/REST   ┌────────────────────────────┐  │
-│  │ Flutter Mobile  │ ─────────────► │ Spring Boot Backend        │  │
+│  │ Flutter USER App│ ─────────────► │ Spring Boot Backend        │  │
 │  │ Dart            │                │ Java + Security + JPA      │  │
 │  └─────────────────┘                └──────┬───────────┬─────────┘  │
+│  ┌─────────────────┐ cookie + CSRF          ▲          │            │
+│  │ React Web Admin │ ───────────────────────┘          │ internal   │
+│  │ TypeScript/Vite │                                  │            │
+│  └─────────────────┘                                  │            │
 │                                           │           │ internal    │
 │                                    ┌──────▼──────┐    ▼             │
 │                                    │ PostgreSQL  │ ┌──────────────┐ │
@@ -58,7 +62,8 @@ Môi trường demo: Docker Compose.
 
 | Lớp | Công nghệ | Trạng thái | Vai trò |
 |---|---|---|---|
-| Mobile | Flutter + Dart | **Đã chốt** | Ứng dụng Android, gồm USER và Admin UI tối thiểu |
+| Mobile | Flutter + Dart | **Đã chốt** | Ứng dụng Android chỉ dành cho USER |
+| Web Admin | React + TypeScript + Vite | **Đã chốt/P0 — ADR-008** | Website quản trị riêng, không dùng chung shell với Mobile |
 | State | Thư viện state management sẽ khóa khi bootstrap | **Đề xuất** | Quản lý application/client state |
 | API chính | Java + Spring Boot | **Đã chốt** | REST API, business logic, authorization, validation và mutation |
 | AI Service | Python + FastAPI | **Đã chốt** | Orchestration AI stateless, provider abstraction |
@@ -79,14 +84,14 @@ Môi trường demo: Docker Compose.
 | **Dart** | **3.12.2** | Đi cùng Flutter 3.44.4; không nâng độc lập |
 | **Material 3** | Theo Flutter SDK | Design system và component nền |
 
-> Không tạo React/Web Admin riêng trong MVP. Admin P0 dùng shell/route riêng trong Flutter cho Manage Exercise, Manage Food và Audit Log. Chỉ tách Web Admin ở P1 khi có yêu cầu vận hành thực tế.
+> Flutter chỉ phục vụ USER. Không tạo Admin route, screen hoặc Admin API client trong `mobile/`; Admin P0 được triển khai tại `admin-web/` theo [ADR-008](../ADR-008_ADMIN_WEB_ONLY.md).
 
 ### 3.2. State, routing và networking
 
 | Thư viện | Trạng thái | Mục đích |
 |---|---|---|
 | **flutter_riverpod** | **Đã chốt/P0 — ADR-001** | State bất đồng bộ, dependency injection và test override; không dùng package state khác song song |
-| **go_router** | **Đề xuất** | Declarative routing, auth redirect và route theo role |
+| **go_router** | **Đề xuất** | Declarative routing, auth redirect và onboarding cho USER |
 | **Dio** | **Đề xuất** | HTTP client, timeout, interceptor, refresh token và error mapping |
 | **Freezed** + **json_serializable** | **Đề xuất** | Immutable model, union state và JSON mapping sinh tự động |
 | **OpenAPI Generator `dart-dio`** | **Đã chốt/P0** | Sinh API client/models từ contract Backend, không viết DTO trùng tay |
@@ -94,7 +99,7 @@ Môi trường demo: Docker Compose.
 Các nguyên tắc bắt buộc:
 
 - Mobile chỉ gọi Spring Boot qua `/api/v1`; không gọi FastAPI hoặc AI Provider trực tiếp.
-- Backend guard là lớp bảo mật bắt buộc; route guard trên Flutter chỉ hỗ trợ UX.
+- Backend không cấp ADMIN session qua `/auth/**`; Flutter không điều hướng theo role ADMIN.
 - Không tự tính BMI/BMR/TDEE, nutrition summary, workout volume hoặc PR như kết quả authoritative.
 - Mọi màn hình phải biểu diễn rõ loading, empty, error, offline và retry state.
 - Pin exact OpenAPI Generator version. CI chạy regenerate và fail nếu generated
@@ -135,13 +140,42 @@ mobile/
 │   │   ├── dashboard/
 │   │   ├── ai_coach/
 │   │   ├── media/
-│   │   ├── notification/
-│   │   └── admin/
+│   │   └── notification/
 │   └── router/
 ├── test/
 ├── integration_test/
 └── pubspec.yaml
 ```
+
+### 3.5. Web Admin — React
+
+| Công nghệ | Trạng thái | Mục đích |
+|---|---|---|
+| **React + TypeScript** | **Đã chốt/P0 — ADR-008** | UI Admin riêng, type-safe component/form |
+| **Vite** | **Đã chốt/P0 — ADR-008** | Dev server và production build gọn cho SPA |
+| **React Router** | **Đề xuất** | Admin route và authenticated layout |
+| **TanStack Query** | **Đề xuất** | Server state, cache invalidation và mutation state |
+| **OpenAPI Generator `typescript-fetch`** | **Đề xuất/P0** | Sinh Admin API client từ cùng contract Backend |
+
+```text
+admin-web/
+├── src/
+│   ├── app/                 # router, providers, authenticated shell
+│   ├── core/                # HTTP, CSRF, errors, shared UI
+│   └── features/
+│       ├── auth/
+│       ├── exercises/
+│       ├── foods/
+│       ├── media/
+│       └── audit/
+├── package.json
+└── package-lock.json
+```
+
+Admin session dùng cookie `HttpOnly`, `Secure`, `SameSite=Strict`; không lưu token
+trong `localStorage` hoặc `sessionStorage`. Client gửi CSRF token cho mutation,
+Backend kiểm tra account status + role `ADMIN` + audience `ADMIN_WEB`. CORS chỉ
+allowlist origin Web Admin theo môi trường và không được dùng làm authorization.
 
 Mỗi feature có thể tách `data/`, `domain/`, `presentation/` khi độ phức tạp yêu cầu; không bắt buộc tạo tầng rỗng chỉ để đúng mẫu.
 
@@ -379,6 +413,16 @@ Streaming/transcoding video nâng cao nằm ngoài MVP.
 
 Không dùng H2 để thay thế các integration test phụ thuộc hành vi PostgreSQL.
 
+### 7.2A. Web Admin
+
+| Công cụ | Loại test |
+|---|---|
+| Vitest + Testing Library | Unit/component, form và auth state |
+| Playwright | Login/logout, route guard, Exercise/Food/Audit E2E |
+
+Test phải chứng minh không lưu token Admin trong Web Storage, mutation gửi CSRF
+đúng contract và session hết hạn quay về MH58 an toàn.
+
 ### 7.3. AI Service
 
 | Công cụ | Loại test |
@@ -394,6 +438,7 @@ Không gọi provider thật trong unit test/CI mặc định. Provider smoke te
 
 - Công thức BMI, BMR, TDEE, calories/macro và boundary validation.
 - Ownership và role `USER`/`ADMIN` trên private/admin API.
+- Mobile từ chối ADMIN login; Admin API yêu cầu `ADMIN_WEB` audience và CSRF.
 - OTP TTL/attempt, refresh token revoke/rotation và Google/Facebook token verification boundary.
 - Workout session state machine, volume/completion/PR.
 - Meal nutrition snapshot và daily aggregation.
@@ -409,13 +454,15 @@ Không gọi provider thật trong unit test/CI mặc định. Provider smoke te
 
 ```text
 docker-compose.yml
+├── admin-web               React static app/reverse proxy
 ├── backend                  Spring Boot API
 ├── ai-service               FastAPI internal service
 ├── postgres                 business database
 ├── object-storage           tùy chọn theo phương án media được chốt
 └── redis                    optional profile
 
-Flutter App chạy trên emulator/device và gọi endpoint Backend được cấu hình.
+Flutter USER App chạy trên emulator/device; Web Admin chạy ở origin riêng được
+allowlist và cả hai gọi endpoint Backend được cấu hình.
 ```
 
 ### 8.2. Build và CI/CD
@@ -427,6 +474,7 @@ Flutter App chạy trên emulator/device và gọi endpoint Backend được c�
 | **GitHub Actions** | **Đề xuất** | Lint, test, build image và kiểm tra migration |
 | **Maven Wrapper** | **Đã chốt/M0-12** | Build Backend duy nhất và nhất quán; không dùng Gradle |
 | **Flutter SDK pinning/FVM** | **Đề xuất** | Đồng nhất Flutter version |
+| **Node.js + npm lockfile** | **Đã chốt/P0 — ADR-008** | Build/test Web Admin có thể lặp lại |
 | **uv + `uv.lock`** | **Đã chốt/M0-12** | Python dependency manager duy nhất; `uv.lock` bắt buộc commit |
 
 Pipeline tối thiểu:
@@ -434,13 +482,13 @@ Pipeline tối thiểu:
 ```text
 Lint/format
    ↓
-Unit test Mobile + Backend + AI Service
+Unit test Mobile + Web Admin + Backend + AI Service
    ↓
-OpenAPI generate `dart-dio` + no-diff contract check
+OpenAPI generate `dart-dio` + `typescript-fetch` và no-diff contract check
    ↓
 Integration test với PostgreSQL/object-storage container nếu sử dụng
    ↓
-Build Flutter APK + Backend/AI Docker images
+Build Flutter APK + Web Admin static image + Backend/AI Docker images
    ↓
 Smoke test Docker Compose + OpenAPI endpoint
 ```
@@ -461,6 +509,8 @@ Smoke test Docker Compose + OpenAPI endpoint
 |---|---:|---|
 | Flutter | 3.44.4 | Pin bằng `.fvmrc` và CI image |
 | Dart | 3.12.2 | Đi cùng Flutter 3.44.4 |
+| Node.js | LTS được chọn tại M7-01 | Pin bằng `.nvmrc`/CI image; commit lockfile |
+| React/Vite | Patch tương thích tại M7-01 | Pin exact direct dependencies và lockfile |
 | Java | 21 LTS | Cùng toolchain ở Maven, CI và Docker |
 | Spring Boot | 3.5.16 | Dùng Spring Boot BOM, pin exact |
 | Python | 3.12 minor | `.python-version`; Docker patch pin digest ở M1 |
@@ -477,7 +527,8 @@ Không dùng tag `latest` trong CI hoặc môi trường demo dùng để chấm
 
 ### Bắt buộc P0
 
-- Flutter Android app với USER flow và Admin shell tối thiểu.
+- Flutter Android app chỉ với USER flow.
+- React Web Admin riêng với Login, Exercise, Food và Audit baseline.
 - Spring Boot REST API `/api/v1`, JWT, ownership và role.
 - PostgreSQL + Flyway là source of truth.
 - FastAPI AI Service stateless và consent-aware.
@@ -488,7 +539,7 @@ Không dùng tag `latest` trong CI hoặc môi trường demo dùng để chấm
 
 - Redis nếu chưa có bottleneck/rate-limit scale thực tế.
 - Push notification/FCM nâng cao.
-- Web Admin riêng.
+- Admin Dashboard/User Management/Import/AI Rule/Prompt mở rộng.
 - Message broker, Kubernetes, service mesh và microservices.
 - Video transcoding/streaming, semantic/vector database và analytics warehouse.
 - Multi-provider AI routing phức tạp.
@@ -498,6 +549,7 @@ Không dùng tag `latest` trong CI hoặc môi trường demo dùng để chấm
 - Mỗi dependency có owner/use case rõ ràng, version được pin và license phù hợp.
 - Local setup chạy bằng tài liệu và Docker Compose có thể lặp lại.
 - Mobile không biết AI provider secret và không bypass Backend.
+- Mobile không chứa Admin route/API client; Admin token không xuất hiện trong JavaScript storage.
 - AI Service không có database credential.
 - Migration chạy tự động trong test và có chiến lược rollback/backup cho môi trường triển khai.
 - CI kiểm tra format, test, build và smoke test trước khi merge.
@@ -511,7 +563,7 @@ Không dùng tag `latest` trong CI hoặc môi trường demo dùng để chấm
 3. **Hoàn thiện vertical slice Auth → Health:** JWT/OTP, secure storage, Health Profile và calculation test.
 4. **Hoàn thiện Workout + Nutrition:** schema, API, Flutter feature và integration test.
 5. **Tích hợp AI an toàn:** consent, context whitelist, provider adapter, schema/safety validation và Apply/Dismiss.
-6. **Bổ sung Admin/Media:** Exercise, Food, Audit và presigned media flow.
+6. **Bổ sung Web Admin/Media:** bootstrap `admin-web/`, tách Admin auth/session, Exercise, Food, Audit và presigned media flow.
 7. **Hardening demo:** OpenAPI, seed, observability, CI, APK/image build và smoke test end-to-end.
 
 Thứ tự này ưu tiên các vertical slice có thể demo và kiểm thử, đồng thời giữ AI/Redis/media nâng cao không cản trở business core.

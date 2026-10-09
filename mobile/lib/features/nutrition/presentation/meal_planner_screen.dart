@@ -114,6 +114,22 @@ class _MealPlannerScreenState extends ConsumerState<MealPlannerScreen> {
           ),
           const SizedBox(height: 14),
 
+          if (dateEntries.any((entry) => entry.estimated)) ...[
+            const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, size: 15),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Các tổng dinh dưỡng có thể bao gồm giá trị tham khảo.',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+
           // 2. Plan Nutrition Summary Card
           Container(
             padding: const EdgeInsets.all(16),

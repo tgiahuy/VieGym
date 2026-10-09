@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/resilient_network_image.dart';
 import '../application/favorite_foods_controller.dart';
-import '../data/food_catalog.dart';
+import '../application/food_catalog_controller.dart';
 import '../domain/food_models.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
@@ -39,8 +39,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final favoriteIds = ref.watch(favoriteFoodsProvider);
+    final catalog = ref.watch(foodCatalogProvider);
 
-    final filteredFoods = masterFoodCatalog.where((food) {
+    final filteredFoods = catalog.foods.where((food) {
       final q = _query.toLowerCase().trim();
       final matchesQuery =
           q.isEmpty ||
@@ -111,6 +112,62 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             ),
           ),
           const SizedBox(height: 10),
+
+          if (catalog.error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Material(
+                color: colors.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.cloud_off_rounded,
+                        color: colors.onErrorContainer,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Không tải được dữ liệu từ máy chủ. Đang hiển thị dữ liệu mẫu.',
+                          style: TextStyle(
+                            color: colors.onErrorContainer,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: catalog.isLoading
+                            ? null
+                            : () => ref
+                                  .read(foodCatalogProvider.notifier)
+                                  .refresh(),
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                catalog.isLoading
+                    ? 'Đang tải danh sách món ăn…'
+                    : '${filteredFoods.length} món ăn',
+                style: TextStyle(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
 
           // Food List
           Expanded(
@@ -190,6 +247,15 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
+                                      if (item.estimated)
+                                        const Text(
+                                          'Giá trị tham khảo',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
                                       Text.rich(
                                         TextSpan(
                                           children: [
@@ -259,7 +325,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                                   onPressed: () {
                                     ref
                                         .read(favoriteFoodsProvider.notifier)
-                                        .toggleFavorite(item.id);
+                                        .toggleFavoriteWithSync(item.id);
                                   },
                                 ),
                               ],

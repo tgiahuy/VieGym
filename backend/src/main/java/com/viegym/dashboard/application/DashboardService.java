@@ -10,11 +10,10 @@ import com.viegym.health.api.WeightTrendResponse;
 import com.viegym.health.application.WeightLogService;
 import com.viegym.health.domain.HealthProfile;
 import com.viegym.health.domain.HealthProfileRepository;
-import com.viegym.health.domain.NutritionTarget;
-import com.viegym.health.domain.NutritionTargetRepository;
 import com.viegym.identity.UserProfile;
 import com.viegym.identity.UserProfileRepository;
-import java.math.BigDecimal;
+import com.viegym.nutrition.api.NutritionDtos;
+import com.viegym.nutrition.application.NutritionService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -31,20 +30,20 @@ public class DashboardService {
 
     private final UserProfileRepository userProfiles;
     private final HealthProfileRepository healthProfiles;
-    private final NutritionTargetRepository nutritionTargets;
     private final WeightLogService weightLogs;
+    private final NutritionService mealNutrition;
     private final Clock clock;
 
     public DashboardService(
             UserProfileRepository userProfiles,
             HealthProfileRepository healthProfiles,
-            NutritionTargetRepository nutritionTargets,
             WeightLogService weightLogs,
+            NutritionService mealNutrition,
             Clock clock) {
         this.userProfiles = userProfiles;
         this.healthProfiles = healthProfiles;
-        this.nutritionTargets = nutritionTargets;
         this.weightLogs = weightLogs;
+        this.mealNutrition = mealNutrition;
         this.clock = clock;
     }
 
@@ -79,23 +78,17 @@ public class DashboardService {
         }
 
         // 2. Nutrition Section
-        Optional<NutritionTarget> targetOpt = nutritionTargets.findByUserId(userId);
         NutritionSection nutrition;
-        if (targetOpt.isPresent()) {
-            NutritionTarget target = targetOpt.get();
-            NutritionMacroSummary targetSummary =
-                    new NutritionMacroSummary(
-                            target.caloriesKcal(),
-                            target.proteinG(),
-                            target.carbsG(),
-                            target.fatG());
-            NutritionMacroSummary consumedSummary =
-                    new NutritionMacroSummary(
-                            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
-            NutritionMacroSummary remainingSummary = targetSummary;
+        NutritionDtos.MealPlan mealPlan = mealNutrition.getMealPlan(userId, date);
+        if (mealPlan.target() != null) {
+            NutritionMacroSummary targetSummary = summary(mealPlan.target());
+            NutritionMacroSummary consumedSummary = summary(mealPlan.consumed());
+            NutritionMacroSummary remainingSummary = summary(mealPlan.remaining());
+            boolean hasMealPlan = mealPlan.id() != null;
             nutrition =
-                    new NutritionSection(targetSummary, consumedSummary, remainingSummary, false);
-            missingData.add("MEAL_PLAN");
+                    new NutritionSection(
+                            targetSummary, consumedSummary, remainingSummary, hasMealPlan);
+            if (!hasMealPlan) missingData.add("MEAL_PLAN");
         } else {
             missingData.add("MEAL_PLAN");
             nutrition = new NutritionSection(null, null, null, false);
@@ -110,5 +103,10 @@ public class DashboardService {
 
         return new DashboardResponse(
                 date, nutrition, workout, body, Collections.emptyList(), missingData, generatedAt);
+    }
+
+    private static NutritionMacroSummary summary(NutritionDtos.Nutrition value) {
+        return new NutritionMacroSummary(
+                value.caloriesKcal(), value.proteinG(), value.carbsG(), value.fatG());
     }
 }

@@ -1,10 +1,12 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/muscle_models.dart';
 import 'body_muscle_map.dart';
+import 'body_muscle_regions_generated.dart';
 
 class FlippableMuscleCard extends StatefulWidget {
   const FlippableMuscleCard({
@@ -67,9 +69,17 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
   @override
   void didUpdateWidget(covariant FlippableMuscleCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.targetMuscles != oldWidget.targetMuscles ||
-        widget.frontPrimaryMuscles != oldWidget.frontPrimaryMuscles ||
-        widget.backPrimaryMuscles != oldWidget.backPrimaryMuscles) {
+    if (!listEquals(widget.targetMuscles, oldWidget.targetMuscles) ||
+        !setEquals(widget.frontPrimaryMuscles, oldWidget.frontPrimaryMuscles) ||
+        !setEquals(widget.backPrimaryMuscles, oldWidget.backPrimaryMuscles) ||
+        !setEquals(
+          widget.frontSecondaryMuscles,
+          oldWidget.frontSecondaryMuscles,
+        ) ||
+        !setEquals(
+          widget.backSecondaryMuscles,
+          oldWidget.backSecondaryMuscles,
+        )) {
       _initMuscles();
       _syncPreferredSide();
     }
@@ -95,10 +105,65 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
       return;
     }
 
-    final parsed = widget.targetMuscles
-        .map(MuscleGroup.fromString)
-        .whereType<MuscleGroup>()
-        .toSet();
+    final parsed = <MuscleGroup>{};
+    for (final raw in widget.targetMuscles) {
+      final tokens = raw.split(RegExp(r'[,•&+/]|\bvà\b', caseSensitive: false));
+      for (final token in tokens) {
+        final trimmed = token.trim();
+        if (trimmed.isEmpty) continue;
+        final norm = trimmed.toLowerCase();
+
+        // Broad group keyword expansion
+        if (norm.contains('lưng') || norm.contains('back')) {
+          parsed.add(MuscleGroup.lats);
+          parsed.add(MuscleGroup.upperBack);
+          if (norm.contains('dưới') || norm.contains('lower')) {
+            parsed.add(MuscleGroup.lowerBack);
+          }
+        }
+        if ((norm.contains('vai') && !norm.contains('cầu vai')) ||
+            norm.contains('shoulder')) {
+          if (norm.contains('sau') || norm.contains('rear')) {
+            parsed.add(MuscleGroup.rearDelts);
+          } else if (norm.contains('trước') || norm.contains('front')) {
+            parsed.add(MuscleGroup.frontDelts);
+          } else {
+            parsed.add(MuscleGroup.sideDelts);
+            parsed.add(MuscleGroup.frontDelts);
+            parsed.add(MuscleGroup.rearDelts);
+          }
+        }
+        if (norm.contains('tay') || norm.contains('arm')) {
+          if (norm.contains('trước') || norm.contains('bicep')) {
+            parsed.add(MuscleGroup.biceps);
+          } else if (norm.contains('sau') || norm.contains('tricep')) {
+            parsed.add(MuscleGroup.triceps);
+          } else {
+            parsed.add(MuscleGroup.biceps);
+            parsed.add(MuscleGroup.triceps);
+          }
+        }
+        if (norm.contains('đùi') || norm.contains('chân') || norm.contains('leg')) {
+          if (norm.contains('sau') || norm.contains('hamstring')) {
+            parsed.add(MuscleGroup.hamstrings);
+          } else if (norm.contains('trước') || norm.contains('quad')) {
+            parsed.add(MuscleGroup.quads);
+          } else {
+            parsed.add(MuscleGroup.quads);
+            parsed.add(MuscleGroup.hamstrings);
+          }
+        }
+
+        final muscle = MuscleGroup.fromString(trimmed);
+        if (muscle != null) {
+          parsed.add(muscle);
+        }
+      }
+      final direct = MuscleGroup.fromString(raw);
+      if (direct != null) {
+        parsed.add(direct);
+      }
+    }
 
     if (parsed.isEmpty) {
       _frontPrimary = {};
@@ -108,21 +173,36 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
       return;
     }
 
+    final frontRegions = generatedMuscleRegions(BodySide.front);
+    final backRegions = generatedMuscleRegions(BodySide.back);
+
     _frontPrimary = parsed
-        .where((m) => m.primarySide == BodySide.front)
+        .where(
+          (m) =>
+              m.primarySide == BodySide.front ||
+              frontRegions.containsKey(m),
+        )
         .toSet();
-    _backPrimary = parsed.where((m) => m.primarySide == BodySide.back).toSet();
+    _backPrimary = parsed
+        .where(
+          (m) =>
+              m.primarySide == BodySide.back ||
+              backRegions.containsKey(m),
+        )
+        .toSet();
     _frontSecondary = {};
     _backSecondary = {};
   }
 
   bool get _hasFrontTargets =>
-      _frontPrimary.isNotEmpty || _frontSecondary.isNotEmpty;
+      _frontPrimary.any((m) => m.primarySide == BodySide.front) ||
+      _frontSecondary.any((m) => m.primarySide == BodySide.front);
 
   bool get _hasBackTargets =>
-      _backPrimary.isNotEmpty || _backSecondary.isNotEmpty;
+      _backPrimary.any((m) => m.primarySide == BodySide.back) ||
+      _backSecondary.any((m) => m.primarySide == BodySide.back);
 
-  bool get _canFlip => _hasFrontTargets && _hasBackTargets;
+  bool get _canFlip => true;
 
   @override
   void dispose() {
@@ -132,8 +212,7 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
 
   void _flipCard() {
     HapticFeedback.lightImpact();
-    if (_controller.isCompleted ||
-        _controller.status == AnimationStatus.forward) {
+    if (_isBack || _controller.value >= 0.5) {
       _controller.reverse();
     } else {
       _controller.forward();
@@ -152,6 +231,14 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            void animationListener() {
+              if (sheetContext.mounted) {
+                setModalState(() {});
+              }
+            }
+
+            _animation.addListener(animationListener);
+
             final activePrimary = _isBack ? _backPrimary : _frontPrimary;
             final activeSecondary = _isBack ? _backSecondary : _frontSecondary;
             final primaryNames = activePrimary.map((m) => m.nameVi).join(', ');
@@ -159,63 +246,72 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                 .map((m) => m.nameVi)
                 .join(', ');
 
-            return Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(28),
+            return PopScope(
+              onPopInvokedWithResult: (didPop, result) {
+                _animation.removeListener(animationListener);
+              },
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
+                  border: Border.all(color: AppColors.borderDefault),
                 ),
-                border: Border.all(color: AppColors.borderDefault),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.borderStrong,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.accessibility_new_rounded,
-                                color: colors.primary,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Nhóm cơ buổi tập hôm nay',
-                              style: TextStyle(
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.borderStrong,
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        if (_canFlip)
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.accessibility_new_rounded,
+                                    color: colors.primary,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Text(
+                                    'Nhóm cơ buổi tập hôm nay',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () {
                               _flipCard();
-                              setModalState(() {});
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -247,9 +343,9 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
 
                     // Centered Large Body Muscle Map
                     Center(
@@ -358,7 +454,8 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
                   ],
                 ),
               ),
-            );
+            ),
+          );
           },
         );
       },

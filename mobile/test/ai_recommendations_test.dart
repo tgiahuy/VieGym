@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viegym/features/ai/application/ai_coach_controller.dart';
+import 'package:viegym/features/ai/data/ai_repository.dart';
 import 'package:viegym/features/ai/domain/ai_models.dart';
 import 'package:viegym/features/ai/presentation/ai_coach_chat_screen.dart';
 import 'package:viegym/features/ai/presentation/ai_tab_screen.dart';
@@ -9,10 +11,16 @@ import 'package:viegym/features/ai/presentation/widgets/ai_recommendation_card.d
 
 void main() {
   group('AI Recommendation State & Model tests', () {
-    test('Initial AiCoachState contains active recommendations', () {
-      final container = ProviderContainer();
+    test('Initial AiCoachState loads active recommendations', () async {
+      final container = ProviderContainer(
+        overrides: [
+          aiRepositoryProvider.overrideWithValue(_FakeAiRepository()),
+        ],
+      );
       addTearDown(container.dispose);
 
+      container.read(aiCoachProvider);
+      await container.read(aiCoachProvider.notifier).refreshRecommendations();
       final state = container.read(aiCoachProvider);
       expect(state.recommendations.length, 2);
       expect(state.activeRecommendations.length, 2);
@@ -25,11 +33,17 @@ void main() {
 
     test(
       'applyRecommendation updates status to applied and removes from active',
-      () {
-        final container = ProviderContainer();
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            aiRepositoryProvider.overrideWithValue(_FakeAiRepository()),
+          ],
+        );
         addTearDown(container.dispose);
 
-        container
+        container.read(aiCoachProvider);
+        await container.read(aiCoachProvider.notifier).refreshRecommendations();
+        await container
             .read(aiCoachProvider.notifier)
             .applyRecommendation('rec_upper_push_today');
 
@@ -45,11 +59,17 @@ void main() {
 
     test(
       'dismissRecommendation updates status to dismissed and removes from active',
-      () {
-        final container = ProviderContainer();
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            aiRepositoryProvider.overrideWithValue(_FakeAiRepository()),
+          ],
+        );
         addTearDown(container.dispose);
 
-        container
+        container.read(aiCoachProvider);
+        await container.read(aiCoachProvider.notifier).refreshRecommendations();
+        await container
             .read(aiCoachProvider.notifier)
             .dismissRecommendation('rec_legs_recovered_today');
 
@@ -117,7 +137,12 @@ void main() {
       });
 
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: AiCoachChatScreen())),
+        ProviderScope(
+          overrides: [
+            aiRepositoryProvider.overrideWithValue(_FakeAiRepository()),
+          ],
+          child: const MaterialApp(home: AiCoachChatScreen()),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -138,7 +163,12 @@ void main() {
         });
 
         await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: AiTabScreen())),
+          ProviderScope(
+            overrides: [
+              aiRepositoryProvider.overrideWithValue(_FakeAiRepository()),
+            ],
+            child: const MaterialApp(home: AiTabScreen()),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -167,7 +197,12 @@ void main() {
         });
 
         await tester.pumpWidget(
-          const ProviderScope(child: MaterialApp(home: AiTabScreen())),
+          ProviderScope(
+            overrides: [
+              aiRepositoryProvider.overrideWithValue(_FakeAiRepository()),
+            ],
+            child: const MaterialApp(home: AiTabScreen()),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -196,3 +231,36 @@ void main() {
     );
   });
 }
+
+class _FakeAiRepository extends AiRepository {
+  _FakeAiRepository() : super(Dio());
+
+  @override
+  Future<List<AiRecommendation>> getDailyRecommendations() async =>
+      _recommendations;
+
+  @override
+  Future<void> apply(AiRecommendation recommendation) async {}
+
+  @override
+  Future<void> dismiss(AiRecommendation recommendation) async {}
+}
+
+const _recommendations = [
+  AiRecommendation(
+    id: 'rec_upper_push_today',
+    type: RecommendationType.workout,
+    title: 'Tập trung thân trên (Upper Push)',
+    description: 'Đề xuất buổi tập 45 phút tối ưu cho ngực và vai.',
+    reason: 'Nhóm cơ ngực và vai đã qua 48h nghỉ ngơi.',
+    actionType: RecommendationActionType.startWorkout,
+  ),
+  AiRecommendation(
+    id: 'rec_legs_recovered_today',
+    type: RecommendationType.recovery,
+    title: 'Cơ chân đã phục hồi hoàn toàn (100%)',
+    description: 'Bạn có thể lên lịch một buổi tập chân.',
+    reason: 'Dữ liệu phục hồi hiện tại.',
+    actionType: RecommendationActionType.viewRecovery,
+  ),
+];

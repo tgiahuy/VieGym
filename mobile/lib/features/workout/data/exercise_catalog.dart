@@ -469,6 +469,26 @@ ExerciseDefinition? findExercise(String id) {
   return null;
 }
 
+ExerciseDefinition? findExerciseByName(String name) {
+  final cleanName = name.trim().toLowerCase();
+  for (final exercise in exerciseCatalog) {
+    if (exercise.name.toLowerCase() == cleanName ||
+        exercise.nameVi.toLowerCase() == cleanName ||
+        exercise.id.toLowerCase() == cleanName) {
+      return exercise;
+    }
+  }
+  for (final exercise in exerciseCatalog) {
+    if (exercise.name.toLowerCase().contains(cleanName) ||
+        exercise.nameVi.toLowerCase().contains(cleanName) ||
+        cleanName.contains(exercise.name.toLowerCase()) ||
+        cleanName.contains(exercise.nameVi.toLowerCase())) {
+      return exercise;
+    }
+  }
+  return null;
+}
+
 List<ExerciseDefinition> replacementCandidates({
   required String originalExerciseId,
   required Set<EquipmentType> availableEquipment,

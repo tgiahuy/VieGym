@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 
-class HomeShell extends StatelessWidget {
+class HomeShell extends StatefulWidget {
   const HomeShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
   @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  bool _isVisible = true;
+
+  @override
+  void didUpdateWidget(covariant HomeShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.navigationShell.currentIndex !=
+        widget.navigationShell.currentIndex) {
+      if (!_isVisible) {
+        setState(() {
+          _isVisible = true;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final currentIndex = navigationShell.currentIndex;
+    final currentIndex = widget.navigationShell.currentIndex;
 
     final tabs = const [
       _NavDestination(
@@ -44,81 +65,124 @@ class HomeShell extends StatelessWidget {
 
     return Scaffold(
       extendBody: true,
-      body: navigationShell,
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.only(bottom: 10),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundDeep.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: AppColors.borderDefault, width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final tabWidth = constraints.maxWidth / tabs.length;
-
-              return Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  // Sliding Liquid Bubble Indicator
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 320),
-                    curve: Curves.easeOutBack,
-                    left: currentIndex * tabWidth,
-                    width: tabWidth,
-                    top: 0,
-                    bottom: 0,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 2,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: AppColors.primaryBorder,
-                          width: 1.2,
-                        ),
-                      ),
-                    ),
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          if (notification.metrics.axis == Axis.vertical) {
+            if (notification.direction == ScrollDirection.reverse) {
+              // User scrolling down (dragging finger up to see lower content) -> hide
+              if (_isVisible) {
+                setState(() {
+                  _isVisible = false;
+                });
+              }
+            } else if (notification.direction == ScrollDirection.forward) {
+              // User scrolling up (dragging finger down to see upper content) -> show
+              if (!_isVisible) {
+                setState(() {
+                  _isVisible = true;
+                });
+              }
+            }
+          }
+          return false;
+        },
+        child: widget.navigationShell,
+      ),
+      bottomNavigationBar: AnimatedSlide(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeInOutCubic,
+        offset: _isVisible ? Offset.zero : const Offset(0, 1.0),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: _isVisible ? 1.0 : 0.0,
+          child: IgnorePointer(
+            ignoring: !_isVisible,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.backgroundDeep.withValues(alpha: 0.98),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.borderDefault.withValues(alpha: 0.5),
+                    width: 0.8,
                   ),
-
-                  // Navigation Tab Items Row
-                  Row(
-                    children: List.generate(tabs.length, (index) {
-                      final tab = tabs[index];
-                      final isSelected = index == currentIndex;
-
-                      return Expanded(
-                        child: _NavBarItem(
-                          destination: tab,
-                          isSelected: isSelected,
-                          primaryColor: colors.primary,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            navigationShell.goBranch(
-                              index,
-                              initialLocation:
-                                  index == navigationShell.currentIndex,
-                            );
-                          },
-                        ),
-                      );
-                    }),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
                   ),
                 ],
-              );
-            },
+              ),
+              child: SafeArea(
+                top: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final tabWidth = constraints.maxWidth / tabs.length;
+
+                    return Stack(
+                      children: [
+                        // Facebook-style Active Top Accent Bar
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutCubic,
+                          left: currentIndex * tabWidth,
+                          width: tabWidth,
+                          top: 0,
+                          height: 3,
+                          child: Center(
+                            child: Container(
+                              width: tabWidth * 0.55,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: const BorderRadius.vertical(
+                                  bottom: Radius.circular(3),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Navigation Items
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 4),
+                          child: Row(
+                            children: List.generate(tabs.length, (index) {
+                              final tab = tabs[index];
+                              final isSelected = index == currentIndex;
+
+                              return Expanded(
+                                child: _NavBarItem(
+                                  destination: tab,
+                                  isSelected: isSelected,
+                                  primaryColor: colors.primary,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    if (!_isVisible) {
+                                      setState(() {
+                                        _isVisible = true;
+                                      });
+                                    }
+                                    widget.navigationShell.goBranch(
+                                      index,
+                                      initialLocation:
+                                          index ==
+                                          widget.navigationShell.currentIndex,
+                                    );
+                                  },
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -157,46 +221,37 @@ class _NavBarItem extends StatelessWidget {
       button: true,
       selected: isSelected,
       label: destination.label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Pop & Scale animation on icon when active
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(
-                  begin: isSelected ? 0.82 : 1.0,
-                  end: isSelected ? 1.08 : 1.0,
-                ),
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutBack,
-                builder: (context, scale, child) {
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: Icon(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          splashColor: primaryColor.withValues(alpha: 0.12),
+          highlightColor: primaryColor.withValues(alpha: 0.06),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
                   isSelected ? destination.activeIcon : destination.icon,
-                  size: 22,
+                  size: 24,
                   color: isSelected ? primaryColor : AppColors.textTertiary,
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                destination.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: isSelected
-                      ? AppColors.textPrimary
-                      : AppColors.textTertiary,
-                  letterSpacing: -0.1,
+                const SizedBox(height: 3),
+                Text(
+                  destination.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? primaryColor : AppColors.textTertiary,
+                    letterSpacing: -0.1,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

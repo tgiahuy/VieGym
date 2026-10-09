@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/resilient_network_image.dart';
+import '../application/food_catalog_controller.dart';
 import '../application/nutrition_controller.dart';
 import '../data/food_catalog.dart';
 import '../domain/food_models.dart';
@@ -28,7 +29,7 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
   }
 
   Future<void> _editFoodEntry(FoodEntry entry) async {
-    final food = findFoodById(entry.foodId);
+    final food = ref.read(foodCatalogProvider.notifier).findById(entry.foodId);
     if (food == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,18 +60,29 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
         quantity: quantity,
       );
 
-      ref
-          .read(nutritionProvider.notifier)
-          .updateFoodEntry(
-            id: entry.id,
-            name: '${food.name} (${calculated.servingName})',
-            calories: calculated.calories,
-            protein: calculated.protein,
-            carbs: calculated.carbs,
-            fat: calculated.fat,
-            servingAmount: quantity,
-            servingUnit: calculated.servingName,
-          );
+      final controller = ref.read(nutritionProvider.notifier);
+      if (int.tryParse(entry.id) != null) {
+        final option = food.servingOptions.firstWhere(
+          (item) => item.id == servingId,
+          orElse: () => food.servingOptions.first,
+        );
+        await controller.updateFoodEntryRemote(
+          entryId: entry.id,
+          mealType: entry.mealType,
+          servingMultiplier: option.multiplier * quantity,
+        );
+      } else {
+        controller.updateFoodEntry(
+          id: entry.id,
+          name: '${food.name} (${calculated.servingName})',
+          calories: calculated.calories,
+          protein: calculated.protein,
+          carbs: calculated.carbs,
+          fat: calculated.fat,
+          servingAmount: quantity,
+          servingUnit: calculated.servingName,
+        );
+      }
     }
   }
 
@@ -111,9 +123,9 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
               const SizedBox(height: 10),
               Expanded(
                 child: ListView.builder(
-                  itemCount: masterFoodCatalog.length,
+                  itemCount: ref.watch(foodCatalogProvider).foods.length,
                   itemBuilder: (context, index) {
-                    final food = masterFoodCatalog[index];
+                    final food = ref.watch(foodCatalogProvider).foods[index];
                     final currentEntries = ref
                         .watch(nutritionProvider)
                         .getEntriesByMeal(_mealType);
@@ -179,23 +191,33 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                                 color: AppColors.success,
                               )
                             : const Icon(Icons.add_circle_outline_rounded),
-                        onTap: () {
+                        onTap: () async {
                           if (!isAdded) {
-                            ref
-                                .read(nutritionProvider.notifier)
-                                .addFoodEntry(
-                                  foodId: food.id,
-                                  name: food.name,
-                                  mealType: _mealType,
-                                  calories: food.baseCalories,
-                                  protein: food.baseProtein,
-                                  carbs: food.baseCarbs,
-                                  fat: food.baseFat,
-                                  servingAmount: 1,
-                                  servingUnit: food.baseServingUnit,
-                                  imageUrl: food.imageUrl,
-                                );
+                            final controller = ref.read(
+                              nutritionProvider.notifier,
+                            );
+                            if (int.tryParse(food.id) != null) {
+                              await controller.addFoodEntryRemote(
+                                foodId: food.id,
+                                mealType: _mealType,
+                                servingMultiplier: 1,
+                              );
+                            } else {
+                              controller.addFoodEntry(
+                                foodId: food.id,
+                                name: food.name,
+                                mealType: _mealType,
+                                calories: food.baseCalories,
+                                protein: food.baseProtein,
+                                carbs: food.baseCarbs,
+                                fat: food.baseFat,
+                                servingAmount: 1,
+                                servingUnit: food.baseServingUnit,
+                                imageUrl: food.imageUrl,
+                              );
+                            }
                           }
+                          if (!sheetContext.mounted) return;
                           Navigator.pop(sheetContext);
                         },
                       ),
@@ -564,7 +586,13 @@ class _MealBuilderScreenState extends ConsumerState<MealBuilderScreen> {
                             size: 18,
                           ),
                           tooltip: 'Xóa món',
-                          onPressed: () => notifier.removeFoodEntry(entry.id),
+                          onPressed: () {
+                            if (int.tryParse(entry.id) != null) {
+                              notifier.removeFoodEntryRemote(entry.id);
+                            } else {
+                              notifier.removeFoodEntry(entry.id);
+                            }
+                          },
                         ),
                       ],
                     ),

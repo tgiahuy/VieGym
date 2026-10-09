@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/application/auth_controller.dart';
 import '../data/food_catalog.dart';
+import '../data/nutrition_repository.dart';
 import '../domain/food_models.dart';
 
 final favoriteFoodsProvider =
@@ -10,12 +12,25 @@ final favoriteFoodsProvider =
 class FavoriteFoodsController extends Notifier<Set<String>> {
   @override
   Set<String> build() {
+    if (ref.read(authProvider).isAuthenticated) {
+      Future.microtask(syncRemoteFavorites);
+    }
     // Initial favorite staples
     return {
       'food_pho_bo', // Phở bò tái nạm
       'food_uc_ga', // Ức gà áp chảo
       'food_salmon', // Cá hồi áp chảo măng tây
     };
+  }
+
+  Future<void> syncRemoteFavorites() async {
+    try {
+      final foods = await ref.read(nutritionRepositoryProvider).getFavorites();
+      if (!ref.mounted) return;
+      state = foods.map((food) => food.id).toSet();
+    } catch (_) {
+      // Offline fallback remains available for the existing demo catalog.
+    }
   }
 
   bool isFavorite(String foodId) => state.contains(foodId);
@@ -30,6 +45,24 @@ class FavoriteFoodsController extends Notifier<Set<String>> {
     }
     state = updated;
     return !isFav;
+  }
+
+  Future<bool> toggleFavoriteWithSync(String foodId) async {
+    final isNowFavorite = toggleFavorite(foodId);
+    final numericId = int.tryParse(foodId);
+    if (numericId == null) return isNowFavorite;
+    try {
+      final repository = ref.read(nutritionRepositoryProvider);
+      if (isNowFavorite) {
+        await repository.addFavorite(foodId);
+      } else {
+        await repository.removeFavorite(foodId);
+      }
+      return isNowFavorite;
+    } catch (_) {
+      toggleFavorite(foodId);
+      rethrow;
+    }
   }
 
   void addFavorite(String foodId) {

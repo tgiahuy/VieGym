@@ -136,6 +136,12 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
                         ),
                       ),
                     ),
+                  IconButton(
+                    tooltip: 'Cài đặt thông báo',
+                    onPressed: () =>
+                        _showPreferences(context, state.preference),
+                    icon: const Icon(Icons.tune_rounded),
+                  ),
                 ],
               ),
             ),
@@ -242,6 +248,83 @@ class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _showPreferences(
+    BuildContext context,
+    NotificationPreference initial,
+  ) async {
+    var draft = initial;
+    final saved = await showModalBottomSheet<NotificationPreference>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cài đặt nhắc nhở',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Múi giờ: ${draft.timezone}',
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Lịch tập'),
+                  value: draft.workoutEnabled,
+                  onChanged: (value) => setModalState(
+                    () => draft = draft.copyWith(workoutEnabled: value),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Bữa ăn'),
+                  value: draft.mealEnabled,
+                  onChanged: (value) => setModalState(
+                    () => draft = draft.copyWith(mealEnabled: value),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Cân nặng'),
+                  value: draft.weightEnabled,
+                  onChanged: (value) => setModalState(
+                    () => draft = draft.copyWith(weightEnabled: value),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Gợi ý AI cá nhân hóa'),
+                  subtitle: const Text('Chỉ hoạt động khi đã bật đồng ý AI'),
+                  value: draft.recommendationEnabled,
+                  onChanged: (value) => setModalState(
+                    () => draft = draft.copyWith(recommendationEnabled: value),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context, draft),
+                    child: const Text('Lưu cài đặt'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (saved != null) {
+      await ref.read(notificationsProvider.notifier).updatePreference(saved);
+    }
   }
 }
 

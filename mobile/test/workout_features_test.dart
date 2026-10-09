@@ -105,6 +105,29 @@ void main() {
       expect(history.first.workoutName, 'Full Body Test');
       expect(history.first.totalVolumeKg, 3600);
     });
+
+    test('session exercise changes are reflected in today schedule', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final initialSchedule = container
+          .read(workoutScheduleProvider)
+          .todayWorkout!;
+      final extraExercise = findExercise('ex_pec_deck_fly')!;
+
+      container
+          .read(workoutSessionProvider.notifier)
+          .addExercise(extraExercise);
+
+      final updatedSchedule = container
+          .read(workoutScheduleProvider)
+          .todayWorkout!;
+      expect(
+        updatedSchedule.plannedExercises.length,
+        initialSchedule.plannedExercises.length + 1,
+      );
+      expect(updatedSchedule.plannedExercises.last.name, extraExercise.name);
+    });
   });
 
   group('Exercise Catalog tests', () {
@@ -355,13 +378,18 @@ void main() {
           tester.view.resetDevicePixelRatio();
         });
 
+        final container = ProviderContainer(
+          overrides: [
+            exerciseCatalogControllerProvider.overrideWith(
+              _SeededExerciseCatalogController.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              exerciseCatalogControllerProvider.overrideWith(
-                _SeededExerciseCatalogController.new,
-              ),
-            ],
+          UncontrolledProviderScope(
+            container: container,
             child: MaterialApp(
               theme: AppTheme.darkTheme,
               home: const WorkoutTabScreen(),
@@ -451,6 +479,16 @@ void main() {
         expect(find.text('Pec Deck Machine Fly'), findsOneWidget);
         expect(find.text('Neutral-Grip Dumbbell Press'), findsOneWidget);
         expect(find.text('5 bài tập'), findsOneWidget);
+
+        final scheduledExercises = container
+            .read(workoutScheduleProvider)
+            .todayWorkout!
+            .plannedExercises;
+        expect(scheduledExercises, hasLength(5));
+        expect(
+          scheduledExercises.map((exercise) => exercise.name),
+          containsAll(['Pec Deck Machine Fly', 'Neutral-Grip Dumbbell Press']),
+        );
       },
     );
   });
@@ -717,6 +755,15 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              workoutScheduleProvider.overrideWith(
+                () => _TestWorkoutScheduleNotifier(
+                  const WorkoutScheduleState(
+                    schedules: [],
+                    history: [],
+                    selectedDate: '2026-09-22',
+                  ),
+                ),
+              ),
               workoutSessionProvider.overrideWith(
                 () => _TestWorkoutSessionNotifier(completedSession),
               ),
@@ -1011,6 +1058,76 @@ void main() {
         // Close modal
         await tester.tap(find.text('Hủy'));
         await tester.pumpAndSettle();
+
+        // Switch to a day that is not today (e.g. tomorrow)
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        final tomorrowWeekday = tomorrow.weekday; // 1=T2, 2=T3, ...
+        final dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+        final targetLabel = dayLabels[tomorrowWeekday - 1];
+        await tester.tap(find.text(targetLabel).first);
+        await tester.pumpAndSettle();
+
+        // 'Bắt đầu tập ngay' should NOT be visible on non-today date
+        expect(find.text('Bắt đầu tập ngay'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'WorkoutScheduleScreen on empty day displays buttons and navigates to WorkoutBuilderScreen',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final router = GoRouter(
+          initialLocation: '/workout/schedule',
+          routes: [
+            GoRoute(
+              path: '/workout/schedule',
+              builder: (context, state) => const WorkoutScheduleScreen(),
+            ),
+            GoRoute(
+              path: '/workout/builder',
+              builder: (context, state) => const WorkoutBuilderScreen(),
+            ),
+            GoRoute(
+              path: '/workout/generate',
+              builder: (context, state) => const AiWorkoutGenerateScreen(),
+            ),
+          ],
+        );
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // Select an empty date far in the future
+        container
+            .read(workoutScheduleProvider.notifier)
+            .selectDate('2099-01-01');
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Check buttons
+        expect(find.text('AI tạo lịch tập'), findsOneWidget);
+        expect(find.text('Tự tạo lịch tập'), findsOneWidget);
+
+        // Tap 'Tự tạo lịch tập'
+        await tester.tap(find.text('Tự tạo lịch tập'));
+        await tester.pumpAndSettle();
+
+        // Verify WorkoutBuilderScreen is rendered
+        expect(find.text('Workout Builder'), findsOneWidget);
+        expect(find.text('Mẫu giáo án chuẩn cho người mới'), findsOneWidget);
+        expect(find.text('3 Buổi PPL'), findsOneWidget);
       },
     );
 
@@ -1459,16 +1576,15 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Workout Builder'), findsOneWidget);
-        expect(find.text('CÁC BUỔI TẬP (2)'), findsOneWidget);
+        expect(find.text('CÁC BUỔI TẬP (1)'), findsOneWidget);
         expect(find.text('Buổi 1'), findsOneWidget);
-        expect(find.text('Buổi 2'), findsOneWidget);
 
         // Tap thêm buổi
         await tester.tap(find.text('Thêm buổi'));
         await tester.pumpAndSettle();
 
-        expect(find.text('CÁC BUỔI TẬP (3)'), findsOneWidget);
-        expect(find.widgetWithText(ChoiceChip, 'Buổi 3'), findsOneWidget);
+        expect(find.text('CÁC BUỔI TẬP (2)'), findsOneWidget);
+        expect(find.widgetWithText(ChoiceChip, 'Buổi 2'), findsOneWidget);
       },
     );
 

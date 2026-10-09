@@ -3,6 +3,7 @@ package com.viegym.workout.schedule.api;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record WorkoutScheduleResponse(
         Long id,
@@ -14,4 +15,5 @@ public record WorkoutScheduleResponse(
         String status,
         String cancelReason,
         OffsetDateTime completedAt,
-        Long activeSessionId) {}
+        Long activeSessionId,
+        List<WorkoutScheduleExerciseResponse> exercises) {}

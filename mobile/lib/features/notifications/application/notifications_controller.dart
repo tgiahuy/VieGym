@@ -1,25 +1,40 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/notifications_repository.dart';
 import '../domain/notification_models.dart';
 
 class NotificationsState {
   const NotificationsState({
     this.notifications = const [],
     this.unreadCount = 0,
+    this.preference = const NotificationPreference(),
+    this.isLoading = false,
+    this.error,
   });
 
   final List<AppNotification> notifications;
   final int unreadCount;
+  final NotificationPreference preference;
+  final bool isLoading;
+  final String? error;
 
   bool get hasUnread => unreadCount > 0;
 
   NotificationsState copyWith({
     List<AppNotification>? notifications,
     int? unreadCount,
+    NotificationPreference? preference,
+    bool? isLoading,
+    String? error,
   }) {
     return NotificationsState(
       notifications: notifications ?? this.notifications,
       unreadCount: unreadCount ?? this.unreadCount,
+      preference: preference ?? this.preference,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
     );
   }
 }
@@ -28,6 +43,28 @@ class NotificationsController extends Notifier<NotificationsState> {
   @override
   NotificationsState build() {
     return _buildInitialState();
+  }
+
+  Future<void> refresh() async {
+    if (state.isLoading) return;
+    state = state.copyWith(isLoading: true);
+    try {
+      final repository = ref.read(notificationsRepositoryProvider);
+      final results = await Future.wait([
+        repository.list(),
+        repository.unreadCount(),
+        repository.preference(),
+      ]);
+      if (!ref.mounted) return;
+      state = NotificationsState(
+        notifications: results[0] as List<AppNotification>,
+        unreadCount: results[1] as int,
+        preference: results[2] as NotificationPreference,
+      );
+    } catch (error) {
+      if (!ref.mounted) return;
+      state = state.copyWith(isLoading: false, error: '$error');
+    }
   }
 
   NotificationsState _buildInitialState() {
@@ -93,6 +130,7 @@ class NotificationsController extends Notifier<NotificationsState> {
 
     final unread = updated.where((n) => !n.isRead).length;
     state = state.copyWith(notifications: updated, unreadCount: unread);
+    unawaited(_ignore(ref.read(notificationsRepositoryProvider).read(id)));
   }
 
   void markAllAsRead() {
@@ -101,12 +139,14 @@ class NotificationsController extends Notifier<NotificationsState> {
     }).toList();
 
     state = state.copyWith(notifications: updated, unreadCount: 0);
+    unawaited(_ignore(ref.read(notificationsRepositoryProvider).readAll()));
   }
 
   void deleteNotification(String id) {
     final updated = state.notifications.where((n) => n.id != id).toList();
     final unread = updated.where((n) => !n.isRead).length;
     state = state.copyWith(notifications: updated, unreadCount: unread);
+    unawaited(_ignore(ref.read(notificationsRepositoryProvider).delete(id)));
   }
 
   void clearAll() {
@@ -117,6 +157,29 @@ class NotificationsController extends Notifier<NotificationsState> {
     final updated = [notification, ...state.notifications];
     final unread = updated.where((n) => !n.isRead).length;
     state = state.copyWith(notifications: updated, unreadCount: unread);
+  }
+
+  Future<void> updatePreference(NotificationPreference value) async {
+    final previous = state.preference;
+    state = state.copyWith(preference: value);
+    try {
+      final saved = await ref
+          .read(notificationsRepositoryProvider)
+          .savePreference(value);
+      if (ref.mounted) state = state.copyWith(preference: saved);
+    } catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(preference: previous, error: '$error');
+      }
+    }
+  }
+
+  Future<void> _ignore(Future<void> request) async {
+    try {
+      await request;
+    } catch (_) {
+      // Optimistic UI remains usable while offline; refresh reconciles later.
+    }
   }
 }
 

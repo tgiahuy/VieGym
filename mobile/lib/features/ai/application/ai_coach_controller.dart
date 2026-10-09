@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../workout/application/workout_session_controller.dart';
 import '../../workout/data/exercise_catalog.dart';
+import '../data/ai_repository.dart';
 import '../domain/ai_models.dart';
 
 final mealCaloriesAddedProvider = NotifierProvider<MealCaloriesController, int>(
@@ -20,8 +21,11 @@ final aiCoachProvider = NotifierProvider<AiCoachController, AiCoachState>(
 );
 
 class AiCoachController extends Notifier<AiCoachState> {
+  int? _conversationId;
+
   @override
   AiCoachState build() {
+    Future<void>.microtask(refreshRecommendations);
     return const AiCoachState(
       messages: [
         AiChatMessage(
@@ -31,37 +35,67 @@ class AiCoachController extends Notifier<AiCoachState> {
               'Chào bạn! Mình là AI Coach của VieGym. Mình liên tục phân tích dữ liệu tập luyện, phục hồi và dinh dưỡng để đưa ra các đề xuất tối ưu hóa thể hình cho bạn.',
         ),
       ],
-      recommendations: [
-        AiRecommendation(
-          id: 'rec_upper_push_today',
-          type: RecommendationType.workout,
-          title: 'Tập trung thân trên (Upper Push)',
-          description:
-              'Đề xuất buổi tập 45 phút tối ưu cho ngực và vai với mức phục hồi 82%.',
-          reason:
-              'Nhóm cơ ngực và vai đã qua 48h nghỉ ngơi và sẵn sàng cho chu kỳ tăng cơ tiếp theo.',
-          actionType: RecommendationActionType.startWorkout,
-          targetMuscles: ['Ngực', 'Vai', 'Tay sau'],
-          recoveryPercent: 82,
-          durationMinutes: 45,
-        ),
-        AiRecommendation(
-          id: 'rec_legs_recovered_today',
-          type: RecommendationType.recovery,
-          title: 'Cơ chân đã phục hồi hoàn toàn (100%)',
-          description:
-              'Bạn có thể sẵn sàng cho buổi Squat hoặc Legs Day với mức tải cao trong 1–2 ngày tới.',
-          reason:
-              'Dựa trên thời gian phục hồi 72h từ buổi tập chân trước và tổng khối lượng tuần đạt 10.800 kg.',
-          actionType: RecommendationActionType.applySchedule,
-          targetMuscles: ['Đùi trước', 'Mông', 'Đùi sau'],
-          recoveryPercent: 100,
-        ),
-      ],
     );
   }
 
-  void applyRecommendation(String id) {
+  Future<void> refreshRecommendations() async {
+    state = state.copyWith(isLoadingRecommendations: true, clearError: true);
+    try {
+      final recommendations = await ref
+          .read(aiRepositoryProvider)
+          .getDailyRecommendations();
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        recommendations: recommendations,
+        isLoadingRecommendations: false,
+      );
+    } catch (_) {
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        recommendations: const [],
+        isLoadingRecommendations: false,
+        errorMessage: 'Không thể tải đề xuất AI lúc này.',
+      );
+    }
+  }
+
+  Future<void> generateRecommendations() async {
+    state = state.copyWith(isLoadingRecommendations: true, clearError: true);
+    try {
+      final recommendations = await ref
+          .read(aiRepositoryProvider)
+          .generateDailyRecommendations();
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        recommendations: recommendations,
+        isLoadingRecommendations: false,
+      );
+    } catch (_) {
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isLoadingRecommendations: false,
+        errorMessage:
+            'Không thể tạo đề xuất. Hãy kiểm tra quyền cá nhân hóa AI.',
+      );
+    }
+  }
+
+  Future<void> applyRecommendation(String id) async {
+    final recommendation = state.recommendations
+        .where((item) => item.id == id)
+        .firstOrNull;
+    if (recommendation == null ||
+        recommendation.status != ProposalStatus.pending) {
+      return;
+    }
+    try {
+      await ref.read(aiRepositoryProvider).apply(recommendation);
+    } catch (_) {
+      if (!ref.mounted) return;
+      state = state.copyWith(errorMessage: 'Áp dụng đề xuất thất bại.');
+      return;
+    }
+    if (!ref.mounted) return;
     final updated = state.recommendations.map((r) {
       if (r.id != id) return r;
       return r.copyWith(status: ProposalStatus.applied);
@@ -69,7 +103,22 @@ class AiCoachController extends Notifier<AiCoachState> {
     state = state.copyWith(recommendations: updated);
   }
 
-  void dismissRecommendation(String id) {
+  Future<void> dismissRecommendation(String id) async {
+    final recommendation = state.recommendations
+        .where((item) => item.id == id)
+        .firstOrNull;
+    if (recommendation == null ||
+        recommendation.status != ProposalStatus.pending) {
+      return;
+    }
+    try {
+      await ref.read(aiRepositoryProvider).dismiss(recommendation);
+    } catch (_) {
+      if (!ref.mounted) return;
+      state = state.copyWith(errorMessage: 'Bỏ qua đề xuất thất bại.');
+      return;
+    }
+    if (!ref.mounted) return;
     final updated = state.recommendations.map((r) {
       if (r.id != id) return r;
       return r.copyWith(status: ProposalStatus.dismissed);
@@ -91,12 +140,33 @@ class AiCoachController extends Notifier<AiCoachState> {
       isGenerating: true,
     );
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    final response = _buildResponse(text);
-    state = state.copyWith(
-      messages: [...state.messages, response],
-      isGenerating: false,
-    );
+    try {
+      _conversationId ??=
+          (await ref
+                  .read(aiRepositoryProvider)
+                  .createConversation(title: text, personalized: true))
+              .id;
+      if (!ref.mounted) return;
+      final exchange = await ref
+          .read(aiRepositoryProvider)
+          .sendMessage(_conversationId!, text);
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        messages: [...state.messages, exchange.assistant],
+        isGenerating: false,
+        effectiveMode: exchange.mode,
+        clearError: true,
+      );
+    } catch (_) {
+      if (!ref.mounted) return;
+      final fallback = _buildResponse(text);
+      state = state.copyWith(
+        messages: [...state.messages, fallback],
+        isGenerating: false,
+        errorMessage:
+            'Đang dùng phản hồi dự phòng vì chưa kết nối được AI Coach.',
+      );
+    }
   }
 
   AiChatMessage _buildResponse(String rawText) {

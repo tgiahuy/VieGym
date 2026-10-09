@@ -99,9 +99,35 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            onPressed: () => context.push('/ai/history'),
+            icon: const Icon(Icons.history_rounded),
+            tooltip: 'Lịch sử trò chuyện',
+          ),
+        ],
       ),
       body: Column(
         children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            color: state.effectiveMode == 'PERSONALIZED'
+                ? AppColors.aiVioletSoft
+                : AppColors.amberSoft,
+            child: Text(
+              state.effectiveMode == 'PERSONALIZED'
+                  ? 'AI cá nhân hóa theo dữ liệu đã cho phép'
+                  : 'Chế độ kiến thức chung — không dùng dữ liệu cá nhân',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: state.effectiveMode == 'PERSONALIZED'
+                    ? AppColors.aiViolet
+                    : AppColors.amber,
+              ),
+            ),
+          ),
           // Chat Messages List
           Expanded(
             child: ListView.builder(
@@ -854,10 +880,7 @@ class _GeneratingBubble extends StatelessWidget {
             SizedBox(width: 9),
             Text(
               'AI Coach đang phân tích yêu cầu...',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ],
         ),

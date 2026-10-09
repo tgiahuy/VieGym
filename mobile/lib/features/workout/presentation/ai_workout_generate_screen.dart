@@ -9,8 +9,10 @@ import '../../onboarding/application/health_profile_controller.dart';
 import '../application/workout_schedule_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
+import '../data/workout_schedule_planning_repository.dart';
 import '../domain/workout_models.dart';
 import 'widgets/exercise_thumbnail.dart';
+import 'widgets/schedule_proposal_dialog.dart';
 
 enum _PlanApplyMode { append, replace }
 
@@ -47,7 +49,9 @@ class _EquipmentVisualItem {
 }
 
 class AiWorkoutGenerateScreen extends ConsumerStatefulWidget {
-  const AiWorkoutGenerateScreen({super.key});
+  const AiWorkoutGenerateScreen({super.key, this.initialDate});
+
+  final DateTime? initialDate;
 
   @override
   ConsumerState<AiWorkoutGenerateScreen> createState() =>
@@ -69,6 +73,7 @@ class _AiWorkoutGenerateScreenState
   };
   double _durationMinutes = 45;
   String _goal = 'Tăng cơ nạc (Hypertrophy)';
+  bool _generateWholeWeek = false;
   bool _isGenerating = false;
   bool _generated = false;
   List<ExerciseDefinition> _generatedExercises = [];
@@ -313,10 +318,20 @@ class _AiWorkoutGenerateScreenState
         _selectedMuscles.addAll(_allMuscles.map((m) => m.name));
       } else if (split == 'upper') {
         _selectedMuscles.clear();
-        _selectedMuscles.addAll(['Ngực', 'Lưng xô', 'Vai', 'Tay trước', 'Tay sau']);
+        _selectedMuscles.addAll([
+          'Ngực',
+          'Lưng xô',
+          'Vai',
+          'Tay trước',
+          'Tay sau',
+        ]);
       } else if (split == 'lower') {
         _selectedMuscles.clear();
-        _selectedMuscles.addAll(['Đùi trước', 'Đùi sau & Mông', 'Cơ bụng (Core)']);
+        _selectedMuscles.addAll([
+          'Đùi trước',
+          'Đùi sau & Mông',
+          'Cơ bụng (Core)',
+        ]);
       } else if (split == 'push') {
         _selectedMuscles.clear();
         _selectedMuscles.addAll(['Ngực', 'Vai', 'Tay sau']);
@@ -344,14 +359,16 @@ class _AiWorkoutGenerateScreenState
     await Future<void>.delayed(const Duration(milliseconds: 700));
 
     final availableTypes = _resolvedEquipmentTypes;
-    final targetMusclesLower =
-        _selectedMuscles.map((m) => m.toLowerCase()).toList();
+    final targetMusclesLower = _selectedMuscles
+        .map((m) => m.toLowerCase())
+        .toList();
 
     final matchingExercises = exerciseCatalog.where((ex) {
       final matchesEquipment = availableTypes.contains(ex.equipment);
       final primaryLower = ex.primaryMuscle.toLowerCase();
-      final secondaryLower =
-          ex.secondaryMuscles.map((m) => m.toLowerCase()).toList();
+      final secondaryLower = ex.secondaryMuscles
+          .map((m) => m.toLowerCase())
+          .toList();
 
       final matchesMuscle = targetMusclesLower.any((m) {
         if (m.contains('ngực') && primaryLower.contains('ngực')) {
@@ -444,7 +461,9 @@ class _AiWorkoutGenerateScreenState
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
+            side: BorderSide(
+              color: colors.outlineVariant.withValues(alpha: 0.6),
+            ),
           ),
           backgroundColor: colors.surfaceContainer,
           titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -487,7 +506,9 @@ class _AiWorkoutGenerateScreenState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: colors.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: colors.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: colors.outlineVariant.withValues(alpha: 0.4),
@@ -673,7 +694,10 @@ class _AiWorkoutGenerateScreenState
               style: TextButton.styleFrom(
                 foregroundColor: colors.onSurfaceVariant,
               ),
-              child: const Text('Hủy', style: TextStyle(fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Hủy',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         );
@@ -685,7 +709,11 @@ class _AiWorkoutGenerateScreenState
     HapticFeedback.lightImpact();
     final scheduleState = ref.read(workoutScheduleProvider);
     final sessionState = ref.read(workoutSessionProvider);
-    final selectedDate = scheduleState.selectedDate;
+    final requestedDate =
+        widget.initialDate ??
+        DateTime.tryParse(scheduleState.selectedDate) ??
+        DateTime.now();
+    final selectedDate = _formatDate(DateUtils.dateOnly(requestedDate));
     final now = DateTime.now();
     final todayStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -694,6 +722,7 @@ class _AiWorkoutGenerateScreenState
         selectedDate == todayStr &&
         (scheduleState.isTodayWorkoutCompleted || sessionState.isFinalized);
     final hasActiveWorkoutToday =
+        !_generateWholeWeek &&
         selectedDate == todayStr &&
         sessionState.exercises.isNotEmpty &&
         !sessionState.isFinalized;
@@ -702,6 +731,323 @@ class _AiWorkoutGenerateScreenState
       final selectedMode = await _chooseApplyMode(sessionState);
       if (selectedMode == null || !mounted) return;
       applyMode = selectedMode;
+    }
+
+    if (!hasActiveWorkoutToday) {
+      try {
+        setState(() => _isGenerating = true);
+        final selected = DateTime.parse(selectedDate);
+        var weekStart = selected.subtract(Duration(days: selected.weekday - 1));
+        final today = DateUtils.dateOnly(DateTime.now());
+        if (weekStart.add(const Duration(days: 6)).isBefore(today)) {
+          weekStart = weekStart.add(const Duration(days: 7));
+        }
+        final dates = _generateWholeWeek
+            ? _buildAiWeekDates(weekStart: weekStart, today: today)
+            : [selected];
+        final repository = ref.read(workoutSchedulePlanningRepositoryProvider);
+        final initialDrafts = dates.asMap().entries.map((entry) {
+          final rotated = [
+            ..._generatedExercises.skip(entry.key),
+            ..._generatedExercises.take(entry.key),
+          ];
+          return ScheduleDraftDay(
+            date: entry.value,
+            time: '17:30',
+            title: _generateWholeWeek
+                ? '$newTitle — Buổi ${entry.key + 1}'
+                : newTitle,
+            exercises: rotated
+                .map(
+                  (exercise) => ScheduleDraftExercise(
+                    exercise: exercise,
+                    targetSets: 3,
+                    targetRepsMin: 8,
+                    targetRepsMax: 12,
+                    restSeconds: 90,
+                  ),
+                )
+                .toList(),
+          );
+        }).toList();
+
+        ScheduleProposalView proposal;
+        try {
+          proposal = await repository.createDirectProposal(
+            sourceType: 'AI',
+            days: initialDrafts,
+          );
+        } catch (_) {
+          proposal = ScheduleProposalView(
+            id: 0,
+            sourceType: 'AI',
+            scope: initialDrafts.length == 1 ? 'ONE_DAY' : 'WEEK',
+            expiresAt: DateTime.now().add(const Duration(minutes: 30)),
+            items: initialDrafts
+                .map(
+                  (d) => ScheduleProposalItemView(
+                    date: d.date,
+                    time: d.time,
+                    title: d.title,
+                    exerciseCount: d.exercises.length,
+                  ),
+                )
+                .toList(),
+          );
+        }
+
+        if (!mounted) return;
+        setState(() => _isGenerating = false);
+        final result = await showScheduleProposalDialog(context, proposal);
+        if (result == null || !result.confirmed || !mounted) return;
+        setState(() => _isGenerating = true);
+
+        var effectiveDrafts = initialDrafts;
+        if (result.items.isNotEmpty) {
+          effectiveDrafts = List.generate(initialDrafts.length, (index) {
+            final original = initialDrafts[index];
+            if (index < result.items.length) {
+              final updatedItem = result.items[index];
+              return ScheduleDraftDay(
+                date: updatedItem.date,
+                time: updatedItem.time,
+                title: original.title,
+                exercises: original.exercises,
+              );
+            }
+            return original;
+          });
+        }
+
+        if (proposal.id > 0) {
+          try {
+            final bool changed = List.generate(
+              initialDrafts.length,
+              (i) =>
+                  i < effectiveDrafts.length &&
+                  (initialDrafts[i].date != effectiveDrafts[i].date ||
+                      initialDrafts[i].time != effectiveDrafts[i].time),
+            ).any((c) => c);
+
+            final proposalToApply = changed
+                ? await repository.createDirectProposal(
+                    sourceType: 'AI',
+                    days: effectiveDrafts,
+                  )
+                : proposal;
+
+            final applied = await repository.applyProposal(proposalToApply.id);
+            if (!mounted) return;
+            ref
+                .read(workoutScheduleProvider.notifier)
+                .mergeAppliedSchedules(
+                  applied.indexed.map((entry) {
+                    final item = entry.$2;
+                    final draft = entry.$1 < effectiveDrafts.length
+                        ? effectiveDrafts[entry.$1]
+                        : null;
+                    return WorkoutScheduleItem(
+                      id: 'server_${item.id}',
+                      date:
+                          '${item.date.year}-${item.date.month.toString().padLeft(2, '0')}-${item.date.day.toString().padLeft(2, '0')}',
+                      time: item.time.substring(0, 5),
+                      title: item.title,
+                      targetMuscles: draft == null
+                          ? _selectedMuscles.join(' • ')
+                          : draft.exercises
+                                .map((e) => e.exercise.primaryMuscle)
+                                .toSet()
+                                .join(' • '),
+                      durationMinutes: _durationMinutes.round(),
+                      plannedExercises: draft == null
+                          ? const []
+                          : draft.exercises
+                                .map(
+                                  (exercise) => PlannedExercisePreview(
+                                    name: exercise.exercise.name,
+                                    setsReps:
+                                        '${exercise.targetSets}x${exercise.targetRepsMin}-${exercise.targetRepsMax}',
+                                  ),
+                                )
+                                .toList(),
+                    );
+                  }).toList(),
+                );
+            if (applied.isNotEmpty) {
+              ref
+                  .read(workoutScheduleProvider.notifier)
+                  .selectDate(_formatDate(applied.first.date));
+            }
+            final todayDraft = effectiveDrafts
+                .where((d) => _formatDate(d.date) == todayStr)
+                .firstOrNull;
+            if (todayDraft != null && todayDraft.exercises.isNotEmpty) {
+              ref
+                  .read(workoutSessionProvider.notifier)
+                  .setSession(
+                    title: todayDraft.title,
+                    exercises: todayDraft.exercises
+                        .map(
+                          (e) => SessionExercise(
+                            exerciseId: e.exercise.id,
+                            name: e.exercise.name,
+                            primaryMuscle: e.exercise.primaryMuscle,
+                            equipment: e.exercise.equipment,
+                            targetSets: e.targetSets,
+                            targetReps: e.targetRepsMin,
+                            weightKg:
+                                e.exercise.equipment == EquipmentType.bodyweight
+                                ? 0
+                                : 25,
+                            thumbnailUrl: e.exercise.thumbnailUrl,
+                          ),
+                        )
+                        .toList(),
+                  );
+            } else if (!_generateWholeWeek &&
+                selectedDate == todayStr &&
+                _generatedExercises.isNotEmpty) {
+              ref
+                  .read(workoutSessionProvider.notifier)
+                  .setSession(
+                    title: newTitle,
+                    exercises: _generatedExercises
+                        .map(
+                          (exercise) => SessionExercise(
+                            exerciseId: exercise.id,
+                            name: exercise.name,
+                            primaryMuscle: exercise.primaryMuscle,
+                            equipment: exercise.equipment,
+                            targetSets: 3,
+                            targetReps: 10,
+                            weightKg:
+                                exercise.equipment == EquipmentType.bodyweight
+                                ? 0
+                                : 25,
+                            thumbnailUrl: exercise.thumbnailUrl,
+                          ),
+                        )
+                        .toList(),
+                  );
+            }
+            setState(() => _isGenerating = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _generateWholeWeek
+                      ? 'Đã áp dụng ${applied.length} buổi AI vào lịch tuần.'
+                      : 'Đã áp dụng giáo án AI vào lịch tập thành công!',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            context.go('/workout');
+            return;
+          } catch (_) {
+            // Fall through to local merge below
+          }
+        }
+
+        // Local merge fallback
+        final scheduleNotifier = ref.read(workoutScheduleProvider.notifier);
+        for (final draft in effectiveDrafts) {
+          final dateStr =
+              '${draft.date.year}-${draft.date.month.toString().padLeft(2, '0')}-${draft.date.day.toString().padLeft(2, '0')}';
+          scheduleNotifier.addSchedule(
+            title: draft.title,
+            targetMuscles: _selectedMuscles.join(' • '),
+            durationMinutes: _durationMinutes.round(),
+            date: dateStr,
+            time: draft.time,
+            plannedExercises: _generatedExercises
+                .map(
+                  (exercise) => PlannedExercisePreview(
+                    name: exercise.name,
+                    setsReps: _getSetsRepsRecommendation(),
+                  ),
+                )
+                .toList(),
+          );
+        }
+
+        final todayDraftFallback = effectiveDrafts
+            .where((d) => _formatDate(d.date) == todayStr)
+            .firstOrNull;
+        if (todayDraftFallback != null &&
+            todayDraftFallback.exercises.isNotEmpty) {
+          ref
+              .read(workoutSessionProvider.notifier)
+              .setSession(
+                title: todayDraftFallback.title,
+                exercises: todayDraftFallback.exercises
+                    .map(
+                      (e) => SessionExercise(
+                        exerciseId: e.exercise.id,
+                        name: e.exercise.name,
+                        primaryMuscle: e.exercise.primaryMuscle,
+                        equipment: e.exercise.equipment,
+                        targetSets: e.targetSets,
+                        targetReps: e.targetRepsMin,
+                        weightKg:
+                            e.exercise.equipment == EquipmentType.bodyweight
+                            ? 0
+                            : 25,
+                        thumbnailUrl: e.exercise.thumbnailUrl,
+                      ),
+                    )
+                    .toList(),
+              );
+        } else if (!_generateWholeWeek &&
+            selectedDate == todayStr &&
+            _generatedExercises.isNotEmpty) {
+          ref
+              .read(workoutSessionProvider.notifier)
+              .setSession(
+                title: newTitle,
+                exercises: _generatedExercises
+                    .map(
+                      (exercise) => SessionExercise(
+                        exerciseId: exercise.id,
+                        name: exercise.name,
+                        primaryMuscle: exercise.primaryMuscle,
+                        equipment: exercise.equipment,
+                        targetSets: 3,
+                        targetReps: 10,
+                        weightKg: exercise.equipment == EquipmentType.bodyweight
+                            ? 0
+                            : 25,
+                        thumbnailUrl: exercise.thumbnailUrl,
+                      ),
+                    )
+                    .toList(),
+              );
+        }
+
+        setState(() => _isGenerating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _generateWholeWeek
+                  ? 'Đã áp dụng ${effectiveDrafts.length} buổi AI vào lịch tuần.'
+                  : 'Đã áp dụng giáo án AI vào lịch tập thành công!',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/workout');
+        return;
+      } catch (error) {
+        if (!mounted) return;
+        setState(() => _isGenerating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
 
     final plannedExercises = _generatedExercises
@@ -801,6 +1147,36 @@ class _AiWorkoutGenerateScreenState
     context.go('/workout');
   }
 
+  static String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  static List<DateTime> _buildAiWeekDates({
+    required DateTime weekStart,
+    required DateTime today,
+  }) {
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final earliest = today.isAfter(weekStart) ? today : weekStart;
+    final dates = <DateTime>[];
+
+    for (final offset in const [0, 2, 4]) {
+      final candidate = weekStart.add(Duration(days: offset));
+      if (!candidate.isBefore(earliest) && !candidate.isAfter(weekEnd)) {
+        dates.add(candidate);
+      }
+    }
+    for (var offset = 0; offset < 7 && dates.length < 3; offset++) {
+      final candidate = weekStart.add(Duration(days: offset));
+      if (!candidate.isBefore(earliest) && !dates.contains(candidate)) {
+        dates.add(candidate);
+      }
+    }
+    dates.sort();
+    return dates;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -826,6 +1202,7 @@ class _AiWorkoutGenerateScreenState
                 _selectedMuscles.addAll(['Ngực', 'Vai']);
                 _applyEquipmentPreset('full_gym');
                 _durationMinutes = 45;
+                _generateWholeWeek = false;
                 _goal = 'Tăng cơ nạc (Hypertrophy)';
                 _generated = false;
                 _generatedExercises.clear();
@@ -839,661 +1216,691 @@ class _AiWorkoutGenerateScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          // Header Banner with AI Violet Identity
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainer,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.aiViolet.withValues(alpha: 0.35),
-                width: 1.2,
+            // Header Banner with AI Violet Identity
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: colors.surfaceContainer,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.aiViolet.withValues(alpha: 0.35),
+                  width: 1.2,
+                ),
+                gradient: const LinearGradient(
+                  colors: [AppColors.aiVioletSoft, AppColors.surfaceElevated],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
-              gradient: const LinearGradient(
-                colors: [
-                  AppColors.aiVioletSoft,
-                  AppColors.surfaceElevated,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.aiViolet.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.aiViolet.withValues(alpha: 0.4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.aiViolet.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.aiViolet.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.aiViolet,
+                      size: 28,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: AppColors.aiViolet,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AI Workout Generator',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.2,
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AI Workout Generator',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 3),
-                      Text(
-                        'Tạo buổi tập chuẩn khoa học theo cơ địa, mục tiêu & thiết bị sẵn có',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                          height: 1.3,
+                        SizedBox(height: 3),
+                        Text(
+                          'Tạo buổi tập chuẩn khoa học theo cơ địa, mục tiêu & thiết bị sẵn có',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 1. Target Muscles Section (Cyan / Teal Accent)
-          _buildSectionHeader(
-            step: '1',
-            accentColor: AppColors.cyan,
-            title: '1. Chọn nhóm cơ mục tiêu',
-            subtitle:
-                'Chọn 1 hoặc nhiều nhóm cơ bạn muốn kích hoạt hôm nay',
-            trailing: Text(
-              '${_selectedMuscles.length}/${_allMuscles.length} nhóm cơ',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.cyan,
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 24),
 
-          // Quick Muscle Split Chips (Cyan Theme)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _PresetChip(
-                  label: 'Toàn thân',
-                  accentColor: AppColors.cyan,
-                  isSelected: _selectedMuscles.length == _allMuscles.length,
-                  onTap: () => _applyMusclePreset('all'),
+            // 1. Target Muscles Section (Cyan / Teal Accent)
+            _buildSectionHeader(
+              step: '1',
+              accentColor: AppColors.cyan,
+              title: '1. Chọn nhóm cơ mục tiêu',
+              subtitle: 'Chọn 1 hoặc nhiều nhóm cơ bạn muốn kích hoạt hôm nay',
+              trailing: Text(
+                '${_selectedMuscles.length}/${_allMuscles.length} nhóm cơ',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.cyan,
                 ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Thân trên',
-                  accentColor: AppColors.cyan,
-                  isSelected: _selectedMuscles.contains('Ngực') &&
-                      _selectedMuscles.contains('Lưng xô') &&
-                      _selectedMuscles.length == 5,
-                  onTap: () => _applyMusclePreset('upper'),
-                ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Thân dưới & Bụng',
-                  accentColor: AppColors.cyan,
-                  isSelected: _selectedMuscles.contains('Đùi trước') &&
-                      _selectedMuscles.contains('Đùi sau & Mông'),
-                  onTap: () => _applyMusclePreset('lower'),
-                ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Đẩy (Push)',
-                  accentColor: AppColors.cyan,
-                  isSelected: _selectedMuscles.contains('Ngực') &&
-                      _selectedMuscles.contains('Vai') &&
-                      _selectedMuscles.length == 3,
-                  onTap: () => _applyMusclePreset('push'),
-                ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Kéo (Pull)',
-                  accentColor: AppColors.cyan,
-                  isSelected: _selectedMuscles.contains('Lưng xô') &&
-                      _selectedMuscles.contains('Tay trước') &&
-                      _selectedMuscles.length == 2,
-                  onTap: () => _applyMusclePreset('pull'),
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-          // Visual Muscle Cards Carousel
-          SizedBox(
-            height: 140,
-            child: ListView.separated(
+            // Quick Muscle Split Chips (Cyan Theme)
+            SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              itemCount: _allMuscles.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final muscle = _allMuscles[index];
-                final isSelected = _selectedMuscles.contains(muscle.name);
-
-                return SizedBox(
-                  width: 140,
-                  child: _MuscleVisualCard(
-                    item: muscle,
-                    isSelected: isSelected,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        if (isSelected) {
-                          if (_selectedMuscles.length > 1) {
-                            _selectedMuscles.remove(muscle.name);
-                          }
-                        } else {
-                          _selectedMuscles.add(muscle.name);
-                        }
-                      });
-                    },
+              child: Row(
+                children: [
+                  _PresetChip(
+                    label: 'Toàn thân',
+                    accentColor: AppColors.cyan,
+                    isSelected: _selectedMuscles.length == _allMuscles.length,
+                    onTap: () => _applyMusclePreset('all'),
                   ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 2. Equipment Section (Amber / Gold Accent)
-          _buildSectionHeader(
-            step: '2',
-            accentColor: AppColors.amber,
-            title: '2. Thiết bị tập luyện có sẵn',
-            subtitle: 'AI sẽ chỉ lọc các bài tập khả dụng với thiết bị bạn chọn',
-            trailing: Text(
-              '${_selectedEquipmentIds.length}/${_equipmentList.length} thiết bị',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.amber,
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Thân trên',
+                    accentColor: AppColors.cyan,
+                    isSelected:
+                        _selectedMuscles.contains('Ngực') &&
+                        _selectedMuscles.contains('Lưng xô') &&
+                        _selectedMuscles.length == 5,
+                    onTap: () => _applyMusclePreset('upper'),
+                  ),
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Thân dưới & Bụng',
+                    accentColor: AppColors.cyan,
+                    isSelected:
+                        _selectedMuscles.contains('Đùi trước') &&
+                        _selectedMuscles.contains('Đùi sau & Mông'),
+                    onTap: () => _applyMusclePreset('lower'),
+                  ),
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Đẩy (Push)',
+                    accentColor: AppColors.cyan,
+                    isSelected:
+                        _selectedMuscles.contains('Ngực') &&
+                        _selectedMuscles.contains('Vai') &&
+                        _selectedMuscles.length == 3,
+                    onTap: () => _applyMusclePreset('push'),
+                  ),
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Kéo (Pull)',
+                    accentColor: AppColors.cyan,
+                    isSelected:
+                        _selectedMuscles.contains('Lưng xô') &&
+                        _selectedMuscles.contains('Tay trước') &&
+                        _selectedMuscles.length == 2,
+                    onTap: () => _applyMusclePreset('pull'),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-          // Equipment Presets (Amber Theme)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _PresetChip(
-                  label: 'Đầy đủ phòng Gym',
-                  accentColor: AppColors.amber,
-                  isSelected:
-                      _selectedEquipmentIds.length == _equipmentList.length,
-                  onTap: () => _applyEquipmentPreset('full_gym'),
-                ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Tạ đơn tại nhà',
-                  accentColor: AppColors.amber,
-                  isSelected:
-                      _selectedEquipmentIds.contains('db') &&
-                      _selectedEquipmentIds.contains('bench') &&
-                      !_selectedEquipmentIds.contains('machine') &&
-                      !_selectedEquipmentIds.contains('cable'),
-                  onTap: () => _applyEquipmentPreset('home_dumbbell'),
-                ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Bodyweight (Không dụng cụ)',
-                  accentColor: AppColors.amber,
-                  isSelected:
-                      _selectedEquipmentIds.length <= 3 &&
-                      _selectedEquipmentIds.contains('bw') &&
-                      !_selectedEquipmentIds.contains('db') &&
-                      !_selectedEquipmentIds.contains('bb'),
-                  onTap: () => _applyEquipmentPreset('bodyweight'),
-                ),
-                const SizedBox(width: 8),
-                _PresetChip(
-                  label: 'Từ hồ sơ đã lưu',
-                  accentColor: AppColors.amber,
-                  icon: Icons.sync_rounded,
-                  isSelected: false,
-                  onTap: () => _applyEquipmentPreset('saved_profile'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+            // Visual Muscle Cards Carousel
+            SizedBox(
+              height: 140,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _allMuscles.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final muscle = _allMuscles[index];
+                  final isSelected = _selectedMuscles.contains(muscle.name);
 
-          // Visual Equipment Carousel with Illustrations
-          SizedBox(
-            height: 135,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _equipmentList.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final eq = _equipmentList[index];
-                final isSelected = _selectedEquipmentIds.contains(eq.id);
-
-                return SizedBox(
-                  width: 140,
-                  child: _EquipmentVisualCard(
-                    item: eq,
-                    isSelected: isSelected,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        if (isSelected) {
-                          if (_selectedEquipmentIds.length > 1) {
-                            _selectedEquipmentIds.remove(eq.id);
-                          }
-                        } else {
-                          _selectedEquipmentIds.add(eq.id);
-                        }
-                      });
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 3. Duration & Intensity (Electric Blue Accent)
-          _buildSectionHeader(
-            step: '3',
-            accentColor: AppColors.blue,
-            title: '3. Thời lượng buổi tập',
-            subtitle: 'AI tự động tính toán số hiệp và bài tập phù hợp thời lượng',
-            trailing: Text(
-              '${_durationMinutes.round()} phút',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: AppColors.blue,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainer,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [30, 45, 60, 75, 90].map((mins) {
-                    final isSel = _durationMinutes.round() == mins;
-                    return GestureDetector(
+                  return SizedBox(
+                    width: 140,
+                    child: _MuscleVisualCard(
+                      item: muscle,
+                      isSelected: isSelected,
                       onTap: () {
                         HapticFeedback.selectionClick();
-                        setState(() => _durationMinutes = mins.toDouble());
+                        setState(() {
+                          if (isSelected) {
+                            if (_selectedMuscles.length > 1) {
+                              _selectedMuscles.remove(muscle.name);
+                            }
+                          } else {
+                            _selectedMuscles.add(muscle.name);
+                          }
+                        });
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSel
-                              ? AppColors.blueSoft
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSel
-                                ? AppColors.blue
-                                : Colors.transparent,
-                          ),
-                        ),
-                        child: Text(
-                          '$mins phút',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSel
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: isSel
-                                ? AppColors.blue
-                                : colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 2. Equipment Section (Amber / Gold Accent)
+            _buildSectionHeader(
+              step: '2',
+              accentColor: AppColors.amber,
+              title: '2. Thiết bị tập luyện có sẵn',
+              subtitle:
+                  'AI sẽ chỉ lọc các bài tập khả dụng với thiết bị bạn chọn',
+              trailing: Text(
+                '${_selectedEquipmentIds.length}/${_equipmentList.length} thiết bị',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.amber,
                 ),
-                const SizedBox(height: 8),
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: AppColors.blue,
-                    inactiveTrackColor:
-                        colors.surfaceContainerHighest,
-                    thumbColor: AppColors.blue,
-                    overlayColor: AppColors.blue.withValues(alpha: 0.15),
-                    trackHeight: 5,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Equipment Presets (Amber Theme)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _PresetChip(
+                    label: 'Đầy đủ phòng Gym',
+                    accentColor: AppColors.amber,
+                    isSelected:
+                        _selectedEquipmentIds.length == _equipmentList.length,
+                    onTap: () => _applyEquipmentPreset('full_gym'),
                   ),
-                  child: Slider(
-                    value: _durationMinutes,
-                    min: 30,
-                    max: 90,
-                    divisions: 4,
-                    label: '${_durationMinutes.round()} phút',
-                    onChanged: (val) => setState(() => _durationMinutes = val),
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Tạ đơn tại nhà',
+                    accentColor: AppColors.amber,
+                    isSelected:
+                        _selectedEquipmentIds.contains('db') &&
+                        _selectedEquipmentIds.contains('bench') &&
+                        !_selectedEquipmentIds.contains('machine') &&
+                        !_selectedEquipmentIds.contains('cable'),
+                    onTap: () => _applyEquipmentPreset('home_dumbbell'),
                   ),
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Bodyweight (Không dụng cụ)',
+                    accentColor: AppColors.amber,
+                    isSelected:
+                        _selectedEquipmentIds.length <= 3 &&
+                        _selectedEquipmentIds.contains('bw') &&
+                        !_selectedEquipmentIds.contains('db') &&
+                        !_selectedEquipmentIds.contains('bb'),
+                    onTap: () => _applyEquipmentPreset('bodyweight'),
+                  ),
+                  const SizedBox(width: 8),
+                  _PresetChip(
+                    label: 'Từ hồ sơ đã lưu',
+                    accentColor: AppColors.amber,
+                    icon: Icons.sync_rounded,
+                    isSelected: false,
+                    onTap: () => _applyEquipmentPreset('saved_profile'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Visual Equipment Carousel with Illustrations
+            SizedBox(
+              height: 135,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _equipmentList.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final eq = _equipmentList[index];
+                  final isSelected = _selectedEquipmentIds.contains(eq.id);
+
+                  return SizedBox(
+                    width: 140,
+                    child: _EquipmentVisualCard(
+                      item: eq,
+                      isSelected: isSelected,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          if (isSelected) {
+                            if (_selectedEquipmentIds.length > 1) {
+                              _selectedEquipmentIds.remove(eq.id);
+                            }
+                          } else {
+                            _selectedEquipmentIds.add(eq.id);
+                          }
+                        });
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader(
+              step: '+',
+              accentColor: AppColors.green,
+              title: 'Phạm vi lịch tập',
+              subtitle: 'Tạo một buổi hoặc phân bổ 3 buổi trong cùng một tuần',
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.today_rounded),
+                  label: Text('Một ngày'),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.date_range_rounded),
+                  label: Text('Cả tuần'),
                 ),
               ],
+              selected: {_generateWholeWeek},
+              onSelectionChanged: (selection) {
+                HapticFeedback.selectionClick();
+                setState(() => _generateWholeWeek = selection.first);
+              },
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // 4. Goal Selector (Semantic Multi-Colors)
-          _buildSectionHeader(
-            step: '4',
-            accentColor: AppColors.aiViolet,
-            title: '4. Trọng tâm buổi tập',
-            subtitle: 'AI thiết lập mức tạ, số hiệp & thời gian nghỉ tương ứng',
-          ),
-          const SizedBox(height: 12),
+            // 3. Duration & Intensity (Electric Blue Accent)
+            _buildSectionHeader(
+              step: '3',
+              accentColor: AppColors.blue,
+              title: '3. Thời lượng buổi tập',
+              subtitle:
+                  'AI tự động tính toán số hiệp và bài tập phù hợp thời lượng',
+              trailing: Text(
+                '${_durationMinutes.round()} phút',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.blue,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
 
-          ..._goals.map((item) {
-            final title = item.$1;
-            final desc = item.$2;
-            final icon = item.$3;
-            final isSelected = _goal == title;
-
-            Color goalAccentColor = AppColors.aiViolet;
-            if (title.contains('Strength')) {
-              goalAccentColor = AppColors.primary;
-            } else if (title.contains('Fat Burn')) {
-              goalAccentColor = AppColors.amber;
-            } else if (title.contains('Mobility')) {
-              goalAccentColor = AppColors.green;
-            }
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Material(
-                color: isSelected
-                    ? goalAccentColor.withValues(alpha: 0.12)
-                    : colors.surfaceContainer,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected
-                          ? goalAccentColor
-                          : colors.outlineVariant,
-                      width: isSelected ? 1.5 : 1.0,
+                border: Border.all(color: colors.outlineVariant),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [30, 45, 60, 75, 90].map((mins) {
+                      final isSel = _durationMinutes.round() == mins;
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _durationMinutes = mins.toDouble());
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? AppColors.blueSoft
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSel
+                                  ? AppColors.blue
+                                  : Colors.transparent,
+                            ),
+                          ),
+                          child: Text(
+                            '$mins phút',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSel
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                              color: isSel
+                                  ? AppColors.blue
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: AppColors.blue,
+                      inactiveTrackColor: colors.surfaceContainerHighest,
+                      thumbColor: AppColors.blue,
+                      overlayColor: AppColors.blue.withValues(alpha: 0.15),
+                      trackHeight: 5,
+                    ),
+                    child: Slider(
+                      value: _durationMinutes,
+                      min: 30,
+                      max: 90,
+                      divisions: 4,
+                      label: '${_durationMinutes.round()} phút',
+                      onChanged: (val) =>
+                          setState(() => _durationMinutes = val),
                     ),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 4. Goal Selector (Semantic Multi-Colors)
+            _buildSectionHeader(
+              step: '4',
+              accentColor: AppColors.aiViolet,
+              title: '4. Trọng tâm buổi tập',
+              subtitle:
+                  'AI thiết lập mức tạ, số hiệp & thời gian nghỉ tương ứng',
+            ),
+            const SizedBox(height: 12),
+
+            ..._goals.map((item) {
+              final title = item.$1;
+              final desc = item.$2;
+              final icon = item.$3;
+              final isSelected = _goal == title;
+
+              Color goalAccentColor = AppColors.aiViolet;
+              if (title.contains('Strength')) {
+                goalAccentColor = AppColors.primary;
+              } else if (title.contains('Fat Burn')) {
+                goalAccentColor = AppColors.amber;
+              } else if (title.contains('Mobility')) {
+                goalAccentColor = AppColors.green;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Material(
+                  color: isSelected
+                      ? goalAccentColor.withValues(alpha: 0.12)
+                      : colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
                         color: isSelected
-                            ? goalAccentColor.withValues(alpha: 0.22)
-                            : colors.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(10),
+                            ? goalAccentColor
+                            : colors.outlineVariant,
+                        width: isSelected ? 1.5 : 1.0,
                       ),
-                      child: Icon(
-                        icon,
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? goalAccentColor.withValues(alpha: 0.22)
+                              : colors.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: isSelected
+                              ? goalAccentColor
+                              : colors.onSurfaceVariant,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.textPrimary
+                              : colors.onSurface,
+                        ),
+                      ),
+                      subtitle: Text(
+                        desc,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
                         color: isSelected
                             ? goalAccentColor
                             : colors.onSurfaceVariant,
-                        size: 20,
                       ),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _goal = title);
+                      },
                     ),
-                    title: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight:
-                            isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected
-                            ? AppColors.textPrimary
-                            : colors.onSurface,
-                      ),
-                    ),
-                    subtitle: Text(
-                      desc,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    trailing: Icon(
-                      isSelected
-                          ? Icons.radio_button_checked_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      color: isSelected
-                          ? goalAccentColor
-                          : colors.onSurfaceVariant,
-                    ),
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _goal = title);
-                    },
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // Primary AI Generate Action Button
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(
-                colors: [
-                  AppColors.aiViolet,
-                  Color(0xFF7A54F7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.aiViolet.withValues(alpha: 0.35),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: _isGenerating ? null : _generatePlan,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isGenerating)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      else
-                        const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      const SizedBox(width: 10),
-                      Text(
-                        _isGenerating
-                            ? 'AI Đang phân tích sinh trắc & giáo án...'
-                            : 'AI Tạo giáo án tối ưu',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Generated Plan Preview Section
-          if (_generated) ...[
-            const SizedBox(height: 28),
-            Divider(color: colors.outlineVariant),
-            const SizedBox(height: 16),
-
-            // Plan Summary Header Card
+            // Primary AI Generate Action Button
             Container(
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: AppColors.aiViolet.withValues(alpha: 0.35),
+                gradient: const LinearGradient(
+                  colors: [AppColors.aiViolet, Color(0xFF7A54F7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.aiViolet.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.success,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Đề xuất: ${_selectedMuscles.join(' + ')} (${_generatedExercises.length} bài)',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: _isGenerating ? null : _generatePlan,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isGenerating)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _isGenerating
+                              ? 'AI Đang phân tích sinh trắc & giáo án...'
+                              : 'AI Tạo giáo án tối ưu',
                           style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
+                            letterSpacing: 0.2,
                           ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.blueSoft,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${_durationMinutes.round()}p • ${_goal.split(' ').first}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.blue,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Giáo án được tối ưu theo cơ chế lũy tiến (Hypertrophy/Strength) với thời gian nghỉ và cường độ bài tập đã cân đối.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colors.onSurfaceVariant,
-                      height: 1.35,
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Generated Exercise List
-            Container(
-              decoration: BoxDecoration(
-                color: colors.surfaceContainer,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: colors.outlineVariant),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                children: _generatedExercises.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final ex = entry.value;
-                  final isLast = index == _generatedExercises.length - 1;
-
-                  return Column(
-                    children: [
-                      _ExercisePreviewRow(
-                        number: index + 1,
-                        exercise: ex,
-                        sets: _getSetsRepsRecommendation(),
-                      ),
-                      if (!isLast)
-                        Divider(
-                          color: colors.outlineVariant.withValues(alpha: 0.6),
-                          height: 16,
-                        ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            // Brand Primary CTA: Apply Plan to Schedule
-            FilledButton.icon(
-              onPressed: _applyPlan,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 54),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
                 ),
-                elevation: 3,
-              ),
-              icon: const Icon(Icons.add_task_rounded),
-              label: const Text(
-                'Áp dụng giáo án này vào lịch tập',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
               ),
             ),
+
+            // Generated Plan Preview Section
+            if (_generated) ...[
+              const SizedBox(height: 28),
+              Divider(color: colors.outlineVariant),
+              const SizedBox(height: 16),
+
+              // Plan Summary Header Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: AppColors.aiViolet.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Đề xuất: ${_selectedMuscles.join(' + ')} (${_generatedExercises.length} bài)',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.blueSoft,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${_durationMinutes.round()}p • ${_goal.split(' ').first}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.blue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Giáo án được tối ưu theo cơ chế lũy tiến (Hypertrophy/Strength) với thời gian nghỉ và cường độ bài tập đã cân đối.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Generated Exercise List
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: colors.outlineVariant),
+                ),
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: _generatedExercises.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final ex = entry.value;
+                    final isLast = index == _generatedExercises.length - 1;
+
+                    return Column(
+                      children: [
+                        _ExercisePreviewRow(
+                          number: index + 1,
+                          exercise: ex,
+                          sets: _getSetsRepsRecommendation(),
+                        ),
+                        if (!isLast)
+                          Divider(
+                            color: colors.outlineVariant.withValues(alpha: 0.6),
+                            height: 16,
+                          ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Brand Primary CTA: Apply Plan to Schedule
+              FilledButton.icon(
+                onPressed: _applyPlan,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 3,
+                ),
+                icon: const Icon(Icons.add_task_rounded),
+                label: const Text(
+                  'Áp dụng giáo án này vào lịch tập',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildSectionHeader({
@@ -1608,9 +2015,7 @@ class _PresetChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected
-                    ? accentColor
-                    : colors.onSurfaceVariant,
+                color: isSelected ? accentColor : colors.onSurfaceVariant,
               ),
             ),
           ],
@@ -1704,16 +2109,10 @@ class _MuscleVisualCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.cyan
-                                : Colors.black45,
+                            color: isSelected ? AppColors.cyan : Colors.black45,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(
-                            item.icon,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                          child: Icon(item.icon, size: 14, color: Colors.white),
                         ),
                         if (isSelected)
                           const Icon(
@@ -1782,9 +2181,7 @@ class _EquipmentVisualCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.amberSoft
-              : colors.surfaceContainer,
+          color: isSelected ? AppColors.amberSoft : colors.surfaceContainer,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected

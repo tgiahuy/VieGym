@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/ai/presentation/ai_coach_chat_screen.dart';
 import '../../features/ai/presentation/ai_consent_screen.dart';
+import '../../features/ai/presentation/ai_conversation_history_screen.dart';
 import '../../features/ai/presentation/ai_tab_screen.dart';
 import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
@@ -44,6 +45,7 @@ import '../../features/workout/presentation/favorite_exercises_screen.dart';
 import '../../features/workout/presentation/workout_builder_screen.dart';
 import '../../features/workout/presentation/workout_history_detail_screen.dart';
 import '../../features/workout/presentation/workout_history_screen.dart';
+import '../../features/workout/presentation/workout_schedule_create_screen.dart';
 import '../../features/workout/presentation/workout_schedule_screen.dart';
 import '../../features/workout/presentation/workout_session_screen.dart';
 import '../../features/workout/presentation/workout_summary_screen.dart';
@@ -220,6 +222,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const WorkoutScheduleScreen(),
       ),
       GoRoute(
+        path: '/workout/schedule/create',
+        name: 'workout-schedule-create',
+        builder: (context, state) => WorkoutScheduleCreateScreen(
+          initialDate: DateTime.tryParse(
+            state.uri.queryParameters['date'] ?? '',
+          ),
+          initialTab: state.uri.queryParameters['tab'],
+        ),
+      ),
+      GoRoute(
         path: '/workout/schedule/swap',
         name: 'workout-swap-schedule',
         builder: (context, state) {
@@ -243,7 +255,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/workout/generate',
         name: 'workout-generate',
-        builder: (context, state) => const AiWorkoutGenerateScreen(),
+        builder: (context, state) => AiWorkoutGenerateScreen(
+          initialDate: DateTime.tryParse(
+            state.uri.queryParameters['date'] ?? '',
+          ),
+        ),
       ),
       GoRoute(
         path: '/workout/favorites',
@@ -259,6 +275,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return WorkoutBuilderScreen(
             initialProgramName: name,
             programType: type,
+            initialDate: state.uri.queryParameters['date'],
           );
         },
       ),
@@ -403,6 +420,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/ai/consent',
         name: 'ai-consent',
         builder: (context, state) => const AiConsentScreen(),
+      ),
+      GoRoute(
+        path: '/ai/history',
+        name: 'ai-history',
+        builder: (context, state) => const AiConversationHistoryScreen(),
       ),
     ],
   );

@@ -360,16 +360,17 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final session = ref.watch(workoutSessionProvider);
     final schedule = ref.watch(workoutScheduleProvider);
-    final colors = Theme.of(context).colorScheme;
-    final hasTodayWorkout = schedule.hasTodayWorkout;
-    final todayWorkoutTitle = schedule.todayWorkout?.title;
+    final isTodayWorkoutCompleted = ref.watch(isTodayWorkoutCompletedProvider);
+    final hasTodayWorkout =
+        schedule.hasTodayWorkout || isTodayWorkoutCompleted;
+    final todayWorkout = schedule.todayWorkout;
+    final todayWorkoutTitle = todayWorkout?.title;
     final displayTitle = session.title.isNotEmpty
         ? session.title
         : (todayWorkoutTitle ?? 'Upper Body A');
-
-    final isTodayWorkoutCompleted = ref.watch(isTodayWorkoutCompletedProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Kế hoạch tập luyện')),
@@ -555,11 +556,23 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                                     .toSet()
                                     .toList()
                               : schedule.todayWorkout != null
-                              ? schedule.todayWorkout!.targetMuscles
-                                    .split(RegExp(r'[•,]'))
-                                    .map((s) => s.trim())
-                                    .where((s) => s.isNotEmpty)
-                                    .toList()
+                              ? {
+                                  ...schedule.todayWorkout!.targetMuscles
+                                      .split(
+                                        RegExp(
+                                          r'[,•&+/]|\bvà\b',
+                                          caseSensitive: false,
+                                        ),
+                                      )
+                                      .map((s) => s.trim())
+                                      .where((s) => s.isNotEmpty),
+                                  ...schedule.todayWorkout!.plannedExercises
+                                      .map((e) => e.primaryMuscle)
+                                      .where(
+                                        (s) => s != null && s.trim().isNotEmpty,
+                                      )
+                                      .cast<String>(),
+                                }.toList()
                               : const ['Ngực', 'Tay sau', 'Vai'],
                           width: 90,
                           height: 126,
@@ -583,6 +596,18 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                       .read(workoutScheduleProvider.notifier)
                       .selectDate(todayStr);
                   context.push('/workout/generate');
+                },
+                customBuildButtonLabel: 'Áp dụng giáo án có sẵn',
+                onCustomBuildWorkout: () {
+                  final now = DateTime.now();
+                  final todayStr =
+                      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                  ref
+                      .read(workoutScheduleProvider.notifier)
+                      .selectDate(todayStr);
+                  context.push(
+                    '/workout/schedule/create?date=$todayStr&tab=personal',
+                  );
                 },
                 buttonLabel: 'Thêm lịch tập hôm nay',
                 onCreateWorkout: () {
@@ -646,7 +671,7 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
                   ),
                 );
                 final count = Text(
-                  '${session.exercises.length} bài tập',
+                  '${hasTodayWorkout ? session.exercises.length : 0} bài tập',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -673,7 +698,7 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
             const SizedBox(height: 10),
 
             // Exercises List with Swipeable Cards
-            if (session.exercises.isEmpty)
+            if (!hasTodayWorkout || session.exercises.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(

@@ -17,7 +17,10 @@ class NotificationBellButton extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(99),
-        onTap: () => NotificationsSheet.show(context),
+        onTap: () {
+          ref.read(notificationsProvider.notifier).refresh();
+          NotificationsSheet.show(context);
+        },
         child: Container(
           width: 44,
           height: 44,

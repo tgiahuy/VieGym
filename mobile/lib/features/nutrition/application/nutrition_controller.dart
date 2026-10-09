@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/application/auth_controller.dart';
+import '../data/nutrition_repository.dart';
 import '../domain/food_models.dart';
 
 String _formatDate(DateTime d) {
@@ -25,6 +27,11 @@ class NutritionState {
     this.targetFat = 70,
     this.waterIntakeByDate = const {},
     this.targetWaterMl = 2000,
+    this.planId,
+    this.targetSource = 'CURRENT',
+    this.warnings = const [],
+    this.isLoading = false,
+    this.error,
   });
 
   final String selectedDate;
@@ -35,6 +42,11 @@ class NutritionState {
   final double targetFat;
   final Map<String, int> waterIntakeByDate;
   final int targetWaterMl;
+  final int? planId;
+  final String targetSource;
+  final List<String> warnings;
+  final bool isLoading;
+  final String? error;
 
   List<FoodEntry> get currentDayEntries =>
       entries.where((e) => e.date == selectedDate).toList();
@@ -53,8 +65,7 @@ class NutritionState {
 
   double get consumedFat => currentDayEntries.fold(0, (sum, e) => sum + e.fat);
 
-  int get remainingCalories =>
-      (targetCalories - consumedCalories).clamp(0, 99999);
+  int get remainingCalories => targetCalories - consumedCalories;
 
   int get waterIntakeMl => waterIntakeByDate[selectedDate] ?? 0;
 
@@ -86,6 +97,13 @@ class NutritionState {
     double? targetFat,
     Map<String, int>? waterIntakeByDate,
     int? targetWaterMl,
+    int? planId,
+    bool clearPlanId = false,
+    String? targetSource,
+    List<String>? warnings,
+    bool? isLoading,
+    String? error,
+    bool clearError = false,
   }) {
     return NutritionState(
       selectedDate: selectedDate ?? this.selectedDate,
@@ -96,11 +114,23 @@ class NutritionState {
       targetFat: targetFat ?? this.targetFat,
       waterIntakeByDate: waterIntakeByDate ?? this.waterIntakeByDate,
       targetWaterMl: targetWaterMl ?? this.targetWaterMl,
+      planId: clearPlanId ? null : (planId ?? this.planId),
+      targetSource: targetSource ?? this.targetSource,
+      warnings: warnings ?? this.warnings,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 }
 
 class NutritionController extends Notifier<NutritionState> {
+  int _localEntrySequence = 0;
+
+  String _nextLocalEntryId(String prefix) {
+    _localEntrySequence++;
+    return '${prefix}_${DateTime.now().microsecondsSinceEpoch}_$_localEntrySequence';
+  }
+
   @override
   NutritionState build() {
     final today = _formatDate(DateTime.now());
@@ -188,6 +218,9 @@ class NutritionController extends Notifier<NutritionState> {
       ),
     ];
 
+    if (ref.read(authProvider).isAuthenticated) {
+      Future.microtask(refreshSelectedDate);
+    }
     return NutritionState(
       selectedDate: today,
       entries: initialEntries,
@@ -202,6 +235,43 @@ class NutritionController extends Notifier<NutritionState> {
 
   void selectDate(String date) {
     state = state.copyWith(selectedDate: date);
+    if (ref.read(authProvider).isAuthenticated) {
+      Future.microtask(refreshSelectedDate);
+    }
+  }
+
+  Future<void> refreshSelectedDate() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final plan = await ref
+          .read(nutritionRepositoryProvider)
+          .getMealPlan(state.selectedDate);
+      if (!ref.mounted) return;
+      _applyRemotePlan(plan);
+    } catch (error) {
+      if (!ref.mounted) return;
+      state = state.copyWith(isLoading: false, error: '$error');
+    }
+  }
+
+  Future<void> refreshHistory() async {
+    try {
+      final plans = await ref
+          .read(nutritionRepositoryProvider)
+          .getMealHistory();
+      if (!ref.mounted) return;
+      final remoteDates = plans.map((plan) => plan.date).toSet();
+      final retained = state.entries
+          .where((entry) => !remoteDates.contains(entry.date))
+          .toList();
+      state = state.copyWith(
+        entries: [...retained, ...plans.expand((plan) => plan.entries)],
+        clearError: true,
+      );
+    } catch (error) {
+      if (!ref.mounted) return;
+      state = state.copyWith(error: '$error');
+    }
   }
 
   void addWater(int amountMl) {
@@ -250,7 +320,7 @@ class NutritionController extends Notifier<NutritionState> {
     String? loggedTime,
   }) {
     final entry = FoodEntry(
-      id: 'entry_${DateTime.now().millisecondsSinceEpoch}',
+      id: _nextLocalEntryId('entry'),
       foodId: foodId,
       name: name,
       mealType: mealType,
@@ -277,7 +347,7 @@ class NutritionController extends Notifier<NutritionState> {
     double? fat,
   }) {
     final entry = FoodEntry(
-      id: 'quick_${DateTime.now().millisecondsSinceEpoch}',
+      id: _nextLocalEntryId('quick'),
       foodId: 'food_quick_log',
       name: (name != null && name.trim().isNotEmpty)
           ? name.trim()
@@ -333,8 +403,99 @@ class NutritionController extends Notifier<NutritionState> {
   }
 
   void removeFoodEntry(String id) {
+    if (int.tryParse(id) != null) {
+      Future.microtask(() => removeFoodEntryRemote(id));
+      return;
+    }
     state = state.copyWith(
       entries: state.entries.where((e) => e.id != id).toList(),
+    );
+  }
+
+  Future<void> addFoodEntryRemote({
+    required String foodId,
+    required MealType mealType,
+    required double servingMultiplier,
+    double? inputAmount,
+    String? inputUnit,
+    String? note,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final plan = await ref
+          .read(nutritionRepositoryProvider)
+          .addEntry(
+            date: state.selectedDate,
+            foodId: foodId,
+            mealType: mealType,
+            servingMultiplier: servingMultiplier,
+            inputAmount: inputAmount,
+            inputUnit: inputUnit,
+            note: note,
+          );
+      _applyRemotePlan(plan);
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: '$error');
+      rethrow;
+    }
+  }
+
+  Future<void> updateFoodEntryRemote({
+    required String entryId,
+    required MealType mealType,
+    required double servingMultiplier,
+    double? inputAmount,
+    String? inputUnit,
+    String? note,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final plan = await ref
+          .read(nutritionRepositoryProvider)
+          .updateEntry(
+            date: state.selectedDate,
+            entryId: entryId,
+            mealType: mealType,
+            servingMultiplier: servingMultiplier,
+            inputAmount: inputAmount,
+            inputUnit: inputUnit,
+            note: note,
+          );
+      _applyRemotePlan(plan);
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: '$error');
+      rethrow;
+    }
+  }
+
+  Future<void> removeFoodEntryRemote(String id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await ref
+          .read(nutritionRepositoryProvider)
+          .deleteEntry(state.selectedDate, id);
+      await refreshSelectedDate();
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: '$error');
+      rethrow;
+    }
+  }
+
+  void _applyRemotePlan(MealPlanApi plan) {
+    final otherDays = state.entries.where((e) => e.date != plan.date).toList();
+    final target = plan.target;
+    state = state.copyWith(
+      entries: [...otherDays, ...plan.entries],
+      targetCalories: target?.calories.round(),
+      targetProtein: target?.protein,
+      targetCarbs: target?.carbs,
+      targetFat: target?.fat,
+      planId: plan.id,
+      clearPlanId: plan.id == null,
+      targetSource: plan.targetSource,
+      warnings: plan.warnings,
+      isLoading: false,
+      clearError: true,
     );
   }
 }

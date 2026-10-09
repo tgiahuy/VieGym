@@ -72,16 +72,57 @@ enum MuscleGroup {
       if (muscle.keyId == normalized) return muscle;
     }
 
-    // Match Vietnamese keywords
-    if (normalized.contains('ngực trên')) return MuscleGroup.upperChest;
-    if (normalized.contains('ngực')) return MuscleGroup.chest;
-    if (normalized.contains('vai sau')) return MuscleGroup.rearDelts;
-    if (normalized.contains('vai trước')) return MuscleGroup.frontDelts;
-    if (normalized.contains('vai')) return MuscleGroup.sideDelts;
-    if (normalized.contains('tay trước') || normalized.contains('biceps')) {
+    // Common exact / direct keywords
+    if (normalized == 'back' || normalized == 'lung') return MuscleGroup.lats;
+    if (normalized == 'chest' || normalized == 'nguc') return MuscleGroup.chest;
+    if (normalized == 'shoulder' || normalized == 'shoulders' || normalized == 'vai') {
+      return MuscleGroup.sideDelts;
+    }
+    if (normalized == 'legs' || normalized == 'leg' || normalized == 'chan' || normalized == 'dui') {
+      return MuscleGroup.quads;
+    }
+    if (normalized == 'arms' || normalized == 'arm' || normalized == 'tay') {
       return MuscleGroup.biceps;
     }
-    if (normalized.contains('tay sau') || normalized.contains('triceps')) {
+
+    // Match Vietnamese & English keywords
+    if (normalized.contains('ngực trên') ||
+        normalized.contains('upper chest') ||
+        normalized.contains('incline')) {
+      return MuscleGroup.upperChest;
+    }
+    if (normalized.contains('ngực') ||
+        normalized.contains('chest') ||
+        normalized.contains('pec')) {
+      return MuscleGroup.chest;
+    }
+    if (normalized.contains('cầu vai') || normalized.contains('trap')) {
+      return MuscleGroup.traps;
+    }
+    if (normalized.contains('vai sau') ||
+        normalized.contains('rear delt') ||
+        normalized.contains('rear delts')) {
+      return MuscleGroup.rearDelts;
+    }
+    if (normalized.contains('vai trước') ||
+        normalized.contains('front delt') ||
+        normalized.contains('front delts')) {
+      return MuscleGroup.frontDelts;
+    }
+    if (normalized.contains('vai') ||
+        normalized.contains('shoulder') ||
+        normalized.contains('deltoid') ||
+        normalized.contains('side delt')) {
+      return MuscleGroup.sideDelts;
+    }
+    if (normalized.contains('tay trước') ||
+        normalized.contains('biceps') ||
+        normalized.contains('bicep')) {
+      return MuscleGroup.biceps;
+    }
+    if (normalized.contains('tay sau') ||
+        normalized.contains('triceps') ||
+        normalized.contains('tricep')) {
       return MuscleGroup.triceps;
     }
     if (normalized.contains('cẳng tay') || normalized.contains('forearm')) {
@@ -89,21 +130,31 @@ enum MuscleGroup {
     }
     if (normalized.contains('bụng') ||
         normalized.contains('trọng tâm') ||
-        normalized.contains('abs')) {
+        normalized.contains('abs') ||
+        normalized.contains('core')) {
       return MuscleGroup.abs;
     }
     if (normalized.contains('liên sườn') || normalized.contains('oblique')) {
       return MuscleGroup.obliques;
     }
-    if (normalized.contains('xô') || normalized.contains('lat')) {
+    if (normalized.contains('xô') ||
+        normalized.contains('lat') ||
+        normalized.contains('lưng xô')) {
       return MuscleGroup.lats;
     }
-    if (normalized.contains('cầu vai') || normalized.contains('trap')) {
-      return MuscleGroup.traps;
+    if (normalized.contains('lưng dưới') ||
+        normalized.contains('lower back') ||
+        normalized.contains('lower_back')) {
+      return MuscleGroup.lowerBack;
     }
-    if (normalized.contains('lưng dưới')) return MuscleGroup.lowerBack;
-    if (normalized.contains('lưng trên') || normalized.contains('lưng')) {
+    if (normalized.contains('lưng trên') ||
+        normalized.contains('upper back') ||
+        normalized.contains('upper_back') ||
+        normalized.contains('rhomboid')) {
       return MuscleGroup.upperBack;
+    }
+    if (normalized.contains('lưng') || normalized.contains('back')) {
+      return MuscleGroup.lats;
     }
     if (normalized.contains('mông') || normalized.contains('glute')) {
       return MuscleGroup.glutes;

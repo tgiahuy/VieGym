@@ -240,10 +240,15 @@ enum ScheduleStatus {
 }
 
 class PlannedExercisePreview {
-  const PlannedExercisePreview({required this.name, required this.setsReps});
+  const PlannedExercisePreview({
+    required this.name,
+    required this.setsReps,
+    this.primaryMuscle,
+  });
 
   final String name;
   final String setsReps;
+  final String? primaryMuscle;
 }
 
 class WorkoutScheduleItem {

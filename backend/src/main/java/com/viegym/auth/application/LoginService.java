@@ -12,6 +12,7 @@ import com.viegym.identity.SecurityRateLimitEvent;
 import com.viegym.identity.SecurityRateLimitEventRepository;
 import com.viegym.identity.User;
 import com.viegym.identity.UserRepository;
+import com.viegym.identity.UserRole;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -67,6 +68,9 @@ public class LoginService {
                         now));
         if (!valid) {
             throw new ApiException(ApiErrorCode.INVALID_CREDENTIALS, "Invalid credentials");
+        }
+        if (user.role() == UserRole.ADMIN) {
+            throw new ApiException(ApiErrorCode.ADMIN_WEB_ONLY, "Administrator must use Web Admin");
         }
 
         ensureActive(user.status());

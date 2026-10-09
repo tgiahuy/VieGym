@@ -87,3 +87,66 @@ class AppNotification {
     );
   }
 }
+
+class NotificationPreference {
+  const NotificationPreference({
+    this.workoutEnabled = true,
+    this.mealEnabled = true,
+    this.weightEnabled = true,
+    this.recommendationEnabled = false,
+    this.weeklyReviewEnabled = false,
+    this.quietHoursStart,
+    this.quietHoursEnd,
+    this.timezone = 'Asia/Ho_Chi_Minh',
+  });
+
+  factory NotificationPreference.fromJson(Map<String, dynamic> json) {
+    return NotificationPreference(
+      workoutEnabled: json['workoutEnabled'] as bool? ?? true,
+      mealEnabled: json['mealEnabled'] as bool? ?? true,
+      weightEnabled: json['weightEnabled'] as bool? ?? true,
+      recommendationEnabled: json['recommendationEnabled'] as bool? ?? false,
+      weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? false,
+      quietHoursStart: json['quietHoursStart'] as String?,
+      quietHoursEnd: json['quietHoursEnd'] as String?,
+      timezone: json['timezone'] as String? ?? 'Asia/Ho_Chi_Minh',
+    );
+  }
+
+  final bool workoutEnabled;
+  final bool mealEnabled;
+  final bool weightEnabled;
+  final bool recommendationEnabled;
+  final bool weeklyReviewEnabled;
+  final String? quietHoursStart;
+  final String? quietHoursEnd;
+  final String timezone;
+
+  NotificationPreference copyWith({
+    bool? workoutEnabled,
+    bool? mealEnabled,
+    bool? weightEnabled,
+    bool? recommendationEnabled,
+    bool? weeklyReviewEnabled,
+  }) => NotificationPreference(
+    workoutEnabled: workoutEnabled ?? this.workoutEnabled,
+    mealEnabled: mealEnabled ?? this.mealEnabled,
+    weightEnabled: weightEnabled ?? this.weightEnabled,
+    recommendationEnabled: recommendationEnabled ?? this.recommendationEnabled,
+    weeklyReviewEnabled: weeklyReviewEnabled ?? this.weeklyReviewEnabled,
+    quietHoursStart: quietHoursStart,
+    quietHoursEnd: quietHoursEnd,
+    timezone: timezone,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'workoutEnabled': workoutEnabled,
+    'mealEnabled': mealEnabled,
+    'weightEnabled': weightEnabled,
+    'recommendationEnabled': recommendationEnabled,
+    'weeklyReviewEnabled': weeklyReviewEnabled,
+    'quietHoursStart': quietHoursStart,
+    'quietHoursEnd': quietHoursEnd,
+    'timezone': timezone,
+  };
+}

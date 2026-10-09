@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 import '../../../core/network/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
@@ -10,7 +9,7 @@ import '../domain/auth_state.dart';
 class DevBypassAuthNotifier extends Notifier<bool> {
   @override
   bool build() {
-    return true;
+    return false;
   }
 
   void toggle() => state = !state;

@@ -3,11 +3,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
+import '../application/meal_templates_controller.dart';
 import '../application/nutrition_controller.dart';
 import '../domain/food_models.dart';
 
-class MealHistoryScreen extends ConsumerWidget {
+class MealHistoryScreen extends ConsumerStatefulWidget {
   const MealHistoryScreen({super.key});
+
+  @override
+  ConsumerState<MealHistoryScreen> createState() => _MealHistoryScreenState();
+}
+
+class _MealHistoryScreenState extends ConsumerState<MealHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (ref.read(authProvider).isAuthenticated) {
+      Future.microtask(
+        () => ref.read(nutritionProvider.notifier).refreshHistory(),
+      );
+    }
+  }
 
   static String _formatDateLabel(String dateStr) {
     try {
@@ -43,8 +60,9 @@ class MealHistoryScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(nutritionProvider);
+    final templateState = ref.watch(mealTemplatesProvider);
     final colors = Theme.of(context).colorScheme;
 
     // Group actual entries by date
@@ -131,6 +149,52 @@ class MealHistoryScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Mẫu bữa ăn',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                ),
+              ),
+              if (state.planId != null)
+                TextButton.icon(
+                  onPressed: () => _saveTemplate(state.planId!),
+                  icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                  label: const Text('Lưu ngày này'),
+                ),
+            ],
+          ),
+          if (templateState.isLoading && templateState.templates.isEmpty)
+            const LinearProgressIndicator()
+          else if (templateState.templates.isEmpty)
+            Text(
+              'Chưa có mẫu. Mở một ngày đã ghi và chọn “Lưu ngày này”.',
+              style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+            )
+          else
+            ...templateState.templates.map(
+              (template) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.restaurant_menu_rounded),
+                title: Text(
+                  template.name,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text('${template.items.length} món'),
+                trailing: FilledButton.tonal(
+                  onPressed: () => _applyTemplate(
+                    template.id,
+                    template.name,
+                    template.items.length,
+                    state.selectedDate,
+                  ),
+                  child: const Text('Dùng mẫu'),
+                ),
+              ),
+            ),
           const SizedBox(height: 18),
 
           // Section Title
@@ -324,5 +388,97 @@ class MealHistoryScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _saveTemplate(int planId) async {
+    final controller = TextEditingController(text: 'Thực đơn của tôi');
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Lưu mẫu bữa ăn'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 160,
+          decoration: const InputDecoration(labelText: 'Tên mẫu'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.trim().isEmpty) return;
+    try {
+      await ref
+          .read(mealTemplatesProvider.notifier)
+          .saveCurrentPlan(name.trim(), planId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể lưu mẫu bữa ăn.')),
+      );
+    }
+  }
+
+  Future<void> _applyTemplate(
+    int id,
+    String name,
+    int itemCount,
+    String targetDate,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Áp dụng “$name”?'),
+        content: Text(
+          'Xem trước: thêm $itemCount món vào ngày $targetDate. Dữ liệu ngày nguồn không thay đổi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final result = await ref
+          .read(mealTemplatesProvider.notifier)
+          .apply(id, targetDate);
+      if (!mounted) return;
+      if (!result.applied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${result.blockedItems.length} món không còn khả dụng; chưa có dữ liệu nào được sao chép.',
+            ),
+          ),
+        );
+        return;
+      }
+      await ref.read(nutritionProvider.notifier).refreshSelectedDate();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã áp dụng mẫu bữa ăn.')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể áp dụng mẫu bữa ăn.')),
+      );
+    }
   }
 }

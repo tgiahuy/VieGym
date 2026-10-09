@@ -11,6 +11,8 @@ class TodayWorkoutEmptyState extends StatelessWidget {
     required this.onCreateWorkout,
     this.aiButtonLabel = 'Tạo lịch tập với AI',
     this.onAiCreateWorkout,
+    this.customBuildButtonLabel = 'Áp dụng giáo án có sẵn',
+    this.onCustomBuildWorkout,
     this.icon = Icons.calendar_today_rounded,
   });
 
@@ -20,6 +22,8 @@ class TodayWorkoutEmptyState extends StatelessWidget {
   final VoidCallback onCreateWorkout;
   final String aiButtonLabel;
   final VoidCallback? onAiCreateWorkout;
+  final String customBuildButtonLabel;
+  final VoidCallback? onCustomBuildWorkout;
   final IconData icon;
 
   @override
@@ -133,6 +137,30 @@ class TodayWorkoutEmptyState extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onCustomBuildWorkout != null) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: TextButton.icon(
+                    onPressed: onCustomBuildWorkout,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.cyan,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    icon: const Icon(Icons.build_rounded, size: 18),
+                    label: Text(
+                      customBuildButtonLabel,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ] else ...[
               SizedBox(
                 width: double.infinity,
@@ -156,6 +184,33 @@ class TodayWorkoutEmptyState extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onCustomBuildWorkout != null) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: onCustomBuildWorkout,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.onSurface,
+                      side: BorderSide(
+                        color: colors.outlineVariant.withValues(alpha: 0.6),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    icon: const Icon(Icons.build_rounded, size: 18),
+                    label: Text(
+                      customBuildButtonLabel,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ],
         ),

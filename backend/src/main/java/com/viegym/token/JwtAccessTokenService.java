@@ -1,5 +1,6 @@
 package com.viegym.token;
 
+import com.viegym.identity.SessionAudience;
 import com.viegym.identity.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -51,16 +52,22 @@ public class JwtAccessTokenService {
      * @return compact JWT string
      */
     public String issue(User user) {
+        return issue(user, SessionAudience.MOBILE_USER);
+    }
+
+    public String issue(User user, SessionAudience sessionAudience) {
         Date now = Date.from(clock.instant());
         Date expiry = Date.from(clock.instant().plus(ttl));
         return Jwts.builder()
                 .issuer(issuer)
                 .audience()
                 .add(audience)
+                .add(sessionAudience.name())
                 .and()
                 .subject(String.valueOf(user.id()))
                 .claim("email", user.email())
                 .claim("role", user.role().name())
+                .claim("session_audience", sessionAudience.name())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)
@@ -70,6 +77,10 @@ public class JwtAccessTokenService {
     /** Access-token TTL in seconds (returned to clients as {@code expiresIn}). */
     public long ttlSeconds() {
         return ttl.getSeconds();
+    }
+
+    public Duration ttl() {
+        return ttl;
     }
 
     private static byte[] sha256(String value) {

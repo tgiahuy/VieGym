@@ -2,6 +2,7 @@ package com.viegym.token;
 
 import com.viegym.identity.RefreshToken;
 import com.viegym.identity.RefreshTokenRepository;
+import com.viegym.identity.SessionAudience;
 import com.viegym.identity.TokenStatus;
 import com.viegym.identity.User;
 import java.nio.charset.StandardCharsets;
@@ -54,10 +55,15 @@ public class RefreshTokenService {
      * @return an {@link Issued} containing the client-facing plain token and the saved entity
      */
     public Issued issue(User user) {
-        return issue(user, null);
+        return issue(user, null, SessionAudience.MOBILE_USER, null);
     }
 
     public Issued issue(User user, String deviceInfo) {
+        return issue(user, deviceInfo, SessionAudience.MOBILE_USER, null);
+    }
+
+    public Issued issue(
+            User user, String deviceInfo, SessionAudience audience, String csrfSecretHash) {
         OffsetDateTime now = OffsetDateTime.now(clock);
         byte[] tokenBytes = new byte[TOKEN_BYTES];
         SECURE_RANDOM.nextBytes(tokenBytes);
@@ -68,7 +74,9 @@ public class RefreshTokenService {
                         new RefreshToken(
                                 user,
                                 tokenHash,
+                                audience,
                                 normalizeDeviceInfo(deviceInfo),
+                                csrfSecretHash,
                                 now.plus(ttl),
                                 now));
         return new Issued(plainToken, entity);

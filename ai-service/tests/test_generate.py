@@ -1,13 +1,3 @@
-"""
-Tests for POST /internal/v1/ai/generate endpoint (M1-19, M1-20).
-
-Covers:
-  - Internal token guard (403 when missing/wrong token)
-  - GENERAL mode returns valid schema
-  - PERSONALIZED mode returns context-aware recommendations
-  - Response always has 1–3 recommendations
-"""
-
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -16,111 +6,74 @@ from app.core.config import settings
 from app.main import app
 
 client = TestClient(app)
-
-VALID_TOKEN = settings.INTERNAL_SERVICE_TOKEN
-GENERATE_URL = "/internal/v1/ai/generate"
-
-GENERAL_PAYLOAD = {
-    "mode": "GENERAL",
-    "context": {
-        "user_id": "test-user-001",
-        "health": {},
-        "workout": {},
-        "nutrition": {},
-    },
-    "prompt": "Give me a general fitness recommendation.",
-    "model_version": "rules-v1",
-}
-
-PERSONALIZED_PAYLOAD = {
-    "mode": "PERSONALIZED",
-    "context": {
-        "user_id": "test-user-002",
-        "health": {"bmi": 25.1, "tdee": 2100.0, "goal": "LOSE_WEIGHT"},
-        "workout": {"recent_sessions": 1, "completion_rate": 0.5, "equipment_ids": []},
-        "nutrition": {"daily_calories_target": 1800.0, "average_calories_last7d": 2200.0},
-    },
-    "prompt": "Generate a personalized recommendation.",
-    "model_version": "rules-v1",
-    "correlation_id": "corr-abc-123",
-}
+URL = "/internal/v1/ai/generate"
+HEADERS = {"X-Internal-Token": settings.INTERNAL_SERVICE_TOKEN}
 
 
-# ── Auth guard ─────────────────────────────────────────────────────────────────
+def payload(request_type: str = "CHAT") -> dict:
+    return {
+        "schemaVersion": "1.0",
+        "correlationId": "corr-test-001",
+        "requestType": request_type,
+        "promptVersion": "chat-v1" if request_type == "CHAT" else "daily-v1",
+        "renderedPrompt": (
+            "rules-v1 chat guidance"
+            if request_type == "CHAT"
+            else "rules-v1 daily recommendation for 2026-09-22"
+        ),
+        "context": {
+            "contextVersion": "context-v1",
+            "consentMode": "DISABLED" if request_type == "CHAT" else "ENABLED",
+            "data": {} if request_type == "CHAT" else {"workout": {"recentSessions7d": 1}},
+        },
+        "candidates": {
+            "foods": [
+                {
+                    "id": 205,
+                    "name": "Ức gà luộc",
+                    "serving_unit": "phần",
+                    "calories_kcal": 165,
+                    "protein_g": 31,
+                }
+            ]
+        },
+        "messages": [{"role": "USER", "content": "Tôi nên tập thế nào?"}],
+        "allowedActions": ["NONE", "ADD_MEAL_ENTRY_PROPOSAL"],
+    }
 
 
-def test_generate_no_token_returns_403() -> None:
-    response = client.post(GENERATE_URL, json=GENERAL_PAYLOAD)
+def test_internal_token_guard() -> None:
+    assert client.post(URL, json=payload()).status_code == 403
+    response = client.post(URL, json=payload(), headers={"X-Internal-Token": "wrong"})
     assert response.status_code == 403
 
 
-def test_generate_wrong_token_returns_403() -> None:
-    response = client.post(
-        GENERATE_URL,
-        json=GENERAL_PAYLOAD,
-        headers={"X-Internal-Token": "wrong-token"},
-    )
-    assert response.status_code == 403
-
-
-# ── GENERAL mode ───────────────────────────────────────────────────────────────
-
-
-def test_generate_general_mode_returns_200() -> None:
-    response = client.post(
-        GENERATE_URL,
-        json=GENERAL_PAYLOAD,
-        headers={"X-Internal-Token": VALID_TOKEN},
-    )
+def test_general_chat_has_no_personal_context_and_returns_structured_response() -> None:
+    response = client.post(URL, json=payload(), headers=HEADERS)
     assert response.status_code == 200
-
-
-def test_generate_general_mode_schema() -> None:
-    response = client.post(
-        GENERATE_URL,
-        json=GENERAL_PAYLOAD,
-        headers={"X-Internal-Token": VALID_TOKEN},
-    )
     body = response.json()
-    assert body["status"] == "SUCCESS"
-    assert isinstance(body["recommendations"], list)
-    assert 1 <= len(body["recommendations"]) <= 3
-
-    for item in body["recommendations"]:
-        assert "title" in item
-        assert "description" in item
-        assert "type" in item
+    assert body["schemaVersion"] == "1.0"
+    assert body["correlationId"] == "corr-test-001"
+    assert body["content"]
+    assert body["items"] == []
 
 
-# ── PERSONALIZED mode ──────────────────────────────────────────────────────────
+def test_disabled_consent_rejects_personal_context() -> None:
+    body = payload()
+    body["context"]["data"] = {"health": {"bmi": 22}}
+    assert client.post(URL, json=body, headers=HEADERS).status_code == 422
 
 
-def test_generate_personalized_mode_returns_200() -> None:
-    response = client.post(
-        GENERATE_URL,
-        json=PERSONALIZED_PAYLOAD,
-        headers={"X-Internal-Token": VALID_TOKEN},
-    )
+def test_daily_recommendation_uses_candidate_id_and_target_date() -> None:
+    response = client.post(URL, json=payload("DAILY_RECOMMENDATION"), headers=HEADERS)
     assert response.status_code == 200
+    items = response.json()["items"]
+    assert 1 <= len(items) <= 3
+    assert items[0]["proposal"]["foodId"] == 205
+    assert items[0]["proposal"]["targetDate"] == "2026-09-22"
 
 
-def test_generate_personalized_mode_1_to_3_items() -> None:
-    response = client.post(
-        GENERATE_URL,
-        json=PERSONALIZED_PAYLOAD,
-        headers={"X-Internal-Token": VALID_TOKEN},
-    )
-    body = response.json()
-    count = len(body["recommendations"])
-    assert 1 <= count <= 3, f"Expected 1–3 items, got {count}"
-
-
-def test_generate_personalized_low_sessions_includes_workout_advice() -> None:
-    """User with only 1 session should receive workout frequency recommendation."""
-    response = client.post(
-        GENERATE_URL,
-        json=PERSONALIZED_PAYLOAD,
-        headers={"X-Internal-Token": VALID_TOKEN},
-    )
-    types = [item["type"] for item in response.json()["recommendations"]]
-    assert "WORKOUT" in types
+def test_context_budget_is_enforced() -> None:
+    body = payload("DAILY_RECOMMENDATION")
+    body["context"]["data"] = {"padding": "x" * (settings.AI_MAX_CONTEXT_BYTES + 1)}
+    assert client.post(URL, json=body, headers=HEADERS).status_code == 413

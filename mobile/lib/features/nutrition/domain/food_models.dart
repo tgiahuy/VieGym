@@ -53,6 +53,11 @@ class FoodItem {
     required this.imageUrl,
     required this.description,
     this.servingOptions = const [],
+    this.gramsPerServing,
+    this.estimated = true,
+    this.dataSource,
+    this.sourceNote,
+    this.selectable = true,
   });
 
   final String id;
@@ -66,6 +71,11 @@ class FoodItem {
   final String imageUrl;
   final String description;
   final List<ServingOption> servingOptions;
+  final double? gramsPerServing;
+  final bool estimated;
+  final String? dataSource;
+  final String? sourceNote;
+  final bool selectable;
 }
 
 class FoodEntry {
@@ -83,6 +93,10 @@ class FoodEntry {
     required this.imageUrl,
     required this.date,
     this.loggedTime,
+    this.servingMultiplier = 1,
+    this.inputAmount,
+    this.inputUnit,
+    this.estimated = true,
   });
 
   final String id;
@@ -98,6 +112,10 @@ class FoodEntry {
   final String imageUrl;
   final String date;
   final String? loggedTime;
+  final double servingMultiplier;
+  final double? inputAmount;
+  final String? inputUnit;
+  final bool estimated;
 }
 
 class CalculatedNutrition {

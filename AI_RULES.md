@@ -452,11 +452,11 @@ chartPink:      #E66BC5  (Chỉ số phụ đặc biệt)
 | **Energy / Active Calories** | `orange` | `#F28C38` |
 | **Streak Flame** | `orange` | `#F28C38` |
 | **Macro: Protein** | `nutritionProtein` (`cyan`) | `#2CC7B5` |
-| **Macro: Carbohydrates** | `nutritionCarbs` (`amber`) | `#F4B740` |
+| **Macro: Carbohydrates** | `nutritionCarbs` (`green`) | `#35C76F` |
 | **Macro: Fat** | `nutritionFat` (`blue`) | `#4D8DFF` |
-| **Macro: Fiber** | `nutritionFiber` (`green`) | `#35C76F` |
+| **Macro: Fiber** | `nutritionFiber` | `#48BB78` |
 | **Hydration: Water** | `nutritionWater` (Light Blue) | `#55B7FF` |
-| **Energy: Calories** | `nutritionCalories` / `textPrimary` | `#F5F5F5` (reuse neutral tương đương; mục 11.2) |
+| **Energy: Calories** | `nutritionCalories` (`orange`) | `#F28C38` |
 
 ---
 
@@ -601,11 +601,11 @@ Hệ màu theo tính năng (Feature Accents) giúp người dùng nhận thức 
 
 | Metric | Color | HEX | Role |
 |---|---|---|---|
-| Calories / kcal | White | #F5F5F5 | Total energy |
-| Protein | Cyan / Teal | #2CC7B5 | Protein / muscle nutrition |
-| Carbs | Amber | #F4B740 | Energy source |
-| Fat | Blue | #4D8DFF | Fat macro |
-| Fiber | Green | #35C76F | Fiber / healthy nutrition |
+| Calories / kcal | Orange | #F28C38 | Total energy |
+| Protein | Cyan / Teal | #2CC7B5 | Protein / muscle recovery |
+| Carbs | Green | #35C76F | Clean plant/grain energy |
+| Fat | Blue | #4D8DFF | Essential lipids / Omega |
+| Fiber | Leaf Green | #48BB78 | Fiber / digestive health |
 | Water | Light Blue | #55B7FF | Hydration |
 
 - **AI / AI Coach → Violet / Purple:** dành cho AI-generated content, recommendation, badge, insight và icon. Không dùng tím làm màu mặc định cho Protein hoặc nutrition metric chính, kể cả trong AI Nutrition Assistant / AI Meal Generator.

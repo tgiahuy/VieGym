@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viegym/features/ai/application/ai_coach_controller.dart';
+import 'package:viegym/features/ai/data/ai_repository.dart';
 import 'package:viegym/features/ai/domain/ai_models.dart';
 import 'package:viegym/features/workout/application/workout_session_controller.dart';
 import 'package:viegym/features/workout/domain/workout_models.dart';
@@ -9,7 +11,11 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
-    container = ProviderContainer();
+    container = ProviderContainer(
+      overrides: [
+        aiRepositoryProvider.overrideWithValue(_OfflineAiRepository()),
+      ],
+    );
   });
 
   tearDown(() {
@@ -111,5 +117,20 @@ void main() {
       expect(response.text, contains('dừng'));
       expect(response.text, contains('chuyên gia y tế'));
     },
+  );
+}
+
+class _OfflineAiRepository extends AiRepository {
+  _OfflineAiRepository() : super(Dio());
+
+  @override
+  Future<List<AiRecommendation>> getDailyRecommendations() async => const [];
+
+  @override
+  Future<AiConversationSummary> createConversation({
+    required String title,
+    required bool personalized,
+  }) async => throw DioException(
+    requestOptions: RequestOptions(path: '/api/v1/ai/conversations'),
   );
 }

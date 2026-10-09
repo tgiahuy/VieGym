@@ -901,6 +901,16 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
     return lunchOptions[variation % lunchOptions.length];
   }
 
+  void _selectNextRecommendedMeal() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedMealTypes.clear();
+      _selectedMealTypes.add(_detectDefaultMealType());
+      _generatedMeals.clear();
+      _addedMealTypes.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -943,6 +953,22 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
         (nutritionState.consumedCalories + totalGeneratedCalories) -
         nutritionState.targetCalories;
 
+    final recommendedMeal = _detectDefaultMealType();
+
+    // Calculate smart estimated allocation for selected meals
+    final targetKcal = nutritionState.targetCalories;
+    final mealWeight = {
+      MealType.breakfast: 0.25,
+      MealType.lunch: 0.35,
+      MealType.dinner: 0.30,
+      MealType.snack: 0.10,
+    };
+    final totalSelectedWeight = _selectedMealTypes.fold<double>(
+      0.0,
+      (sum, m) => sum + (mealWeight[m] ?? 0.25),
+    );
+    final estimatedSelectedKcal = (totalSelectedWeight * targetKcal).round();
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -957,9 +983,20 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
             }
           },
         ),
-        title: const Text(
-          'AI tạo bữa ăn',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.aiViolet,
+              size: 20,
+            ),
+            SizedBox(width: 8),
+            Text(
+              'AI Tạo Bữa Ăn Thông Minh',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -967,192 +1004,103 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header description
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.surfaceContainer,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colors.outlineVariant.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      color: AppColors.aiVioletSoft,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: AppColors.aiViolet,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Chọn một hoặc nhiều bữa trong ngày. VieGym AI sẽ tính toán và phân bổ thực đơn cân bằng cho bạn.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 1. Multi-Select Meal Type Selector
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'CHỌN CÁC BỮA CẦN GỢI Ý',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textTertiary,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                Row(
-                  children: [
-                    InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: _selectMainMeals,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        child: Text(
-                          '3 bữa chính',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Text(
-                      ' • ',
-                      style: TextStyle(color: AppColors.textTertiary),
-                    ),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: _selectAllMeals,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        child: Text(
-                          'Tất cả',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: MealType.values.map((m) {
-                final isSelected = _selectedMealTypes.contains(m);
-                return FilterChip(
-                  label: Text(m.label),
-                  selected: isSelected,
-                  selectedColor: colors.primary,
-                  showCheckmark: true,
-                  checkmarkColor: Colors.white,
-                  labelStyle: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                    color: isSelected ? Colors.white : colors.onSurface,
-                  ),
-                  backgroundColor: colors.surfaceContainer,
-                  side: BorderSide(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                  onSelected: (_) => _toggleMealType(m),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // 2. Nutrition Target Summary
+            // ── AI Hero Intelligence Banner ──────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colors.surfaceContainer,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: colors.outlineVariant.withValues(alpha: 0.4),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.aiViolet.withValues(alpha: 0.18),
+                    colors.surfaceContainer,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.aiVioletBorder, width: 1.2),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'DINH DƯỠNG CÒN LẠI HÔM NAY',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textTertiary,
-                          letterSpacing: 0.6,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.aiViolet,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.psychology_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'AI NUTRITION ENGINE',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.12),
+                          color: colors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: colors.primary.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Text(
                           healthProfile.goal.label.split('(').first.trim(),
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                             color: colors.primary,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  Text(
+                    'AI tự động phân tích calo còn lại trong ngày và thiết kế thực đơn chuẩn macro cá nhân hóa.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: colors.onSurface.withValues(alpha: 0.9),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 4 Nutrition Badges (Orange, Cyan, Green, Blue)
                   Row(
                     children: [
                       Expanded(
                         child: _MacroBadge(
-                          label: 'Calo còn lại',
+                          label: 'Calo thiếu',
                           value: '$remainingKcal',
                           unit: 'kcal',
                           color: AppColors.nutritionCalories,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: _MacroBadge(
                           label: 'Protein thiếu',
@@ -1161,7 +1109,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           color: AppColors.nutritionProtein,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: _MacroBadge(
                           label: 'Carb thiếu',
@@ -1170,7 +1118,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           color: AppColors.nutritionCarbs,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: _MacroBadge(
                           label: 'Fat thiếu',
@@ -1184,118 +1132,332 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+
+            // ── 1. Smart Meal Selector Section ───────────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'BỮA ĂN CẦN GỢI Ý',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.aiVioletSoft,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${_selectedMealTypes.length} đã chọn',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.aiViolet,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickSelectBtn(
+                        label: '⚡ Hiện tại',
+                        isSelected:
+                            _selectedMealTypes.length == 1 &&
+                            _selectedMealTypes.contains(recommendedMeal),
+                        onTap: _selectNextRecommendedMeal,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _QuickSelectBtn(
+                        label: '🍽️ 3 chính',
+                        isSelected:
+                            _selectedMealTypes.length == 3 &&
+                            _selectedMealTypes.contains(MealType.breakfast) &&
+                            _selectedMealTypes.contains(MealType.lunch) &&
+                            _selectedMealTypes.contains(MealType.dinner),
+                        onTap: _selectMainMeals,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _QuickSelectBtn(
+                        label: '✨ Tất cả',
+                        isSelected:
+                            _selectedMealTypes.length == MealType.values.length,
+                        onTap: _selectAllMeals,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Smart Bento Grid for Meal Selection (2x2)
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SmartMealCard(
+                        mealType: MealType.breakfast,
+                        title: 'Bữa sáng',
+                        timeRange: '06:00 – 09:00',
+                        emoji: '🌅',
+                        suggestedKcal: (targetKcal * 0.25).round(),
+                        loggedEntries: nutritionState.getEntriesByMeal(
+                          MealType.breakfast,
+                        ),
+                        isRecommendedNow: recommendedMeal == MealType.breakfast,
+                        isSelected: _selectedMealTypes.contains(
+                          MealType.breakfast,
+                        ),
+                        onToggle: () => _toggleMealType(MealType.breakfast),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SmartMealCard(
+                        mealType: MealType.lunch,
+                        title: 'Bữa trưa',
+                        timeRange: '11:30 – 13:30',
+                        emoji: '☀️',
+                        suggestedKcal: (targetKcal * 0.35).round(),
+                        loggedEntries: nutritionState.getEntriesByMeal(
+                          MealType.lunch,
+                        ),
+                        isRecommendedNow: recommendedMeal == MealType.lunch,
+                        isSelected: _selectedMealTypes.contains(MealType.lunch),
+                        onToggle: () => _toggleMealType(MealType.lunch),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SmartMealCard(
+                        mealType: MealType.dinner,
+                        title: 'Bữa tối',
+                        timeRange: '18:00 – 20:30',
+                        emoji: '🌙',
+                        suggestedKcal: (targetKcal * 0.30).round(),
+                        loggedEntries: nutritionState.getEntriesByMeal(
+                          MealType.dinner,
+                        ),
+                        isRecommendedNow: recommendedMeal == MealType.dinner,
+                        isSelected: _selectedMealTypes.contains(
+                          MealType.dinner,
+                        ),
+                        onToggle: () => _toggleMealType(MealType.dinner),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SmartMealCard(
+                        mealType: MealType.snack,
+                        title: 'Bữa phụ',
+                        timeRange: '15:00 – 16:30',
+                        emoji: '🍎',
+                        suggestedKcal: (targetKcal * 0.10).round(),
+                        loggedEntries: nutritionState.getEntriesByMeal(
+                          MealType.snack,
+                        ),
+                        isRecommendedNow: recommendedMeal == MealType.snack,
+                        isSelected: _selectedMealTypes.contains(MealType.snack),
+                        onToggle: () => _toggleMealType(MealType.snack),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // AI Target Allocation Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: colors.surfaceContainer,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colors.outlineVariant.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.pie_chart_outline_rounded,
+                    color: AppColors.aiViolet,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Dự kiến phân bổ cho ${_selectedMealTypes.length} bữa đã chọn: ~${remainingKcal > 0 ? (remainingKcal * (totalSelectedWeight / 1.0)).round() : estimatedSelectedKcal} kcal',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── 2. Smart Quick Moods & Dietary Tags ───────────────────────────
+            const Text(
+              'GỢI Ý KHẨU VỊ & CHẾ ĐỘ ĂN (1 CHẠM)',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: Row(
+                children: [
+                  _DietaryChip(
+                    emoji: '🇻🇳',
+                    label: 'Ưu tiên món Việt',
+                    isActive: _preferVietnamese,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _preferVietnamese = !_preferVietnamese);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _DietaryChip(
+                    emoji: '🥩',
+                    label: 'Giàu đạm (High-Protein)',
+                    isActive: _promptController.text.contains('protein'),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        if (_promptController.text.contains('protein')) {
+                          _promptController.clear();
+                        } else {
+                          _promptController.text =
+                              'giàu protein, ít dầu mỡ, tăng cơ';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _DietaryChip(
+                    emoji: '🥗',
+                    label: 'Ít tinh bột (Low-Carb)',
+                    isActive: _promptController.text.contains('low carb'),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        if (_promptController.text.contains('low carb')) {
+                          _promptController.clear();
+                        } else {
+                          _promptController.text =
+                              'low carb, nhiều rau xanh, hạn chế tinh bột';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _DietaryChip(
+                    emoji: '🥑',
+                    label: 'Eat Clean thanh đạm',
+                    isActive: _promptController.text.contains('eat clean'),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        if (_promptController.text.contains('eat clean')) {
+                          _promptController.clear();
+                        } else {
+                          _promptController.text =
+                              'eat clean, hấp luộc, thanh nhẹ';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _DietaryChip(
+                    emoji: '🍲',
+                    label: 'Món nước ấm bụng',
+                    isActive: _promptController.text.contains('món nước'),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        if (_promptController.text.contains('món nước')) {
+                          _promptController.clear();
+                        } else {
+                          _promptController.text = 'món nước, canh súp ấm nóng';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _DietaryChip(
+                    emoji: '⏱️',
+                    label: '<15 phút',
+                    isActive: _prepTimePreference == 'quick',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(
+                        () => _prepTimePreference =
+                            _prepTimePreference == 'quick' ? 'any' : 'quick',
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
 
-            // 3. Optional Preferences
+            // ── 3. Custom Free-text Prompt ────────────────────────────────────
             const Text(
-              'TÙY CHỌN & ƯU TIÊN',
+              'BẠN ĐANG THÈM GÌ HOẶC CÓ NGUYÊN LIỆU NÀO? (TÙY CHỌN)',
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textTertiary,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilterChip(
-                  label: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [Text('🇻🇳 '), Text('Ưu tiên món Việt')],
-                  ),
-                  selected: _preferVietnamese,
-                  selectedColor: colors.primary.withValues(alpha: 0.16),
-                  checkmarkColor: colors.primary,
-                  labelStyle: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: _preferVietnamese
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                    color: _preferVietnamese
-                        ? colors.primary
-                        : colors.onSurface,
-                  ),
-                  side: BorderSide(
-                    color: _preferVietnamese
-                        ? colors.primary
-                        : colors.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                  onSelected: (val) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _preferVietnamese = val);
-                  },
-                ),
-                ChoiceChip(
-                  label: const Text('⏱️ < 15 phút'),
-                  selected: _prepTimePreference == 'quick',
-                  selectedColor: colors.primary.withValues(alpha: 0.16),
-                  labelStyle: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: _prepTimePreference == 'quick'
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                    color: _prepTimePreference == 'quick'
-                        ? colors.primary
-                        : colors.onSurface,
-                  ),
-                  side: BorderSide(
-                    color: _prepTimePreference == 'quick'
-                        ? colors.primary
-                        : colors.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                  onSelected: (val) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _prepTimePreference = val ? 'quick' : 'any');
-                  },
-                ),
-                ChoiceChip(
-                  label: const Text('⏱️ 15–30 phút'),
-                  selected: _prepTimePreference == 'medium',
-                  selectedColor: colors.primary.withValues(alpha: 0.16),
-                  labelStyle: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: _prepTimePreference == 'medium'
-                        ? FontWeight.w800
-                        : FontWeight.w600,
-                    color: _prepTimePreference == 'medium'
-                        ? colors.primary
-                        : colors.onSurface,
-                  ),
-                  side: BorderSide(
-                    color: _prepTimePreference == 'medium'
-                        ? colors.primary
-                        : colors.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                  onSelected: (val) {
-                    HapticFeedback.selectionClick();
-                    setState(
-                      () => _prepTimePreference = val ? 'medium' : 'any',
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // 4. Optional Free-Text Input
-            const Text(
-              'BẠN MUỐN ĂN GÌ? (TÙY CHỌN)',
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.8,
+                letterSpacing: 0.6,
               ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _promptController,
               decoration: InputDecoration(
-                hintText: 'VD: cơm gà, món nước, ít dầu mỡ, dễ nấu...',
-                prefixIcon: const Icon(Icons.restaurant_menu_rounded, size: 20),
+                hintText: 'VD: cơm gà, bò xào bông cải, trứng, ức gà...',
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+                prefixIcon: const Icon(
+                  Icons.restaurant_rounded,
+                  size: 20,
+                  color: AppColors.aiViolet,
+                ),
                 suffixIcon: _promptController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 18),
@@ -1315,7 +1477,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: colors.outlineVariant.withValues(alpha: 0.5),
+                    color: colors.outlineVariant.withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -1323,54 +1485,90 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
             ),
             const SizedBox(height: 20),
 
-            // 5. Generate Button
-            FilledButton.icon(
-              onPressed: _isGenerating ? null : _generateAllSelectedMeals,
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+            // ── 4. Main Generate Button ──────────────────────────────────────
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.aiViolet.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              icon: _isGenerating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.auto_awesome_rounded, size: 20),
-              label: Text(
-                _isGenerating
-                    ? 'AI đang tạo ${_selectedMealTypes.length} bữa ăn...'
-                    : '✨ Tạo ${_selectedMealTypes.length} bữa ăn với AI',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.3,
+              child: FilledButton.icon(
+                onPressed: _isGenerating ? null : _generateAllSelectedMeals,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.aiViolet,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  elevation: 0,
+                ),
+                icon: _isGenerating
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome_rounded, size: 22),
+                label: Text(
+                  _isGenerating
+                      ? 'AI đang tính toán ${_selectedMealTypes.length} bữa ăn...'
+                      : '✨ Tạo ${_selectedMealTypes.length} bữa ăn với AI',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 26),
 
-            // 6. Loading State or Generated Result List
+            // ── 5. Loading State or Generated Result List ────────────────────
             if (_isGenerating)
               Container(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(32),
                 alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.aiVioletBorder,
+                    width: 1.2,
+                  ),
+                ),
                 child: Column(
                   children: [
-                    const CircularProgressIndicator(),
+                    const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(
+                        color: AppColors.aiViolet,
+                        strokeWidth: 3,
+                      ),
+                    ),
                     const SizedBox(height: 16),
+                    const Text(
+                      'VieGym AI đang thiết kế thực đơn...',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      'VieGym AI đang tính toán và phân bổ dinh dưỡng cho ${_selectedMealTypes.length} bữa ăn...',
+                      'Tối ưu hóa ${_selectedMealTypes.length} bữa ăn dựa trên mục tiêu ${healthProfile.goal.label.split("(").first.trim()}',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12.5,
                         color: colors.onSurfaceVariant,
                       ),
                     ),
@@ -1384,18 +1582,16 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.accentAmber.withValues(alpha: 0.1),
+                    color: AppColors.amberSoft,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.accentAmber.withValues(alpha: 0.35),
-                    ),
+                    border: Border.all(color: AppColors.amberBorder),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
-                        color: AppColors.accentAmber,
+                        color: AppColors.amber,
                         size: 22,
                       ),
                       const SizedBox(width: 10),
@@ -1408,7 +1604,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.accentAmber,
+                                color: AppColors.amber,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1444,14 +1640,21 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(
-                            Icons.dashboard_customize_rounded,
-                            color: AppColors.accentAmber,
-                            size: 20,
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: AppColors.aiVioletSoft,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.dashboard_customize_rounded,
+                              color: AppColors.aiViolet,
+                              size: 18,
+                            ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Text(
-                            'TỔNG KẾ HOẠCH (${_generatedMeals.length} BỮA ĂN)',
+                            'TỔNG THỰC ĐƠN (${_generatedMeals.length} BỮA)',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
@@ -1462,54 +1665,57 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                           Text(
                             '🔥 $totalGeneratedCalories kcal',
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 14,
                               fontWeight: FontWeight.w900,
                               color: AppColors.nutritionCalories,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: Text(
                               'Tổng protein: ${totalGeneratedProtein.toStringAsFixed(1)}g',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.5,
                                 color: colors.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          FilledButton.icon(
-                            onPressed: allAdded ? null : _handleAddAllMeals,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: allAdded
-                                  ? AppColors.accentEmerald
-                                  : colors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
+                          Flexible(
+                            child: FilledButton.icon(
+                              onPressed: allAdded ? null : _handleAddAllMeals,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: allAdded
+                                    ? AppColors.accentEmerald
+                                    : colors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                              icon: Icon(
+                                allAdded
+                                    ? Icons.check_circle_rounded
+                                    : Icons.playlist_add_check_rounded,
+                                size: 16,
                               ),
-                            ),
-                            icon: Icon(
-                              allAdded
-                                  ? Icons.check_circle_rounded
-                                  : Icons.playlist_add_check_rounded,
-                              size: 16,
-                            ),
-                            label: Text(
-                              allAdded
-                                  ? 'Đã thêm tất cả ✓'
-                                  : 'Thêm tất cả (${_generatedMeals.length})',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
+                              label: Text(
+                                allAdded
+                                    ? 'Đã thêm tất cả ✓'
+                                    : 'Thêm tất cả (${_generatedMeals.length})',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                           ),
@@ -1546,6 +1752,281 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
   }
 }
 
+class _QuickSelectBtn extends StatelessWidget {
+  const _QuickSelectBtn({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withValues(alpha: 0.16)
+              : colors.surfaceContainer,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : colors.outlineVariant.withValues(alpha: 0.4),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? colors.primary : colors.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmartMealCard extends StatelessWidget {
+  const _SmartMealCard({
+    required this.mealType,
+    required this.title,
+    required this.timeRange,
+    required this.emoji,
+    required this.suggestedKcal,
+    required this.loggedEntries,
+    required this.isRecommendedNow,
+    required this.isSelected,
+    required this.onToggle,
+  });
+
+  final MealType mealType;
+  final String title;
+  final String timeRange;
+  final String emoji;
+  final int suggestedKcal;
+  final List<FoodEntry> loggedEntries;
+  final bool isRecommendedNow;
+  final bool isSelected;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final hasLogged = loggedEntries.isNotEmpty;
+    final totalLoggedKcal = loggedEntries.fold<int>(
+      0,
+      (sum, e) => sum + e.calories,
+    );
+
+    return InkWell(
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withValues(alpha: 0.08)
+              : colors.surfaceContainer,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : isRecommendedNow
+                ? AppColors.aiVioletBorder
+                : colors.outlineVariant.withValues(alpha: 0.4),
+            width: isSelected ? 1.8 : 1.0,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Emoji + Title + Selection Indicator
+            Row(
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: isSelected ? colors.primary : colors.onSurface,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: isSelected ? colors.primary : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? colors.primary
+                          : AppColors.textTertiary,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 13)
+                      : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // Time & Target budget
+            Text(
+              timeRange,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textTertiary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Dynamic Status Badge
+            if (isRecommendedNow) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.aiVioletSoft,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.alarm_on_rounded,
+                      size: 11,
+                      color: AppColors.aiViolet,
+                    ),
+                    SizedBox(width: 3),
+                    Text(
+                      'Khuyên dùng lúc này',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.aiViolet,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (hasLogged) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.accentEmerald.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Đã nạp $totalLoggedKcal kcal',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.accentEmerald,
+                  ),
+                ),
+              ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Gợi ý ~$suggestedKcal kcal',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.nutritionCalories,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DietaryChip extends StatelessWidget {
+  const _DietaryChip({
+    required this.emoji,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.aiViolet.withValues(alpha: 0.16)
+              : colors.surfaceContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive
+                ? AppColors.aiViolet
+                : colors.outlineVariant.withValues(alpha: 0.4),
+            width: isActive ? 1.4 : 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                color: isActive ? AppColors.aiViolet : colors.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MacroBadge extends StatelessWidget {
   const _MacroBadge({
     required this.label,
@@ -1566,7 +2047,7 @@ class _MacroBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Column(
         children: [
@@ -1620,11 +2101,9 @@ class _GeneratedMealCard extends StatelessWidget {
           // Header Tag
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surfaceElevated,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
               children: [
@@ -1636,7 +2115,7 @@ class _GeneratedMealCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'GỢI Ý ${meal.mealType.label.toUpperCase()}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
                     color: AppColors.aiViolet,
@@ -1761,7 +2240,7 @@ class _GeneratedMealCard extends StatelessWidget {
                         ),
                         Text(
                           '${item.calories} kcal',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.nutritionCalories,
@@ -1784,14 +2263,14 @@ class _GeneratedMealCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
                           Icon(
                             Icons.psychology_alt_rounded,
                             size: 16,
                             color: AppColors.aiViolet,
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Text(
                             'Vì sao AI gợi ý?',
                             style: TextStyle(

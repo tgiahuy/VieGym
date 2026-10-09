@@ -29,6 +29,10 @@ public class RefreshToken {
     private String tokenHash;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private SessionAudience audience;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private TokenStatus status;
 
@@ -44,6 +48,9 @@ public class RefreshToken {
     @Column(name = "device_info", length = 255)
     private String deviceInfo;
 
+    @Column(name = "csrf_secret_hash", length = 255)
+    private String csrfSecretHash;
+
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
@@ -52,13 +59,17 @@ public class RefreshToken {
     public RefreshToken(
             User user,
             String tokenHash,
+            SessionAudience audience,
             String deviceInfo,
+            String csrfSecretHash,
             OffsetDateTime expiresAt,
             OffsetDateTime createdAt) {
         this.user = user;
         this.tokenHash = tokenHash;
+        this.audience = audience;
         this.status = TokenStatus.ACTIVE;
         this.deviceInfo = deviceInfo;
+        this.csrfSecretHash = csrfSecretHash;
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
     }
@@ -75,6 +86,10 @@ public class RefreshToken {
         return tokenHash;
     }
 
+    public SessionAudience audience() {
+        return audience;
+    }
+
     public TokenStatus status() {
         return status;
     }
@@ -85,6 +100,10 @@ public class RefreshToken {
 
     public Long replacedByTokenId() {
         return replacedByTokenId;
+    }
+
+    public String csrfSecretHash() {
+        return csrfSecretHash;
     }
 
     public void rotateTo(RefreshToken replacement, OffsetDateTime now) {

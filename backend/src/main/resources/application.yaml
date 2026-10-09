@@ -77,3 +77,11 @@ viegym:
 
 otp:
   provider: ${MAIL_PROVIDER:fake}
+
+admin:
+  cookie:
+    secure: ${ADMIN_COOKIE_SECURE:true}
+  bootstrap:
+    enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+    email: ${ADMIN_BOOTSTRAP_EMAIL:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}

@@ -412,7 +412,21 @@ class AiTabScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      ref.read(aiCoachProvider.notifier).applyRecommendation(recommendation.id);
+      await ref
+          .read(aiCoachProvider.notifier)
+          .applyRecommendation(recommendation.id);
+      if (!context.mounted) return;
+      final applied = ref
+          .read(aiCoachProvider)
+          .recommendations
+          .where((item) => item.id == recommendation.id)
+          .any((item) => item.status == ProposalStatus.applied);
+      if (!applied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể áp dụng đề xuất lúc này.')),
+        );
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -594,6 +608,52 @@ class AiTabScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
+          if (state.errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                state.errorMessage!,
+                style: TextStyle(color: colors.onErrorContainer, fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              TextButton.icon(
+                onPressed: state.isLoadingRecommendations
+                    ? null
+                    : () => ref
+                          .read(aiCoachProvider.notifier)
+                          .refreshRecommendations(),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Làm mới'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: state.isLoadingRecommendations
+                    ? null
+                    : () => ref
+                          .read(aiCoachProvider.notifier)
+                          .generateRecommendations(),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 17),
+                label: const Text('Tạo đề xuất'),
+              ),
+            ],
+          ),
+          if (state.isLoadingRecommendations) ...[
+            const SizedBox(height: 8),
+            const LinearProgressIndicator(),
+          ],
+          const SizedBox(height: 12),
+
           // 3. RECOMMENDATIONS LIST / EMPTY STATE
           if (state.activeRecommendations.isEmpty)
             Container(
@@ -650,10 +710,11 @@ class AiTabScreen extends ConsumerWidget {
               return AIRecommendationCard(
                 recommendation: rec,
                 onApply: () => _handleApplyRecommendation(context, ref, rec),
-                onDismiss: () {
-                  ref
+                onDismiss: () async {
+                  await ref
                       .read(aiCoachProvider.notifier)
                       .dismissRecommendation(rec.id);
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Đã bỏ qua đề xuất'),

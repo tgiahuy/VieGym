@@ -190,7 +190,7 @@ public class ExerciseCatalogService {
                                                         r.id(), Collections.emptyList()),
                                                 equipmentMap.getOrDefault(
                                                         r.id(), Collections.emptyList()),
-                                                Collections.emptyList()))
+                                                loadMedia(r.id())))
                         .toList();
 
         return PageResponse.from(new PageImpl<>(content, pageable, totalElements));
@@ -237,7 +237,7 @@ public class ExerciseCatalogService {
                 readJsonStringList(row.safetyNotesJson()),
                 muscleGroups.getOrDefault(row.id(), Collections.emptyList()),
                 equipment.getOrDefault(row.id(), Collections.emptyList()),
-                Collections.emptyList());
+                loadMedia(row.id()));
     }
 
     @Transactional(readOnly = true)
@@ -348,7 +348,7 @@ public class ExerciseCatalogService {
                                         muscleGroupMap.getOrDefault(
                                                 r.id(), Collections.emptyList()),
                                         equipmentMap.getOrDefault(r.id(), Collections.emptyList()),
-                                        Collections.emptyList()))
+                                        loadMedia(r.id())))
                 .toList();
     }
 
@@ -417,7 +417,7 @@ public class ExerciseCatalogService {
                                                         r.id(), Collections.emptyList()),
                                                 equipmentMap.getOrDefault(
                                                         r.id(), Collections.emptyList()),
-                                                Collections.emptyList()))
+                                                loadMedia(r.id())))
                         .toList();
 
         return PageResponse.from(new PageImpl<>(content, pageable, totalElements));
@@ -518,6 +518,20 @@ public class ExerciseCatalogService {
         } catch (Exception e) {
             return Collections.emptyList();
         }
+    }
+
+    private List<Object> loadMedia(Long exerciseId) {
+        return jdbc.query(
+                "select id, media_type, role, sort_order, mime_type from media_objects where owner_type='EXERCISE' and owner_id=? and status='READY' and visibility='PUBLIC' and deleted_at is null order by sort_order, id",
+                (rs, row) ->
+                        Map.of(
+                                "id", rs.getLong("id"),
+                                "type", rs.getString("media_type"),
+                                "role", rs.getString("role"),
+                                "sortOrder", rs.getInt("sort_order"),
+                                "mimeType", rs.getString("mime_type"),
+                                "url", "/api/v1/media-content/" + rs.getLong("id") + "/public"),
+                exerciseId);
     }
 
     private record ExerciseRow(

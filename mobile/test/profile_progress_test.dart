@@ -99,7 +99,7 @@ void main() {
         expect(find.text('Cài đặt'), findsOneWidget);
         expect(find.text('Kỷ lục cá nhân (PR)'), findsOneWidget);
         expect(find.text('Thiết bị tập luyện'), findsOneWidget);
-        expect(find.text('Tùy chọn & Ràng buộc cá nhân'), findsOneWidget);
+        expect(find.text('Các giáo án'), findsOneWidget);
         expect(find.text('Bảo mật tài khoản'), findsOneWidget);
         expect(find.text('Cá nhân hóa AI theo hồ sơ'), findsOneWidget);
         expect(find.text('Âm thanh đếm ngược nghỉ'), findsOneWidget);

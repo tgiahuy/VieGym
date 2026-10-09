@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/workout_schedule_planning_repository.dart';
 import '../domain/workout_models.dart';
 import 'workout_session_controller.dart';
 
@@ -366,11 +367,67 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
       ),
     ];
 
+    ref.listen(workoutSessionProvider, (previous, next) {
+      if (previous != null &&
+          _hasSameScheduledExercises(previous.exercises, next.exercises)) {
+        return;
+      }
+      _syncTodayScheduleExercises(next);
+    });
+
     return WorkoutScheduleState(
       selectedDate: todayStr,
       schedules: defaultSchedules,
       history: defaultHistory,
     );
+  }
+
+  bool _hasSameScheduledExercises(
+    List<SessionExercise> previous,
+    List<SessionExercise> next,
+  ) {
+    if (previous.length != next.length) return false;
+    for (var index = 0; index < previous.length; index++) {
+      final before = previous[index];
+      final after = next[index];
+      if (before.exerciseId != after.exerciseId ||
+          before.name != after.name ||
+          before.primaryMuscle != after.primaryMuscle ||
+          before.targetSets != after.targetSets ||
+          before.targetReps != after.targetReps) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _syncTodayScheduleExercises(WorkoutSessionState session) {
+    if (session.exercises.isEmpty) return;
+
+    final today = _formatDate(DateTime.now());
+    final scheduleIndex = state.schedules.lastIndexWhere(
+      (item) => item.date == today && item.status == ScheduleStatus.planned,
+    );
+    if (scheduleIndex == -1) return;
+
+    final current = state.schedules[scheduleIndex];
+    final updated = [...state.schedules];
+    updated[scheduleIndex] = current.copyWith(
+      plannedExercises: session.exercises
+          .map(
+            (exercise) => PlannedExercisePreview(
+              name: exercise.name,
+              setsReps: '${exercise.targetSets}x${exercise.targetReps}',
+              primaryMuscle: exercise.primaryMuscle,
+            ),
+          )
+          .toList(),
+      targetMuscles: session.exercises
+          .map((exercise) => exercise.primaryMuscle)
+          .toSet()
+          .join(' • '),
+    );
+    state = state.copyWith(schedules: updated);
   }
 
   void selectDate(String date) {
@@ -396,7 +453,136 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
       plannedExercises: plannedExercises,
     );
 
+    final todayStr = _formatDate(DateTime.now());
+    if (date == todayStr && plannedExercises.isNotEmpty) {
+      ref.read(workoutSessionProvider.notifier).loadFromSchedule(newItem);
+    }
+
     state = state.copyWith(schedules: [...state.schedules, newItem]);
+  }
+
+  void mergeAppliedSchedules(
+    List<WorkoutScheduleItem> applied, {
+    bool replaceMatchingDates = true,
+  }) {
+    final appliedIds = applied.map((item) => item.id).toSet();
+    final appliedDates = applied.map((item) => item.date).toSet();
+    final retained = state.schedules.where((item) {
+      if (appliedIds.contains(item.id)) return false;
+      if (replaceMatchingDates &&
+          appliedDates.contains(item.date) &&
+          item.status == ScheduleStatus.planned) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    final todayStr = _formatDate(DateTime.now());
+    final todayApplied = applied
+        .where((item) => item.date == todayStr)
+        .firstOrNull;
+    if (todayApplied != null && todayApplied.plannedExercises.isNotEmpty) {
+      ref.read(workoutSessionProvider.notifier).loadFromSchedule(todayApplied);
+    }
+
+    state = state.copyWith(schedules: [...retained, ...applied]);
+  }
+
+  Future<void> syncFromServer({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    try {
+      final rows = await ref
+          .read(workoutSchedulePlanningRepositoryProvider)
+          .loadSchedules(from: from, to: to);
+      final activeRows = rows
+          .where((item) => item.status != 'CANCELLED')
+          .toList();
+      final today = _formatDate(DateTime.now());
+      final activeSession = ref.read(workoutSessionProvider);
+      final serverItems = activeRows.map((item) {
+        final id = 'server_${item.id}';
+        final date = _formatDate(item.date);
+        final time = item.time.length >= 5
+            ? item.time.substring(0, 5)
+            : item.time;
+        final cached =
+            state.schedules
+                .where((schedule) => schedule.id == id)
+                .firstOrNull ??
+            state.schedules
+                .where(
+                  (schedule) =>
+                      schedule.date == date &&
+                      schedule.time == time &&
+                      schedule.title == item.title,
+                )
+                .lastOrNull;
+
+        final plannedList = item.plannedExercises.isNotEmpty
+            ? item.plannedExercises
+            : (date == today &&
+                    activeSession.exercises.isNotEmpty &&
+                    activeSession.id == id
+                ? activeSession.exercises
+                    .map(
+                      (exercise) => PlannedExercisePreview(
+                        name: exercise.name,
+                        setsReps:
+                            '${exercise.targetSets}x${exercise.targetReps}',
+                        primaryMuscle: exercise.primaryMuscle,
+                      ),
+                    )
+                    .toList()
+                : cached?.plannedExercises ?? const []);
+
+        final serverMuscles = plannedList
+            .map((exercise) => exercise.primaryMuscle)
+            .whereType<String>()
+            .where((muscle) => muscle.isNotEmpty)
+            .toSet()
+            .join(' • ');
+
+        return WorkoutScheduleItem(
+          id: id,
+          date: date,
+          time: time,
+          title: item.title,
+          targetMuscles: serverMuscles.isNotEmpty
+              ? serverMuscles
+              : (cached?.targetMuscles ?? 'Theo lịch đã lưu'),
+          durationMinutes: cached?.durationMinutes ?? 45,
+          status: item.status == 'COMPLETED'
+              ? ScheduleStatus.completed
+              : ScheduleStatus.planned,
+          plannedExercises: plannedList,
+        );
+      }).toList();
+
+      final fromStr = _formatDate(from);
+      final toStr = _formatDate(to);
+      // Clean up any server schedules in [from, to] that are no longer active
+      // Also remove any mock/local planned schedules in this range if server has data
+      final retained = state.schedules.where((item) {
+        final inRange =
+            item.date.compareTo(fromStr) >= 0 &&
+            item.date.compareTo(toStr) <= 0;
+        if (inRange) {
+          if (item.id.startsWith('server_')) {
+            return false;
+          }
+          if (serverItems.isNotEmpty && item.status == ScheduleStatus.planned) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
+
+      state = state.copyWith(schedules: [...retained, ...serverItems]);
+    } catch (_) {
+      // Keep the cached/local schedule when the backend is unavailable.
+    }
   }
 
   bool extendLatestPlannedSchedule({
@@ -515,6 +701,53 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
     );
   }
 
+  void updateScheduleExercises({
+    required String scheduleId,
+    required List<PlannedExercisePreview> exercises,
+    int? durationMinutes,
+    String? targetMuscles,
+  }) {
+    final index = state.schedules.indexWhere((s) => s.id == scheduleId);
+    if (index == -1) return;
+    final current = state.schedules[index];
+
+    final derivedTargetMuscles = (targetMuscles != null && targetMuscles.trim().isNotEmpty)
+        ? targetMuscles
+        : (exercises.any((e) => e.primaryMuscle != null && e.primaryMuscle!.trim().isNotEmpty)
+            ? exercises
+                .map((e) => e.primaryMuscle)
+                .where((m) => m != null && m.trim().isNotEmpty)
+                .cast<String>()
+                .toSet()
+                .join(' • ')
+            : current.targetMuscles);
+
+    final updated = [...state.schedules];
+    updated[index] = current.copyWith(
+      plannedExercises: exercises,
+      durationMinutes: durationMinutes ?? current.durationMinutes,
+      targetMuscles: derivedTargetMuscles,
+    );
+    state = state.copyWith(schedules: updated);
+  }
+
+  void restoreSchedule(WorkoutScheduleItem item, {int? atIndex}) {
+    if (state.schedules.any((s) => s.id == item.id)) return;
+    final updated = [...state.schedules];
+    if (atIndex != null && atIndex >= 0 && atIndex <= updated.length) {
+      updated.insert(atIndex, item);
+    } else {
+      updated.add(item);
+    }
+    state = state.copyWith(schedules: updated);
+  }
+
+  void clearSchedulesForDate(String date) {
+    state = state.copyWith(
+      schedules: state.schedules.where((s) => s.date != date).toList(),
+    );
+  }
+
   bool moveWorkoutDate(String scheduleId, String newDate) {
     final existingOnTarget = state.schedules
         .where((s) => s.date == newDate)
@@ -538,13 +771,14 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
     required double totalVolumeKg,
     required int completedSets,
     required int prCount,
+    String? date,
     List<String> targetMuscles = const [],
     List<HistoryExerciseLog> exercises = const [],
   }) {
-    final todayStr = _formatDate(DateTime.now());
+    final targetDate = date ?? _formatDate(DateTime.now());
     final newHistoryItem = WorkoutHistoryItem(
       id: 'hist_${DateTime.now().millisecondsSinceEpoch}',
-      date: todayStr,
+      date: targetDate,
       workoutName: workoutName,
       durationMinutes: durationMinutes,
       totalVolumeKg: totalVolumeKg,
@@ -557,16 +791,32 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
     final activeScheduleId = state.schedules
         .where(
           (item) =>
-              item.date == todayStr && item.status == ScheduleStatus.planned,
+              item.date == targetDate && item.status == ScheduleStatus.planned,
         )
         .lastOrNull
         ?.id;
-    final updatedSchedules = state.schedules.map((item) {
+    var updatedSchedules = state.schedules.map((item) {
       if (item.id == activeScheduleId) {
         return item.copyWith(status: ScheduleStatus.completed);
       }
       return item;
     }).toList();
+
+    if (activeScheduleId == null &&
+        !state.schedules.any((s) => s.date == targetDate)) {
+      updatedSchedules = [
+        ...updatedSchedules,
+        WorkoutScheduleItem(
+          id: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+          date: targetDate,
+          time: '18:00',
+          title: workoutName,
+          targetMuscles: targetMuscles.join(' • '),
+          durationMinutes: durationMinutes,
+          status: ScheduleStatus.completed,
+        ),
+      ];
+    }
 
     state = state.copyWith(
       schedules: updatedSchedules,

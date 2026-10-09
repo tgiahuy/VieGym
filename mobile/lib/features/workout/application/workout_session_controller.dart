@@ -352,13 +352,19 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
   void setSession({
     required String title,
     required List<SessionExercise> exercises,
+    String? id,
   }) {
     state = WorkoutSessionState(
-      id: 'session_${DateTime.now().millisecondsSinceEpoch}',
+      id: id ?? 'session_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
       exercises: exercises,
       logs: {for (final ex in exercises) ex.exerciseId: _createSetLogs(ex)},
     );
+  }
+
+  void loadFromSchedule(WorkoutScheduleItem schedule) {
+    final exercises = buildSessionExercisesFromSchedule(schedule);
+    setSession(title: schedule.title, exercises: exercises, id: schedule.id);
   }
 
   void finalizeSession() {
@@ -374,4 +380,91 @@ class WorkoutSessionController extends Notifier<WorkoutSessionState> {
       logs: const {},
     );
   }
+}
+
+List<SessionExercise> buildSessionExercisesFromSchedule(
+  WorkoutScheduleItem schedule,
+) {
+  if (schedule.plannedExercises.isNotEmpty) {
+    return schedule.plannedExercises.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final planned = entry.value;
+      final def = findExerciseByName(planned.name);
+
+      int targetSets = 3;
+      int targetReps = 10;
+      final match = RegExp(r'(\d+)\s*x\s*(\d+)').firstMatch(planned.setsReps);
+      if (match != null) {
+        targetSets = int.tryParse(match.group(1) ?? '3') ?? 3;
+        targetReps = int.tryParse(match.group(2) ?? '10') ?? 10;
+      }
+
+      if (def != null) {
+        return SessionExercise(
+          exerciseId: '${def.id}_$idx',
+          // Keep the saved schedule snapshot as the display source. A catalog
+          // alias may point to the same exercise but use a different name.
+          name: planned.name,
+          primaryMuscle: planned.primaryMuscle ?? def.primaryMuscle,
+          equipment: def.equipment,
+          targetSets: targetSets,
+          targetReps: targetReps,
+          weightKg: def.equipment == EquipmentType.bodyweight ? 0 : 20,
+          thumbnailUrl: def.thumbnailUrl,
+        );
+      }
+
+      final firstMuscle = schedule.targetMuscles
+          .split(RegExp(r'[,•&+/]|\bvà\b'))
+          .first
+          .trim();
+      return SessionExercise(
+        exerciseId: 'plan_ex_${idx}_${DateTime.now().millisecondsSinceEpoch}',
+        name: planned.name,
+        primaryMuscle:
+            planned.primaryMuscle ??
+            (firstMuscle.isNotEmpty ? firstMuscle : 'Toàn thân'),
+        equipment: EquipmentType.barbell,
+        targetSets: targetSets,
+        targetReps: targetReps,
+        weightKg: 20,
+      );
+    }).toList();
+  }
+
+  final muscleKeywords = schedule.targetMuscles
+      .split(RegExp(r'[,•&+/]|\bvà\b'))
+      .map((s) => s.trim().toLowerCase())
+      .where((s) => s.isNotEmpty)
+      .toList();
+
+  final matched = exerciseCatalog
+      .where((ex) {
+        final pm = ex.primaryMuscle.toLowerCase();
+        final name = ex.name.toLowerCase();
+        final nameVi = ex.nameVi.toLowerCase();
+        return muscleKeywords.any(
+          (kw) => pm.contains(kw) || name.contains(kw) || nameVi.contains(kw),
+        );
+      })
+      .take(4)
+      .toList();
+
+  final selected = matched.isNotEmpty
+      ? matched
+      : exerciseCatalog.take(4).toList();
+  return selected
+      .map(
+        (def) => SessionExercise(
+          exerciseId: def.id,
+          name: def.name,
+          primaryMuscle: def.primaryMuscle,
+          equipment: def.equipment,
+          targetSets: 3,
+          targetReps: 10,
+          weightKg: def.equipment == EquipmentType.bodyweight ? 0 : 20,
+          thumbnailUrl: def.thumbnailUrl,
+        ),
+      )
+      .toList();
 }

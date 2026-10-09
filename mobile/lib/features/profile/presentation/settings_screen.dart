@@ -3,16 +3,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../ai/data/ai_repository.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../application/progress_controller.dart';
 
 class AiConsentNotifier extends Notifier<bool> {
   @override
-  bool build() => true;
+  bool build() {
+    Future<void>.microtask(_load);
+    return false;
+  }
 
-  void toggle() => state = !state;
-  void setConsent(bool val) => state = val;
+  Future<void> _load() async {
+    try {
+      state = await ref.read(aiRepositoryProvider).getConsent();
+    } catch (_) {
+      // Consent defaults to disabled when the authoritative state is unavailable.
+    }
+  }
+
+  Future<void> toggle() => setConsent(!state);
+
+  Future<void> setConsent(bool val) async {
+    final previous = state;
+    state = val;
+    try {
+      state = await ref.read(aiRepositoryProvider).updateConsent(val);
+    } catch (_) {
+      state = previous;
+      rethrow;
+    }
+  }
 }
 
 final aiConsentProvider = NotifierProvider<AiConsentNotifier, bool>(
@@ -191,15 +213,19 @@ class SettingsScreen extends ConsumerWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(
-                    Icons.tune_rounded,
+                    Icons.menu_book_rounded,
                     color: AppColors.violet,
                   ),
                   title: const Text(
-                    'Tùy chọn & Ràng buộc cá nhân',
+                    'Các giáo án',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
+                  subtitle: const Text(
+                    'Giáo án mẫu & giáo án cá nhân',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => context.push('/profile/preferences'),
+                  onTap: () => context.push('/workout/schedule/create'),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -250,17 +276,29 @@ class SettingsScreen extends ConsumerWidget {
                   activeThumbColor: AppColors.aiViolet,
                   activeTrackColor: AppColors.aiVioletSoft,
                   value: aiConsent,
-                  onChanged: (val) {
-                    ref.read(aiConsentProvider.notifier).setConsent(val);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          val
-                              ? 'Đã bật cá nhân hóa AI theo hồ sơ'
-                              : 'Đã chuyển sang chế độ Kiến thức chung',
+                  onChanged: (val) async {
+                    try {
+                      await ref
+                          .read(aiConsentProvider.notifier)
+                          .setConsent(val);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            val
+                                ? 'Đã bật cá nhân hóa AI theo hồ sơ'
+                                : 'Đã chuyển sang chế độ Kiến thức chung',
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    } catch (_) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Không thể cập nhật quyền AI.'),
+                        ),
+                      );
+                    }
                   },
                 ),
                 const Divider(height: 1),

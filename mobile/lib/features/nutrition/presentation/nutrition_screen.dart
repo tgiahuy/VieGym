@@ -73,7 +73,7 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen> {
 
     final consumed = state.consumedCalories + aiCalories;
     final target = state.targetCalories;
-    final remaining = (target - consumed).clamp(0, 99999);
+    final remaining = target - consumed;
     final caloriePercent = target > 0
         ? (consumed / target).clamp(0.0, 1.0)
         : 0.0;
@@ -147,12 +147,27 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen> {
             state: state,
             onAdjustGoals: () => _showGoalAdjustmentSheet(context, ref, state),
           ),
-          const SizedBox(height: 12),
+          if (state.currentDayEntries.any((entry) => entry.estimated)) ...[
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, size: 15),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Tổng ngày có sử dụng giá trị dinh dưỡng tham khảo.',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
 
-          // 3. Nutrition Action Cards: Tìm kiếm, Yêu thích, Kế hoạch, Lịch sử
+          // 3. Nutrition Action Cards: Tìm kiếm, AI Thực đơn, Kế hoạch, Lịch sử
           _NutritionActionCards(
             onSearch: () => context.push('/meal/search'),
-            onFavorites: () => context.push('/meal/favorites'),
+            onAiGenerate: () => context.push('/meal/generate'),
             onPlan: () => context.push('/meal/plan'),
             onHistory: () => context.push('/meal/history'),
           ),
@@ -160,34 +175,53 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen> {
 
           // 4. VieGym AI Nutrition Assistant Card
           const _AiNutritionAssistantCard(),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
-          // 5. Meals Section Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // 6. Meals Section Header
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
             children: [
-              Text(
-                'CÁC BỮA ĂN TRONG NGÀY',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
-                  color: colors.onSurface.withValues(alpha: 0.8),
-                ),
+              const Row(
+                children: [
+                  Icon(
+                    Icons.restaurant_menu_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'CÁC BỮA ĂN TRONG NGÀY',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '$totalLoggedCount món đã ghi',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colors.onSurfaceVariant,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$totalLoggedCount món đã ghi',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // 8. Meal Cards (Breakfast, Lunch, Dinner, Snack)
+          // 7. Meal Cards (Breakfast, Lunch, Dinner, Snack)
           ...MealType.values.map((meal) {
             final mealEntries = state.getEntriesByMeal(meal);
             return Padding(
@@ -197,6 +231,8 @@ class _NutritionScreenState extends ConsumerState<NutritionScreen> {
                 entries: mealEntries,
                 onAddFood: () =>
                     context.push('/meal/search?mealType=${meal.code}'),
+                onAiGenerate: () =>
+                    context.push('/meal/generate?mealType=${meal.code}'),
                 onQuickLog: () => _showQuickCalorieDialog(context, ref, meal),
                 onDeleteEntry: (entry) =>
                     _confirmDeleteEntry(context, ref, entry, meal),
@@ -915,7 +951,7 @@ class _WeeklyDateSelector extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Daily Energy & Nutrition Summary Card
+// 2. Daily Energy & Nutrition Summary Card (Modern Bento Hub)
 // ─────────────────────────────────────────────────────────────────────────────
 class _DailyEnergySummaryCard extends StatelessWidget {
   const _DailyEnergySummaryCard({
@@ -946,55 +982,85 @@ class _DailyEnergySummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isOverTarget = remaining < 0;
+
+    // Remaining macros
+    final proteinRemaining = (state.targetProtein - state.consumedProtein)
+        .clamp(0.0, 500.0);
+    final carbsRemaining = (state.targetCarbs - state.consumedCarbs).clamp(
+      0.0,
+      800.0,
+    );
+    final fatRemaining = (state.targetFat - state.consumedFat).clamp(
+      0.0,
+      300.0,
+    );
+
+    // Dynamic smart tip for beginners
+    String smartCoachTip;
+    if (consumed == 0) {
+      smartCoachTip =
+          '👋 Chào ngày mới! Bấm "✨ AI Thực đơn" để gợi ý bữa ăn chuẩn macro đầu ngày.';
+    } else if (isOverTarget) {
+      smartCoachTip =
+          '⚠️ Bạn đã nạp vượt chỉ tiêu ${remaining.abs()} kcal. Hãy duy trì vận động nhẹ & uống nhiều nước.';
+    } else if (proteinRemaining > 35) {
+      smartCoachTip =
+          '💪 Bạn còn thiếu ${proteinRemaining.toStringAsFixed(0)}g Protein. Hãy ưu tiên bổ sung ức gà, trứng hoặc cá.';
+    } else if (caloriePercentInt >= 85) {
+      smartCoachTip =
+          '🎯 Tuyệt vời! Bạn sắp hoàn thành mục tiêu calo hôm nay ($caloriePercentInt%).';
+    } else {
+      smartCoachTip =
+          '🔥 Đang nạp $caloriePercentInt% năng lượng. Hãy cân đối protein & carb cho các bữa tiếp theo!';
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: colors.outlineVariant.withValues(alpha: 0.6),
-          width: 1,
+          width: 1.2,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Title & Edit Goal CTA
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final sectionTitle = Row(
-                children: [
-                  const Icon(
-                    Icons.local_fire_department_rounded,
-                    color: AppColors.nutritionCalories,
-                    size: 18,
+          // ── Header Row: Title & Adjust Goal ────────────────────────────────
+          Row(
+            children: [
+              const Icon(
+                Icons.bolt_rounded,
+                color: AppColors.nutritionCalories,
+                size: 20,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'NĂNG LƯỢNG HÔM NAY',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'NĂNG LƯỢNG & DINH DƯỠNG',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                        color: colors.onSurface.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-              final adjustButton = InkWell(
-                borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
                 onTap: onAdjustGoals,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                    horizontal: 8,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceNested,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: AppColors.borderDefault,
                       width: 0.8,
@@ -1004,7 +1070,7 @@ class _DailyEnergySummaryCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.edit_outlined,
+                        Icons.tune_rounded,
                         size: 13,
                         color: AppColors.textSecondary,
                       ),
@@ -1020,103 +1086,125 @@ class _DailyEnergySummaryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              );
-
-              if (constraints.maxWidth < 340) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    sectionTitle,
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: adjustButton,
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(child: sectionTitle),
-                  const SizedBox(width: 12),
-                  adjustButton,
-                ],
-              );
-            },
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // Main Calories: 1.640 / 2.500 kcal
-          RichText(
-            text: TextSpan(
+          // ── Hero Calorie Display ───────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.nutritionCalories.withValues(alpha: 0.12),
+                  colors.surfaceContainerHigh,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppColors.nutritionCaloriesBorder,
+                width: 1,
+              ),
+            ),
+            child: Column(
               children: [
-                TextSpan(
-                  text: _formatNumber(consumed),
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.nutritionCalories,
-                    letterSpacing: -0.5,
-                  ),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: 16,
+                  runSpacing: 8,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isOverTarget ? 'VƯỢT CHỈ TIÊU' : 'CALO CÒN LẠI',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            color: isOverTarget
+                                ? colors.error
+                                : AppColors.nutritionCalories,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              _formatNumber(remaining.abs()),
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                color: isOverTarget
+                                    ? colors.error
+                                    : AppColors.nutritionCalories,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'kcal',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: isOverTarget
+                                    ? colors.error
+                                    : AppColors.nutritionCalories,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Đã nạp / Mục tiêu',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_formatNumber(consumed)} / ${_formatNumber(target)}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                TextSpan(
-                  text: ' / ${_formatNumber(target)} kcal',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.nutritionCalories,
+                const SizedBox(height: 12),
+
+                // Main Calorie Progress Bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    value: calorieRatio,
+                    minHeight: 8,
+                    backgroundColor: colors.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isOverTarget ? colors.error : AppColors.nutritionCalories,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 4),
-
-          // Subtitle: Đã nạp 66% chỉ tiêu năng lượng hôm nay
-          Text(
-            'Đã nạp $caloriePercentInt% chỉ tiêu năng lượng hôm nay',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Remaining Badge Pill: Còn lại: 860 kcal
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'Còn lại: ${_formatNumber(remaining)} kcal',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: AppColors.nutritionCalories,
-              ),
-            ),
-          ),
           const SizedBox(height: 14),
 
-          // Calorie Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: calorieRatio,
-              minHeight: 8,
-              backgroundColor: colors.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                AppColors.nutritionCalories,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // 3 Macro Compact Cards (Protein, Carb, Fat)
+          // ── 3 Macro Cards (Protein, Carb, Fat) ─────────────────────────────
           Row(
             children: [
               Expanded(
@@ -1124,6 +1212,7 @@ class _DailyEnergySummaryCard extends StatelessWidget {
                   name: 'Protein',
                   consumed: state.consumedProtein,
                   target: state.targetProtein,
+                  remaining: proteinRemaining,
                   color: AppColors.nutritionProtein,
                 ),
               ),
@@ -1133,6 +1222,7 @@ class _DailyEnergySummaryCard extends StatelessWidget {
                   name: 'Carb',
                   consumed: state.consumedCarbs,
                   target: state.targetCarbs,
+                  remaining: carbsRemaining,
                   color: AppColors.nutritionCarbs,
                 ),
               ),
@@ -1142,10 +1232,44 @@ class _DailyEnergySummaryCard extends StatelessWidget {
                   name: 'Fat',
                   consumed: state.consumedFat,
                   target: state.targetFat,
+                  remaining: fatRemaining,
                   color: AppColors.nutritionFat,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+
+          // ── Smart AI Status Callout (Beginner Friendly) ────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.aiVioletSoft,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.aiVioletBorder, width: 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.aiViolet,
+                  size: 17,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    smartCoachTip,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1158,12 +1282,14 @@ class _MacroProgressCard extends StatelessWidget {
     required this.name,
     required this.consumed,
     required this.target,
+    required this.remaining,
     required this.color,
   });
 
   final String name;
   final double consumed;
   final double target;
+  final double remaining;
   final Color color;
 
   @override
@@ -1173,20 +1299,21 @@ class _MacroProgressCard extends StatelessWidget {
     final percent = (ratio * 100).toInt();
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: [dot] Name  83%
+          // Top Row: Dot + Name + Percent
           Row(
             children: [
               Container(
-                width: 6,
-                height: 6,
+                width: 7,
+                height: 7,
                 decoration: BoxDecoration(shape: BoxShape.circle, color: color),
               ),
               const SizedBox(width: 5),
@@ -1194,8 +1321,8 @@ class _MacroProgressCard extends StatelessWidget {
                 child: Text(
                   name,
                   style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w900,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1203,31 +1330,31 @@ class _MacroProgressCard extends StatelessWidget {
               Text(
                 '$percent%',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w900,
                   color: color,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
-          // Consumed / Target: 132g /160g
+          // Consumed / Target
           RichText(
             text: TextSpan(
               children: [
                 TextSpan(
                   text: '${consumed.toStringAsFixed(0)}g',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                     color: colors.onSurface,
                   ),
                 ),
                 TextSpan(
-                  text: ' /${target.toStringAsFixed(0)}g',
+                  text: ' / ${target.toStringAsFixed(0)}g',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w600,
                     color: colors.onSurfaceVariant,
                   ),
@@ -1235,16 +1362,31 @@ class _MacroProgressCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           // Mini progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
               value: ratio,
-              minHeight: 4,
+              minHeight: 5,
               backgroundColor: colors.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          // Remaining hint
+          Text(
+            remaining > 0
+                ? 'Còn thiếu ${remaining.toStringAsFixed(0)}g'
+                : 'Đã đủ ✓',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: remaining > 0
+                  ? colors.onSurfaceVariant
+                  : AppColors.accentEmerald,
             ),
           ),
         ],
@@ -1254,18 +1396,18 @@ class _MacroProgressCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Nutrition Action Cards: Tìm kiếm, Yêu thích, Kế hoạch, Lịch sử
+// 3. Nutrition Action Cards: Tìm kiếm, AI Thực đơn, Kế hoạch, Lịch sử
 // ─────────────────────────────────────────────────────────────────────────────
 class _NutritionActionCards extends StatelessWidget {
   const _NutritionActionCards({
     required this.onSearch,
-    required this.onFavorites,
+    required this.onAiGenerate,
     required this.onPlan,
     required this.onHistory,
   });
 
   final VoidCallback onSearch;
-  final VoidCallback onFavorites;
+  final VoidCallback onAiGenerate;
   final VoidCallback onPlan;
   final VoidCallback onHistory;
 
@@ -1276,16 +1418,17 @@ class _NutritionActionCards extends StatelessWidget {
         Expanded(
           child: _ActionCardItem(
             icon: Icons.search_rounded,
-            label: 'Tìm kiếm',
+            label: 'Tìm món',
             onTap: onSearch,
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: _ActionCardItem(
-            icon: Icons.favorite_rounded,
-            label: 'Yêu thích',
-            onTap: onFavorites,
+            icon: Icons.auto_awesome_rounded,
+            label: '✨ AI Thực đơn',
+            isAiHighlighted: true,
+            onTap: onAiGenerate,
           ),
         ),
         const SizedBox(width: 8),
@@ -1314,39 +1457,52 @@ class _ActionCardItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isAiHighlighted = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isAiHighlighted;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         decoration: BoxDecoration(
-          color: colors.surfaceContainer,
-          borderRadius: BorderRadius.circular(14),
+          color: isAiHighlighted
+              ? AppColors.aiViolet.withValues(alpha: 0.12)
+              : colors.surfaceContainer,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: colors.outlineVariant.withValues(alpha: 0.6),
-            width: 1,
+            color: isAiHighlighted
+                ? AppColors.aiVioletBorder
+                : colors.outlineVariant.withValues(alpha: 0.5),
+            width: isAiHighlighted ? 1.5 : 1.0,
           ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20, color: AppColors.iconPrimary),
-            const SizedBox(height: 5),
+            Icon(
+              icon,
+              size: 20,
+              color: isAiHighlighted
+                  ? AppColors.aiViolet
+                  : AppColors.iconPrimary,
+            ),
+            const SizedBox(height: 6),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w800,
+                color: isAiHighlighted ? AppColors.aiViolet : colors.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1740,13 +1896,14 @@ class _PromptChip extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. Meal Section Card
+// 7. Meal Section Card (Smart Bento Card with Harmonious Action Buttons)
 // ─────────────────────────────────────────────────────────────────────────────
 class _MealSectionCard extends StatelessWidget {
   const _MealSectionCard({
     required this.mealType,
     required this.entries,
     required this.onAddFood,
+    this.onAiGenerate,
     required this.onQuickLog,
     required this.onDeleteEntry,
   });
@@ -1754,32 +1911,46 @@ class _MealSectionCard extends StatelessWidget {
   final MealType mealType;
   final List<FoodEntry> entries;
   final VoidCallback onAddFood;
+  final VoidCallback? onAiGenerate;
   final VoidCallback onQuickLog;
   final ValueChanged<FoodEntry> onDeleteEntry;
 
-  IconData _getMealIcon() {
+  String _getMealEmoji() {
     switch (mealType) {
       case MealType.breakfast:
-        return Icons.wb_twilight_rounded;
+        return '🌅';
       case MealType.lunch:
-        return Icons.wb_sunny_rounded;
+        return '☀️';
       case MealType.dinner:
-        return Icons.nightlight_round;
+        return '🌙';
       case MealType.snack:
-        return Icons.local_cafe_rounded;
+        return '🍎';
+    }
+  }
+
+  Color _getMealAccentColor() {
+    switch (mealType) {
+      case MealType.breakfast:
+        return AppColors.nutritionCalories;
+      case MealType.lunch:
+        return AppColors.nutritionProtein;
+      case MealType.dinner:
+        return AppColors.aiViolet;
+      case MealType.snack:
+        return AppColors.nutritionCarbs;
     }
   }
 
   String _getMealSubtitle() {
     switch (mealType) {
       case MealType.breakfast:
-        return 'Năng lượng đầu ngày';
+        return 'Nạp năng lượng đầu ngày';
       case MealType.lunch:
-        return 'Bữa ăn chính phục hồi';
+        return 'Bữa chính cân bằng dưỡng chất';
       case MealType.dinner:
-        return 'Hồi phục cơ bắp';
+        return 'Phục hồi cơ bắp & nghỉ ngơi';
       case MealType.snack:
-        return 'Trước/sau tập & ăn nhẹ';
+        return 'Bổ sung trước/sau tập';
     }
   }
 
@@ -1792,252 +1963,393 @@ class _MealSectionCard extends StatelessWidget {
     final totalCarbs = entries.fold(0.0, (sum, e) => sum + e.carbs);
     final totalFat = entries.fold(0.0, (sum, e) => sum + e.fat);
 
+    final accentColor = _getMealAccentColor();
+    final hasItems = entries.isNotEmpty;
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.6),
-          width: 1,
+          color: hasItems
+              ? colors.outlineVariant.withValues(alpha: 0.7)
+              : colors.outlineVariant.withValues(alpha: 0.45),
+          width: 1.1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Meal Header Row
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(_getMealIcon(), color: colors.onSurface, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          mealType.label,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            mealType.timeRange,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _getMealSubtitle(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$totalCalories ',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.nutritionCalories,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'kcal',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.nutritionCalories,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Meal Macro Summary Row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHigh.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(10),
-            ),
+          // ── Meal Header ──────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             child: Row(
               children: [
-                Text(
-                  'Dinh dưỡng bữa:',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colors.onSurfaceVariant,
+                // Meal Emoji Container matching AI Meal Generator style
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.28),
+                      width: 1,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  'P: ${totalProtein.toStringAsFixed(0)}g',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.nutritionProtein,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'C: ${totalCarbs.toStringAsFixed(0)}g',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.nutritionCarbs,
+                  alignment: Alignment.center,
+                  child: Text(
+                    _getMealEmoji(),
+                    style: const TextStyle(fontSize: 22),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'F: ${totalFat.toStringAsFixed(0)}g',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.nutritionFat,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            mealType.label,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              mealType.timeRange,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _getMealSubtitle(),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Calorie pill
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: hasItems
+                        ? AppColors.nutritionCalories.withValues(alpha: 0.14)
+                        : colors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: hasItems
+                          ? AppColors.nutritionCaloriesBorder
+                          : colors.outlineVariant.withValues(alpha: 0.4),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$totalCalories',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: hasItems
+                              ? AppColors.nutritionCalories
+                              : colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'kcal',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: hasItems
+                              ? AppColors.nutritionCalories
+                              : colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
 
-          // Food Item Rows
-          if (entries.isEmpty)
+          // ── Macro Summary Strip (if has items) ──────────────────────────
+          if (hasItems) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Center(
-                child: Text(
-                  'Chưa có món nào được ghi.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.onSurfaceVariant,
-                  ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-              ),
-            )
-          else
-            ...entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _FoodItemRow(
-                  entry: entry,
-                  onDelete: () => onDeleteEntry(entry),
-                ),
-              );
-            }),
-          const SizedBox(height: 6),
-
-          // Bottom Action Buttons: [ + Thêm món ] [ ⚡ Ghi nhanh calo ]
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHigh.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(12),
-                  onTap: onAddFood,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_rounded,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'Thêm món',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: onQuickLog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colors.outlineVariant.withValues(alpha: 0.4),
-                        width: 0.8,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tổng macro bữa:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 16,
-                          color: AppColors.accentAmber,
+                    Row(
+                      children: [
+                        _macroPill(
+                          'P',
+                          '${totalProtein.toStringAsFixed(0)}g',
+                          AppColors.nutritionProtein,
                         ),
-                        SizedBox(width: 6),
+                        const SizedBox(width: 8),
+                        _macroPill(
+                          'C',
+                          '${totalCarbs.toStringAsFixed(0)}g',
+                          AppColors.nutritionCarbs,
+                        ),
+                        const SizedBox(width: 8),
+                        _macroPill(
+                          'F',
+                          '${totalFat.toStringAsFixed(0)}g',
+                          AppColors.nutritionFat,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // ── Food Items List or Beginner Empty State ───────────────────────
+          if (!hasItems)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHigh.withValues(
+                        alpha: 0.45,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.restaurant_outlined,
+                          size: 13,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
                         Text(
-                          'Ghi nhanh calo',
+                          'Chưa có món nào trong ${mealType.label.toLowerCase()}',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 11.5,
+                            color: colors.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  _buildActionRow(colors),
+                ],
               ),
-            ],
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _FoodItemRow(
+                      entry: entry,
+                      onDelete: () => onDeleteEntry(entry),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // Populated bottom actions row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: _buildActionRow(colors),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionRow(ColorScheme colors) {
+    return Row(
+      children: [
+        // 1. Thêm món
+        Expanded(
+          child: _MealActionButton(
+            icon: Icons.add_circle_outline_rounded,
+            label: 'Thêm món',
+            color: colors.primary,
+            backgroundColor: colors.primary.withValues(alpha: 0.12),
+            borderColor: colors.primary.withValues(alpha: 0.35),
+            onTap: onAddFood,
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // 2. AI gợi ý
+        if (onAiGenerate != null) ...[
+          Expanded(
+            child: _MealActionButton(
+              icon: Icons.auto_awesome_rounded,
+              label: 'AI gợi ý',
+              color: AppColors.aiViolet,
+              backgroundColor: AppColors.aiVioletSoft,
+              borderColor: AppColors.aiVioletBorder,
+              onTap: onAiGenerate!,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+
+        // 3. Ghi nhanh
+        Expanded(
+          child: _MealActionButton(
+            icon: Icons.bolt_rounded,
+            label: 'Ghi nhanh',
+            color: AppColors.accentAmber,
+            backgroundColor: AppColors.accentAmber.withValues(alpha: 0.12),
+            borderColor: AppColors.accentAmber.withValues(alpha: 0.35),
+            onTap: onQuickLog,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _macroPill(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7.1. Harmonious Meal Action Button Component
+// ─────────────────────────────────────────────────────────────────────────────
+class _MealActionButton extends StatelessWidget {
+  const _MealActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color backgroundColor;
+  final Color borderColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

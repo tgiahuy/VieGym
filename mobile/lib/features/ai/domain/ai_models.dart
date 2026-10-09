@@ -201,6 +201,7 @@ class AiRecommendation {
     this.durationMinutes,
     this.createdAt,
     this.metadata,
+    this.version = 0,
   });
 
   final String id;
@@ -215,6 +216,7 @@ class AiRecommendation {
   final int? durationMinutes;
   final DateTime? createdAt;
   final Map<String, dynamic>? metadata;
+  final int version;
 
   AiRecommendation copyWith({
     ProposalStatus? status,
@@ -235,8 +237,47 @@ class AiRecommendation {
       durationMinutes: durationMinutes,
       createdAt: createdAt,
       metadata: metadata,
+      version: version,
     );
   }
+}
+
+class AiConversationSummary {
+  const AiConversationSummary({
+    required this.id,
+    required this.title,
+    required this.requestedMode,
+    this.preview,
+    this.lastMessageAt,
+  });
+
+  factory AiConversationSummary.fromJson(Map<String, dynamic> json) {
+    return AiConversationSummary(
+      id: (json['id'] as num).toInt(),
+      title: '${json['title'] ?? ''}',
+      requestedMode: '${json['requestedMode'] ?? 'GENERAL_KNOWLEDGE'}',
+      preview: json['preview'] as String?,
+      lastMessageAt: DateTime.tryParse('${json['lastMessageAt'] ?? ''}'),
+    );
+  }
+
+  final int id;
+  final String title;
+  final String requestedMode;
+  final String? preview;
+  final DateTime? lastMessageAt;
+}
+
+class AiMessageExchange {
+  const AiMessageExchange({
+    required this.mode,
+    required this.user,
+    required this.assistant,
+  });
+
+  final String mode;
+  final AiChatMessage user;
+  final AiChatMessage assistant;
 }
 
 class AiCoachState {
@@ -245,12 +286,16 @@ class AiCoachState {
     this.recommendations = const [],
     this.isGenerating = false,
     this.isLoadingRecommendations = false,
+    this.effectiveMode = 'GENERAL_KNOWLEDGE',
+    this.errorMessage,
   });
 
   final List<AiChatMessage> messages;
   final List<AiRecommendation> recommendations;
   final bool isGenerating;
   final bool isLoadingRecommendations;
+  final String effectiveMode;
+  final String? errorMessage;
 
   List<AiRecommendation> get activeRecommendations =>
       recommendations.where((r) => r.status == ProposalStatus.pending).toList();
@@ -262,6 +307,9 @@ class AiCoachState {
     List<AiRecommendation>? recommendations,
     bool? isGenerating,
     bool? isLoadingRecommendations,
+    String? effectiveMode,
+    String? errorMessage,
+    bool clearError = false,
   }) {
     return AiCoachState(
       messages: messages ?? this.messages,
@@ -269,6 +317,8 @@ class AiCoachState {
       isGenerating: isGenerating ?? this.isGenerating,
       isLoadingRecommendations:
           isLoadingRecommendations ?? this.isLoadingRecommendations,
+      effectiveMode: effectiveMode ?? this.effectiveMode,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
 }

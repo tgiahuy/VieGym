@@ -8,7 +8,6 @@ import '../../../shared/utils/greeting_utils.dart';
 import '../../ai/application/ai_coach_controller.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../notifications/presentation/widgets/notification_bell_button.dart';
-import '../../nutrition/application/nutrition_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../../profile/application/progress_controller.dart';
 import '../../profile/presentation/widgets/log_weight_dialog.dart';
@@ -34,27 +33,25 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
     final session = ref.watch(workoutSessionProvider);
     final schedule = ref.watch(workoutScheduleProvider);
-    final nutrition = ref.watch(nutritionProvider);
     final auth = ref.watch(authProvider);
     final healthProfile = ref.watch(healthProfileProvider);
     final progress = ref.watch(progressProvider);
-    final aiCalories = ref.watch(mealCaloriesAddedProvider);
 
     final userName = healthProfile.nickname.isNotEmpty
         ? healthProfile.nickname
         : (auth.user?.displayName ?? 'Gia Huy');
     final userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : 'G';
-    final totalConsumedCalories = nutrition.consumedCalories + aiCalories;
     final greeting = getTimeBasedGreeting();
-    final hasTodayWorkout = schedule.hasTodayWorkout;
+    final isTodayCompleted = ref.watch(isTodayWorkoutCompletedProvider);
+    final hasTodayWorkout =
+        schedule.hasTodayWorkout || isTodayCompleted;
     final todayWorkoutTitle = schedule.todayWorkout?.title;
     final displayTitle = session.title.isNotEmpty
         ? session.title
         : (todayWorkoutTitle ?? 'Upper Body A');
-
-    final isTodayCompleted = ref.watch(isTodayWorkoutCompletedProvider);
     final todayScheduleItem = schedule.todayWorkout;
     final todayHistoryItem = schedule.history
         .where((h) => h.date == _formatDate(DateTime.now()))
@@ -91,27 +88,61 @@ class DashboardScreen extends ConsumerWidget {
     final double bmi = (healthProfile.bmi > 0 ? healthProfile.bmi : 23.73)
         .toDouble();
 
+    final goalLabel = healthProfile.goal.label.split('(').first.trim();
+
     return Scaffold(
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
           children: [
-            // 1. User Header: Greeting & Name on left, Bell & Avatar on right
+            // ─────────────────────────────────────────────────────────────────
+            // 1. User Hero Header: Greeting, Goal Badge, Notifications & Avatar
+            // ─────────────────────────────────────────────────────────────────
             Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '$greeting,',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            '$greeting 👋',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (goalLabel.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colors.primary.withValues(alpha: 0.25),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                goalLabel,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: colors.primary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         userName,
                         style: const TextStyle(
@@ -128,15 +159,24 @@ class DashboardScreen extends ConsumerWidget {
                 InkWell(
                   borderRadius: BorderRadius.circular(99),
                   onTap: () => context.push('/profile'),
-                  child: CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.surfaceNested,
-                    child: Text(
-                      userInitial,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: 0.6),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 21,
+                      backgroundColor: AppColors.surfaceNested,
+                      child: Text(
+                        userInitial,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                   ),
@@ -145,7 +185,9 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 18),
 
-            // 2. Weekly Progress Card (Tiến độ trong tuần)
+            // ─────────────────────────────────────────────────────────────────
+            // 2. Weekly Progress Card (Tiến độ & Chuỗi ngày trong tuần)
+            // ─────────────────────────────────────────────────────────────────
             WeeklyProgressCard(
               completedWorkouts: progress.completedWorkoutsThisWeek,
               targetWorkouts: progress.targetWorkoutsPerWeek,
@@ -154,7 +196,9 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
+            // ─────────────────────────────────────────────────────────────────
             // 3. Hero Workout Card or Empty State
+            // ─────────────────────────────────────────────────────────────────
             if (hasTodayWorkout && session.exercises.isNotEmpty)
               _HeroWorkoutCard(
                 title: displayTitle,
@@ -180,6 +224,18 @@ class DashboardScreen extends ConsumerWidget {
                       .selectDate(todayStr);
                   context.push('/workout/generate');
                 },
+                customBuildButtonLabel: 'Áp dụng giáo án có sẵn',
+                onCustomBuildWorkout: () {
+                  final now = DateTime.now();
+                  final todayStr =
+                      '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                  ref
+                      .read(workoutScheduleProvider.notifier)
+                      .selectDate(todayStr);
+                  context.push(
+                    '/workout/schedule/create?date=$todayStr&tab=personal',
+                  );
+                },
                 buttonLabel: 'Thêm lịch tập ngay!',
                 onCreateWorkout: () {
                   final now = DateTime.now();
@@ -191,9 +247,11 @@ class DashboardScreen extends ConsumerWidget {
                   context.push('/workout/schedule');
                 },
               ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // 4. Weight Trend (Xu hướng cân nặng 30 ngày & Cập nhật cân nặng)
+            // ─────────────────────────────────────────────────────────────────
+            // 4. Weight Trend Card (Xu hướng cân nặng 30 ngày & Cập nhật)
+            // ─────────────────────────────────────────────────────────────────
             _DashboardWeightTrendCard(
               currentWeightKg: currentWeight,
               targetWeightKg: targetWeight,
@@ -201,90 +259,17 @@ class DashboardScreen extends ConsumerWidget {
               weightLogs: progress.weightLogs,
               onLogWeight: () => _showLogWeightDialog(context, ref),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // 5. Today's Nutrition & Recovery Metrics Overview
-            const Text(
-              'Chỉ số dinh dưỡng & Phục hồi',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    icon: Icons.local_fire_department_rounded,
-                    label: 'Năng lượng',
-                    value: '$totalConsumedCalories',
-                    unit: '/ ${nutrition.targetCalories} kcal',
-                    color: AppColors.nutritionCalories,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: _MetricCard(
-                    icon: Icons.monitor_heart_outlined,
-                    label: 'Phục hồi',
-                    value: '88%',
-                    unit: 'Sẵn sàng tập luyện',
-                    color: AppColors.cyan,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // 6. AI Coach Banner
-            Card(
-              margin: EdgeInsets.zero,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () => context.push('/ai/chat'),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.aiVioletSoft,
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.aiViolet,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'AI Coach Thông Minh',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                              ),
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              'Hỏi AI về kỹ thuật, đau nhức hoặc đổi bài tập linh hoạt.',
-                              style: TextStyle(fontSize: 12, height: 1.35),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
-                ),
-              ),
+            // ─────────────────────────────────────────────────────────────────
+            // 5. AI Coach Assistant Card with Starter Prompt Chips
+            // ─────────────────────────────────────────────────────────────────
+            _DashboardAiCoachCard(
+              onChat: () => context.push('/ai/chat'),
+              onSelectPrompt: (prompt) {
+                ref.read(aiCoachProvider.notifier).send(prompt);
+                context.push('/ai/chat');
+              },
             ),
           ],
         ),
@@ -294,7 +279,7 @@ class DashboardScreen extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dashboard Weight Trend Card (30-Day Trend + Quick Log Action)
+// 5. Dashboard Weight Trend Card (30-Day Trend + Quick Log Action)
 // ─────────────────────────────────────────────────────────────────────────────
 class _DashboardWeightTrendCard extends StatelessWidget {
   const _DashboardWeightTrendCard({
@@ -334,9 +319,10 @@ class _DashboardWeightTrendCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: colors.outlineVariant.withValues(alpha: 0.35),
+          color: colors.outlineVariant.withValues(alpha: 0.45),
+          width: 1.1,
         ),
       ),
       child: Column(
@@ -345,74 +331,75 @@ class _DashboardWeightTrendCard extends StatelessWidget {
           // Header: Icon, Title, Metric, and Quick Action Button
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.cyan.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.trending_down_rounded,
-                      size: 17,
-                      color: AppColors.cyan,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'XU HƯỚNG CÂN NẶNG (30 NGÀY)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurfaceVariant,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            '${currentWeightKg.toStringAsFixed(1)} kg',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'BMI: ${bmi.toStringAsFixed(1)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.cyan.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.trending_down_rounded,
+                  size: 17,
+                  color: AppColors.cyan,
+                ),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'XU HƯỚNG CÂN NẶNG (30 NGÀY)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurfaceVariant,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          '${currentWeightKg.toStringAsFixed(1)} kg',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        Text(
+                          'BMI: ${bmi.toStringAsFixed(1)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               // Action Button "Cập nhật cân nặng"
               InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+                borderRadius: BorderRadius.circular(10),
                 onTap: onLogWeight,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 8,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.cyan.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: AppColors.cyan.withValues(alpha: 0.3),
                       width: 1,
@@ -422,11 +409,11 @@ class _DashboardWeightTrendCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.add_rounded, size: 14, color: AppColors.cyan),
-                      SizedBox(width: 4),
+                      SizedBox(width: 3),
                       Text(
                         'Cập nhật',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: AppColors.cyan,
                         ),
@@ -461,12 +448,16 @@ class _DashboardWeightTrendCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                'So với 30 ngày trước',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: colors.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  'So với 30 ngày trước',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -522,12 +513,19 @@ class _DashboardWeightTrendCard extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
-                Text(
-                  'Mục tiêu: ${targetWeightKg.toStringAsFixed(0)} kg',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.cyan,
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      'Mục tiêu: ${targetWeightKg.toStringAsFixed(0)} kg',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.cyan,
+                      ),
+                    ),
                   ),
                 ),
                 Text(
@@ -664,7 +662,7 @@ class _DashboardWeightLineChartPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hero Workout Card
+// 3. Hero Workout Card
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeroWorkoutCard extends StatelessWidget {
   const _HeroWorkoutCard({
@@ -947,19 +945,26 @@ class _HeroWorkoutCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onStart,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onStart,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(
-                  completedSets > 0 ? 'Tiếp tục buổi tập' : 'Bắt đầu tập ngay',
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text(
+                    completedSets > 0 ? 'Tiếp tục buổi tập' : 'Bắt đầu tập ngay',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -996,44 +1001,138 @@ class _MuscleBadge extends StatelessWidget {
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.unit,
-    required this.color,
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. AI Coach Assistant Card with Starter Prompt Chips
+// ─────────────────────────────────────────────────────────────────────────────
+class _DashboardAiCoachCard extends StatelessWidget {
+  const _DashboardAiCoachCard({
+    required this.onChat,
+    required this.onSelectPrompt,
   });
 
-  final IconData icon;
-  final String label;
-  final String value;
-  final String unit;
-  final Color color;
+  final VoidCallback onChat;
+  final ValueChanged<String> onSelectPrompt;
 
   @override
   Widget build(BuildContext context) {
-    final cardContent = Padding(
-      padding: const EdgeInsets.all(14),
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainer,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.aiVioletBorder.withValues(alpha: 0.6),
+          width: 1.2,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 10),
-          Text(label, style: const TextStyle(fontSize: 12)),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: AppColors.aiVioletSoft,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.aiViolet,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Trợ lý AI Thể hình & Dinh dưỡng',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Hỏi AI về kỹ thuật, đổi bài hoặc dinh dưỡng chuẩn gym',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
+                color: AppColors.aiViolet,
+                onPressed: onChat,
+              ),
+            ],
           ),
-          Text(
-            unit,
-            style: const TextStyle(fontSize: 10, color: AppColors.textTertiary),
+          const SizedBox(height: 12),
+
+          // Starter Prompt Chips
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _PromptChip(
+                label: '💡 Hướng dẫn cho người mới',
+                onTap: () => onSelectPrompt('Tôi là người mới bắt đầu tập gym, hãy hướng dẫn tôi lộ trình 4 tuần đầu tiên'),
+              ),
+              _PromptChip(
+                label: '💪 Gợi ý tăng cơ nạc',
+                onTap: () => onSelectPrompt('Làm thế nào để tối ưu tăng cơ nạc mà không tích mỡ thừa?'),
+              ),
+              _PromptChip(
+                label: '🥗 Bữa ăn sau tập',
+                onTap: () => onSelectPrompt('Nên ăn gì ngay sau buổi tập gym để phục hồi cơ tốt nhất?'),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+}
 
-    return Card(margin: EdgeInsets.zero, child: cardContent);
+class _PromptChip extends StatelessWidget {
+  const _PromptChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colors.outlineVariant.withValues(alpha: 0.4),
+            width: 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 }

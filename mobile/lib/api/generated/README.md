@@ -48,14 +48,14 @@ Please follow the [installation procedure](#installation--usage) and then run th
 import 'package:viegym_api/viegym_api.dart';
 
 
-final api = ViegymApi().getAuthControllerApi();
-final ChangePasswordRequest changePasswordRequest = ; // ChangePasswordRequest |
+final api = ViegymApi().getAdminWorkoutTemplateControllerApi();
+final int id = 789; // int |
 
 try {
-    final response = await api.changePassword(changePasswordRequest);
+    final response = await api.archive(id);
     print(response);
 } catch on DioException (e) {
-    print("Exception when calling AuthControllerApi->changePassword: $e\n");
+    print("Exception when calling AdminWorkoutTemplateControllerApi->archive: $e\n");
 }
 
 ```
@@ -66,7 +66,12 @@ All URIs are relative to *http://localhost:8080/api/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+[*AdminWorkoutTemplateControllerApi*](doc/AdminWorkoutTemplateControllerApi.md) | [**archive**](doc/AdminWorkoutTemplateControllerApi.md#archive) | **DELETE** /api/v1/admin/workout-program-templates/{id} |
+[*AdminWorkoutTemplateControllerApi*](doc/AdminWorkoutTemplateControllerApi.md) | [**create2**](doc/AdminWorkoutTemplateControllerApi.md#create2) | **POST** /api/v1/admin/workout-program-templates |
+[*AdminWorkoutTemplateControllerApi*](doc/AdminWorkoutTemplateControllerApi.md) | [**list**](doc/AdminWorkoutTemplateControllerApi.md#list) | **GET** /api/v1/admin/workout-program-templates |
+[*AdminWorkoutTemplateControllerApi*](doc/AdminWorkoutTemplateControllerApi.md) | [**update2**](doc/AdminWorkoutTemplateControllerApi.md#update2) | **PUT** /api/v1/admin/workout-program-templates/{id} |
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**changePassword**](doc/AuthControllerApi.md#changepassword) | **POST** /api/v1/auth/password/change |
+[*AuthControllerApi*](doc/AuthControllerApi.md) | [**facebook**](doc/AuthControllerApi.md#facebook) | **POST** /api/v1/auth/facebook |
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**forgotPassword**](doc/AuthControllerApi.md#forgotpassword) | **POST** /api/v1/auth/password/forgot |
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**google**](doc/AuthControllerApi.md#google) | **POST** /api/v1/auth/google |
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**login**](doc/AuthControllerApi.md#login) | **POST** /api/v1/auth/login |
@@ -76,40 +81,163 @@ Class | Method | HTTP request | Description
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**resendOtp**](doc/AuthControllerApi.md#resendotp) | **POST** /api/v1/auth/otp/resend |
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**resetPassword**](doc/AuthControllerApi.md#resetpassword) | **POST** /api/v1/auth/password/reset |
 [*AuthControllerApi*](doc/AuthControllerApi.md) | [**verifyOtp**](doc/AuthControllerApi.md#verifyotp) | **POST** /api/v1/auth/otp/verify |
+[*DashboardControllerApi*](doc/DashboardControllerApi.md) | [**getDashboard**](doc/DashboardControllerApi.md#getdashboard) | **GET** /api/v1/dashboard |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**addFavorite1**](doc/ExerciseCatalogControllerApi.md#addfavorite1) | **PUT** /api/v1/favorite-exercises/{exerciseId} |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**getExerciseAlternatives**](doc/ExerciseCatalogControllerApi.md#getexercisealternatives) | **GET** /api/v1/exercises/{id}/alternatives |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**getExerciseDetail**](doc/ExerciseCatalogControllerApi.md#getexercisedetail) | **GET** /api/v1/exercises/{id} |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**listEquipment**](doc/ExerciseCatalogControllerApi.md#listequipment) | **GET** /api/v1/equipment |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**listFavoriteExercises**](doc/ExerciseCatalogControllerApi.md#listfavoriteexercises) | **GET** /api/v1/favorite-exercises |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**listMuscleGroups**](doc/ExerciseCatalogControllerApi.md#listmusclegroups) | **GET** /api/v1/muscle-groups |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**removeFavorite1**](doc/ExerciseCatalogControllerApi.md#removefavorite1) | **DELETE** /api/v1/favorite-exercises/{exerciseId} |
+[*ExerciseCatalogControllerApi*](doc/ExerciseCatalogControllerApi.md) | [**searchExercises**](doc/ExerciseCatalogControllerApi.md#searchexercises) | **GET** /api/v1/exercises |
 [*HealthProfileControllerApi*](doc/HealthProfileControllerApi.md) | [**create**](doc/HealthProfileControllerApi.md#create) | **POST** /api/v1/health/profile |
+[*HealthProfileControllerApi*](doc/HealthProfileControllerApi.md) | [**get2**](doc/HealthProfileControllerApi.md#get2) | **GET** /api/v1/health/profile |
+[*HealthProfileControllerApi*](doc/HealthProfileControllerApi.md) | [**update1**](doc/HealthProfileControllerApi.md#update1) | **PUT** /api/v1/health/profile |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**addEntry**](doc/NutritionControllerApi.md#addentry) | **POST** /api/v1/meal-plans/{planDate}/entries |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**addFavorite**](doc/NutritionControllerApi.md#addfavorite) | **PUT** /api/v1/favorite-foods/{foodId} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**applyTemplate**](doc/NutritionControllerApi.md#applytemplate) | **POST** /api/v1/meal-templates/{id}/apply |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**createTemplate**](doc/NutritionControllerApi.md#createtemplate) | **POST** /api/v1/meal-templates |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**deleteEntry**](doc/NutritionControllerApi.md#deleteentry) | **DELETE** /api/v1/meal-plans/{planDate}/entries/{entryId} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**deleteTemplate**](doc/NutritionControllerApi.md#deletetemplate) | **DELETE** /api/v1/meal-templates/{id} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**favorites**](doc/NutritionControllerApi.md#favorites) | **GET** /api/v1/favorite-foods |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**food**](doc/NutritionControllerApi.md#food) | **GET** /api/v1/foods/{id} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**foods**](doc/NutritionControllerApi.md#foods) | **GET** /api/v1/foods |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**mealHistory**](doc/NutritionControllerApi.md#mealhistory) | **GET** /api/v1/meal-plans/history |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**mealPlan**](doc/NutritionControllerApi.md#mealplan) | **GET** /api/v1/meal-plans |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**removeFavorite**](doc/NutritionControllerApi.md#removefavorite) | **DELETE** /api/v1/favorite-foods/{foodId} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**template**](doc/NutritionControllerApi.md#template) | **GET** /api/v1/meal-templates/{id} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**templates**](doc/NutritionControllerApi.md#templates) | **GET** /api/v1/meal-templates |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**updateEntry**](doc/NutritionControllerApi.md#updateentry) | **PUT** /api/v1/meal-plans/{planDate}/entries/{entryId} |
+[*NutritionControllerApi*](doc/NutritionControllerApi.md) | [**updateTemplate**](doc/NutritionControllerApi.md#updatetemplate) | **PUT** /api/v1/meal-templates/{id} |
+[*PersonalRecordControllerApi*](doc/PersonalRecordControllerApi.md) | [**listPersonalRecords**](doc/PersonalRecordControllerApi.md#listpersonalrecords) | **GET** /api/v1/personal-records |
 [*PreferenceControllerApi*](doc/PreferenceControllerApi.md) | [**get1**](doc/PreferenceControllerApi.md#get1) | **GET** /api/v1/preferences |
 [*PreferenceControllerApi*](doc/PreferenceControllerApi.md) | [**getEquipment**](doc/PreferenceControllerApi.md#getequipment) | **GET** /api/v1/preferences/equipment |
 [*PreferenceControllerApi*](doc/PreferenceControllerApi.md) | [**put**](doc/PreferenceControllerApi.md#put) | **PUT** /api/v1/preferences |
 [*PreferenceControllerApi*](doc/PreferenceControllerApi.md) | [**putEquipment**](doc/PreferenceControllerApi.md#putequipment) | **PUT** /api/v1/preferences/equipment |
 [*UserProfileControllerApi*](doc/UserProfileControllerApi.md) | [**callGet**](doc/UserProfileControllerApi.md#callget) | **GET** /api/v1/users/me |
 [*UserProfileControllerApi*](doc/UserProfileControllerApi.md) | [**update**](doc/UserProfileControllerApi.md#update) | **PUT** /api/v1/users/me |
+[*WeightLogControllerApi*](doc/WeightLogControllerApi.md) | [**list2**](doc/WeightLogControllerApi.md#list2) | **GET** /api/v1/weight-logs |
+[*WeightLogControllerApi*](doc/WeightLogControllerApi.md) | [**trend**](doc/WeightLogControllerApi.md#trend) | **GET** /api/v1/weight-logs/trend |
+[*WeightLogControllerApi*](doc/WeightLogControllerApi.md) | [**upsert**](doc/WeightLogControllerApi.md#upsert) | **PUT** /api/v1/weight-logs/{loggedDate} |
+[*WorkoutLogControllerApi*](doc/WorkoutLogControllerApi.md) | [**getWorkoutLogDetail**](doc/WorkoutLogControllerApi.md#getworkoutlogdetail) | **GET** /api/v1/workout-logs/{id} |
+[*WorkoutLogControllerApi*](doc/WorkoutLogControllerApi.md) | [**listWorkoutLogs**](doc/WorkoutLogControllerApi.md#listworkoutlogs) | **GET** /api/v1/workout-logs |
+[*WorkoutProgramControllerApi*](doc/WorkoutProgramControllerApi.md) | [**archiveProgram**](doc/WorkoutProgramControllerApi.md#archiveprogram) | **DELETE** /api/v1/workout-programs/{id} |
+[*WorkoutProgramControllerApi*](doc/WorkoutProgramControllerApi.md) | [**createProgram**](doc/WorkoutProgramControllerApi.md#createprogram) | **POST** /api/v1/workout-programs |
+[*WorkoutProgramControllerApi*](doc/WorkoutProgramControllerApi.md) | [**getProgram**](doc/WorkoutProgramControllerApi.md#getprogram) | **GET** /api/v1/workout-programs/{id} |
+[*WorkoutProgramControllerApi*](doc/WorkoutProgramControllerApi.md) | [**listPrograms**](doc/WorkoutProgramControllerApi.md#listprograms) | **GET** /api/v1/workout-programs |
+[*WorkoutProgramControllerApi*](doc/WorkoutProgramControllerApi.md) | [**updateProgram**](doc/WorkoutProgramControllerApi.md#updateprogram) | **PUT** /api/v1/workout-programs/{id} |
+[*WorkoutScheduleControllerApi*](doc/WorkoutScheduleControllerApi.md) | [**cancelSchedule**](doc/WorkoutScheduleControllerApi.md#cancelschedule) | **DELETE** /api/v1/workout-schedules/{id} |
+[*WorkoutScheduleControllerApi*](doc/WorkoutScheduleControllerApi.md) | [**createSchedule**](doc/WorkoutScheduleControllerApi.md#createschedule) | **POST** /api/v1/workout-schedules |
+[*WorkoutScheduleControllerApi*](doc/WorkoutScheduleControllerApi.md) | [**getSchedule**](doc/WorkoutScheduleControllerApi.md#getschedule) | **GET** /api/v1/workout-schedules/{id} |
+[*WorkoutScheduleControllerApi*](doc/WorkoutScheduleControllerApi.md) | [**listSchedules**](doc/WorkoutScheduleControllerApi.md#listschedules) | **GET** /api/v1/workout-schedules |
+[*WorkoutScheduleControllerApi*](doc/WorkoutScheduleControllerApi.md) | [**updateSchedule**](doc/WorkoutScheduleControllerApi.md#updateschedule) | **PUT** /api/v1/workout-schedules/{id} |
+[*WorkoutSchedulePlanningControllerApi*](doc/WorkoutSchedulePlanningControllerApi.md) | [**apply**](doc/WorkoutSchedulePlanningControllerApi.md#apply) | **POST** /api/v1/workout-schedule-proposals/{id}/apply |
+[*WorkoutSchedulePlanningControllerApi*](doc/WorkoutSchedulePlanningControllerApi.md) | [**create1**](doc/WorkoutSchedulePlanningControllerApi.md#create1) | **POST** /api/v1/workout-schedule-proposals |
+[*WorkoutSchedulePlanningControllerApi*](doc/WorkoutSchedulePlanningControllerApi.md) | [**get3**](doc/WorkoutSchedulePlanningControllerApi.md#get3) | **GET** /api/v1/workout-schedule-proposals/{id} |
+[*WorkoutSessionControllerApi*](doc/WorkoutSessionControllerApi.md) | [**discardSession**](doc/WorkoutSessionControllerApi.md#discardsession) | **POST** /api/v1/workout-sessions/{id}/discard |
+[*WorkoutSessionControllerApi*](doc/WorkoutSessionControllerApi.md) | [**finishSession**](doc/WorkoutSessionControllerApi.md#finishsession) | **POST** /api/v1/workout-sessions/{id}/finish |
+[*WorkoutSessionControllerApi*](doc/WorkoutSessionControllerApi.md) | [**pauseSession**](doc/WorkoutSessionControllerApi.md#pausesession) | **POST** /api/v1/workout-sessions/{id}/pause |
+[*WorkoutSessionControllerApi*](doc/WorkoutSessionControllerApi.md) | [**resumeSession**](doc/WorkoutSessionControllerApi.md#resumesession) | **POST** /api/v1/workout-sessions/{id}/resume |
+[*WorkoutSessionControllerApi*](doc/WorkoutSessionControllerApi.md) | [**startSession**](doc/WorkoutSessionControllerApi.md#startsession) | **POST** /api/v1/workout-sessions/{scheduleId}/start |
+[*WorkoutTemplateControllerApi*](doc/WorkoutTemplateControllerApi.md) | [**get4**](doc/WorkoutTemplateControllerApi.md#get4) | **GET** /api/v1/workout-program-templates/{id} |
+[*WorkoutTemplateControllerApi*](doc/WorkoutTemplateControllerApi.md) | [**list1**](doc/WorkoutTemplateControllerApi.md#list1) | **GET** /api/v1/workout-program-templates |
 
 
 ## Documentation For Models
 
+ - [ApiResponseApplyScheduleProposalResponse](doc/ApiResponseApplyScheduleProposalResponse.md)
+ - [ApiResponseApplyTemplateResult](doc/ApiResponseApplyTemplateResult.md)
+ - [ApiResponseDashboardResponse](doc/ApiResponseDashboardResponse.md)
  - [ApiResponseEquipmentPreferenceResponse](doc/ApiResponseEquipmentPreferenceResponse.md)
+ - [ApiResponseExerciseDetailDto](doc/ApiResponseExerciseDetailDto.md)
+ - [ApiResponseFinishSessionResponse](doc/ApiResponseFinishSessionResponse.md)
+ - [ApiResponseFood](doc/ApiResponseFood.md)
  - [ApiResponseHealthProfileResponse](doc/ApiResponseHealthProfileResponse.md)
+ - [ApiResponseListEquipmentDto](doc/ApiResponseListEquipmentDto.md)
+ - [ApiResponseListExerciseSummaryDto](doc/ApiResponseListExerciseSummaryDto.md)
+ - [ApiResponseListMealTemplate](doc/ApiResponseListMealTemplate.md)
+ - [ApiResponseListMuscleGroupDto](doc/ApiResponseListMuscleGroupDto.md)
+ - [ApiResponseListWorkoutTemplateResponse](doc/ApiResponseListWorkoutTemplateResponse.md)
+ - [ApiResponseMealPlan](doc/ApiResponseMealPlan.md)
+ - [ApiResponseMealTemplate](doc/ApiResponseMealTemplate.md)
+ - [ApiResponsePageResponseExerciseSummaryDto](doc/ApiResponsePageResponseExerciseSummaryDto.md)
+ - [ApiResponsePageResponseFood](doc/ApiResponsePageResponseFood.md)
+ - [ApiResponsePageResponseMealPlan](doc/ApiResponsePageResponseMealPlan.md)
+ - [ApiResponsePageResponsePersonalRecordDto](doc/ApiResponsePageResponsePersonalRecordDto.md)
+ - [ApiResponsePageResponseWeightLogDto](doc/ApiResponsePageResponseWeightLogDto.md)
+ - [ApiResponsePageResponseWorkoutLogSummaryDto](doc/ApiResponsePageResponseWorkoutLogSummaryDto.md)
+ - [ApiResponsePageResponseWorkoutProgramSummaryResponse](doc/ApiResponsePageResponseWorkoutProgramSummaryResponse.md)
+ - [ApiResponsePageResponseWorkoutScheduleResponse](doc/ApiResponsePageResponseWorkoutScheduleResponse.md)
+ - [ApiResponsePauseSessionResponse](doc/ApiResponsePauseSessionResponse.md)
  - [ApiResponsePreferenceResponse](doc/ApiResponsePreferenceResponse.md)
  - [ApiResponseRegisterChallengeResponse](doc/ApiResponseRegisterChallengeResponse.md)
+ - [ApiResponseResumeSessionResponse](doc/ApiResponseResumeSessionResponse.md)
+ - [ApiResponseScheduleProposalResponse](doc/ApiResponseScheduleProposalResponse.md)
  - [ApiResponseSessionResponse](doc/ApiResponseSessionResponse.md)
+ - [ApiResponseStartSessionResponse](doc/ApiResponseStartSessionResponse.md)
+ - [ApiResponseUpsertWeightLogResponse](doc/ApiResponseUpsertWeightLogResponse.md)
  - [ApiResponseUserResponse](doc/ApiResponseUserResponse.md)
  - [ApiResponseVoid](doc/ApiResponseVoid.md)
+ - [ApiResponseWeightTrendResponse](doc/ApiResponseWeightTrendResponse.md)
+ - [ApiResponseWorkoutLogDetailDto](doc/ApiResponseWorkoutLogDetailDto.md)
+ - [ApiResponseWorkoutProgramResponse](doc/ApiResponseWorkoutProgramResponse.md)
+ - [ApiResponseWorkoutScheduleResponse](doc/ApiResponseWorkoutScheduleResponse.md)
+ - [ApiResponseWorkoutTemplateResponse](doc/ApiResponseWorkoutTemplateResponse.md)
+ - [ApplyMealTemplateRequest](doc/ApplyMealTemplateRequest.md)
+ - [ApplyScheduleProposalResponse](doc/ApplyScheduleProposalResponse.md)
+ - [ApplyTemplateResult](doc/ApplyTemplateResult.md)
  - [AvatarResponse](doc/AvatarResponse.md)
+ - [BodySection](doc/BodySection.md)
  - [ChangePasswordRequest](doc/ChangePasswordRequest.md)
  - [CreateHealthProfileRequest](doc/CreateHealthProfileRequest.md)
+ - [CreateMealTemplateRequest](doc/CreateMealTemplateRequest.md)
+ - [CreateScheduleProposalRequest](doc/CreateScheduleProposalRequest.md)
+ - [DashboardResponse](doc/DashboardResponse.md)
+ - [DiscardSessionRequest](doc/DiscardSessionRequest.md)
+ - [EquipmentDto](doc/EquipmentDto.md)
  - [EquipmentItem](doc/EquipmentItem.md)
  - [EquipmentPreferenceRequest](doc/EquipmentPreferenceRequest.md)
  - [EquipmentPreferenceResponse](doc/EquipmentPreferenceResponse.md)
+ - [ExerciseDetailDto](doc/ExerciseDetailDto.md)
+ - [ExerciseEquipmentDto](doc/ExerciseEquipmentDto.md)
+ - [ExerciseMuscleGroupDto](doc/ExerciseMuscleGroupDto.md)
+ - [ExerciseSummaryDto](doc/ExerciseSummaryDto.md)
+ - [FacebookLoginRequest](doc/FacebookLoginRequest.md)
+ - [FinishExerciseLogRequest](doc/FinishExerciseLogRequest.md)
+ - [FinishSessionRequest](doc/FinishSessionRequest.md)
+ - [FinishSessionResponse](doc/FinishSessionResponse.md)
+ - [FinishSetLogRequest](doc/FinishSetLogRequest.md)
+ - [Food](doc/Food.md)
  - [ForgotPasswordRequest](doc/ForgotPasswordRequest.md)
  - [GoogleLoginRequest](doc/GoogleLoginRequest.md)
  - [HealthProfileResponse](doc/HealthProfileResponse.md)
+ - [Item](doc/Item.md)
  - [LoginRequest](doc/LoginRequest.md)
  - [LogoutRequest](doc/LogoutRequest.md)
+ - [Meal](doc/Meal.md)
+ - [MealEntry](doc/MealEntry.md)
+ - [MealEntryRequest](doc/MealEntryRequest.md)
+ - [MealPlan](doc/MealPlan.md)
+ - [MealTemplate](doc/MealTemplate.md)
  - [Metrics](doc/Metrics.md)
+ - [MuscleGroupDto](doc/MuscleGroupDto.md)
+ - [Nutrition](doc/Nutrition.md)
+ - [NutritionMacroSummary](doc/NutritionMacroSummary.md)
+ - [NutritionSection](doc/NutritionSection.md)
  - [NutritionTarget](doc/NutritionTarget.md)
  - [OnboardingResponse](doc/OnboardingResponse.md)
  - [OtpResendRequest](doc/OtpResendRequest.md)
  - [OtpVerifyRequest](doc/OtpVerifyRequest.md)
+ - [PageResponseExerciseSummaryDto](doc/PageResponseExerciseSummaryDto.md)
+ - [PageResponseFood](doc/PageResponseFood.md)
+ - [PageResponseMealPlan](doc/PageResponseMealPlan.md)
+ - [PageResponsePersonalRecordDto](doc/PageResponsePersonalRecordDto.md)
+ - [PageResponseWeightLogDto](doc/PageResponseWeightLogDto.md)
+ - [PageResponseWorkoutLogSummaryDto](doc/PageResponseWorkoutLogSummaryDto.md)
+ - [PageResponseWorkoutProgramSummaryResponse](doc/PageResponseWorkoutProgramSummaryResponse.md)
+ - [PageResponseWorkoutScheduleResponse](doc/PageResponseWorkoutScheduleResponse.md)
+ - [PauseSessionResponse](doc/PauseSessionResponse.md)
+ - [PersonalRecordDto](doc/PersonalRecordDto.md)
  - [PreferenceRequest](doc/PreferenceRequest.md)
  - [PreferenceResponse](doc/PreferenceResponse.md)
  - [Profile](doc/Profile.md)
@@ -117,9 +245,42 @@ Class | Method | HTTP request | Description
  - [RegisterChallengeResponse](doc/RegisterChallengeResponse.md)
  - [RegisterRequest](doc/RegisterRequest.md)
  - [ResetPasswordRequest](doc/ResetPasswordRequest.md)
+ - [ResumeSessionResponse](doc/ResumeSessionResponse.md)
+ - [ScheduleExercisePlan](doc/ScheduleExercisePlan.md)
+ - [ScheduleProposalItemRequest](doc/ScheduleProposalItemRequest.md)
+ - [ScheduleProposalItemResponse](doc/ScheduleProposalItemResponse.md)
+ - [ScheduleProposalResponse](doc/ScheduleProposalResponse.md)
+ - [Serving](doc/Serving.md)
  - [SessionResponse](doc/SessionResponse.md)
+ - [StartSessionResponse](doc/StartSessionResponse.md)
+ - [TemplateItem](doc/TemplateItem.md)
+ - [UpdateHealthProfileRequest](doc/UpdateHealthProfileRequest.md)
  - [UpdateUserRequest](doc/UpdateUserRequest.md)
+ - [UpsertWeightLogRequest](doc/UpsertWeightLogRequest.md)
+ - [UpsertWeightLogResponse](doc/UpsertWeightLogResponse.md)
  - [UserResponse](doc/UserResponse.md)
+ - [WeightLogDto](doc/WeightLogDto.md)
+ - [WeightTrendPoint](doc/WeightTrendPoint.md)
+ - [WeightTrendResponse](doc/WeightTrendResponse.md)
+ - [WorkoutCompletion](doc/WorkoutCompletion.md)
+ - [WorkoutDayRequest](doc/WorkoutDayRequest.md)
+ - [WorkoutDayResponse](doc/WorkoutDayResponse.md)
+ - [WorkoutExerciseLogDto](doc/WorkoutExerciseLogDto.md)
+ - [WorkoutExerciseRequest](doc/WorkoutExerciseRequest.md)
+ - [WorkoutExerciseResponse](doc/WorkoutExerciseResponse.md)
+ - [WorkoutLogDetailDto](doc/WorkoutLogDetailDto.md)
+ - [WorkoutLogSummaryDto](doc/WorkoutLogSummaryDto.md)
+ - [WorkoutProgramRequest](doc/WorkoutProgramRequest.md)
+ - [WorkoutProgramResponse](doc/WorkoutProgramResponse.md)
+ - [WorkoutProgramSummaryResponse](doc/WorkoutProgramSummaryResponse.md)
+ - [WorkoutScheduleRequest](doc/WorkoutScheduleRequest.md)
+ - [WorkoutScheduleResponse](doc/WorkoutScheduleResponse.md)
+ - [WorkoutSection](doc/WorkoutSection.md)
+ - [WorkoutSetLogDto](doc/WorkoutSetLogDto.md)
+ - [WorkoutTemplateDayRequest](doc/WorkoutTemplateDayRequest.md)
+ - [WorkoutTemplateDayResponse](doc/WorkoutTemplateDayResponse.md)
+ - [WorkoutTemplateRequest](doc/WorkoutTemplateRequest.md)
+ - [WorkoutTemplateResponse](doc/WorkoutTemplateResponse.md)
 
 
 ## Documentation For Authorization

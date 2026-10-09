@@ -169,23 +169,21 @@ abstract final class AppColors {
   static const secondary = surfaceElevated;
 
   // ── Nutrition Macros (100% Consistent Across Project) ───────────────────────
-  // Neutral equivalent of #F5F5F5, as permitted by AI_RULES.md §11.2.
-  static const nutritionCalories = textPrimary;
-  static final nutritionCaloriesSoft = nutritionCalories.withValues(
-    alpha: 0.12,
-  );
+  static const nutritionCalories = orange;
+  static const nutritionCaloriesSoft = orangeSoft;
+  static const nutritionCaloriesBorder = orangeBorder;
   static const nutritionProtein = cyan;
   static const nutritionProteinSoft = cyanSoft;
   static const nutritionProteinBorder = cyanBorder;
-  static const nutritionCarbs = amber;
+  static const nutritionCarbs = green;
   static const nutritionCarb = nutritionCarbs;
-  static const nutritionCarbsSoft = amberSoft;
-  static const nutritionCarbsBorder = amberBorder;
+  static const nutritionCarbsSoft = greenSoft;
+  static const nutritionCarbsBorder = greenBorder;
   static const nutritionFat = blue;
   static const nutritionFatSoft = blueSoft;
   static const nutritionFatBorder = blueBorder;
-  static const nutritionFiber = green;
-  static const nutritionFiberSoft = greenSoft;
+  static const nutritionFiber = Color(0xFF48BB78);
+  static const nutritionFiberSoft = Color(0x1F48BB78);
   static const nutritionWater = Color(0xFF55B7FF);
   static final nutritionWaterSoft = nutritionWater.withValues(alpha: 0.12);
 
@@ -302,7 +300,7 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: cs.primary,
           foregroundColor: AppColors.onPrimary,
-          minimumSize: const Size(double.infinity, 52),
+          minimumSize: const Size(64, 48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

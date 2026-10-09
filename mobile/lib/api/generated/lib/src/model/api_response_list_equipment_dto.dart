@@ -1,0 +1,52 @@
+//
+// AUTO-GENERATED FILE, DO NOT MODIFY!
+//
+
+// ignore_for_file: unused_element
+import 'package:viegym_api/src/model/equipment_dto.dart';
+import 'package:copy_with_extension/copy_with_extension.dart';
+import 'package:json_annotation/json_annotation.dart';
+
+part 'api_response_list_equipment_dto.g.dart';
+
+@CopyWith()
+@JsonSerializable(
+  checked: true,
+  createToJson: true,
+  disallowUnrecognizedKeys: false,
+  explicitToJson: true,
+)
+class ApiResponseListEquipmentDto {
+  /// Returns a new [ApiResponseListEquipmentDto] instance.
+  ApiResponseListEquipmentDto({this.success, this.message, this.data});
+
+  @JsonKey(name: r'success', required: false, includeIfNull: false)
+  final bool? success;
+
+  @JsonKey(name: r'message', required: false, includeIfNull: false)
+  final String? message;
+
+  @JsonKey(name: r'data', required: false, includeIfNull: false)
+  final List<EquipmentDto>? data;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ApiResponseListEquipmentDto &&
+          other.success == success &&
+          other.message == message &&
+          other.data == data;
+
+  @override
+  int get hashCode => success.hashCode + message.hashCode + data.hashCode;
+
+  factory ApiResponseListEquipmentDto.fromJson(Map<String, dynamic> json) =>
+      _$ApiResponseListEquipmentDtoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ApiResponseListEquipmentDtoToJson(this);
+
+  @override
+  String toString() {
+    return toJson().toString();
+  }
+}

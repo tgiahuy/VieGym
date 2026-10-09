@@ -19,6 +19,7 @@ import com.viegym.common.error.ApiException;
 import com.viegym.identity.AccountStatus;
 import com.viegym.identity.AuthProvider;
 import com.viegym.identity.OtpPurpose;
+import com.viegym.identity.SessionAudience;
 import com.viegym.identity.TokenStatus;
 import com.viegym.identity.UserRole;
 import com.viegym.observability.CorrelationId;
@@ -116,6 +117,7 @@ class BackendApplicationTests {
                                 + "('chk_users_auth_provider', 'chk_users_role', 'chk_users_status', "
                                 + "'chk_users_local_password', 'chk_users_active_verified', "
                                 + "'chk_refresh_tokens_status', 'chk_refresh_tokens_revoked', "
+                                + "'chk_refresh_tokens_audience', 'chk_refresh_tokens_admin_csrf', "
                                 + "'chk_otp_codes_purpose', 'chk_otp_codes_attempt_count', "
                                 + "'chk_otp_codes_max_attempts', 'chk_security_rate_limit_scope')",
                         String.class);
@@ -131,7 +133,7 @@ class BackendApplicationTests {
                 .contains(
                         "uq_users_email_ci",
                         "uq_users_provider_subject",
-                        "idx_refresh_tokens_user_status",
+                        "idx_refresh_tokens_user_audience_status",
                         "idx_otp_destination_purpose",
                         "idx_security_rate_limit_subject");
         assertThat(constraints)
@@ -143,6 +145,8 @@ class BackendApplicationTests {
                         "chk_users_active_verified",
                         "chk_refresh_tokens_status",
                         "chk_refresh_tokens_revoked",
+                        "chk_refresh_tokens_audience",
+                        "chk_refresh_tokens_admin_csrf",
                         "chk_otp_codes_purpose",
                         "chk_otp_codes_attempt_count",
                         "chk_otp_codes_max_attempts",
@@ -159,6 +163,8 @@ class BackendApplicationTests {
                 .contains(enumSqlValues(AccountStatus.class));
         assertThat(checkConstraintDefinition("chk_refresh_tokens_status"))
                 .contains(enumSqlValues(TokenStatus.class));
+        assertThat(checkConstraintDefinition("chk_refresh_tokens_audience"))
+                .contains(enumSqlValues(SessionAudience.class));
         assertThat(checkConstraintDefinition("chk_otp_codes_purpose"))
                 .contains(enumSqlValues(OtpPurpose.class));
     }

@@ -81,7 +81,7 @@ public class WorkoutSessionService {
             if (active.scheduleId().equals(scheduleId)) {
                 // Idempotent retry for same schedule
                 List<WorkoutExerciseResponse> exercises =
-                        loadPlannedExercises(schedule.workoutDayId());
+                        loadPlannedExercises(schedule.id(), schedule.workoutDayId());
                 return new StartSessionResponse(
                         active.id(),
                         active.scheduleId(),
@@ -111,7 +111,8 @@ public class WorkoutSessionService {
                         Timestamp.class,
                         sessionId);
 
-        List<WorkoutExerciseResponse> exercises = loadPlannedExercises(schedule.workoutDayId());
+        List<WorkoutExerciseResponse> exercises =
+                loadPlannedExercises(schedule.id(), schedule.workoutDayId());
 
         return new StartSessionResponse(
                 sessionId, scheduleId, "IN_PROGRESS", toOffsetDateTime(startedAt), 0, exercises);
@@ -500,7 +501,33 @@ public class WorkoutSessionService {
         }
     }
 
-    private List<WorkoutExerciseResponse> loadPlannedExercises(Long workoutDayId) {
+    private List<WorkoutExerciseResponse> loadPlannedExercises(Long scheduleId, Long workoutDayId) {
+        List<WorkoutExerciseResponse> snapshot =
+                jdbc.query(
+                        "select wse.id, wse.exercise_id, wse.exercise_name_snapshot as exercise_name, e.slug as exercise_slug,"
+                                + " (case when e.visibility = 'HIDDEN' or e.deleted_at is not null then true else false end) as is_hidden,"
+                                + " wse.sort_order, wse.target_sets, wse.target_reps_min, wse.target_reps_max,"
+                                + " wse.target_duration_seconds, wse.rest_seconds, wse.note"
+                                + " from workout_schedule_exercises wse join exercises e on wse.exercise_id = e.id"
+                                + " where wse.workout_schedule_id = ? order by wse.sort_order asc",
+                        (rs, row) ->
+                                new WorkoutExerciseResponse(
+                                        rs.getLong("id"),
+                                        rs.getLong("exercise_id"),
+                                        rs.getString("exercise_name"),
+                                        rs.getString("exercise_slug"),
+                                        rs.getBoolean("is_hidden"),
+                                        rs.getInt("sort_order"),
+                                        rs.getInt("target_sets"),
+                                        rs.getObject("target_reps_min", Integer.class),
+                                        rs.getObject("target_reps_max", Integer.class),
+                                        rs.getObject("target_duration_seconds", Integer.class),
+                                        rs.getInt("rest_seconds"),
+                                        rs.getString("note")),
+                        scheduleId);
+        if (!snapshot.isEmpty()) {
+            return snapshot;
+        }
         if (workoutDayId == null) {
             return Collections.emptyList();
         }

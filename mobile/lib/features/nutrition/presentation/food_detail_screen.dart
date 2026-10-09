@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/resilient_network_image.dart';
 import '../application/favorite_foods_controller.dart';
+import '../application/food_catalog_controller.dart';
 import '../application/nutrition_controller.dart';
 import '../data/food_catalog.dart';
 import '../domain/food_models.dart';
@@ -38,7 +39,7 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
   void initState() {
     super.initState();
     _selectedMeal = widget.initialMealType;
-    final food = findFoodById(widget.foodId);
+    final food = ref.read(foodCatalogProvider.notifier).findById(widget.foodId);
     if (widget.initialServingId != null &&
         widget.initialServingId!.isNotEmpty) {
       _selectedServingId = widget.initialServingId!;
@@ -200,9 +201,20 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
       if (proceed != true) return;
     }
 
-    ref
-        .read(nutritionProvider.notifier)
-        .addFoodEntry(
+    final controller = ref.read(nutritionProvider.notifier);
+    try {
+      if (int.tryParse(food.id) != null) {
+        final option = food.servingOptions.firstWhere(
+          (item) => item.id == _selectedServingId,
+          orElse: () => food.servingOptions.first,
+        );
+        await controller.addFoodEntryRemote(
+          foodId: food.id,
+          mealType: _selectedMeal,
+          servingMultiplier: option.multiplier * _quantity,
+        );
+      } else {
+        controller.addFoodEntry(
           foodId: food.id,
           name: '${food.name} (${calculated.servingName})',
           mealType: _selectedMeal,
@@ -214,6 +226,14 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
           servingUnit: calculated.servingName,
           imageUrl: food.imageUrl,
         );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể thêm món. Vui lòng thử lại.')),
+      );
+      return;
+    }
 
     if (!mounted) return;
     if (GoRouter.maybeOf(context) != null && context.canPop()) {
@@ -251,7 +271,8 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final food = findFoodById(widget.foodId);
+    ref.watch(foodCatalogProvider);
+    final food = ref.read(foodCatalogProvider.notifier).findById(widget.foodId);
     final colors = Theme.of(context).colorScheme;
 
     if (food == null) {
@@ -283,7 +304,9 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
               color: isFav ? colors.primary : colors.onSurface,
             ),
             onPressed: () {
-              ref.read(favoriteFoodsProvider.notifier).toggleFavorite(food.id);
+              ref
+                  .read(favoriteFoodsProvider.notifier)
+                  .toggleFavoriteWithSync(food.id);
             },
           ),
         ],
@@ -320,6 +343,19 @@ class _FoodDetailScreenState extends ConsumerState<FoodDetailScreen> {
               height: 1.35,
             ),
           ),
+          if (food.estimated) ...[
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.info_outline_rounded, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  'Giá trị dinh dưỡng tham khảo',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 18),
 
           // Live Macro Cards (4 Columns)

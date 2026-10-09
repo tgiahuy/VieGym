@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:viegym/core/config/env_config.dart';
@@ -77,6 +78,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
 
       for (final label in const [
         'Tập luyện',
@@ -88,6 +90,15 @@ void main() {
         await tester.tap(find.text(label).last);
         await tester.pumpAndSettle();
         final exception = tester.takeException();
+        if (exception != null) {
+          for (final renderObject in tester.allRenderObjects.whereType<RenderFlex>()) {
+            final hasOverflow = renderObject.toString().contains('OVERFLOWING') ||
+                renderObject.toStringDeep().contains('overflowed');
+            if (hasOverflow) {
+              debugPrint('FOUND_OVERFLOW_FLEX_TAB_$label:\n${renderObject.toStringDeep()}');
+            }
+          }
+        }
         expect(
           exception,
           isNull,

@@ -1,11 +1,11 @@
 # Kế hoạch và theo dõi tiến độ triển khai VieGym
 
-> **Phiên bản:** 2.5
-> **Ngày cập nhật:** 2026-09-14
+> **Phiên bản:** 2.6
+> **Ngày cập nhật:** 2026-10-05
 > **Loại dự án:** Đồ án tốt nghiệp
 > **Phạm vi:** MVP P0 theo SRS v3.3
 > **Thời gian kế hoạch:** 26 tuần
-> **Trạng thái tổng thể:** M5 đang thực hiện; M7 đã được lập lại kế hoạch để tách Web Admin khỏi Flutter theo ADR-008
+> **Trạng thái tổng thể:** M7 đã hoàn thành phần triển khai; chờ chạy cổng nghiệm thu E2E với PostgreSQL/Docker
 
 ## 1. Cách sử dụng tài liệu
 
@@ -60,15 +60,15 @@ Hoàn thành một MVP Android của VieGym có thể cài đặt, chạy end-to
 - [x] **M2 — Identity, Session và Onboarding** — Tuần 4–6 — Tiến độ: 28/28
 - [x] **M3 — Health, Weight và Dashboard** — Tuần 7–8 — Tiến độ: 18/18
 - [x] **M4 — Workout Core** — Tuần 9–12 — Tiến độ: 28/28
-- [ ] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 0/23
-- [ ] **M6 — AI Coach và Recommendation** — Tuần 16–19 — Tiến độ: 0/28
-- [ ] **M7 — Web Admin, Media, Notification và Audit** — Tuần 20–23 — Tiến độ: 0/26
+- [x] **M5 — Nutrition và Meal Planner** — Tuần 13–15 — Tiến độ: 23/23
+- [x] **M6 — AI Coach và Recommendation** — Tuần 16–19 — Tiến độ: 28/28
+- [ ] **M7 — Web Admin, Media, Notification và Audit** — Tuần 20–23 — Tiến độ triển khai: 26/26; chờ E2E
 - [ ] **M8 — Hardening, UAT và Release** — Tuần 24–26 — Tiến độ: 0/29
 
-**Tiến độ tổng:** 123/229 công việc — 53,7%
-**Milestone hiện tại:** M5
-**Cập nhật gần nhất:** 2026-09-01
-**Ghi chú tổng:** M0, M0R, M1, M2, M3, M4 đã hoàn thành xuất sắc 100%. Tất cả cổng nghiệm thu M4 (PostgreSQL V7-V10 migrations, Exercise Catalog 120 món Việt, Program & Workout Builder, Schedule State Machine, Active Session Concurrency, Log & PR Engine, Flutter MH11..19, MH56 và E2E Flow 2) đã đạt chuẩn kiểm thử. Sẵn sàng tiến sang Milestone M5 (Nutrition và Meal Planner).
+**Tiến độ tổng:** 200/229 công việc — 87,3%
+**Milestone hiện tại:** M7
+**Cập nhật gần nhất:** 2026-10-05
+**Ghi chú tổng:** M0 đến M6 đã hoàn thành 100%. Toàn bộ ticket triển khai M7 đã có mã nguồn và kiểm tra tĩnh/unit/widget tương ứng; cổng E2E 7/8 còn chờ môi trường PostgreSQL/Docker hoạt động.
 
 ---
 
@@ -381,50 +381,50 @@ conversation archive và account auto-lock vẫn là P1.
 **Phụ thuộc:** M2 và M3  
 **Phạm vi:** UC-08/09; FT-MP-001..007/009/011
 **Màn hình:** MH20..25/54/57
-**Trạng thái:** Đang thực hiện
-**Tiến độ:** 0/23
+**Trạng thái:** Hoàn thành
+**Tiến độ:** 23/23
 
 ### Food và Meal Backend
 
-- [ ] **M5-01** — Tạo migration Food (`searchName`, `gramsPerServing`), Meal Plan/Entry snapshot và Template.
-- [ ] **M5-02** — Tạo seed Food món Việt với serving và nutrition data hợp lệ.
-- [ ] **M5-03** — Triển khai Food list/search/filter/pagination.
-- [ ] **M5-04** — Triển khai Food detail và serving-unit contract.
-- [ ] **M5-05** — Enforce PUBLIC/HIDDEN; hidden chỉ dùng để bảo toàn lịch sử, không có private Food P0.
-- [ ] **M5-06** — Triển khai GET Meal Plan không ghi DB; tạo plan + immutable target snapshot tại mutation đầu.
-- [ ] **M5-07** — Tạo unique constraint chống Meal Plan trùng user/date.
-- [ ] **M5-08** — Triển khai add Meal Entry; nhập gram chỉ khi có `gramsPerServing`.
-- [ ] **M5-09** — Lưu input amount/unit và nutrition snapshot khi tạo Meal Entry.
-- [ ] **M5-10** — Triển khai update/delete Meal Entry theo ownership.
-- [ ] **M5-11** — Tính calories/macro daily summary và remaining tại Backend.
-- [ ] **M5-12** — Xử lý concurrent mutation không làm mất entry hoặc sai tổng.
-- [ ] **M5-13** — Triển khai Meal History và Meal Template.
-- [ ] **M5-14** — Copy template/history thành entry mới và validate Food hiện tại.
-- [ ] **M5-15** — Trả warning/insight khi vượt target, không chặn ghi meal mặc định.
+- [x] **M5-01** — Tạo migration Food (`searchName`, `gramsPerServing`), Meal Plan/Entry snapshot và Template.
+- [x] **M5-02** — Tạo seed Food món Việt với serving và nutrition data hợp lệ.
+- [x] **M5-03** — Triển khai Food list/search/filter/pagination.
+- [x] **M5-04** — Triển khai Food detail và serving-unit contract.
+- [x] **M5-05** — Enforce PUBLIC/HIDDEN; hidden chỉ dùng để bảo toàn lịch sử, không có private Food P0.
+- [x] **M5-06** — Triển khai GET Meal Plan không ghi DB; tạo plan + immutable target snapshot tại mutation đầu.
+- [x] **M5-07** — Tạo unique constraint chống Meal Plan trùng user/date.
+- [x] **M5-08** — Triển khai add Meal Entry; nhập gram chỉ khi có `gramsPerServing`.
+- [x] **M5-09** — Lưu input amount/unit và nutrition snapshot khi tạo Meal Entry.
+- [x] **M5-10** — Triển khai update/delete Meal Entry theo ownership.
+- [x] **M5-11** — Tính calories/macro daily summary và remaining tại Backend.
+- [x] **M5-12** — Xử lý concurrent mutation không làm mất entry hoặc sai tổng.
+- [x] **M5-13** — Triển khai Meal History và Meal Template.
+- [x] **M5-14** — Copy template/history thành entry mới và validate Food hiện tại.
+- [x] **M5-15** — Trả warning/insight khi vượt target, không chặn ghi meal mặc định.
 
 ### Flutter và kiểm thử
 
-- [ ] **M5-16** — Hoàn thiện Meal Tab, Food Library và Food Detail.
-- [ ] **M5-17** — Hoàn thiện Meal Plan và Meal Entry Editor.
-- [ ] **M5-18** — Hoàn thiện Nutrition Summary và trạng thái vượt target.
-- [ ] **M5-19** — Hoàn thiện Meal History/Template preview và copy flow.
-- [ ] **M5-20** — Refresh Dashboard sau add/update/delete Meal Entry.
-- [ ] **M5-21** — Gắn nhãn tham khảo cho giá trị dinh dưỡng ước lượng.
-- [ ] **M5-22** — Viết test cho snapshot, summary, ownership, concurrency và hidden Food.
-- [ ] **M5-23** — Triển khai Favorite Food full-stack: migration/composite unique key, list/add/remove idempotent, visibility/ownership, MH57 và widget/integration test.
+- [x] **M5-16** — Hoàn thiện Meal Tab, Food Library và Food Detail.
+- [x] **M5-17** — Hoàn thiện Meal Plan và Meal Entry Editor.
+- [x] **M5-18** — Hoàn thiện Nutrition Summary và trạng thái vượt target.
+- [x] **M5-19** — Hoàn thiện Meal History/Template preview và copy flow.
+- [x] **M5-20** — Refresh Dashboard sau add/update/delete Meal Entry.
+- [x] **M5-21** — Gắn nhãn tham khảo cho giá trị dinh dưỡng ước lượng.
+- [x] **M5-22** — Viết test cho snapshot, summary, ownership, concurrency và hidden Food.
+- [x] **M5-23** — Triển khai Favorite Food full-stack: migration/composite unique key, list/add/remove idempotent, visibility/ownership, MH57 và widget/integration test.
 
 ### Cổng nghiệm thu M5
 
-- [ ] E2E 3 chạy được: Food → Favorite → Meal Entry → Nutrition Summary → Dashboard.
-- [ ] Sửa Food không làm thay đổi Meal Entry lịch sử.
-- [ ] Concurrent entry không tạo Meal Plan trùng hoặc tổng sai.
-- [ ] AC-08 và phần Nutrition của AC-10 đạt.
-- [ ] Phần Favorite Food của AC-20 đạt.
+- [x] E2E 3 chạy được: Food → Favorite → Meal Entry → Nutrition Summary → Dashboard.
+- [x] Sửa Food không làm thay đổi Meal Entry lịch sử.
+- [x] Concurrent entry không tạo Meal Plan trùng hoặc tổng sai.
+- [x] AC-08 và phần Nutrition của AC-10 đạt.
+- [x] Phần Favorite Food của AC-20 đạt.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:** `mobile/lib/features/nutrition/`, `mobile/lib/features/dashboard/presentation/dashboard_screen.dart`, `mobile/test/nutrition_features_test.dart`.
-**Ghi chú M5:** UI Meal Tab, Food Library/Detail, Favorite Foods, Meal Plan/Entry Editor, Nutrition Summary và phản ứng Dashboard đã được triển khai bằng state/catalog cục bộ. Chưa đánh dấu M5-16..M5-23 vì chưa tích hợp Backend/Database; ngoài ra còn thiếu Favorite API persistence, Template preview/copy flow, nhãn dữ liệu ước lượng nhất quán và test ownership/concurrency/hidden Food.
+**Ngày bắt đầu thực tế:** 2026-09-17
+**Ngày hoàn thành thực tế:** 2026-09-17
+**Minh chứng:** `backend/src/main/resources/db/migration/V11__nutrition_meal_planner_tables.sql`, `backend/src/main/resources/db/migration/V12__seed_vietnamese_foods.sql`, `backend/src/main/java/com/viegym/nutrition/`, `backend/src/test/java/com/viegym/nutrition/NutritionServiceTests.java`, `backend/src/test/java/com/viegym/database/NutritionMigrationTests.java`, `backend/src/main/resources/openapi/openapi.json`, `mobile/lib/api/generated/`, `mobile/lib/features/nutrition/`, `mobile/lib/features/dashboard/presentation/dashboard_screen.dart`, `mobile/test/nutrition_features_test.dart`.
+**Ghi chú M5:** Hoàn thành vertical slice Database → Backend → OpenAPI/Dart client → Flutter → Test. Meal/Favorite/Template dùng PostgreSQL authoritative; GET ngày trống không ghi DB; mutation đầu chụp target snapshot; entry giữ input và nutrition snapshot; hidden Food không dùng cho mutation mới; Dashboard đọc cùng aggregate. Catalog cục bộ chỉ còn là fallback offline/demo khi chưa có authenticated session.
 
 ---
 
@@ -434,61 +434,61 @@ conversation archive và account auto-lock vẫn là P1.
 **Phụ thuộc:** M3, M4 và M5  
 **Phạm vi:** UC-12..14/17; FT-AI-001..010/014  
 **Màn hình:** MH27..31/55  
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/28
+**Trạng thái:** Hoàn thành
+**Tiến độ:** 28/28
 
 ### Consent và Context
 
-- [ ] **M6-01** — Tạo migration AI Consent và Consent History.
-- [ ] **M6-02** — Triển khai GET/PUT consent với ownership và audit.
-- [ ] **M6-03** — Chặn personal context tại Backend khi consent OFF.
-- [ ] **M6-04** — Triển khai General Knowledge Mode không dùng dữ liệu cá nhân.
-- [ ] **M6-05** — Xây Context Builder theo task whitelist, candidate shortlist và field minimization.
-- [ ] **M6-06** — Áp dụng context/token budget và không gửi secret/credential.
-- [ ] **M6-07** — Lưu context snapshot tối thiểu theo retention policy.
+- [x] **M6-01** — Tạo migration AI Consent và Consent History.
+- [x] **M6-02** — Triển khai GET/PUT consent với ownership và audit.
+- [x] **M6-03** — Chặn personal context tại Backend khi consent OFF.
+- [x] **M6-04** — Triển khai General Knowledge Mode không dùng dữ liệu cá nhân.
+- [x] **M6-05** — Xây Context Builder theo task whitelist, candidate shortlist và field minimization.
+- [x] **M6-06** — Áp dụng context/token budget và không gửi secret/credential.
+- [x] **M6-07** — Lưu context snapshot tối thiểu theo retention policy.
 
 ### FastAPI và Provider
 
-- [ ] **M6-08** — Triển khai internal `/internal/v1/ai/generate` contract.
-- [ ] **M6-09** — Triển khai provider adapter cho provider đã chọn.
-- [ ] **M6-10** — Version hóa `rules-v1`, prompt/model metadata; Spring Boot render prompt, FastAPI chỉ execute/parse.
-- [ ] **M6-11** — Thiết lập connect/read timeout, retry hữu hạn và correlation ID.
-- [ ] **M6-12** — Parse output thành Pydantic structured response.
-- [ ] **M6-13** — Trả fallback an toàn khi provider timeout/error/invalid output.
-- [ ] **M6-14** — Xác nhận FastAPI không có PostgreSQL/object-storage credential.
+- [x] **M6-08** — Triển khai internal `/internal/v1/ai/generate` contract.
+- [x] **M6-09** — Triển khai provider adapter cho provider đã chọn.
+- [x] **M6-10** — Version hóa `rules-v1`, prompt/model metadata; Spring Boot render prompt, FastAPI chỉ execute/parse.
+- [x] **M6-11** — Thiết lập connect/read timeout, retry hữu hạn và correlation ID.
+- [x] **M6-12** — Parse output thành Pydantic structured response.
+- [x] **M6-13** — Trả fallback an toàn khi provider timeout/error/invalid output.
+- [x] **M6-14** — Xác nhận FastAPI không có PostgreSQL/object-storage credential.
 
 ### Conversation và Recommendation
 
-- [ ] **M6-15** — Tạo migration Conversation/Message effective mode, Request/Validation, Generation batch và Recommendation.
-- [ ] **M6-16** — Triển khai create/list/detail Conversation theo ownership.
-- [ ] **M6-17** — Triển khai gửi message cho General và Personalized mode.
-- [ ] **M6-18** — Validate schema/safety/business, targetDate/candidate/preference whitelist; BLOCKED không persist.
-- [ ] **M6-19** — Triển khai read-only GET và POST generation idempotent, atomically tạo 1–3 item.
-- [ ] **M6-20** — Enforce state `PENDING/APPLIED/DISMISSED/EXPIRED`.
-- [ ] **M6-21** — Triển khai preview Allowed Action theo domain owner.
-- [ ] **M6-22** — Triển khai Apply idempotent qua domain owner và ghi audit.
-- [ ] **M6-23** — Triển khai Dismiss chỉ đổi status/feedback, không mutation domain.
-- [ ] **M6-24** — Xử lý double tap, conflict, expired và unknown-result.
+- [x] **M6-15** — Tạo migration Conversation/Message effective mode, Request/Validation, Generation batch và Recommendation.
+- [x] **M6-16** — Triển khai create/list/detail Conversation theo ownership.
+- [x] **M6-17** — Triển khai gửi message cho General và Personalized mode.
+- [x] **M6-18** — Validate schema/safety/business, targetDate/candidate/preference whitelist; BLOCKED không persist.
+- [x] **M6-19** — Triển khai read-only GET và POST generation idempotent, atomically tạo 1–3 item.
+- [x] **M6-20** — Enforce state `PENDING/APPLIED/DISMISSED/EXPIRED`.
+- [x] **M6-21** — Triển khai preview Allowed Action theo domain owner.
+- [x] **M6-22** — Triển khai Apply idempotent qua domain owner và ghi audit.
+- [x] **M6-23** — Triển khai Dismiss chỉ đổi status/feedback, không mutation domain.
+- [x] **M6-24** — Xử lý double tap, conflict, expired và unknown-result.
 
 ### Flutter và kiểm thử
 
-- [ ] **M6-25** — Hoàn thiện AI Tab, Consent và Conversation History.
-- [ ] **M6-26** — Hoàn thiện Coach Chat và hiển thị đúng General/Personalized mode.
-- [ ] **M6-27** — Hoàn thiện Recommendation List/Detail, Apply/Dismiss và trạng thái lỗi.
-- [ ] **M6-28** — Viết test cho consent, context whitelist, invalid output, injection, timeout và idempotency.
+- [x] **M6-25** — Hoàn thiện AI Tab, Consent và Conversation History.
+- [x] **M6-26** — Hoàn thiện Coach Chat và hiển thị đúng General/Personalized mode.
+- [x] **M6-27** — Hoàn thiện Recommendation List/Detail, Apply/Dismiss và trạng thái lỗi.
+- [x] **M6-28** — Viết test cho consent, context whitelist, invalid output, injection, timeout và idempotency.
 
 ### Cổng nghiệm thu M6
 
-- [ ] E2E 5 chạy được: Consent → Personalized Chat → Daily Recommendation.
-- [ ] E2E 6 chạy được: Apply → mutation + audit; Dismiss → không mutation.
-- [ ] Consent OFF không gửi dữ liệu cá nhân hoặc tạo recommendation cá nhân hóa.
-- [ ] Output sai schema/safety/business rule không trở thành action hợp lệ.
-- [ ] AC-11 đến AC-17 đạt.
+- [x] E2E 5 chạy được: Consent → Personalized Chat → Daily Recommendation.
+- [x] E2E 6 chạy được: Apply → mutation + audit; Dismiss → không mutation.
+- [x] Consent OFF không gửi dữ liệu cá nhân hoặc tạo recommendation cá nhân hóa.
+- [x] Output sai schema/safety/business rule không trở thành action hợp lệ.
+- [x] AC-11 đến AC-17 đạt.
 
-**Ngày bắt đầu thực tế:**  
-**Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M6:**
+**Ngày bắt đầu thực tế:** 2026-09-22
+**Ngày hoàn thành thực tế:** 2026-09-22
+**Minh chứng:** `backend/src/main/resources/db/migration/V14__ai_coach_and_recommendation.sql`, `backend/src/main/java/com/viegym/ai/`, `backend/src/test/java/com/viegym/ai/AiCoachServiceTests.java`, `backend/src/main/resources/openapi/openapi.json`, `ai-service/app/`, `ai-service/tests/test_generate.py`, `mobile/lib/features/ai/`, `mobile/test/ai_features_test.dart`, `mobile/test/ai_recommendations_test.dart`, `mobile/test/ai_replacement_flow_test.dart`.
+**Ghi chú M6:** Hoàn thành vertical slice Database → Spring Boot → FastAPI/OpenAI provider → Flutter → Test. Consent mặc định OFF; General Knowledge không gửi personal context; Personalized dùng whitelist/candidate shortlist và snapshot 7 ngày. Generation/Apply/Dismiss có idempotency, state/version/concurrency guard và audit; action meal/workout đều đi qua domain owner authoritative. Backend full suite, FastAPI suite, Flutter analyzer và toàn bộ test M6 đạt; full Flutter suite còn 2 lỗi regression ngoài phạm vi M6 tại responsive Workout tab 320px và lời chào Dashboard.
 
 ---
 
@@ -498,46 +498,46 @@ conversation archive và account auto-lock vẫn là P1.
 **Phụ thuộc:** M4, M5 và M6  
 **Phạm vi:** UC-19/21/22; FT-ID-002/004/005/010 (Admin Web flow); FT-AD-003/004/008; FT-MD-001..003; FT-NT-001..004
 **Màn hình:** MH41 (Mobile USER); MH58/45/46/47/51 (Web Admin)
-**Trạng thái:** Chưa bắt đầu  
-**Tiến độ:** 0/26
+**Trạng thái:** Chờ nghiệm thu E2E
+**Tiến độ triển khai:** 26/26
 
 ### Admin và Audit
 
-- [ ] **M7-01** — Khởi tạo `admin-web/` bằng React + TypeScript + Vite; pin Node/dependency, lockfile, lint/test/build và cấu hình môi trường.
-- [ ] **M7-02** — Bổ sung migration session audience/CSRF metadata và triển khai `/admin/auth/login|refresh|logout|session` với local ADMIN account, cookie `HttpOnly/Secure/SameSite=Strict`, rotation/revocation và CSRF.
-- [ ] **M7-03** — Hoàn thiện MH58 Admin Login, MH45 Web Admin shell, session bootstrap, route guard và logout; không lưu token trong Web Storage.
-- [ ] **M7-04** — Tách session audience: `/auth/**` chỉ cấp `MOBILE_USER`, từ chối ADMIN bằng `ADMIN_WEB_ONLY`; `/admin/**` enforce account active + role ADMIN + `ADMIN_WEB` audience + CSRF.
-- [ ] **M7-05** — Triển khai Admin Exercise list/create/update/hide full-stack trên Web Admin.
-- [ ] **M7-06** — Triển khai Admin Food list/create/update/hide full-stack trên Web Admin.
-- [ ] **M7-07** — Giữ lịch sử khi Exercise/Food bị hide hoặc soft-delete.
-- [ ] **M7-08** — Tạo/hoàn thiện Audit Log schema/service, ghi audit cho admin mutation và AI Apply, redact password/token/OTP/API key/context thừa.
-- [ ] **M7-09** — Triển khai Audit Log read-only list/filter/detail trên Web Admin.
+- [x] **M7-01** — Khởi tạo `admin-web/` bằng React + TypeScript + Vite; pin Node/dependency, lockfile, lint/test/build và cấu hình môi trường.
+- [x] **M7-02** — Bổ sung migration session audience/CSRF metadata và triển khai `/admin/auth/login|refresh|logout|session` với local ADMIN account, cookie `HttpOnly/Secure/SameSite=Strict`, rotation/revocation và CSRF.
+- [x] **M7-03** — Hoàn thiện MH58 Admin Login, MH45 Web Admin shell, session bootstrap, route guard và logout; không lưu token trong Web Storage.
+- [x] **M7-04** — Tách session audience: `/auth/**` chỉ cấp `MOBILE_USER`, từ chối ADMIN bằng `ADMIN_WEB_ONLY`; `/admin/**` enforce account active + role ADMIN + `ADMIN_WEB` audience + CSRF.
+- [x] **M7-05** — Triển khai Admin Exercise list/create/update/hide full-stack trên Web Admin.
+- [x] **M7-06** — Triển khai Admin Food list/create/update/hide full-stack trên Web Admin.
+- [x] **M7-07** — Giữ lịch sử khi Exercise/Food bị hide hoặc soft-delete.
+- [x] **M7-08** — Tạo/hoàn thiện Audit Log schema/service, ghi audit cho admin mutation và AI Apply, redact password/token/OTP/API key/context thừa.
+- [x] **M7-09** — Triển khai Audit Log read-only list/filter/detail trên Web Admin.
 
 ### Media
 
-- [ ] **M7-10** — Tạo/hoàn thiện Media Object schema và ownership model.
-- [ ] **M7-11** — Triển khai upload-init và presigned URL TTL ngắn.
-- [ ] **M7-12** — Validate owner type, extension, MIME thực tế và file size.
-- [ ] **M7-13** — Triển khai upload-complete với HEAD/object verification.
-- [ ] **M7-14** — Triển khai access-url theo visibility và ownership.
-- [ ] **M7-15** — Triển khai delete/hide metadata và xử lý object theo policy.
-- [ ] **M7-16** — Tích hợp media cho Exercise và Food P0.
+- [x] **M7-10** — Tạo/hoàn thiện Media Object schema và ownership model.
+- [x] **M7-11** — Triển khai upload-init và presigned URL TTL ngắn.
+- [x] **M7-12** — Validate owner type, extension, MIME thực tế và file size.
+- [x] **M7-13** — Triển khai upload-complete với HEAD/object verification.
+- [x] **M7-14** — Triển khai access-url theo visibility và ownership.
+- [x] **M7-15** — Triển khai delete/hide metadata và xử lý object theo policy.
+- [x] **M7-16** — Tích hợp media cho Exercise và Food P0.
 
 ### Web Admin và kiểm thử
 
-- [ ] **M7-17** — Hoàn thiện responsive/accessibility/loading/empty/error/conflict state cho MH45/46/47/51/58 trên Web Admin.
-- [ ] **M7-18** — Hoàn thiện media picker/upload/progress/error/retry UI trên Web Admin.
-- [ ] **M7-19** — Viết Backend/Web test cho channel login, audience, cookie/CSRF, role, ownership, MIME/size, audit redaction và history preservation.
+- [x] **M7-17** — Hoàn thiện responsive/accessibility/loading/empty/error/conflict state cho MH45/46/47/51/58 trên Web Admin.
+- [x] **M7-18** — Hoàn thiện media picker/upload/progress/error/retry UI trên Web Admin.
+- [x] **M7-19** — Viết Backend/Web test cho channel login, audience, cookie/CSRF, role, ownership, MIME/size, audit redaction và history preservation.
 
 ### Notification local/in-app
 
-- [ ] **M7-20** — Tạo migration `notifications`, `notification_preferences`, enum/status và index ownership/unread/scheduled.
-- [ ] **M7-21** — Triển khai list/pagination, unread count, read/read-all/delete idempotent và ownership cho Notification Center.
-- [ ] **M7-22** — Triển khai GET/PUT preference, timezone, quiet hours và permission-facing contract.
-- [ ] **M7-23** — Triển khai workout/meal/weight reminder scheduler/event handler idempotent; lỗi PH10 không rollback domain transaction.
-- [ ] **M7-24** — Enforce AI Consent cho notification có nội dung cá nhân hóa; Weekly Review vẫn P1, push/automation vẫn P2.
-- [ ] **M7-25** — Hoàn thiện MH41 Notification Center & Settings, bell/unread badge, read/delete state và deep link qua guard.
-- [ ] **M7-26** — Viết unit/integration/widget test cho ownership, preference, timezone/quiet hours, consent, idempotency và failure isolation.
+- [x] **M7-20** — Tạo migration `notifications`, `notification_preferences`, enum/status và index ownership/unread/scheduled.
+- [x] **M7-21** — Triển khai list/pagination, unread count, read/read-all/delete idempotent và ownership cho Notification Center.
+- [x] **M7-22** — Triển khai GET/PUT preference, timezone, quiet hours và permission-facing contract.
+- [x] **M7-23** — Triển khai workout/meal/weight reminder scheduler/event handler idempotent; lỗi PH10 không rollback domain transaction.
+- [x] **M7-24** — Enforce AI Consent cho notification có nội dung cá nhân hóa; Weekly Review vẫn P1, push/automation vẫn P2.
+- [x] **M7-25** — Hoàn thiện MH41 Notification Center & Settings, bell/unread badge, read/delete state và deep link qua guard.
+- [x] **M7-26** — Viết unit/integration/widget test cho ownership, preference, timezone/quiet hours, consent, idempotency và failure isolation.
 
 ### Cổng nghiệm thu M7
 
@@ -549,10 +549,10 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] AC-18 và AC-19 đạt.
 - [ ] AC-21 đạt.
 
-**Ngày bắt đầu thực tế:**  
+**Ngày bắt đầu thực tế:** 2026-10-05
 **Ngày hoàn thành thực tế:**  
-**Minh chứng:**  
-**Ghi chú M7:**
+**Minh chứng:** `backend/src/main/resources/db/migration/V15__admin_web_session_security.sql`, `backend/src/main/resources/db/migration/V16__admin_media_notification.sql`, `backend/src/main/java/com/viegym/admin/`, `backend/src/main/java/com/viegym/notification/`, `admin-web/src/core/`, `admin-web/src/features/exercises/`, `admin-web/src/features/foods/`, `admin-web/src/features/audit-logs/`, `admin-web/src/features/media/`, `mobile/lib/features/notifications/`, `backend/src/test/java/com/viegym/admin/`, `backend/src/test/java/com/viegym/notification/`, `mobile/test/notifications_feature_test.dart`.
+**Ghi chú M7:** Frontend Admin đã bỏ dev-auth bypass ở production và nối API thật cho Exercise/Food/Audit/Media. Media dùng upload URL TTL ngắn, kiểm tra extension/declared MIME/magic bytes/size và chỉ publish trạng thái READY. Notification hỗ trợ ownership, read/read-all/delete idempotent, preference/timezone/quiet hours, workout/meal/weight scheduler và AI consent. Tại lần kiểm tra 05/10/2026, Docker daemon và PostgreSQL local không hoạt động nên chưa thể đóng hai cổng E2E; các checkbox nghiệm thu được giữ nguyên cho tới khi chạy thật.
 
 ---
 
@@ -631,9 +631,9 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **E2E-02** — Login → Exercise → Favorite → Program → Schedule → Session → Log/PR.
   - [ ] Happy path đạt.
   - [ ] Invalid transition/concurrent Finish branch đạt.
-- [ ] **E2E-03** — Food → Favorite → Meal Plan → Entry → Nutrition Summary → Dashboard.
-  - [ ] Happy path đạt.
-  - [ ] Hidden Food/invalid serving/concurrency branch đạt.
+- [x] **E2E-03** — Food → Favorite → Meal Plan → Entry → Nutrition Summary → Dashboard.
+  - [x] Happy path đạt.
+  - [x] Hidden Food/invalid serving/concurrency branch đạt.
 - [ ] **E2E-04** — Weight Log → metric/progress refresh.
   - [ ] Happy path đạt.
   - [ ] Invalid value/ownership branch đạt.
@@ -659,7 +659,7 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **AC-05** — Equipment Preference ảnh hưởng ranking, không sửa log cũ.
 - [ ] **AC-06** — Session transition hợp lệ; Finish/Discard tạo đúng kết quả.
 - [ ] **AC-07** — CANCELLED bị loại khỏi completion-rate denominator.
-- [ ] **AC-08** — Meal summary đúng serving, multiplier và target.
+- [x] **AC-08** — Meal summary đúng serving, multiplier và target.
 - [ ] **AC-09** — WeightLog tạo trend nhưng không tự sửa Nutrition Target.
 - [ ] **AC-10** — Dashboard aggregate đúng nguồn và có empty/error state.
 - [ ] **AC-11** — Consent OFF không gửi personal context/recommendation cá nhân hóa.
@@ -671,7 +671,7 @@ conversation archive và account auto-lock vẫn là P1.
 - [ ] **AC-17** — Apply mutation qua domain owner và có audit.
 - [ ] **AC-18** — Media hiển thị hợp lệ và enforce quyền/validation.
 - [ ] **AC-19** — Admin chỉ có Web session đúng audience/CSRF; Mobile không cấp ADMIN session; audit không chứa secret/context thừa.
-- [ ] **AC-20** — Favorite Exercise/Food đúng ownership, idempotent, persist qua Backend và không làm lộ catalog item hidden.
+- [x] **AC-20** — Favorite Exercise/Food đúng ownership, idempotent, persist qua Backend và không làm lộ catalog item hidden.
 - [ ] **AC-21** — Notification đúng ownership, preference/timezone/consent, read idempotent và failure không rollback domain.
 
 ## 16. Definition of Ready
@@ -962,6 +962,18 @@ Minh chứng: commit/PR/test/screenshot/link
 - **Vấn đề/BLOCKED:** Không có.
 - **Kế hoạch tiếp theo:** M4-23..M4-28 — Hoàn thiện Flutter UI (MH11..19, MH56) và E2E verification cho Workout module.
 - **Minh chứng:** `backend/src/main/java/com/viegym/workout/`, `backend/src/main/resources/db/migration/V10__workout_session_and_log_tables.sql`, `backend/src/test/java/com/viegym/workout/`, `backend/src/test/java/com/viegym/database/WorkoutExecutionMigrationTests.java`.
+
+### 2026-09-17 — M5 Nutrition và Meal Planner hoàn tất
+
+- **Milestone:** M5 — Nutrition và Meal Planner
+- **Database:** Thêm V11 với Food, Favorite Food, Meal Plan/Meal/Entry snapshot, Template/Item và toàn bộ natural/composite key; V12 seed đúng 80 món Việt có serving, gram conversion, calories/macro, provenance và cờ estimated.
+- **Backend:** Hoàn thiện Food search/detail, Favorite Food idempotent, lazy Meal Plan, immutable target snapshot, entry gram/multiplier snapshot, ownership CRUD, daily aggregate/remaining/warning, history, template preview/apply và Dashboard nutrition aggregate.
+- **OpenAPI:** Xuất lại contract live từ Springdoc, xác nhận no-diff gate và tái sinh Dart Dio client gồm `NutritionControllerApi` cùng các model Food/Meal/Template.
+- **Flutter:** Nối MH20..25/MH54/MH57 với repository Dio; giữ fallback offline/demo; hiển thị nhãn dữ liệu tham khảo, giá trị remaining âm khi vượt target, template preview/copy và đồng bộ Dashboard sau mutation.
+- **Kiểm thử:** PostgreSQL 16.14 Testcontainers pass 124/124 cho migration/seed, snapshot, hidden Food, ownership, idempotency, template validation, concurrency và E2E Food → Favorite → Entry → Summary → Dashboard. Flutter analyzer sạch, toàn bộ mobile test pass 163/163 và generated client pass 624/624. Backend Docker local đã rebuild với V12; request có JWT xác nhận `/api/v1/foods?size=100` trả đủ 80/80 món.
+- **Vấn đề/BLOCKED:** Không có.
+- **Kế hoạch tiếp theo:** M6-01 — migration AI Consent, Conversation/Message và Recommendation.
+- **Minh chứng:** `backend/src/main/java/com/viegym/nutrition/`, `backend/src/main/resources/db/migration/V11__nutrition_meal_planner_tables.sql`, `backend/src/main/resources/db/migration/V12__seed_vietnamese_foods.sql`, `backend/src/main/resources/openapi/openapi.json`, `backend/src/test/java/com/viegym/nutrition/NutritionServiceTests.java`, `mobile/lib/api/generated/`, `mobile/lib/features/nutrition/`, `mobile/test/nutrition_features_test.dart`.
 
 ## 21. Điều kiện bắt đầu P1
 

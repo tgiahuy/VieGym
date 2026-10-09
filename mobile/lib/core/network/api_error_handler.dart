@@ -83,7 +83,8 @@ class ApiErrorHandler {
     if (data is Map<String, dynamic>) {
       final message = data['message'] as String?;
       final code = data['code'] as String?;
-      final details = data['details'] as Map<String, dynamic>?;
+      final rawDetails = data['details'];
+      final details = rawDetails is Map<String, dynamic> ? rawDetails : null;
       if (message != null) {
         return ApiError(
           message: message,

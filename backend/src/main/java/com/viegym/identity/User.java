@@ -92,6 +92,19 @@ public class User {
         return user;
     }
 
+    public static User localAdmin(String email, String passwordHash, OffsetDateTime now) {
+        User user = new User();
+        user.email = email;
+        user.passwordHash = passwordHash;
+        user.authProvider = AuthProvider.LOCAL;
+        user.role = UserRole.ADMIN;
+        user.status = AccountStatus.ACTIVE;
+        user.emailVerifiedAt = now;
+        user.createdAt = now;
+        user.updatedAt = now;
+        return user;
+    }
+
     public Long id() {
         return id;
     }

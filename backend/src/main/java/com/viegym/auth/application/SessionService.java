@@ -6,6 +6,7 @@ import com.viegym.common.error.ApiErrorCode;
 import com.viegym.common.error.ApiException;
 import com.viegym.identity.RefreshToken;
 import com.viegym.identity.RefreshTokenRepository;
+import com.viegym.identity.SessionAudience;
 import com.viegym.identity.TokenStatus;
 import com.viegym.token.JwtAccessTokenService;
 import com.viegym.token.RefreshTokenService;
@@ -48,6 +49,11 @@ public class SessionService {
                                         new ApiException(
                                                 ApiErrorCode.UNAUTHENTICATED,
                                                 "Invalid refresh token"));
+
+        if (current.audience() != SessionAudience.MOBILE_USER) {
+            throw new ApiException(
+                    ApiErrorCode.SESSION_AUDIENCE_INVALID, "Session audience is invalid");
+        }
 
         if (current.status() == TokenStatus.REVOKED) {
             revokeReplacementChain(current, now);

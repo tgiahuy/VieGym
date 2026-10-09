@@ -41,9 +41,7 @@ class AiConsentScreen extends ConsumerWidget {
               secondary: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: aiConsent
-                      ? AppColors.aiSoft
-                      : AppColors.surfaceNested,
+                  color: aiConsent ? AppColors.aiSoft : AppColors.surfaceNested,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -64,17 +62,27 @@ class AiConsentScreen extends ConsumerWidget {
               activeThumbColor: AppColors.aiAccent,
               activeTrackColor: AppColors.aiSoft,
               value: aiConsent,
-              onChanged: (val) {
-                ref.read(aiConsentProvider.notifier).setConsent(val);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      val
-                          ? 'Đã bật Chế độ AI Cá nhân hóa'
-                          : 'Đã chuyển sang Chế độ Kiến thức Phổ quát',
+              onChanged: (val) async {
+                try {
+                  await ref.read(aiConsentProvider.notifier).setConsent(val);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        val
+                            ? 'Đã bật Chế độ AI Cá nhân hóa'
+                            : 'Đã chuyển sang Chế độ Kiến thức Phổ quát',
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } catch (_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Không thể cập nhật quyền AI.'),
+                    ),
+                  );
+                }
               },
             ),
           ),
@@ -87,9 +95,7 @@ class AiConsentScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: AppColors.aiSoft,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.aiBorder,
-                ),
+                border: Border.all(color: AppColors.aiBorder),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

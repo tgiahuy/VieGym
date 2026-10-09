@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/resilient_network_image.dart';
 import '../application/favorite_foods_controller.dart';
-import '../data/food_catalog.dart';
+import '../application/food_catalog_controller.dart';
 
 class FavoriteFoodsScreen extends ConsumerWidget {
   const FavoriteFoodsScreen({super.key});
@@ -14,7 +14,9 @@ class FavoriteFoodsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
     final favoriteIds = ref.watch(favoriteFoodsProvider);
-    final favoriteFoods = masterFoodCatalog
+    final favoriteFoods = ref
+        .watch(foodCatalogProvider)
+        .foods
         .where((f) => favoriteIds.contains(f.id))
         .toList();
 
@@ -226,7 +228,7 @@ class FavoriteFoodsScreen extends ConsumerWidget {
                               onPressed: () {
                                 ref
                                     .read(favoriteFoodsProvider.notifier)
-                                    .toggleFavorite(food.id);
+                                    .toggleFavoriteWithSync(food.id);
                               },
                             ),
                           ],

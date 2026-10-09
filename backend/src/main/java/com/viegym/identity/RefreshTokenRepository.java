@@ -14,5 +14,8 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Query("SELECT t FROM RefreshToken t JOIN FETCH t.user WHERE t.tokenHash = :tokenHash")
     Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
 
+    @Query("SELECT t FROM RefreshToken t JOIN FETCH t.user WHERE t.tokenHash = :tokenHash")
+    Optional<RefreshToken> findByTokenHash(@Param("tokenHash") String tokenHash);
+
     List<RefreshToken> findAllByUserIdAndStatus(Long userId, TokenStatus status);
 }

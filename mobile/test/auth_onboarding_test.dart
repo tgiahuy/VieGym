@@ -774,7 +774,7 @@ void main() {
         );
 
         final expectedGreeting = getTimeBasedGreeting();
-        expect(find.text('$expectedGreeting,'), findsOneWidget);
+        expect(find.text('$expectedGreeting 👋'), findsOneWidget);
         expect(find.text('Huy'), findsOneWidget);
         expect(find.text('Mặt trước'), findsOneWidget);
 

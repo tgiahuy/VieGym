@@ -10,6 +10,7 @@ All URIs are relative to *http://localhost:8080/api/v1*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**changePassword**](AuthControllerApi.md#changepassword) | **POST** /api/v1/auth/password/change |
+[**facebook**](AuthControllerApi.md#facebook) | **POST** /api/v1/auth/facebook |
 [**forgotPassword**](AuthControllerApi.md#forgotpassword) | **POST** /api/v1/auth/password/forgot |
 [**google**](AuthControllerApi.md#google) | **POST** /api/v1/auth/google |
 [**login**](AuthControllerApi.md#login) | **POST** /api/v1/auth/login |
@@ -50,6 +51,47 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**ApiResponseVoid**](ApiResponseVoid.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: */*
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **facebook**
+> ApiResponseSessionResponse facebook(facebookLoginRequest)
+
+
+
+### Example
+```dart
+import 'package:viegym_api/api.dart';
+
+final api = ViegymApi().getAuthControllerApi();
+final FacebookLoginRequest facebookLoginRequest = ; // FacebookLoginRequest |
+
+try {
+    final response = api.facebook(facebookLoginRequest);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling AuthControllerApi->facebook: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **facebookLoginRequest** | [**FacebookLoginRequest**](FacebookLoginRequest.md)|  |
+
+### Return type
+
+[**ApiResponseSessionResponse**](ApiResponseSessionResponse.md)
 
 ### Authorization
 

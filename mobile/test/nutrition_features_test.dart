@@ -346,15 +346,15 @@ void main() {
         expect(find.text('Hôm nay'), findsWidgets);
 
         // Verify Energy & Macros Card
-        expect(find.text('NĂNG LƯỢNG & DINH DƯỠNG'), findsOneWidget);
+        expect(find.text('NĂNG LƯỢNG HÔM NAY'), findsOneWidget);
         expect(find.text('Chỉnh mục tiêu'), findsOneWidget);
         expect(find.text('Protein'), findsOneWidget);
         expect(find.text('Carb'), findsOneWidget);
         expect(find.text('Fat'), findsOneWidget);
 
         // Verify 4 Action Cards directly below Energy Card
-        expect(find.text('Tìm kiếm'), findsOneWidget);
-        expect(find.text('Yêu thích'), findsOneWidget);
+        expect(find.text('Tìm món'), findsOneWidget);
+        expect(find.text('✨ AI Thực đơn'), findsOneWidget);
         expect(find.text('Kế hoạch'), findsOneWidget);
         expect(find.text('Lịch sử'), findsOneWidget);
 
@@ -362,10 +362,7 @@ void main() {
         expect(find.text('Mẹo cho người mới'), findsOneWidget);
         await tester.tap(find.text('Mẹo cho người mới'));
         await tester.pumpAndSettle();
-        expect(
-          find.text('Cách theo dõi bữa ăn chuẩn gymmer'),
-          findsOneWidget,
-        );
+        expect(find.text('Cách theo dõi bữa ăn chuẩn gymmer'), findsOneWidget);
         expect(find.text('Ưu tiên nạp đủ Protein'), findsOneWidget);
         await tester.tap(find.text('Đã hiểu'));
         await tester.pumpAndSettle();
@@ -771,10 +768,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify Screen Title & Sections
-        expect(find.text('AI tạo bữa ăn'), findsOneWidget);
-        expect(find.text('CHỌN CÁC BỮA CẦN GỢI Ý'), findsOneWidget);
-        expect(find.text('DINH DƯỠNG CÒN LẠI HÔM NAY'), findsOneWidget);
-        expect(find.text('TÙY CHỌN & ƯU TIÊN'), findsOneWidget);
+        expect(find.text('AI Tạo Bữa Ăn Thông Minh'), findsOneWidget);
+        expect(find.text('BỮA ĂN CẦN GỢI Ý'), findsOneWidget);
+        expect(find.text('AI NUTRITION ENGINE'), findsOneWidget);
+        expect(find.text('GỢI Ý KHẨU VỊ & CHẾ ĐỘ ĂN (1 CHẠM)'), findsOneWidget);
         expect(find.text('Ưu tiên món Việt'), findsOneWidget);
 
         // Tap Generate
@@ -807,5 +804,105 @@ void main() {
         expect(countAfter, greaterThan(countBefore));
       },
     );
+
+    testWidgets(
+      'AiMealGenerateScreen generates and adds all selected main meals',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 5200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: const AiMealGenerateScreen(
+                initialMealType: MealType.breakfast,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('🍽️ 3 chính'));
+        await tester.pumpAndSettle();
+        expect(find.text('3 đã chọn'), findsOneWidget);
+
+        await tester.tap(find.text('✨ Tạo 3 bữa ăn với AI'));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        expect(find.text('TỔNG THỰC ĐƠN (3 BỮA)'), findsOneWidget);
+        expect(find.text('GỢI Ý BỮA SÁNG'), findsOneWidget);
+        expect(find.text('GỢI Ý BỮA TRƯA'), findsOneWidget);
+        expect(find.text('GỢI Ý BỮA TỐI'), findsOneWidget);
+
+        final countBefore = container.read(nutritionProvider).entries.length;
+        await tester.tap(find.text('Thêm tất cả (3)'));
+        await tester.pumpAndSettle();
+
+        if (find.text('Lượng calo sắp đạt chỉ tiêu').evaluate().isNotEmpty) {
+          await tester.tap(find.widgetWithText(FilledButton, 'Vẫn thêm'));
+          await tester.pumpAndSettle();
+        }
+
+        final state = container.read(nutritionProvider);
+        expect(state.entries.length, greaterThan(countBefore));
+        expect(state.getEntriesByMeal(MealType.breakfast), isNotEmpty);
+        expect(state.getEntriesByMeal(MealType.lunch), isNotEmpty);
+        expect(state.getEntriesByMeal(MealType.dinner), isNotEmpty);
+        expect(find.text('Đã thêm tất cả ✓'), findsOneWidget);
+      },
+    );
+
+    for (final scenario in [
+      (count: 2, selector: 'Bữa trưa'),
+      (count: 4, selector: '✨ Tất cả'),
+    ]) {
+      testWidgets(
+        'AiMealGenerateScreen renders ${scenario.count} selected meals',
+        (tester) async {
+          tester.view.physicalSize = const Size(1080, 5200);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MaterialApp(
+                theme: AppTheme.darkTheme,
+                home: const AiMealGenerateScreen(
+                  initialMealType: MealType.breakfast,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text(scenario.selector).first);
+          await tester.pumpAndSettle();
+          expect(find.text('${scenario.count} đã chọn'), findsOneWidget);
+
+          await tester.tap(find.text('✨ Tạo ${scenario.count} bữa ăn với AI'));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('TỔNG THỰC ĐƠN (${scenario.count} BỮA)'),
+            findsOneWidget,
+          );
+          expect(find.text('Thêm tất cả (${scenario.count})'), findsOneWidget);
+        },
+      );
+    }
   });
 }

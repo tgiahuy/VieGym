@@ -17,12 +17,13 @@ import com.viegym.health.domain.HealthCalculationResult;
 import com.viegym.health.domain.HealthProfile;
 import com.viegym.health.domain.HealthProfileRepository;
 import com.viegym.health.domain.NutritionTarget;
-import com.viegym.health.domain.NutritionTargetRepository;
 import com.viegym.health.domain.TrainingExperience;
 import com.viegym.health.domain.WeightTrendDirection;
 import com.viegym.identity.User;
 import com.viegym.identity.UserProfile;
 import com.viegym.identity.UserProfileRepository;
+import com.viegym.nutrition.api.NutritionDtos;
+import com.viegym.nutrition.application.NutritionService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -39,8 +40,8 @@ class DashboardServiceTests {
 
     private UserProfileRepository userProfiles;
     private HealthProfileRepository healthProfiles;
-    private NutritionTargetRepository nutritionTargets;
     private WeightLogService weightLogs;
+    private NutritionService mealNutrition;
     private Clock clock;
     private DashboardService service;
 
@@ -48,12 +49,12 @@ class DashboardServiceTests {
     void setUp() {
         userProfiles = mock(UserProfileRepository.class);
         healthProfiles = mock(HealthProfileRepository.class);
-        nutritionTargets = mock(NutritionTargetRepository.class);
         weightLogs = mock(WeightLogService.class);
+        mealNutrition = mock(NutritionService.class);
         clock = Clock.fixed(Instant.parse("2026-08-31T10:00:00Z"), ZoneOffset.UTC);
         service =
                 new DashboardService(
-                        userProfiles, healthProfiles, nutritionTargets, weightLogs, clock);
+                        userProfiles, healthProfiles, weightLogs, mealNutrition, clock);
     }
 
     @Test
@@ -113,8 +114,26 @@ class DashboardServiceTests {
 
         when(userProfiles.findByUserId(userId)).thenReturn(Optional.of(userProfile));
         when(healthProfiles.findByUserId(userId)).thenReturn(Optional.of(healthProfile));
-        when(nutritionTargets.findByUserId(userId)).thenReturn(Optional.of(nutritionTarget));
         when(weightLogs.getTrend(userId, 30)).thenReturn(trend);
+        when(mealNutrition.getMealPlan(userId, today))
+                .thenReturn(
+                        new NutritionDtos.MealPlan(
+                                null,
+                                today,
+                                "CURRENT",
+                                new NutritionDtos.Nutrition(
+                                        targetValues.caloriesKcal(),
+                                        targetValues.proteinG(),
+                                        targetValues.carbsG(),
+                                        targetValues.fatG()),
+                                NutritionDtos.Nutrition.zero(),
+                                new NutritionDtos.Nutrition(
+                                        targetValues.caloriesKcal(),
+                                        targetValues.proteinG(),
+                                        targetValues.carbsG(),
+                                        targetValues.fatG()),
+                                List.of(),
+                                List.of()));
 
         DashboardResponse response = service.getDashboard(userId, today);
 
@@ -146,7 +165,17 @@ class DashboardServiceTests {
 
         when(userProfiles.findByUserId(userId)).thenReturn(Optional.of(userProfile));
         when(healthProfiles.findByUserId(userId)).thenReturn(Optional.empty());
-        when(nutritionTargets.findByUserId(userId)).thenReturn(Optional.empty());
+        when(mealNutrition.getMealPlan(userId, today))
+                .thenReturn(
+                        new NutritionDtos.MealPlan(
+                                null,
+                                today,
+                                "CURRENT",
+                                null,
+                                NutritionDtos.Nutrition.zero(),
+                                null,
+                                List.of(),
+                                List.of()));
 
         DashboardResponse response = service.getDashboard(userId, today);
 

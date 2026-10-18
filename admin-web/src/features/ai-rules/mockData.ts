@@ -21,6 +21,7 @@ export const INITIAL_TEMPLATES: PromptTemplateItem[] = [
     contextWindowPct: 14.2,
     updatedAt: '2 giờ trước',
     author: 'AI Eng Team',
+    draftRevision: 0,
     content: `# ROLE & PERSONA DEFINITION
 Bạn là VieGym AI Engine chuyên gia thiết kế giáo án thể hình cá nhân hóa chuẩn Khoa học Thể thao & Phục hồi Chức năng.
 
@@ -54,6 +55,7 @@ Giữ cường độ trong khoảng RPE: {{target_rpe_range}}. Tránh tuyệt đ
     contextWindowPct: 11.1,
     updatedAt: '1 ngày trước',
     author: 'Nutrition Lead',
+    draftRevision: 0,
     content: `# ROLE & PERSONA DEFINITION
 Bạn là Chuyên gia Dinh dưỡng Thể thao VieGym AI Nutritionist chuẩn ISSN & Viện Dinh Dưỡng Quốc Gia.
 
@@ -80,6 +82,7 @@ Bạn là Chuyên gia Dinh dưỡng Thể thao VieGym AI Nutritionist chuẩn IS
     contextWindowPct: 7.6,
     updatedAt: '3 ngày trước',
     author: 'UX Copywriter',
+    draftRevision: 0,
     content: `# ROLE & VOICE GUIDELINES
 Bạn là VieGym Coach — Huấn luyện viên thể hình thông minh, truyền cảm hứng, thân thiện và giàu năng lượng tích cực.
 
@@ -103,6 +106,7 @@ Bạn là VieGym Coach — Huấn luyện viên thể hình thông minh, truyề
     contextWindowPct: 4.8,
     updatedAt: '5 ngày trước',
     author: 'Medical Advisory',
+    draftRevision: 0,
     content: `# CLINICAL GUARDRAIL FILTER
 Nếu phát hiện hồ sơ chấn thương cấp tính (Knee ACL/MCL, Lumbar Herniation, Rotator Cuff Tear):
 - Tự động hạ cấp độ bài tập xuống 1 bậc.
@@ -154,6 +158,7 @@ export const SAFETY_RULES: SafetyRuleItem[] = [
     description: 'Loại trừ Barbell Back Squat, Conventional Deadlift, Overhead Press khi có cờ chấn thương lưng dưới.',
     action: 'Thay thế bằng Leg Press 45° hoặc Dumbbell Split Squat',
     isActive: true,
+    version: 0,
   },
   {
     id: 'rule-2',
@@ -164,6 +169,7 @@ export const SAFETY_RULES: SafetyRuleItem[] = [
     description: 'Chặn máy Leg Extension ở góc duỗi tối đa (0-30 độ). Khuyến nghị Closed Kinetic Chain exercises.',
     action: 'Chuyển sang Squat hộp nhẹ kiểm soát biên độ',
     isActive: true,
+    version: 0,
   },
   {
     id: 'rule-3',
@@ -174,6 +180,7 @@ export const SAFETY_RULES: SafetyRuleItem[] = [
     description: 'Không cho phép AI gán RPE > 8.0 trong tuần đầu để chống quá tải thần kinh trung ương.',
     action: 'Khóa RPE tối đa 7.5 và RIR >= 2',
     isActive: true,
+    version: 0,
   },
   {
     id: 'rule-4',
@@ -184,6 +191,7 @@ export const SAFETY_RULES: SafetyRuleItem[] = [
     description: 'Xóa toàn bộ họ tên thật, số điện thoại, email trước khi gửi prompt qua LLM gateway.',
     action: 'Sanitize và gán UUID ngẫu nhiên',
     isActive: true,
+    version: 0,
   },
   {
     id: 'rule-5',
@@ -194,6 +202,7 @@ export const SAFETY_RULES: SafetyRuleItem[] = [
     description: 'Tự động kiểm tra chéo thành phần chi tiết trong công thức nấu ăn trước khi gợi ý thực đơn.',
     action: 'Loại bỏ hoàn toàn nhóm nguyên liệu gây dị ứng',
     isActive: true,
+    version: 0,
   },
 ]
 

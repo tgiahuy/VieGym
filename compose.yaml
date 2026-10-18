@@ -6,8 +6,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    # Local development binds to loopback (127.0.0.1). For production, use compose.prod.yaml with reverse proxy.
     ports:
-      - "0.0.0.0:${SERVER_PORT:-8080}:8080"
+      - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,6 +90,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-local}
       INTERNAL_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?Set AI_SERVICE_TOKEN in .env}
+      # Development default allows mock. Production (APP_ENV=production) strictly rejects mock via Settings.validate_deployment_secrets
       AI_PROVIDER: ${AI_PROVIDER:-mock}
       AI_MODEL: ${AI_MODEL:-mock}
       AI_PROVIDER_API_KEY: ${AI_PROVIDER_API_KEY:-}

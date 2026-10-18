@@ -23,10 +23,10 @@ export const DiffCompareModal: React.FC<DiffCompareModalProps> = ({ isOpen, onCl
             <span className="material-symbols-outlined text-[#ff506d] text-xl">difference</span>
             <div>
               <h3 className="text-base font-bold text-[#f5f5f6]">
-                So sánh bản cập nhật: v3.4.1 ➔ v3.4.2 (Production)
+                Lịch sử triển khai prompt
               </h3>
               <p className="text-xs text-[#8a8d93]">
-                Bổ sung quy tắc thay thế chuyển động khi chấn thương lưng dưới
+                Mỗi lần publish được lưu thành một version và audit event trên backend
               </p>
             </div>
           </div>
@@ -40,23 +40,9 @@ export const DiffCompareModal: React.FC<DiffCompareModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Diff Content */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-3 font-mono text-xs">
-          <div className="p-3 rounded-lg bg-[#131417] border border-[#292a2f] space-y-1">
-            <div className="text-[#8a8d93]">@@ -8,6 +8,8 @@ CLINICAL SAFETY GUARDRAILS</div>
-            <div className="text-[#a7a9ae]">
-              {' '}
-              TUYỆT ĐỐI KHÔNG chỉ định bất kỳ bài tập tải trọng dọc trục cột sống...
-            </div>
-            <div className="bg-[#ff5a5f]/15 text-[#ff5a5f] p-1 rounded">
-              - // v3.4.1: Chỉ ghi nhận cảnh báo chung cho người dùng
-            </div>
-            <div className="bg-[#35c76f]/15 text-[#35c76f] p-1 rounded">
-              + // v3.4.2: Tự động thay thế bằng Leg Press máy nghiêng 45° hoặc Dumbbell Split Squat
-            </div>
-            <div className="text-[#a7a9ae]">
-              {' '}
-              Giữ cường độ trong khoảng RPE: {'{{target_rpe_range}}'}.
-            </div>
+        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-3 text-sm">
+          <div className="p-4 rounded-lg bg-[#131417] border border-[#292a2f] text-[#a7a9ae]">
+            Xem các sự kiện <span className="font-mono text-[#f5f5f6]">AI_PROMPT_PUBLISH</span> trong trang Audit Logs để xác minh người phát hành, version và correlation ID. Giao diện diff chi tiết chưa được cung cấp bởi API.
           </div>
         </div>
 

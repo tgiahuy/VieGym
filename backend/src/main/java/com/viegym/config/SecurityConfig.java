@@ -26,6 +26,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -46,9 +47,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
-
-    private static final String DEFAULT_SECRET = "test-jwt-secret-key-for-dev-and-test";
 
     @Bean
     FilterRegistrationBean<AdminCsrfFilter> disableContainerRegistration(AdminCsrfFilter filter) {
@@ -226,7 +226,7 @@ public class SecurityConfig {
 
     @Bean
     JwtDecoder jwtDecoder(
-            @Value("${JWT_SIGNING_KEY:${JWT_SECRET:" + DEFAULT_SECRET + "}}") String secret,
+            @Value("${JWT_SIGNING_KEY:${JWT_SECRET:}}") String secret,
             @Value("${JWT_ISSUER:viegym-backend}") String issuer,
             @Value("${JWT_AUDIENCE:viegym-api}") String audience) {
         byte[] keyBytes = sha256(secret);

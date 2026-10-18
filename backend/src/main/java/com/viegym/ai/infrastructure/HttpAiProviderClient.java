@@ -20,7 +20,7 @@ public class HttpAiProviderClient implements AiProviderClient {
     public HttpAiProviderClient(
             RestClient.Builder builder,
             @Value("${AI_SERVICE_BASE_URL:http://localhost:8000}") String baseUrl,
-            @Value("${AI_SERVICE_TOKEN:dev-secret-token}") String token,
+            @Value("${AI_SERVICE_TOKEN:}") String token,
             @Value("${AI_CONNECT_TIMEOUT_MS:3000}") int connectTimeoutMs,
             @Value("${AI_READ_TIMEOUT_MS:20000}") int readTimeoutMs) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -61,6 +61,23 @@ public class HttpAiProviderClient implements AiProviderClient {
         } catch (RestClientException exception) {
             throw new ApiException(
                     ApiErrorCode.AI_PROVIDER_UNAVAILABLE, "AI service is temporarily unavailable");
+        }
+    }
+
+    @Override
+    public ProviderStatus status() {
+        try {
+            ProviderStatus response =
+                    client.get()
+                            .uri("/internal/v1/ai/status")
+                            .header("X-Internal-Token", token)
+                            .retrieve()
+                            .body(ProviderStatus.class);
+            return response == null
+                    ? new ProviderStatus("unavailable", "unavailable", false)
+                    : response;
+        } catch (RestClientException exception) {
+            return new ProviderStatus("unavailable", "unavailable", false);
         }
     }
 }

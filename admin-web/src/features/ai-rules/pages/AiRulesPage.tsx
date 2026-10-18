@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { AiMetricsTab } from '../components/AiMetricsTab'
 import { DiffCompareModal } from '../components/DiffCompareModal'
 import { PromptEditor } from '../components/PromptEditor'
@@ -6,31 +6,53 @@ import { PromptMasterList } from '../components/PromptMasterList'
 import { SafetyRulesTab } from '../components/SafetyRulesTab'
 import { SandboxTestModal } from '../components/SandboxTestModal'
 import { VariableAllowlist } from '../components/VariableAllowlist'
-import { INITIAL_TEMPLATES } from '../mockData'
+import { aiRulesApi } from '../api'
 import { PromptTemplateItem } from '../types'
 
 type ActiveTab = 'safety' | 'prompts' | 'metrics'
 
 export const AiRulesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('prompts')
-  const [templates, setTemplates] = useState<PromptTemplateItem[]>(INITIAL_TEMPLATES)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('prompt-1')
+  const [templates, setTemplates] = useState<PromptTemplateItem[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [editedContents, setEditedContents] = useState<Record<string, string>>({})
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Modals
   const [isDiffOpen, setIsDiffOpen] = useState(false)
   const [isSandboxOpen, setIsSandboxOpen] = useState(false)
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg)
     setTimeout(() => {
       setToastMessage(null)
     }, 3200)
-  }
+  }, [])
+
+  useEffect(() => {
+    aiRulesApi.listPrompts()
+      .then((items) => {
+        setTemplates(items)
+        setSelectedTemplateId((current) => current || items[0]?.id || '')
+      })
+      .catch((error: unknown) => {
+        showToast(error instanceof Error ? error.message : 'Không thể tải prompt từ backend')
+      })
+      .finally(() => setIsLoading(false))
+  }, [showToast])
 
   const selectedTemplate =
-    templates.find((t) => t.id === selectedTemplateId) || templates[0]!
+    templates.find((t) => t.id === selectedTemplateId) || templates[0]
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-[#a7a9ae]">Đang tải cấu hình AI từ backend...</div>
+  }
+
+  if (!selectedTemplate) {
+    return <div className="p-6 text-sm text-[#ff5a5f]">Không có prompt template khả dụng.</div>
+  }
 
   const currentContent =
     editedContents[selectedTemplate.id] !== undefined
@@ -56,32 +78,43 @@ export const AiRulesPage: React.FC = () => {
     )
   }
 
-  const handleSaveDraft = () => {
-    setTemplates((prev) =>
-      prev.map((t) =>
-        t.id === selectedTemplate.id
-          ? { ...t, content: currentContent, status: 'draft', updatedAt: 'Vừa xong' }
-          : t
-      )
-    )
-    showToast(`Đã lưu bản nháp (Draft) cho template #${selectedTemplate.code}`)
+  const replaceTemplate = (saved: PromptTemplateItem) => {
+    setTemplates((prev) => prev.map((item) => item.id === saved.id ? saved : item))
+    setEditedContents((prev) => {
+      const next = { ...prev }
+      delete next[saved.id]
+      return next
+    })
   }
 
-  const handlePublish = () => {
-    setTemplates((prev) =>
-      prev.map((t) =>
-        t.id === selectedTemplate.id
-          ? {
-              ...t,
-              content: currentContent,
-              status: 'production',
-              version: 'v3.5.0',
-              updatedAt: 'Vừa xong',
-            }
-          : t
-      )
-    )
-    showToast(`Đã phát hành phiên bản mới v3.5.0 lên Production thành công!`)
+  const handleSaveDraft = async () => {
+    setIsSaving(true)
+    try {
+      const saved = await aiRulesApi.saveDraft(selectedTemplate, currentContent)
+      replaceTemplate(saved)
+      showToast(`Server đã lưu bản nháp cho template #${selectedTemplate.code}`)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Lưu bản nháp thất bại')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handlePublish = async () => {
+    setIsSaving(true)
+    try {
+      let draft = selectedTemplate
+      if (currentContent !== selectedTemplate.content) {
+        draft = await aiRulesApi.saveDraft(selectedTemplate, currentContent)
+      }
+      const published = await aiRulesApi.publish(draft)
+      replaceTemplate(published)
+      showToast(`Server xác nhận đã phát hành ${published.version} lên Production`)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Phát hành thất bại')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleResetContent = () => {
@@ -130,29 +163,26 @@ export const AiRulesPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               const newTitle = window.prompt('Nhập tên prompt template mới:', 'Custom Workout Generator')
               if (newTitle) {
-                const newTpl: PromptTemplateItem = {
-                  id: `prompt-${Date.now()}`,
-                  code: `PRM-${Math.floor(1000 + Math.random() * 9000)}`,
-                  useCase: 'WORKOUT_ENGINE',
-                  useCaseLabel: 'WORKOUT_ENGINE',
-                  title: newTitle,
-                  description: 'Template tạo mới từ Admin Console',
-                  version: 'v1.0.0-draft',
-                  status: 'draft',
-                  model: 'Claude 3.5 Sonnet',
-                  fallbackModel: 'GPT-4o',
-                  tokensEstimate: 500,
-                  contextWindowPct: 3.9,
-                  updatedAt: 'Vừa tạo',
-                  author: 'Super Admin',
-                  content: '# ROLE & TASK INSTRUCTIONS\nBạn là VieGym AI...',
+                try {
+                  const newTpl = await aiRulesApi.createPrompt({
+                    code: `PRM-${Math.floor(1000 + Math.random() * 9000)}`,
+                    useCase: 'WORKOUT_ENGINE',
+                    useCaseLabel: 'WORKOUT_ENGINE',
+                    title: newTitle,
+                    description: 'Template tạo mới từ Admin Console',
+                    model: 'configured-provider-model',
+                    fallbackModel: 'Không cấu hình',
+                    content: '# ROLE & TASK INSTRUCTIONS\nBạn là VieGym AI...',
+                  })
+                  setTemplates((prev) => [newTpl, ...prev])
+                  setSelectedTemplateId(newTpl.id)
+                  showToast(`Server đã tạo bản nháp template "${newTitle}"`)
+                } catch (error) {
+                  showToast(error instanceof Error ? error.message : 'Tạo prompt thất bại')
                 }
-                setTemplates([newTpl, ...templates])
-                setSelectedTemplateId(newTpl.id)
-                showToast(`Đã tạo bản nháp template "${newTitle}"`)
               }
             }}
             className="h-10 px-4 rounded-xl bg-[#f2305a] hover:bg-[#d52b50] active:bg-[#c32649] text-[#f5f5f6] text-sm font-semibold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
@@ -178,7 +208,7 @@ export const AiRulesPage: React.FC = () => {
           <span className="material-symbols-outlined text-lg">verified_user</span>
           <span>Quy tắc an toàn</span>
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#222327] text-[#8a8d93] border border-[#292a2f]">
-            14 quy tắc
+            Backend managed
           </span>
         </button>
 
@@ -212,7 +242,7 @@ export const AiRulesPage: React.FC = () => {
           <span className="material-symbols-outlined text-lg">insights</span>
           <span>Chỉ số AI</span>
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#35c76f]/10 text-[#35c76f] border border-[#35c76f]/30">
-            Live 99.8%
+            Live backend
           </span>
         </button>
       </section>
@@ -254,9 +284,9 @@ export const AiRulesPage: React.FC = () => {
         <div className="flex items-center gap-2 text-xs text-[#8a8d93]">
           <span className="w-2 h-2 rounded-full bg-[#35c76f]" />
           <span className="hidden sm:inline">
-            Bản nháp tự động lưu 3 phút trước · Chưa có thay đổi chưa commit
+            Chỉ hiển thị thành công sau khi server xác nhận
           </span>
-          <span className="sm:hidden">Auto-saved</span>
+          <span className="sm:hidden">Server-backed</span>
         </div>
 
         {/* Actions */}
@@ -270,7 +300,8 @@ export const AiRulesPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={handleSaveDraft}
+            onClick={() => void handleSaveDraft()}
+            disabled={isSaving}
             className="h-10 sm:h-11 px-4 sm:px-5 rounded-xl bg-[#222327] hover:bg-[#1c1d21] text-[#f5f5f6] border border-[#292a2f] hover:border-[#34363b] text-xs sm:text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-base text-[#8a8d93]">save</span>
@@ -278,11 +309,12 @@ export const AiRulesPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={handlePublish}
+            onClick={() => void handlePublish()}
+            disabled={isSaving}
             className="h-10 sm:h-11 px-4 sm:px-6 rounded-xl bg-[#f2305a] hover:bg-[#d52b50] active:bg-[#c32649] text-[#f5f5f6] text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-lg shadow-[#f2305a]/20 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">rocket_launch</span>
-            <span>Phát hành (Publish v3.5.0)</span>
+            <span>{isSaving ? 'Đang xử lý...' : 'Phát hành lên Production'}</span>
           </button>
         </div>
       </footer>

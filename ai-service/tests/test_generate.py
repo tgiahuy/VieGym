@@ -48,6 +48,16 @@ def test_internal_token_guard() -> None:
     assert response.status_code == 403
 
 
+def test_status_reports_active_provider() -> None:
+    response = client.get("/internal/v1/ai/status", headers=HEADERS)
+    assert response.status_code == 200
+    assert response.json() == {
+        "provider": settings.AI_PROVIDER,
+        "model": settings.AI_MODEL,
+        "reachable": True,
+    }
+
+
 def test_general_chat_has_no_personal_context_and_returns_structured_response() -> None:
     response = client.post(URL, json=payload(), headers=HEADERS)
     assert response.status_code == 200

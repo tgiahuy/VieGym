@@ -8,98 +8,12 @@ interface ActivityChartProps {
   totalAuditLogs?: number
 }
 
-const fallbackDays: DayActivityData[] = [
-  {
-    day: 'T2',
-    label: 'T2',
-    workoutCount: 2410,
-    nutritionCount: 2820,
-    aiCount: 1750,
-    workoutHeight: '65%',
-    nutritionHeight: '75%',
-    aiHeight: '48%',
-    tooltip: 'Tập: 2,410 · D.Dưỡng: 2,820 · AI: 1,750',
-  },
-  {
-    day: 'T3',
-    label: 'T3',
-    workoutCount: 2680,
-    nutritionCount: 3010,
-    aiCount: 1890,
-    workoutHeight: '72%',
-    nutritionHeight: '80%',
-    aiHeight: '52%',
-    tooltip: 'Tập: 2,680 · D.Dưỡng: 3,010 · AI: 1,890',
-  },
-  {
-    day: 'T4',
-    label: 'T4',
-    workoutCount: 3120,
-    nutritionCount: 3340,
-    aiCount: 2150,
-    workoutHeight: '85%',
-    nutritionHeight: '88%',
-    aiHeight: '60%',
-    tooltip: 'Tập: 3,120 · D.Dưỡng: 3,340 · AI: 2,150',
-  },
-  {
-    day: 'T5',
-    label: 'T5',
-    workoutCount: 3420,
-    nutritionCount: 3680,
-    aiCount: 2510,
-    workoutHeight: '92%',
-    nutritionHeight: '95%',
-    aiHeight: '78%',
-    isPeak: true,
-    tooltip: 'Tập: 3,420 · D.Dưỡng: 3,680 · AI: 2,510',
-  },
-  {
-    day: 'T6',
-    label: 'T6',
-    workoutCount: 2910,
-    nutritionCount: 3110,
-    aiCount: 2020,
-    workoutHeight: '78%',
-    nutritionHeight: '82%',
-    aiHeight: '56%',
-    tooltip: 'Tập: 2,910 · D.Dưỡng: 3,110 · AI: 2,020',
-  },
-  {
-    day: 'T7',
-    label: 'T7',
-    workoutCount: 2240,
-    nutritionCount: 2540,
-    aiCount: 1510,
-    workoutHeight: '60%',
-    nutritionHeight: '68%',
-    aiHeight: '42%',
-    tooltip: 'Tập: 2,240 · D.Dưỡng: 2,540 · AI: 1,510',
-  },
-  {
-    day: 'CN',
-    label: 'CN (Hôm nay)',
-    workoutCount: 2050,
-    nutritionCount: 2380,
-    aiCount: 1360,
-    workoutHeight: '55%',
-    nutritionHeight: '64%',
-    aiHeight: '38%',
-    tooltip: 'Tập: 2,050 · D.Dưỡng: 2,380 · AI: 1,360',
-  },
-]
-
 export const ActivityChart: React.FC<ActivityChartProps> = ({
   days,
-  totalExercises = 0,
-  totalFoods = 0,
   totalAuditLogs = 0,
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-  const chartDays = days && days.length > 0 ? days : fallbackDays
-
-  const totalCalculatedWorkouts = totalExercises > 0 ? totalExercises * 5 : 24310
-  const totalCalculatedCalories = totalFoods > 0 ? `${(totalFoods * 0.15).toFixed(1)}M kcal` : '18.4M kcal'
+  const chartDays = days ?? []
 
   return (
     <div className="col-span-12 lg:col-span-8 bg-[#17181b] border border-[#292a2f] rounded-[18px] p-6 flex flex-col justify-between shadow-sm">
@@ -151,6 +65,11 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
               </div>
             </div>
 
+            {chartDays.length === 0 && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center text-sm text-[#8a8d93]">
+                Chưa có endpoint cung cấp dữ liệu hoạt động theo ngày
+              </div>
+            )}
             {/* Grouped Columns */}
             <div className="relative z-10 h-full w-full flex items-end justify-between px-2 sm:px-6 pt-4 pb-1">
               {chartDays.map((item, idx) => {
@@ -210,15 +129,15 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
         <div className="flex flex-wrap items-center gap-6">
           <div>
             <span className="text-[#8a8d93] block text-[11px]">Cao điểm hệ thống:</span>
-            <span className="text-[#f5f5f6] font-semibold">18:00 - 20:30 (Thứ 5)</span>
+            <span className="text-[#f5f5f6] font-semibold">Chưa có dữ liệu</span>
           </div>
           <div>
             <span className="text-[#8a8d93] block text-[11px]">Tổng lượt workout:</span>
-            <span className="text-[#f5f5f6] font-semibold">{totalCalculatedWorkouts.toLocaleString('vi-VN')} lượt</span>
+            <span className="text-[#f5f5f6] font-semibold">Chưa có dữ liệu</span>
           </div>
           <div>
             <span className="text-[#8a8d93] block text-[11px]">Nhật ký calo nạp:</span>
-            <span className="text-[#f5f5f6] font-semibold">{totalCalculatedCalories}</span>
+            <span className="text-[#f5f5f6] font-semibold">Chưa có dữ liệu</span>
           </div>
           {totalAuditLogs > 0 && (
             <div>
@@ -229,7 +148,7 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({
         </div>
         <div className="text-xs text-[#a7a9ae] font-medium flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[#35c76f] animate-pulse" />
-          <span>Thời gian thực (Live Telemetry)</span>
+          <span>Dữ liệu backend</span>
         </div>
       </div>
     </div>

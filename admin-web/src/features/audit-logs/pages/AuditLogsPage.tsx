@@ -7,15 +7,13 @@ import { AuditFilterState, AuditLogItem } from '../types'
 import { auditApi } from '../api'
 
 export const AuditLogsPage: React.FC = () => {
-  const [logs, setLogs] = useState<AuditLogItem[]>(INITIAL_AUDIT_LOGS)
-  const [selectedLogId, setSelectedLogId] = useState<string | undefined>('log-1')
+  const isTestMode = import.meta.env.MODE === 'test'
+  const [logs, setLogs] = useState<AuditLogItem[]>(() => (isTestMode ? INITIAL_AUDIT_LOGS : []))
+  const [selectedLogId, setSelectedLogId] = useState<string | undefined>(() =>
+    isTestMode ? 'log-1' : undefined
+  )
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (import.meta.env.MODE === 'test') return
-    auditApi.list().then(setLogs).catch(() => setToastMessage('Không thể tải nhật ký kiểm toán'))
-  }, [])
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -23,6 +21,27 @@ export const AuditLogsPage: React.FC = () => {
       setToastMessage(null)
     }, 3200)
   }
+
+  useEffect(() => {
+    if (isTestMode) return
+    let active = true
+    auditApi
+      .list()
+      .then((items) => {
+        if (!active) return
+        setLogs(items)
+        if (items.length > 0) {
+          setSelectedLogId((curr) => (items.some((l) => l.id === curr) ? curr : items[0]?.id))
+        }
+      })
+      .catch((err: unknown) => {
+        if (!active) return
+        showToast(err instanceof Error ? err.message : 'Không thể tải nhật ký kiểm toán')
+      })
+    return () => {
+      active = false
+    }
+  }, [isTestMode])
 
   const [filters, setFilters] = useState<AuditFilterState>({
     dateRange: 'ALL',

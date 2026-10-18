@@ -60,6 +60,7 @@ public class AiCoachService {
     private final Clock clock;
     private final AiContextBuilder contextBuilder;
     private final AiProviderClient provider;
+    private final AiPromptConfigurationService promptConfiguration;
     private final NutritionService nutrition;
     private final WorkoutSchedulePlanningService workoutPlanning;
     private final TransactionTemplate transactions;
@@ -70,6 +71,7 @@ public class AiCoachService {
             Clock clock,
             AiContextBuilder contextBuilder,
             AiProviderClient provider,
+            AiPromptConfigurationService promptConfiguration,
             NutritionService nutrition,
             WorkoutSchedulePlanningService workoutPlanning,
             PlatformTransactionManager transactionManager) {
@@ -78,6 +80,7 @@ public class AiCoachService {
         this.clock = clock;
         this.contextBuilder = contextBuilder;
         this.provider = provider;
+        this.promptConfiguration = promptConfiguration;
         this.nutrition = nutrition;
         this.workoutPlanning = workoutPlanning;
         this.transactions = new TransactionTemplate(transactionManager);
@@ -228,8 +231,13 @@ public class AiCoachService {
                         : contextBuilder.general();
         if ("PERSONALIZED".equals(effectiveMode)) persistSnapshot(userId, "CHAT", bundle);
 
-        String prompt = renderChatPrompt(content, effectiveMode);
-        startRequest(userId, "CHAT", correlationId, "chat-v1");
+        AiPromptConfigurationService.ResolvedPrompt promptConfig =
+                promptConfiguration.resolve(
+                        "CHAT_COACH",
+                        "chat-v1",
+                        "Provide concise Vietnamese fitness guidance. Never diagnose illness.");
+        String prompt = renderChatPrompt(promptConfig.content(), content, effectiveMode);
+        startRequest(userId, "CHAT", correlationId, promptConfig.version());
         String answer;
         String safety = "NORMAL";
         String disclaimer = null;
@@ -246,7 +254,7 @@ public class AiCoachService {
                                 new ProviderRequest(
                                         correlationId,
                                         "CHAT",
-                                        "chat-v1",
+                                        promptConfig.version(),
                                         prompt,
                                         bundle.context(),
                                         bundle.candidates(),
@@ -330,15 +338,21 @@ public class AiCoachService {
         AiContextBuilder.ContextBundle bundle =
                 contextBuilder.build(userId, "DAILY_RECOMMENDATION");
         persistSnapshot(userId, "DAILY_RECOMMENDATION", bundle);
-        startRequest(userId, "DAILY_RECOMMENDATION", batch.correlationId(), "daily-v1");
+        AiPromptConfigurationService.ResolvedPrompt promptConfig =
+                promptConfiguration.resolve(
+                        "WORKOUT_ENGINE",
+                        "daily-v1",
+                        "Create 1-3 safe Vietnamese recommendations. Use only candidate IDs and allowed actions.");
+        startRequest(
+                userId, "DAILY_RECOMMENDATION", batch.correlationId(), promptConfig.version());
         try {
             ProviderResponse response =
                     provider.generate(
                             new ProviderRequest(
                                     batch.correlationId(),
                                     "DAILY_RECOMMENDATION",
-                                    "daily-v1",
-                                    renderDailyPrompt(targetDate),
+                                    promptConfig.version(),
+                                    renderDailyPrompt(promptConfig.content(), targetDate),
                                     bundle.context(),
                                     bundle.candidates(),
                                     List.of(),
@@ -940,17 +954,19 @@ public class AiCoachService {
                 || normalized.contains("tiết lộ prompt");
     }
 
-    private static String renderChatPrompt(String message, String mode) {
-        return "rules-v1/chat-v1\nMode: "
+    private static String renderChatPrompt(String configuredPrompt, String message, String mode) {
+        return configuredPrompt
+                + "\nMode: "
                 + mode
-                + "\nProvide concise Vietnamese fitness guidance. Never diagnose illness.\nUser: "
+                + "\nUser: "
                 + message;
     }
 
-    private static String renderDailyPrompt(LocalDate date) {
-        return "rules-v1/daily-v1\nCreate 1-3 safe Vietnamese recommendations for "
+    private static String renderDailyPrompt(String configuredPrompt, LocalDate date) {
+        return configuredPrompt
+                + "\nTarget date: "
                 + date
-                + ". Use only candidate IDs and allowed actions.";
+                + ".";
     }
 
     private static void validateIdempotencyKey(String key) {

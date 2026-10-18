@@ -13,6 +13,32 @@ concurrency:
 
 jobs:
   # ────────────────────────────────────────────────────────────────────────────
+  # Admin Web — React / TypeScript
+  # ────────────────────────────────────────────────────────────────────────────
+  admin-web-ci:
+    name: Admin Web (Node 24 / npm)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./admin-web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 24.18.1
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.18.1"
+          cache: npm
+          cache-dependency-path: admin-web/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint, test and production build
+        run: npm run verify
+
+  # ────────────────────────────────────────────────────────────────────────────
   # Backend — Spring Boot / Maven
   # ────────────────────────────────────────────────────────────────────────────
   backend-ci:

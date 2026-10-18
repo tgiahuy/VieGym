@@ -6,6 +6,10 @@ import java.util.Map;
 public interface AiProviderClient {
     ProviderResponse generate(ProviderRequest request);
 
+    default ProviderStatus status() {
+        return new ProviderStatus("unknown", "unknown", false);
+    }
+
     record ProviderRequest(
             String correlationId,
             String requestType,
@@ -22,4 +26,6 @@ public interface AiProviderClient {
             String safetyLevel,
             List<Map<String, Object>> items,
             Map<String, Object> providerMetadata) {}
+
+    record ProviderStatus(String provider, String model, boolean reachable) {}
 }

@@ -41,7 +41,27 @@ export const WorkoutPlanListPage: React.FC = () => {
   }
 
   useEffect(() => {
-    loadPlans()
+    if (import.meta.env.MODE === 'test') return
+    let active = true
+    workoutPlanApi
+      .list()
+      .then((items) => {
+        if (!active) return
+        setPlans(items)
+        setLoadError(null)
+      })
+      .catch((err: unknown) => {
+        if (!active) return
+        setLoadError(err instanceof Error ? err.message : 'Không thể tải danh sách giáo án')
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false)
+        }
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   // Filter logic

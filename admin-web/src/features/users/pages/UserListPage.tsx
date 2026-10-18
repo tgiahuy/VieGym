@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { InviteAdminModal } from '../components/InviteAdminModal'
 import { UserDetailDrawer } from '../components/UserDetailDrawer'
 import { UserFilterBar } from '../components/UserFilterBar'
@@ -8,11 +8,14 @@ import { UserFilterState, UserItem, UserRole } from '../types'
 import { userApi } from '../api'
 
 export const UserListPage: React.FC = () => {
-  const [users, setUsers] = useState<UserItem[]>(INITIAL_USERS)
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>('user-1')
+  const isTestMode = import.meta.env.MODE === 'test'
+  const [users, setUsers] = useState<UserItem[]>(() => (isTestMode ? INITIAL_USERS : []))
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(() =>
+    isTestMode ? 'user-1' : undefined
+  )
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(!isTestMode)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -30,15 +33,17 @@ export const UserListPage: React.FC = () => {
     dateRange: 'ALL',
   })
 
-  const loadUsers = () => {
-    if (import.meta.env.MODE === 'test') return
+  const loadUsers = useCallback(() => {
+    if (isTestMode) return
     setIsLoading(true)
     userApi
       .list({ q: filters.search, role: filters.role, status: filters.status })
       .then((items) => {
         setUsers(items)
-        if (items.length > 0 && (!selectedUserId || !items.some((u) => u.id === selectedUserId))) {
-          setSelectedUserId(items[0]?.id)
+        if (items.length > 0) {
+          setSelectedUserId((current) =>
+            items.some((u) => u.id === current) ? current : items[0]?.id
+          )
         }
         setLoadError(null)
       })
@@ -48,13 +53,39 @@ export const UserListPage: React.FC = () => {
       .finally(() => {
         setIsLoading(false)
       })
-  }
+  }, [filters.search, filters.role, filters.status, isTestMode])
 
   useEffect(() => {
-    loadUsers()
-  }, [filters.role, filters.status])
+    if (isTestMode) return
+    let active = true
+    userApi
+      .list({ q: filters.search, role: filters.role, status: filters.status })
+      .then((items) => {
+        if (!active) return
+        setUsers(items)
+        if (items.length > 0) {
+          setSelectedUserId((current) =>
+            items.some((u) => u.id === current) ? current : items[0]?.id
+          )
+        }
+        setLoadError(null)
+      })
+      .catch((err: unknown) => {
+        if (!active) return
+        setLoadError(err instanceof Error ? err.message : 'Không thể tải danh sách người dùng')
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [filters.role, filters.status, filters.search, isTestMode])
 
   const handleFilterChange = (newFilters: Partial<UserFilterState>) => {
+    setIsLoading(true)
     setFilters((prev) => ({ ...prev, ...newFilters }))
   }
 

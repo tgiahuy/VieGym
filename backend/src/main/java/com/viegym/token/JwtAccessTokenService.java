@@ -18,13 +18,11 @@ import org.springframework.stereotype.Component;
  * Issues signed JWT access tokens.
  *
  * <p>The token carries a minimal set of claims needed by resource servers: {@code sub} (user ID),
- * {@code email} and {@code role}. The signing key is loaded from {@code JWT_SECRET} (base64-encoded
- * ≥ 32-byte key); a safe default is provided for local development and tests.
+ * {@code email} and {@code role}. The signing key is loaded from {@code JWT_SIGNING_KEY} (or the
+ * legacy {@code JWT_SECRET}) and production startup validation rejects missing or weak values.
  */
 @Component
 public class JwtAccessTokenService {
-
-    private static final String DEFAULT_SECRET = "test-jwt-secret-key-for-dev-and-test";
 
     private final SecretKey secretKey;
     private final Duration ttl;
@@ -34,7 +32,7 @@ public class JwtAccessTokenService {
 
     JwtAccessTokenService(
             Clock clock,
-            @Value("${JWT_SIGNING_KEY:${JWT_SECRET:" + DEFAULT_SECRET + "}}") String secret,
+            @Value("${JWT_SIGNING_KEY:${JWT_SECRET:}}") String secret,
             @Value("${JWT_ACCESS_TTL:PT15M}") Duration ttl,
             @Value("${JWT_ISSUER:viegym-backend}") String issuer,
             @Value("${JWT_AUDIENCE:viegym-api}") String audience) {

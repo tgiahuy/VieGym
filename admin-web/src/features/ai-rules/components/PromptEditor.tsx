@@ -38,7 +38,7 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#a7a9ae]">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#35c76f]/15 text-[#35c76f] border border-[#35c76f]/30 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#35c76f]" />
-                Phiên bản hiện hành: {template.version} (Production)
+                Phiên bản hiện hành: {template.version} ({template.status === 'production' ? 'Production' : 'Có bản nháp chưa phát hành'})
               </span>
               <span>•</span>
               <span className="flex items-center gap-1 font-mono text-[#9b7bff] font-medium">
@@ -181,7 +181,7 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({
         <div className="px-4 py-2 bg-[#222327]/50 border-t border-[#292a2f] flex items-center justify-between text-xs text-[#8a8d93]">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#35c76f]" />
-            Syntax Validated · JSON Schema v3.4 Compliant
+            Nội dung đang hiển thị từ cấu hình đã lưu trên server
           </span>
           <span>
             {lines.length} dòng · {charCount} ký tự

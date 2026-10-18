@@ -75,7 +75,7 @@ export const SandboxTestModal: React.FC<SandboxTestModalProps> = ({
               <h3 className="text-base font-bold text-[#f5f5f6]">
                 AI Sandbox Simulator — {template.code}
               </h3>
-              <p className="text-xs text-[#8a8d93]">Kiểm thử mô phỏng với context hội viên</p>
+              <p className="text-xs text-[#8a8d93]">Mô phỏng cục bộ — không gọi AI Gateway</p>
             </div>
           </div>
           <button
@@ -172,7 +172,7 @@ export const SandboxTestModal: React.FC<SandboxTestModalProps> = ({
             <div className="space-y-1.5 pt-2">
               <span className="text-xs font-semibold text-[#35c76f] flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">check_circle</span>
-                Kết quả JSON schema phản hồi từ AI Gateway (580ms):
+                Kết quả mô phỏng cục bộ (không phải phản hồi từ AI Gateway):
               </span>
               <pre className="p-4 rounded-xl bg-[#131417] border border-[#292a2f] text-xs font-mono text-[#f5f5f6] whitespace-pre-wrap overflow-x-auto">
                 {mockOutput}

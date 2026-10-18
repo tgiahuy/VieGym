@@ -22,6 +22,7 @@ export interface PromptTemplateItem {
   author: string
   tokensEstimate: number
   contextWindowPct: number
+  draftRevision: number
 }
 
 export interface AllowlistVariable {
@@ -39,6 +40,7 @@ export interface SafetyRuleItem {
   description: string
   action: string
   isActive: boolean
+  version: number
 }
 
 export interface AiMetricItem {
@@ -47,4 +49,16 @@ export interface AiMetricItem {
   change: string
   isPositive: boolean
   description: string
+}
+
+export interface AiMetrics {
+  provider: string
+  model: string
+  serviceReachable: boolean
+  requests24h: number
+  succeeded24h: number
+  failed24h: number
+  blocked24h: number
+  averageLatencyMs: number | null
+  warnings: string[]
 }

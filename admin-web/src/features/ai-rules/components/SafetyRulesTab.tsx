@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { SAFETY_RULES } from '../mockData'
+import React, { useEffect, useState } from 'react'
+import { aiRulesApi } from '../api'
 import { SafetyRuleItem } from '../types'
 
 interface SafetyRulesTabProps {
@@ -7,21 +7,31 @@ interface SafetyRulesTabProps {
 }
 
 export const SafetyRulesTab: React.FC<SafetyRulesTabProps> = ({ onNotify }) => {
-  const [rules, setRules] = useState<SafetyRuleItem[]>(SAFETY_RULES)
+  const [rules, setRules] = useState<SafetyRuleItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
-  const handleToggle = (id: string) => {
-    setRules((prev) =>
-      prev.map((r) => {
-        if (r.id === id) {
-          const next = !r.isActive
-          onNotify(
-            `${next ? 'Đã kích hoạt' : 'Đã vô hiệu hóa'} quy tắc an toàn #${r.code}`
-          )
-          return { ...r, isActive: next }
-        }
-        return r
+  useEffect(() => {
+    aiRulesApi.listSafetyRules()
+      .then(setRules)
+      .catch((error: unknown) => {
+        onNotify(error instanceof Error ? error.message : 'Không thể tải quy tắc an toàn')
       })
-    )
+      .finally(() => setIsLoading(false))
+  }, [onNotify])
+
+  const handleToggle = async (rule: SafetyRuleItem) => {
+    const next = !rule.isActive
+    setUpdatingId(rule.id)
+    try {
+      const saved = await aiRulesApi.updateSafetyRule(rule, next)
+      setRules((prev) => prev.map((item) => item.id === saved.id ? saved : item))
+      onNotify(`${next ? 'Đã kích hoạt' : 'Đã vô hiệu hóa'} quy tắc an toàn #${rule.code}`)
+    } catch (error) {
+      onNotify(error instanceof Error ? error.message : 'Không thể cập nhật quy tắc an toàn')
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
   return (
@@ -39,7 +49,7 @@ export const SafetyRulesTab: React.FC<SafetyRulesTabProps> = ({ onNotify }) => {
         <div className="flex items-center gap-3">
           <span className="text-xs text-[#35c76f] font-semibold bg-[#35c76f]/10 border border-[#35c76f]/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-[#35c76f]" />
-            100% Guardrail Active
+            {rules.filter((rule) => rule.isActive).length}/{rules.length} Guardrail Active
           </span>
         </div>
       </div>
@@ -47,6 +57,12 @@ export const SafetyRulesTab: React.FC<SafetyRulesTabProps> = ({ onNotify }) => {
       {/* Rules Table */}
       <div className="rounded-2xl border border-[#292a2f] bg-[#17181b] overflow-hidden">
         <div className="divide-y divide-[#292a2f]">
+          {isLoading && (
+            <div className="p-6 text-sm text-[#a7a9ae]">Đang tải quy tắc từ backend...</div>
+          )}
+          {!isLoading && rules.length === 0 && (
+            <div className="p-6 text-sm text-[#a7a9ae]">Chưa có quy tắc an toàn.</div>
+          )}
           {rules.map((rule) => (
             <div
               key={rule.id}
@@ -99,7 +115,8 @@ export const SafetyRulesTab: React.FC<SafetyRulesTabProps> = ({ onNotify }) => {
                 </span>
                 <button
                   type="button"
-                  onClick={() => handleToggle(rule.id)}
+                onClick={() => void handleToggle(rule)}
+                disabled={updatingId === rule.id}
                   className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ${
                     rule.isActive ? 'bg-[#f2305a]' : 'bg-[#292a2f]'
                   }`}

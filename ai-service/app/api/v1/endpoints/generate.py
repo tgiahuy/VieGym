@@ -10,6 +10,15 @@ from app.services.ai_provider import provider_for_settings
 router = APIRouter()
 
 
+@router.get("/status")
+async def provider_status(token: str = Depends(verify_internal_token)) -> dict[str, object]:
+    return {
+        "provider": settings.AI_PROVIDER,
+        "model": settings.AI_MODEL,
+        "reachable": True,
+    }
+
+
 @router.post("/generate", response_model=GenerateResponse)
 async def generate_recommendation(
     request: GenerateRequest, token: str = Depends(verify_internal_token)

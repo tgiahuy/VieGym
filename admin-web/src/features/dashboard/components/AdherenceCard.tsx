@@ -17,10 +17,10 @@ export const AdherenceCard: React.FC<AdherenceCardProps> = ({
   const topMusclesText =
     muscleDistribution.length > 0
       ? muscleDistribution.slice(0, 2).map((m) => m.name).join(' & ')
-      : 'Ngực & Lưng'
+      : 'Chưa có dữ liệu'
 
-  const avgProtein = macroDistribution?.avgProtein ?? 24.5
-  const highProteinPercentage = macroDistribution?.highProteinPercentage ?? 84.2
+  const avgProtein = macroDistribution?.avgProtein ?? 0
+  const highProteinPercentage = macroDistribution?.highProteinPercentage ?? 0
 
   return (
     <div className="bg-[#17181b] border border-[#292a2f] rounded-[18px] p-6 flex flex-col justify-between shadow-sm">
@@ -36,7 +36,7 @@ export const AdherenceCard: React.FC<AdherenceCardProps> = ({
             </p>
           </div>
           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#35c76f]/10 text-[#35c76f] border border-[#35c76f]/20">
-            {totalExercises > 0 ? `${totalExercises} Bài tập` : '82.4% Đạt chuẩn'}
+            {totalExercises} bài tập
           </span>
         </div>
 
@@ -65,7 +65,7 @@ export const AdherenceCard: React.FC<AdherenceCardProps> = ({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="text-base font-bold text-[#f5f5f6]">
-                  {totalExercises > 0 ? `${totalExercises}` : '78%'}
+                  {totalExercises}
                 </span>
                 <span className="text-[9px] text-[#8a8d93] uppercase">Exercises</span>
               </div>
@@ -100,7 +100,7 @@ export const AdherenceCard: React.FC<AdherenceCardProps> = ({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="text-base font-bold text-[#f5f5f6]">
-                  {totalFoods > 0 ? `${totalFoods}` : '86%'}
+                  {totalFoods}
                 </span>
                 <span className="text-[9px] text-[#8a8d93] uppercase">Foods</span>
               </div>

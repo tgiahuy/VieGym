@@ -183,21 +183,21 @@ export const DashboardPage: React.FC = () => {
         {/* CARD 1: AUDIT & VẬN HÀNH */}
         <MetricCard
           title="NHẬT KÝ & VẬN HÀNH"
-          value={isLoading ? '...' : (data.totalAuditLogs > 0 ? String(data.totalAuditLogs) : '12,430')}
+          value={isLoading ? '...' : String(data.totalAuditLogs)}
           icon="group"
           iconColor="text-[#4d8dff]"
           subtitle={
             <span>
               Sự kiện ghi nhận ·{' '}
               <strong className="text-[#f5f5f6]">
-                {data.successfulAudits > 0 ? `${data.successfulAudits} Thành công` : '8,910 Active'}
+                {data.successfulAudits} thành công
               </strong>
             </span>
           }
           badge={
             <span className="text-[#35c76f] font-semibold flex items-center gap-0.5">
               <span className="material-symbols-outlined text-xs">trending_up</span>
-              +8.4%
+              Dữ liệu thực
             </span>
           }
         />
@@ -226,14 +226,14 @@ export const DashboardPage: React.FC = () => {
         {/* CARD 3: FOODS */}
         <MetricCard
           title="THỰC PHẨM & DINH DƯỠNG"
-          value={isLoading ? '...' : (data.totalFoods > 0 ? String(data.totalFoods) : '1,248')}
+          value={isLoading ? '...' : String(data.totalFoods)}
           icon="restaurant"
           iconColor="text-[#f28c38]"
           subtitle={
             <span>
-              {data.totalFoods > 0 ? data.standardizedFoods : '1,212'} chuẩn hóa ·{' '}
+              {data.standardizedFoods} chuẩn hóa ·{' '}
               <span className="text-[#f4b740] font-semibold">
-                {data.totalFoods > 0 ? `${data.missingNutritionFoods} cần bổ sung` : '18 cần bổ sung'}
+                {data.missingNutritionFoods} cần bổ sung
               </span>
             </span>
           }
@@ -251,14 +251,14 @@ export const DashboardPage: React.FC = () => {
         {/* CARD 4: EQUIPMENT & AI */}
         <MetricCard
           title="THIẾT BỊ & DANH MỤC"
-          value={isLoading ? '...' : (data.totalEquipments > 0 ? String(data.totalEquipments) : '11')}
+          value={isLoading ? '...' : String(data.totalEquipments)}
           unit="loại thiết bị"
           icon="precision_manufacturing"
           iconColor="text-[#9b7bff]"
           subtitle={
             <span>
               <strong className="text-[#9b7bff] font-semibold">
-                {data.totalEquipments > 0 ? data.commonEquipments : '8'}
+                {data.commonEquipments}
               </strong>{' '}
               phổ biến · AI tương thích
             </span>
@@ -266,7 +266,7 @@ export const DashboardPage: React.FC = () => {
           badge={
             <span className="flex items-center gap-1 text-[11px] text-[#9b7bff] font-medium bg-[#9b7bff]/10 px-2 py-0.5 rounded-full">
               <span className="material-symbols-outlined text-xs">bolt</span>
-              v3.4
+              Backend
             </span>
           }
         />

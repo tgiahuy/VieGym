@@ -13,17 +13,12 @@ import type {
 
 export const dashboardApi = {
   async getDashboardData(): Promise<DashboardData> {
-    const [exercisesRes, foodsRes, auditsRes, equipmentsRes] = await Promise.allSettled([
+    const [exercises, foods, audits, equipments] = await Promise.all([
       exerciseApi.list(),
       foodApi.list(),
       auditApi.list(),
       equipmentApi.list(),
     ])
-
-    const exercises = exercisesRes.status === 'fulfilled' ? exercisesRes.value : []
-    const foods = foodsRes.status === 'fulfilled' ? foodsRes.value : []
-    const audits = auditsRes.status === 'fulfilled' ? auditsRes.value : []
-    const equipments = equipmentsRes.status === 'fulfilled' ? equipmentsRes.value : []
 
     // Exercise metrics
     const totalExercises = exercises.length
@@ -74,15 +69,6 @@ export const dashboardApi = {
       color: muscleColors[idx % muscleColors.length] || '#f2305a',
     }))
 
-    if (muscleDistribution.length === 0) {
-      muscleDistribution.push(
-        { name: 'Cơ ngực & Lưng', count: 12, percentage: 45, color: '#f2305a' },
-        { name: 'Cơ đùi & Mông', count: 8, percentage: 30, color: '#ff506d' },
-        { name: 'Cơ vai & Tay', count: 5, percentage: 16, color: '#f4b740' },
-        { name: 'Cơ bụng & Khác', count: 3, percentage: 9, color: '#35c76f' }
-      )
-    }
-
     // Macro distribution calculated from real foods
     let totalCalories = 0
     let totalProtein = 0
@@ -100,17 +86,17 @@ export const dashboardApi = {
       }
     })
 
-    const foodCount = foods.length || 1
-    const avgCalories = Math.round(totalCalories / foodCount)
-    const avgProtein = Math.round((totalProtein / foodCount) * 10) / 10
-    const avgCarbs = Math.round((totalCarbs / foodCount) * 10) / 10
-    const avgFat = Math.round((totalFat / foodCount) * 10) / 10
+    const foodCount = foods.length
+    const avgCalories = foodCount === 0 ? 0 : Math.round(totalCalories / foodCount)
+    const avgProtein = foodCount === 0 ? 0 : Math.round((totalProtein / foodCount) * 10) / 10
+    const avgCarbs = foodCount === 0 ? 0 : Math.round((totalCarbs / foodCount) * 10) / 10
+    const avgFat = foodCount === 0 ? 0 : Math.round((totalFat / foodCount) * 10) / 10
 
-    const sumMacros = (avgProtein * 4 + avgCarbs * 4 + avgFat * 9) || 1
-    const proteinPercentage = Math.round(((avgProtein * 4) / sumMacros) * 100)
-    const carbsPercentage = Math.round(((avgCarbs * 4) / sumMacros) * 100)
-    const fatPercentage = Math.max(0, 100 - proteinPercentage - carbsPercentage)
-    const highProteinPercentage = Math.round((highProteinCount / foodCount) * 100)
+    const sumMacros = avgProtein * 4 + avgCarbs * 4 + avgFat * 9
+    const proteinPercentage = sumMacros === 0 ? 0 : Math.round(((avgProtein * 4) / sumMacros) * 100)
+    const carbsPercentage = sumMacros === 0 ? 0 : Math.round(((avgCarbs * 4) / sumMacros) * 100)
+    const fatPercentage = sumMacros === 0 ? 0 : Math.max(0, 100 - proteinPercentage - carbsPercentage)
+    const highProteinPercentage = foodCount === 0 ? 0 : Math.round((highProteinCount / foodCount) * 100)
 
     const macroDistribution: MacroDistributionStat = {
       avgCalories,
@@ -120,7 +106,7 @@ export const dashboardApi = {
       proteinPercentage,
       carbsPercentage,
       fatPercentage,
-      highProteinPercentage: highProteinPercentage || 84,
+      highProteinPercentage,
     }
 
     // Dynamic alerts from actual data
@@ -178,44 +164,9 @@ export const dashboardApi = {
     }
 
     // 7 days activity computation
-    const dayLabels = [
-      { day: 'T2', label: 'T2' },
-      { day: 'T3', label: 'T3' },
-      { day: 'T4', label: 'T4' },
-      { day: 'T5', label: 'T5' },
-      { day: 'T6', label: 'T6' },
-      { day: 'T7', label: 'T7' },
-      { day: 'CN', label: 'CN (Hôm nay)' },
-    ]
-
-    const baseWorkout = totalExercises > 0 ? totalExercises * 5 : 200
-    const baseNutrition = totalFoods > 0 ? totalFoods * 3 : 150
-    const baseAi = (totalExercises + totalFoods) > 0 ? (totalExercises + totalFoods) * 2 : 120
-
-    const activityDays: DayActivityData[] = dayLabels.map((d, index) => {
-      const multiplier = 0.6 + (index * 0.08) + (index === 3 ? 0.25 : 0)
-      const wCount = Math.round(baseWorkout * multiplier)
-      const nCount = Math.round(baseNutrition * multiplier)
-      const aCount = Math.round(baseAi * multiplier)
-
-      const maxVal = Math.max(wCount, nCount, aCount, 1)
-      const wH = `${Math.min(95, Math.max(25, Math.round((wCount / (maxVal * 1.15)) * 100)))}%`
-      const nH = `${Math.min(95, Math.max(25, Math.round((nCount / (maxVal * 1.15)) * 100)))}%`
-      const aH = `${Math.min(95, Math.max(20, Math.round((aCount / (maxVal * 1.15)) * 100)))}%`
-
-      return {
-        day: d.day,
-        label: d.label,
-        workoutCount: wCount,
-        nutritionCount: nCount,
-        aiCount: aCount,
-        workoutHeight: wH,
-        nutritionHeight: nH,
-        aiHeight: aH,
-        isPeak: index === 3,
-        tooltip: `Tập: ${wCount.toLocaleString('vi-VN')} · D.Dưỡng: ${nCount.toLocaleString('vi-VN')} · AI: ${aCount.toLocaleString('vi-VN')}`,
-      }
-    })
+    // The catalog APIs do not expose time-series activity. Keep this empty instead of
+    // manufacturing telemetry from catalog totals.
+    const activityDays: DayActivityData[] = []
 
     return {
       totalExercises,

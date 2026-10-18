@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { EquipmentCategory, EquipmentItem, EquipmentStatus } from '../types'
 
 interface EquipmentModalProps {
@@ -38,46 +38,37 @@ export const EquipmentModal: React.FC<EquipmentModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  if (!isOpen) return null
+
+  return (
+    <EquipmentModalForm
+      key={equipment?.id ?? 'create'}
+      equipment={equipment}
+      onClose={onClose}
+      onSave={onSave}
+      onDelete={onDelete}
+    />
+  )
+}
+
+const EquipmentModalForm: React.FC<Omit<EquipmentModalProps, 'isOpen'>> = ({
+  equipment,
+  onClose,
+  onSave,
+  onDelete,
+}) => {
   const isEditing = Boolean(equipment)
 
-  const [name, setName] = useState('')
-  const [nameEn, setNameEn] = useState('')
-  const [code, setCode] = useState('')
-  const [category, setCategory] = useState<EquipmentCategory>('free_weights')
-  const [iconName, setIconName] = useState('fitness_center')
-  const [status, setStatus] = useState<EquipmentStatus>('active')
-  const [description, setDescription] = useState('')
-  const [suitableFor, setSuitableFor] = useState('')
-  const [safetyNotes, setSafetyNotes] = useState('')
-  const [isCommon, setIsCommon] = useState(true)
-
-  useEffect(() => {
-    if (equipment) {
-      setName(equipment.name)
-      setNameEn(equipment.nameEn || '')
-      setCode(equipment.code)
-      setCategory(equipment.category)
-      setIconName(equipment.iconName || 'fitness_center')
-      setStatus(equipment.status)
-      setDescription(equipment.description || '')
-      setSuitableFor(equipment.suitableFor || '')
-      setSafetyNotes(equipment.safetyNotes || '')
-      setIsCommon(equipment.isCommon ?? true)
-    } else {
-      setName('')
-      setNameEn('')
-      setCode('')
-      setCategory('free_weights')
-      setIconName('fitness_center')
-      setStatus('active')
-      setDescription('')
-      setSuitableFor('')
-      setSafetyNotes('')
-      setIsCommon(true)
-    }
-  }, [equipment, isOpen])
-
-  if (!isOpen) return null
+  const [name, setName] = useState(equipment?.name ?? '')
+  const [nameEn, setNameEn] = useState(equipment?.nameEn ?? '')
+  const [code, setCode] = useState(equipment?.code ?? '')
+  const [category, setCategory] = useState<EquipmentCategory>(equipment?.category ?? 'free_weights')
+  const [iconName, setIconName] = useState(equipment?.iconName ?? 'fitness_center')
+  const [status, setStatus] = useState<EquipmentStatus>(equipment?.status ?? 'active')
+  const [description, setDescription] = useState(equipment?.description ?? '')
+  const [suitableFor, setSuitableFor] = useState(equipment?.suitableFor ?? '')
+  const [safetyNotes, setSafetyNotes] = useState(equipment?.safetyNotes ?? '')
+  const [isCommon, setIsCommon] = useState(equipment?.isCommon ?? true)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -323,6 +314,20 @@ export const EquipmentModal: React.FC<EquipmentModalProps> = ({
               placeholder="Ví dụ: Luôn sử dụng kẹp khóa tạ, kiểm tra chốt an toàn trước khi tập..."
               className="w-full h-11 px-3.5 bg-[#222327] border border-[#292a2f] rounded-xl text-[#f5f5f6] text-[14px] focus:outline-none focus:border-[#f2305a]"
             />
+          </div>
+
+          {/* Thiết bị phổ biến */}
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              id="equipment-is-common"
+              checked={isCommon}
+              onChange={(e) => setIsCommon(e.target.checked)}
+              className="w-4 h-4 rounded text-[#f2305a] accent-[#f2305a] bg-[#222327] border-[#292a2f]"
+            />
+            <label htmlFor="equipment-is-common" className="text-[13px] font-medium text-[#f5f5f6] cursor-pointer">
+              Thiết bị phổ biến (Ưu tiên trong gợi ý bài tập &amp; AI)
+            </label>
           </div>
         </form>
 

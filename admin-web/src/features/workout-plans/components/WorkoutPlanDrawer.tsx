@@ -10,6 +10,71 @@ import type {
   WorkoutPlanStatus,
 } from '../types'
 
+const MUSCLE_MAP: Record<string, string> = {
+  chest: 'Cơ ngực',
+  back: 'Cơ lưng xô',
+  shoulders: 'Cơ vai',
+  biceps: 'Cơ tay trước',
+  triceps: 'Cơ tay sau',
+  legs: 'Cơ đùi & mông',
+  abs: 'Cơ bụng',
+}
+
+const getDefaultDay = (dayNum: number): WorkoutPlanDay => {
+  const templates: Record<number, { name: string; desc: string; muscles: string[] }> = {
+    1: {
+      name: 'Buổi 1: Thân trên (Upper Body Focus)',
+      desc: 'Tập trung cơ ngực, lưng xô và vai',
+      muscles: ['chest', 'back', 'shoulders'],
+    },
+    2: {
+      name: 'Buổi 2: Thân dưới (Lower Body Focus)',
+      desc: 'Tập trung đùi trước, đùi sau và bắp chân',
+      muscles: ['quadriceps', 'hamstrings', 'calves'],
+    },
+    3: {
+      name: 'Buổi 3: Đẩy (Push Focus)',
+      desc: 'Tập trung cơ ngực, vai trước và tay sau',
+      muscles: ['chest', 'shoulders', 'triceps'],
+    },
+    4: {
+      name: 'Buổi 4: Kéo (Pull Focus)',
+      desc: 'Tập trung cơ lưng xô, vai sau và tay trước',
+      muscles: ['back', 'biceps'],
+    },
+    5: {
+      name: 'Buổi 5: Chân & Bụng (Legs & Core)',
+      desc: 'Tập trung đùi, mông và cơ lõi',
+      muscles: ['quadriceps', 'glutes', 'abs'],
+    },
+    6: {
+      name: 'Buổi 6: Toàn thân (Full Body)',
+      desc: 'Kích hoạt toàn bộ các nhóm cơ chính',
+      muscles: ['chest', 'back', 'quadriceps'],
+    },
+    7: {
+      name: 'Buổi 7: Tim mạch & Phục hồi (Cardio & Recovery)',
+      desc: 'Vận động nhẹ nhàng và phục hồi chủ động',
+      muscles: ['abs'],
+    },
+  }
+
+  const tmpl = templates[dayNum] || {
+    name: `Buổi ${dayNum}: Buổi tập ${dayNum}`,
+    desc: `Mô tả mục tiêu buổi ${dayNum}...`,
+    muscles: ['chest'],
+  }
+
+  return {
+    id: `day-new-${Date.now()}-${dayNum}`,
+    dayNumber: dayNum,
+    name: tmpl.name,
+    description: tmpl.desc,
+    targetMuscles: tmpl.muscles,
+    exercises: [],
+  }
+}
+
 interface WorkoutPlanDrawerProps {
   isOpen: boolean
   plan: WorkoutPlan | null
@@ -38,33 +103,21 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
   const [description, setDescription] = useState(plan?.description || '')
   const [goal, setGoal] = useState<WorkoutPlanGoal>(plan?.goal || 'hypertrophy')
   const [level, setLevel] = useState<WorkoutPlanLevel>(plan?.level || 'intermediate')
-  const [daysPerWeek, setDaysPerWeek] = useState<number>(plan?.daysPerWeek || 4)
-  const [durationWeeks, setDurationWeeks] = useState<number>(plan?.durationWeeks || 8)
+  const initialDaysCount = plan?.days?.length || plan?.daysPerWeek || 4
+  const [daysPerWeek, setDaysPerWeek] = useState<number>(initialDaysCount)
   const [estimatedDurationMin, setEstimatedDurationMin] = useState<number>(
     plan?.estimatedDurationMin || 60
   )
   const [author, setAuthor] = useState(plan?.author || 'VieGym Master Coach')
   const [status, setStatus] = useState<WorkoutPlanStatus>(plan?.status || 'active')
-  const [tagInput, setTagInput] = useState('')
-  const [tags, setTags] = useState<string[]>(
-    plan?.tags || ['Hypertrophy', 'Compound', 'Bodybuilding']
-  )
 
   // Routine Days & Exercises State
-  const [days, setDays] = useState<WorkoutPlanDay[]>(
-    plan?.days && plan.days.length > 0
-      ? plan.days
-      : [
-          {
-            id: 'day-new-1',
-            dayNumber: 1,
-            name: 'Buổi 1: Thân trên (Upper Body Focus)',
-            description: 'Tập trung cơ ngực, lưng xô và vai',
-            targetMuscles: ['chest', 'back', 'shoulders'],
-            exercises: [],
-          },
-        ]
-  )
+  const [days, setDays] = useState<WorkoutPlanDay[]>(() => {
+    if (plan?.days && plan.days.length > 0) {
+      return plan.days
+    }
+    return Array.from({ length: initialDaysCount }, (_, idx) => getDefaultDay(idx + 1))
+  })
 
   const [activeDayIndex, setActiveDayIndex] = useState<number>(0)
   const [isExercisePickerOpen, setIsExercisePickerOpen] = useState(false)
@@ -72,30 +125,38 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
   // Ensure active day index is within range
   const currentDay = days[activeDayIndex] || days[0]
 
-  // Add tag
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()])
-      setTagInput('')
-    }
-  }
+  // Synchronize days with daysPerWeek
+  const handleDaysPerWeekChange = (count: number) => {
+    const targetCount = Math.min(Math.max(1, count), 7)
+    setDaysPerWeek(targetCount)
 
-  const handleRemoveTag = (t: string) => {
-    setTags(tags.filter((item) => item !== t))
+    setDays((prevDays) => {
+      if (prevDays.length === targetCount) return prevDays
+      if (targetCount > prevDays.length) {
+        const added: WorkoutPlanDay[] = []
+        for (let i = prevDays.length + 1; i <= targetCount; i++) {
+          added.push(getDefaultDay(i))
+        }
+        return [...prevDays, ...added]
+      } else {
+        return prevDays.slice(0, targetCount)
+      }
+    })
+
+    setActiveDayIndex((prev) => (prev >= targetCount ? Math.max(0, targetCount - 1) : prev))
   }
 
   // Day Operations
   const handleAddDay = () => {
-    const newDayNum = days.length + 1
-    const newDay: WorkoutPlanDay = {
-      id: `day-new-${Date.now()}`,
-      dayNumber: newDayNum,
-      name: `Buổi ${newDayNum}: Buổi tập mới`,
-      description: 'Mô tả mục tiêu buổi tập...',
-      targetMuscles: ['chest'],
-      exercises: [],
+    if (days.length >= 7) {
+      alert('Tối đa 7 buổi tập mỗi tuần.')
+      return
     }
-    setDays([...days, newDay])
+    const newDayNum = days.length + 1
+    const newDay = getDefaultDay(newDayNum)
+    const nextDays = [...days, newDay]
+    setDays(nextDays)
+    setDaysPerWeek(nextDays.length)
     setActiveDayIndex(days.length)
   }
 
@@ -109,6 +170,7 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
       const nextDays = days.filter((_, idx) => idx !== dayIndex)
       const renumbered: WorkoutPlanDay[] = nextDays.map((d, idx) => ({ ...d, dayNumber: idx + 1 }))
       setDays(renumbered)
+      setDaysPerWeek(renumbered.length)
       if (activeDayIndex >= renumbered.length) {
         setActiveDayIndex(renumbered.length - 1)
       }
@@ -213,11 +275,11 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
       goal,
       level,
       daysPerWeek: Number(daysPerWeek) || days.length,
-      durationWeeks: Number(durationWeeks) || 8,
+      durationWeeks: plan?.durationWeeks || 8,
       estimatedDurationMin: Number(estimatedDurationMin) || 60,
       status,
       author: author.trim() || 'VieGym Master Coach',
-      tags,
+      tags: plan?.tags || [],
       days,
       createdAt: plan ? plan.createdAt : 'Hôm nay',
       updatedAt: 'Hôm nay',
@@ -304,7 +366,7 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">fitness_center</span>
-          <span>2. Lịch tập &amp; Bài tập ({totalExercisesCount})</span>
+          <span>2. Lịch tập &amp; Bài tập ({days.length} buổi • {totalExercisesCount} bài)</span>
         </button>
 
         <button
@@ -392,7 +454,7 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
             </div>
 
             {/* Schedule & Duration */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[13px] font-medium text-[#f5f5f6] mb-1.5">
                   Số buổi / tuần
@@ -401,22 +463,23 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
                   type="number"
                   min={1}
                   max={7}
-                  value={daysPerWeek}
-                  onChange={(e) => setDaysPerWeek(Number(e.target.value))}
-                  className="w-full h-11 px-3.5 rounded-xl bg-[#222327] border border-[#292a2f] text-[13px] text-[#f5f5f6] focus:outline-none focus:border-[#f2305a] transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[13px] font-medium text-[#f5f5f6] mb-1.5">
-                  Lộ trình (Số tuần)
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={52}
-                  value={durationWeeks}
-                  onChange={(e) => setDurationWeeks(Number(e.target.value))}
+                  value={daysPerWeek || ''}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    if (raw === '') {
+                      setDaysPerWeek(0)
+                      return
+                    }
+                    const val = parseInt(raw, 10)
+                    if (!isNaN(val)) {
+                      handleDaysPerWeekChange(val)
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!daysPerWeek || daysPerWeek < 1) {
+                      handleDaysPerWeekChange(days.length)
+                    }
+                  }}
                   className="w-full h-11 px-3.5 rounded-xl bg-[#222327] border border-[#292a2f] text-[13px] text-[#f5f5f6] focus:outline-none focus:border-[#f2305a] transition-colors"
                 />
               </div>
@@ -468,52 +531,6 @@ const DrawerFormContent: React.FC<DrawerFormContentProps> = ({
               </div>
             </div>
 
-            {/* Tags */}
-            <div>
-              <label className="block text-[13px] font-medium text-[#f5f5f6] mb-1.5">
-                Thẻ phân loại (Tags)
-              </label>
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleAddTag()
-                    }
-                  }}
-                  placeholder="Thêm thẻ (nhấn Enter hoặc bấm +)..."
-                  className="flex-1 h-10 px-3.5 rounded-xl bg-[#222327] border border-[#292a2f] text-[13px] text-[#f5f5f6] placeholder-[#8a8d93] focus:outline-none focus:border-[#f2305a] transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddTag}
-                  className="h-10 px-4 rounded-xl bg-[#222327] hover:bg-[#292a2f] border border-[#292a2f] text-[#f5f5f6] text-[13px] font-medium transition-colors cursor-pointer"
-                >
-                  + Thêm
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] bg-[#222327] text-[#e3e2e4] border border-[#292a2f]"
-                  >
-                    <span>#{t}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(t)}
-                      className="text-[#8a8d93] hover:text-[#ff506d] transition-colors cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">close</span>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 

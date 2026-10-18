@@ -101,6 +101,62 @@ void main() {
     );
 
     testWidgets(
+      'Card targeting Cơ cổ initially shows front view and flips to back view with maps rendered',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: FlippableMuscleCard(
+                  targetMuscles: ['Cơ cổ'],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Mặt trước'), findsOneWidget);
+        expect(find.byType(BodyMuscleMap), findsOneWidget);
+
+        // Tap to flip
+        await tester.tap(find.byType(FlippableMuscleCard));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Mặt sau'), findsOneWidget);
+        expect(find.byType(BodyMuscleMap), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Card targeting Cơ dạng hông initially shows back view and flips to front view with maps rendered',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: FlippableMuscleCard(
+                  targetMuscles: ['Cơ dạng hông'],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Mặt sau'), findsOneWidget);
+        expect(find.byType(BodyMuscleMap), findsOneWidget);
+
+        // Tap to flip
+        await tester.tap(find.byType(FlippableMuscleCard));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Mặt trước'), findsOneWidget);
+        expect(find.byType(BodyMuscleMap), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'Long press opens detail modal with flip button that flips the map',
       (tester) async {
         await tester.pumpWidget(

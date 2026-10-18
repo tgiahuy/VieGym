@@ -7,13 +7,26 @@ import {
 import { authApi } from './authApi'
 import { AuthContext } from './authContextDef'
 import type { AdminLoginRequest, AdminUser } from './types'
+import { env } from '../config/env'
+import { setUnauthorizedHandler } from '../api/client'
+
+const localAdmin: AdminUser = {
+  id: 0,
+  email: 'local-admin@viegym.dev',
+  role: 'ADMIN',
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [user, setUser] = useState<AdminUser | null>(env.authDisabled ? localAdmin : null)
+  const [isLoading, setIsLoading] = useState<boolean>(!env.authDisabled)
   const [error, setError] = useState<string | null>(null)
 
   const checkSession = useCallback(async () => {
+    if (env.authDisabled) {
+      setUser(localAdmin)
+      setIsLoading(false)
+      return
+    }
     try {
       setError(null)
       const session = await authApi.getSession()
@@ -26,6 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    if (env.authDisabled) return
+
     let isMounted = true
     authApi
       .getSession()
@@ -50,7 +65,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (env.authDisabled) return
+
+    return setUnauthorizedHandler(() => {
+      setUser(null)
+      setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+    })
+  }, [])
+
   const login = useCallback(async (credentials: AdminLoginRequest) => {
+    if (env.authDisabled) {
+      setUser(localAdmin)
+      setError(null)
+      return localAdmin
+    }
     setIsLoading(true)
     setError(null)
     try {
@@ -84,6 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
+    if (env.authDisabled) {
+      setUser(localAdmin)
+      return
+    }
     try {
       await authApi.logout()
     } catch {

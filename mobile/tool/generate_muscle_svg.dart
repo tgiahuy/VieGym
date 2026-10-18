@@ -18,6 +18,47 @@ void main() {
     side: 'back',
   );
 
+  // Ensure bilateral cervical neck region exists for back side
+  if (!back.regions.any((r) => r.group == 'neck')) {
+    back.regions.addAll([
+      _Region(
+        group: 'neck',
+        points: const [
+          _Point(404, 232),
+          _Point(409, 232),
+          _Point(409, 294),
+          _Point(402, 307),
+          _Point(391, 315),
+          _Point(380, 298),
+          _Point(372, 283),
+          _Point(390, 262),
+          _Point(400, 244),
+        ],
+        area: 1200,
+        centerX: 395.0,
+        centerY: 270.0,
+      ),
+      _Region(
+        group: 'neck',
+        points: const [
+          _Point(419, 231),
+          _Point(422, 232),
+          _Point(424, 240),
+          _Point(437, 264),
+          _Point(457, 286),
+          _Point(445, 302),
+          _Point(435, 318),
+          _Point(421, 304),
+          _Point(417, 296),
+          _Point(416, 236),
+        ],
+        area: 1200,
+        centerX: 430.0,
+        centerY: 270.0,
+      ),
+    ]);
+  }
+
   _writeSvg(front);
   _writeSvg(back);
   _writeDart(front, back);
@@ -112,7 +153,10 @@ _VectorizedImage _vectorize({
 }
 
 String _frontGroup(double x, double y, int area) {
-  if (y < 335) return 'traps';
+  if (y < 335) {
+    if (x > 370 && x < 450) return 'neck';
+    return 'traps';
+  }
   if (y < 430) return area > 9000 ? 'chest' : 'frontDelts';
   if (y < 540) {
     if (x < 290 || x > 549) return 'biceps';
@@ -126,12 +170,14 @@ String _frontGroup(double x, double y, int area) {
   }
   if (y < 1050) {
     if (y < 900 && x > 360 && x < 459) return 'adductors';
+    if (y < 800 && (x < 335 || x > 505)) return 'abductors';
     return 'quads';
   }
   return 'calves';
 }
 
 String _backGroup(double x, double y, int area) {
+  if (y < 310 && x > 365 && x < 460) return 'neck';
   if (y < 410) return area > 10000 ? 'traps' : 'rearDelts';
   if (y < 450) return 'upperBack';
   if (y < 555) return area > 8000 ? 'lats' : 'triceps';
@@ -139,7 +185,10 @@ String _backGroup(double x, double y, int area) {
     if (x < 260 || x > 565) return 'forearms';
     return 'lowerBack';
   }
-  if (y < 830) return 'glutes';
+  if (y < 830) {
+    if (x < 315 || x > 515) return 'abductors';
+    return 'glutes';
+  }
   if (y < 1120) return 'hamstrings';
   return 'calves';
 }

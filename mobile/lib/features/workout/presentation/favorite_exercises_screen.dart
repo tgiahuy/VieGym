@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
 import '../application/exercise_catalog_controller.dart';
 import '../application/favorite_exercises_controller.dart';
+import '../application/workout_schedule_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
 import '../domain/workout_models.dart';
@@ -276,8 +277,8 @@ class FavoriteExercisesScreen extends ConsumerWidget {
                                   child: FilledButton.icon(
                                     onPressed: () {
                                       final startedAddOn = ref
-                                          .read(workoutSessionProvider.notifier)
-                                          .addExercise(exercise);
+                                          .read(workoutScheduleProvider.notifier)
+                                          .addExerciseToTodaySchedule(exercise);
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -285,7 +286,7 @@ class FavoriteExercisesScreen extends ConsumerWidget {
                                           content: Text(
                                             startedAddOn
                                                 ? 'Đã tạo buổi tập thêm với ${exercise.name}.'
-                                                : 'Đã thêm ${exercise.name} vào hôm nay.',
+                                                : 'Đã thêm ${exercise.name} vào lịch tập hôm nay.',
                                           ),
                                           behavior: SnackBarBehavior.floating,
                                         ),

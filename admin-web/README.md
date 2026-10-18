@@ -19,6 +19,8 @@ npm run dev
 
 Only browser-safe configuration may use the `VITE_` prefix. Never place secrets, passwords, signing keys, or server credentials in this application.
 
+For local UI development, `VITE_AUTH_DISABLED=true` skips the Admin Web login screen. This only bypasses the frontend route/session check; backend Admin APIs remain protected. Keep it `false` in every deployed environment.
+
 ## Verification
 
 ```bash

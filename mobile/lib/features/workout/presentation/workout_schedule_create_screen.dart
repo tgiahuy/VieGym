@@ -46,6 +46,17 @@ class _WorkoutScheduleCreateScreenState
   int _selectedDayIndex = 0;
   late DateTime _date;
   TimeOfDay _time = const TimeOfDay(hour: 18, minute: 0);
+  StateSetter? _dialogSetState;
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    if (_dialogSetState != null) {
+      try {
+        _dialogSetState!(() {});
+      } catch (_) {}
+    }
+  }
 
   @override
   void initState() {
@@ -94,11 +105,14 @@ class _WorkoutScheduleCreateScreenState
   }
 
   Future<void> _selectSource(WorkoutPlanSource source) async {
-    HapticFeedback.selectionClick();
+    HapticFeedback.mediumImpact();
     setState(() {
+      _selected = source;
       _submitting = true;
       _error = null;
     });
+    // Brief animation delay so user sees and feels the tile selection feedback
+    await Future.delayed(const Duration(milliseconds: 160));
     try {
       final detail = await ref
           .read(workoutSchedulePlanningRepositoryProvider)
@@ -122,9 +136,13 @@ class _WorkoutScheduleCreateScreenState
         _originalSelected = fullDetail;
         _selectedDayIndex = 0;
         _selectedDay = updatedDays.firstOrNull;
-        _wholeWeek = updatedDays.length > 1 && _wholeWeek;
+        _wholeWeek = false;
         _submitting = false;
       });
+
+      if (mounted) {
+        _openConfigurationDialog();
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -270,10 +288,11 @@ class _WorkoutScheduleCreateScreenState
     final active = _activeDay;
     if (active == null) return;
     final list = List<PlannedExercisePreview>.from(active.exercises);
-    if (fromIndex < 0 ||
-        fromIndex >= list.length ||
-        toIndex < 0 ||
-        toIndex >= list.length) {
+    if (fromIndex < 0 || fromIndex >= list.length) return;
+    if (toIndex > fromIndex) {
+      toIndex -= 1;
+    }
+    if (toIndex < 0 || toIndex >= list.length || fromIndex == toIndex) {
       return;
     }
     final item = list.removeAt(fromIndex);
@@ -1438,7 +1457,7 @@ class _WorkoutScheduleCreateScreenState
                     Expanded(
                       child: _QuickSourceCard(
                         icon: Icons.auto_awesome_rounded,
-                        badge: 'Gợi ý người mới ⭐',
+                        badge: 'Gợi ý ⭐',
                         title: 'AI tạo',
                         subtitle: 'Cá nhân hóa theo mục tiêu',
                         color: AppColors.violet,
@@ -1653,13 +1672,18 @@ class _WorkoutScheduleCreateScreenState
             )
           else ...[
             ...sources.map(
-              (source) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _SourceTile(
-                  source: source,
-                  selected: _selected?.id == source.id,
-                  onTap: () => _selectSource(source),
-                ),
+              (source) => _SwipeableSourceTile(
+                key: ValueKey('source_${source.id}'),
+                source: source,
+                selected: _selected?.id == source.id,
+                onTap: () {
+                  if (_selected?.id == source.id) {
+                    _openConfigurationDialog();
+                  } else {
+                    _selectSource(source);
+                  }
+                },
+                onDelete: () => _confirmDeletePersonalProgram(source),
               ),
             ),
             if (_sourceTab == _SourceTab.personal) ...[
@@ -1698,12 +1722,6 @@ class _WorkoutScheduleCreateScreenState
             ],
           ],
 
-          // 3. Configuration Section when plan is selected
-          if (_selected != null) ...[
-            const SizedBox(height: 20),
-            _buildConfiguration(colors),
-          ],
-
           if (_error != null) ...[
             const SizedBox(height: 14),
             Container(
@@ -1737,485 +1755,624 @@ class _WorkoutScheduleCreateScreenState
           ],
         ],
       ),
-      bottomNavigationBar: _selected == null
-          ? null
-          : Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(22),
-                ),
-                border: Border.all(color: AppColors.borderDefault),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Đã chọn: ${_selected!.name} • ${_wholeWeek ? "Cả tuần" : "1 ngày"}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: _submitting ? null : _previewAndApply,
-                        icon: _submitting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.visibility_rounded, size: 20),
-                        label: const Text(
-                          'Xem trước lịch tập',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
     );
   }
 
-  Widget _buildConfiguration(ColorScheme colors) {
-    final source = _selected!;
-    final targetDates = _targetDates(_wholeWeek ? source.days.length : 1);
-    final conflictingDates = _findConflictingDates(targetDates);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.35),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+  Future<void> _confirmDeletePersonalProgram(
+    WorkoutPlanSource source, {
+    bool fromDialog = false,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceElevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppColors.borderDefault),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  source.sourceType == 'ADMIN_TEMPLATE'
-                      ? Icons.verified_rounded
-                      : Icons.menu_book_rounded,
-                  size: 18,
-                  color: AppColors.primary,
+                child: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFDC2626),
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'CẤU HÌNH LỊCH TẬP',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    Text(
-                      source.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 12),
+              const Text(
+                'Xoá giáo án',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Bạn có chắc chắn muốn xoá giáo án "${source.name}" không? Thao tác này không thể hoàn tác.',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: const Text(
+                'Huỷ',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: const Text(
+                'Xoá giáo án',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      if (fromDialog) {
+        Navigator.of(context).pop();
+      }
+      try {
+        await ref
+            .read(workoutSchedulePlanningRepositoryProvider)
+            .deletePersonalProgram(source.id);
+        if (!mounted) return;
+        if (_selected?.id == source.id) {
+          setState(() {
+            _selected = null;
+            _selectedDay = null;
+          });
+        }
+        await _loadSources();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã xoá giáo án "${source.name}" thành công'),
+              backgroundColor: AppColors.surfaceElevated,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể xoá giáo án: $e'),
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _openConfigurationDialog() async {
+    final colors = Theme.of(context).colorScheme;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            _dialogSetState = setDialogState;
+            final source = _selected;
+            if (source == null) return const SizedBox.shrink();
+            final targetDates = _targetDates(_wholeWeek ? source.days.length : 1);
+            final conflictingDates = _findConflictingDates(targetDates);
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 24,
+              ),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: 520,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.borderDefault,
+                    width: 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Scope Switch
-          const Text(
-            'Phạm vi áp dụng',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(
-                value: false,
-                icon: Icon(Icons.today_rounded, size: 16),
-                label: Text('Một ngày'),
-              ),
-              ButtonSegment(
-                value: true,
-                icon: Icon(Icons.date_range_rounded, size: 16),
-                label: Text('Cả tuần'),
-              ),
-            ],
-            selected: {_wholeWeek},
-            onSelectionChanged: source.days.length < 2
-                ? null
-                : (selection) => setState(() {
-                    HapticFeedback.selectionClick();
-                    _wholeWeek = selection.first;
-                    if (_wholeWeek) _date = _normalizedWeekStart(_date);
-                  }),
-          ),
-
-          // Day Selection for Single Day vs Whole Week
-          if (!_wholeWeek) ...[
-            const SizedBox(height: 14),
-            DropdownButtonFormField<WorkoutPlanDay>(
-              value: _activeDay,
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText: 'Chọn buổi tập',
-                isDense: true,
-                filled: true,
-                fillColor: AppColors.surfaceStrong,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.borderDefault),
-                ),
-              ),
-              items: source.days
-                  .map(
-                    (day) => DropdownMenuItem(
-                      value: day,
-                      child: Text(
-                        '${day.name} • ${day.exercises.length} bài',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (day) {
-                if (day != null) {
-                  setState(() {
-                    _selectedDay = day;
-                    _selectedDayIndex = source.days.indexOf(day);
-                  });
-                }
-              },
-            ),
-          ] else ...[
-            const SizedBox(height: 14),
-            // Interactive visual weekly distribution
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceStrong,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.borderDefault),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Phân bổ ${source.days.length} buổi trong tuần:',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                      // Header
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.successSoft,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'Tự động cách ngày',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.success,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: source.days.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final day = entry.value;
-                      final offset = source.days.length <= 1
-                          ? 0
-                          : (idx * 6 / (source.days.length - 1)).round();
-                      final dayName = _dayOfWeekName(offset + 1);
-
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.borderDefault,
+                        padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: AppColors.borderDefault),
                           ),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
+                              padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(6),
+                                color: AppColors.surfaceStrong,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.borderDefault),
                               ),
-                              child: Text(
-                                dayName,
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
+                              child: Icon(
+                                source.sourceType == 'ADMIN_TEMPLATE'
+                                    ? Icons.verified_rounded
+                                    : Icons.menu_book_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'CẤU HÌNH LỊCH TẬP',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textSecondary,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                  Text(
+                                    source.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (source.sourceType == 'USER_PROGRAM')
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Color(0xFFEF4444),
+                                  size: 20,
+                                ),
+                                tooltip: 'Xoá giáo án',
+                                onPressed: () => _confirmDeletePersonalProgram(
+                                  source,
+                                  fromDialog: true,
+                                ),
+                              ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close_rounded,
+                                color: AppColors.iconSecondary,
+                                size: 22,
+                              ),
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Scrollable Body
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Distribution of sessions in the week
+                              if (source.days.length > 1) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceStrong,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.borderDefault,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        alignment: WrapAlignment.spaceBetween,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Phân bổ ${source.days.length} buổi trong tuần:',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.success.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              'Tự động cách ngày',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.success,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      ...targetDates.asMap().entries.map((entry) {
+                                        final idx = entry.key;
+                                        final targetDate = entry.value;
+                                        final day = idx < source.days.length
+                                            ? source.days[idx]
+                                            : null;
+                                        final isCurrent = idx == _selectedDayIndex;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 6),
+                                          child: InkWell(
+                                            onTap: () {
+                                              if (day != null) {
+                                                HapticFeedback.selectionClick();
+                                                setState(() {
+                                                  _selectedDay = day;
+                                                  _selectedDayIndex = idx;
+                                                });
+                                              }
+                                            },
+                                            borderRadius: BorderRadius.circular(10),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 8,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: isCurrent
+                                                    ? AppColors.primarySoft
+                                                    : AppColors.surfaceElevated,
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color: isCurrent
+                                                      ? AppColors.primary
+                                                      : AppColors.borderDefault,
+                                                  width: isCurrent ? 1.2 : 1.0,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 3,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.primary,
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: Text(
+                                                      _dayOfWeekName(targetDate.weekday),
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      '${day?.name ?? "Buổi ${idx + 1}"} (${day?.exercises.length ?? 0} bài)',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: isCurrent
+                                                            ? FontWeight.w700
+                                                            : FontWeight.w500,
+                                                        color: isCurrent
+                                                            ? Colors.white
+                                                            : AppColors.textSecondary,
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  if (isCurrent) ...[
+                                                    const SizedBox(width: 6),
+                                                    const Icon(
+                                                      Icons.check_circle_rounded,
+                                                      color: AppColors.primary,
+                                                      size: 16,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              // Detailed and Customizable Exercise List for the active day
+                              _buildExerciseListSection(source, colors),
+
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _PickerTile(
+                                      icon: Icons.calendar_today_rounded,
+                                      label: 'Ngày tập',
+                                      value: '${_date.day}/${_date.month}/${_date.year}',
+                                      onTap: _pickDate,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _PickerTile(
+                                      icon: Icons.schedule_rounded,
+                                      label: 'Giờ tập',
+                                      value: _time.format(context),
+                                      onTap: _pickTime,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              // Quick Time Chips
+                              const SizedBox(height: 10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    const Text(
+                                      'Giờ nhanh:',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textTertiary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _QuickTimeChip(
+                                      label: '06:00 (Sáng)',
+                                      selected: _time.hour == 6 && _time.minute == 0,
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        setState(() => _time = const TimeOfDay(hour: 6, minute: 0));
+                                      },
+                                    ),
+                                    const SizedBox(width: 6),
+                                    _QuickTimeChip(
+                                      label: '17:30 (Chiều)',
+                                      selected: _time.hour == 17 && _time.minute == 30,
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        setState(
+                                          () => _time = const TimeOfDay(hour: 17, minute: 30),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(width: 6),
+                                    _QuickTimeChip(
+                                      label: '19:00 (Tối)',
+                                      selected: _time.hour == 19 && _time.minute == 0,
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        setState(
+                                          () => _time = const TimeOfDay(hour: 19, minute: 0),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Beginner Coach Advice Box
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceStrong,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: AppColors.borderDefault,
+                                  ),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.tips_and_updates_rounded,
+                                      color: AppColors.amber,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '💡 Mẹo: Bạn có thể chọn từng buổi để tập bù hoặc thử nghiệm giáo án mới trước khi áp dụng toàn bộ.',
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          color: colors.onSurfaceVariant.withValues(alpha: 0.9),
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Real-time Conflict Detection Warning Banner
+                              if (conflictingDates.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warningSoft,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: AppColors.warningBorder),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline_rounded,
+                                        color: AppColors.amber,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Bạn đã có lịch tập vào ngày ${conflictingDates.join(", ")}. Khi xác nhận áp dụng, giáo án mới sẽ thay thế lịch đang có ở những ngày này.',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.amber,
+                                            height: 1.3,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Footer Actions
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+                        decoration: const BoxDecoration(
+                          color: AppColors.surfaceElevated,
+                          border: Border(
+                            top: BorderSide(color: AppColors.borderDefault),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.textSecondary,
+                                  side: const BorderSide(color: AppColors.borderDefault),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                child: const Text(
+                                  'Đóng',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${day.name} (${day.exercises.length} bài)',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              flex: 2,
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                onPressed: _submitting
+                                    ? null
+                                    : () async {
+                                        Navigator.of(dialogContext).pop();
+                                        await _previewAndApply();
+                                      },
+                                icon: _submitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.visibility_rounded, size: 18),
+                                label: const Text(
+                                  'Xem trước lịch tập',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // 4. Detailed and Customizable Exercise List for the active day
-          _buildExerciseListSection(source, colors),
-
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _PickerTile(
-                  icon: Icons.calendar_today_rounded,
-                  label: _wholeWeek ? 'Tuần bắt đầu' : 'Ngày tập',
-                  value: '${_date.day}/${_date.month}/${_date.year}',
-                  onTap: _pickDate,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _PickerTile(
-                  icon: Icons.schedule_rounded,
-                  label: 'Giờ tập',
-                  value: _time.format(context),
-                  onTap: _pickTime,
-                ),
-              ),
-            ],
-          ),
-
-          // Quick Time Chips
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                const Text(
-                  'Giờ nhanh:',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _QuickTimeChip(
-                  label: '06:00 (Sáng)',
-                  selected: _time.hour == 6 && _time.minute == 0,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _time = const TimeOfDay(hour: 6, minute: 0));
-                  },
-                ),
-                const SizedBox(width: 6),
-                _QuickTimeChip(
-                  label: '17:30 (Chiều)',
-                  selected: _time.hour == 17 && _time.minute == 30,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(
-                      () => _time = const TimeOfDay(hour: 17, minute: 30),
-                    );
-                  },
-                ),
-                const SizedBox(width: 6),
-                _QuickTimeChip(
-                  label: '19:00 (Tối)',
-                  selected: _time.hour == 19 && _time.minute == 0,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(
-                      () => _time = const TimeOfDay(hour: 19, minute: 0),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Beginner Coach Advice Box
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceStrong,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.borderDefault,
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.tips_and_updates_rounded,
-                  color: AppColors.amber,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _wholeWeek
-                        ? '💡 Mẹo cho người mới: VieGym tự động sắp xếp ngày tập xen kẽ ngày nghỉ để cơ bắp có 48h phục hồi và phát triển tối ưu.'
-                        : '💡 Mẹo: Bạn có thể chọn từng buổi để tập bù hoặc thử nghiệm giáo án mới trước khi áp dụng toàn bộ.',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: colors.onSurfaceVariant.withValues(alpha: 0.9),
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Real-time Conflict Detection Warning Banner
-          if (conflictingDates.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.warningSoft,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.warningBorder),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.info_outline_rounded,
-                    color: AppColors.amber,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Bạn đã có lịch tập vào ngày ${conflictingDates.join(", ")}. Khi xác nhận áp dụng, giáo án mới sẽ thay thế lịch đang có ở những ngày này.',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.amber,
-                        height: 1.3,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
+    _dialogSetState = null;
   }
 
   Widget _buildExerciseListSection(
@@ -2241,13 +2398,14 @@ class _WorkoutScheduleCreateScreenState
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.borderDefault),
                 ),
                 child: const Icon(
                   Icons.fitness_center_rounded,
                   size: 16,
-                  color: AppColors.primary,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(width: 8),
@@ -2255,33 +2413,35 @@ class _WorkoutScheduleCreateScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
                       children: [
                         const Text(
                           'BÀI TẬP TRONG BUỔI',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textSecondary,
                             letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 1.5,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: AppColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.borderDefault),
                           ),
                           child: Text(
                             '${exercises.length} bài',
                             style: const TextStyle(
                               fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -2339,7 +2499,7 @@ class _WorkoutScheduleCreateScreenState
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight:
-                              isSelected ? FontWeight.w900 : FontWeight.w600,
+                              isSelected ? FontWeight.w800 : FontWeight.w600,
                           color: isSelected
                               ? Colors.white
                               : AppColors.textSecondary,
@@ -2379,267 +2539,57 @@ class _WorkoutScheduleCreateScreenState
               ),
             )
           else
-            ...exercises.asMap().entries.map((entry) {
-              final index = entry.key;
-              final ex = entry.value;
-
-              ExerciseDefinition? def;
-              final nameLower = ex.name.toLowerCase().trim();
-              for (final e in exerciseCatalog) {
-                if (e.name.toLowerCase().trim() == nameLower ||
-                    e.nameVi.toLowerCase().trim() == nameLower) {
-                  def = e;
-                  break;
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: exercises.length,
+              onReorder: _moveExercise,
+              itemBuilder: (context, index) {
+                final ex = exercises[index];
+                ExerciseDefinition? def;
+                final nameLower = ex.name.toLowerCase().trim();
+                for (final e in exerciseCatalog) {
+                  if (e.name.toLowerCase().trim() == nameLower ||
+                      e.nameVi.toLowerCase().trim() == nameLower) {
+                    def = e;
+                    break;
+                  }
                 }
-              }
-
-              final titleVi = def?.nameVi ?? ex.name;
-              final primaryMuscle =
-                  def?.primaryMuscle ?? ex.primaryMuscle ?? 'Toàn thân';
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.borderDefault,
-                    width: 0.8,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '#${index + 1}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                titleVi,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13.5,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              if (titleVi != ex.name)
-                                Text(
-                                  ex.name,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textTertiary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primarySoft,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      primaryMuscle,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  if (def?.equipment != null)
-                                    Text(
-                                      def!.equipment.label,
-                                      style: const TextStyle(
-                                        fontSize: 10.5,
-                                        color: AppColors.textSecondary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  InkWell(
-                                    onTap: () => _editSetsReps(index),
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.cyan.withValues(
-                                          alpha: 0.12,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: AppColors.cyan.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            ex.setsReps,
-                                            style: const TextStyle(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w800,
-                                              color: AppColors.cyan,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 3),
-                                          const Icon(
-                                            Icons.edit_rounded,
-                                            size: 11,
-                                            color: AppColors.cyan,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () => _swapExercise(index),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 0,
-                            ),
-                            minimumSize: const Size(0, 30),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(
-                              color: AppColors.primary.withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          icon: const Icon(
-                            Icons.swap_horiz_rounded,
-                            size: 14,
-                          ),
-                          label: const Text(
-                            'Đổi bài',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: index > 0
-                              ? () => _moveExercise(index, index - 1)
-                              : null,
-                          icon: const Icon(
-                            Icons.arrow_upward_rounded,
-                            size: 16,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          tooltip: 'Di chuyển lên',
-                        ),
-                        IconButton(
-                          onPressed: index < exercises.length - 1
-                              ? () => _moveExercise(index, index + 1)
-                              : null,
-                          icon: const Icon(
-                            Icons.arrow_downward_rounded,
-                            size: 16,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          tooltip: 'Di chuyển xuống',
-                        ),
-                        IconButton(
-                          onPressed: () => _removeExercise(index),
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            size: 16,
-                            color: AppColors.error,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          tooltip: 'Xóa bài tập',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            }),
-          const SizedBox(height: 6),
+                return _SwipeableExerciseCard(
+                  key: ValueKey('ex_${ex.name}_${index}_${ex.setsReps}'),
+                  index: index,
+                  exercise: ex,
+                  definition: def,
+                  onEditSetsReps: () => _editSetsReps(index),
+                  onSwap: () => _swapExercise(index),
+                  onDelete: () => _removeExercise(index),
+                );
+              },
+            ),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            height: 40,
+            height: 42,
             child: OutlinedButton.icon(
               onPressed: _addExercise,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: BorderSide(
-                  color: AppColors.primary.withValues(alpha: 0.6),
-                  width: 1.1,
+                foregroundColor: Colors.white,
+                backgroundColor: AppColors.surfaceElevated,
+                side: const BorderSide(
+                  color: AppColors.borderDefault,
+                  width: 1.0,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: const Icon(Icons.add_rounded, size: 16),
+              icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
               label: const Text(
                 'Thêm bài tập vào buổi này',
                 style: TextStyle(
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -2650,6 +2600,7 @@ class _WorkoutScheduleCreateScreenState
             decoration: BoxDecoration(
               color: AppColors.surfaceElevated,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.borderDefault),
             ),
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2662,7 +2613,7 @@ class _WorkoutScheduleCreateScreenState
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Người mới: Bạn có thể bấm "Đổi bài" để chọn máy tập hoặc tạ đơn nhẹ nhàng hơn nếu chưa quen với bài tạ đòn.',
+                    'Mẹo: Giữ biểu tượng ⠿ để kéo thả đổi thứ tự bài. Gạt bài tập sang trái để đổi bài hoặc xóa bài.',
                     style: TextStyle(
                       fontSize: 11,
                       color: AppColors.textSecondary,
@@ -2869,22 +2820,27 @@ class _QuickSourceCard extends StatelessWidget {
                     ),
                     child: Icon(icon, color: color, size: 20),
                   ),
+                  const SizedBox(width: 6),
                   if (badge != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        badge!,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w900,
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badge!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
@@ -2894,9 +2850,10 @@ class _QuickSourceCard extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
                   color: Colors.white,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 3),
@@ -2916,7 +2873,137 @@ class _QuickSourceCard extends StatelessWidget {
   }
 }
 
-class _SourceTile extends StatelessWidget {
+class _SwipeableSourceTile extends StatefulWidget {
+  const _SwipeableSourceTile({
+    super.key,
+    required this.source,
+    required this.selected,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final WorkoutPlanSource source;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  State<_SwipeableSourceTile> createState() => _SwipeableSourceTileState();
+}
+
+class _SwipeableSourceTileState extends State<_SwipeableSourceTile> {
+  double _dragOffset = 0.0;
+  static const double _maxActionWidth = 110.0;
+
+  void _reset() {
+    if (_dragOffset != 0.0) {
+      setState(() => _dragOffset = 0.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.source.sourceType != 'USER_PROGRAM') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: _SourceTile(
+          source: widget.source,
+          selected: widget.selected,
+          onTap: widget.onTap,
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Stack(
+          children: [
+            // Revealed delete action behind
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDC2626),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                alignment: Alignment.centerRight,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      _reset();
+                      widget.onDelete();
+                    },
+                    child: const SizedBox(
+                      width: _maxActionWidth,
+                      height: double.infinity,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.delete_outline_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Xoá giáo án',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Front tile that slides
+            Transform.translate(
+              offset: Offset(_dragOffset, 0),
+              child: GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    _dragOffset += details.primaryDelta ?? 0;
+                    if (_dragOffset < -_maxActionWidth) {
+                      _dragOffset = -_maxActionWidth;
+                    } else if (_dragOffset > 0) {
+                      _dragOffset = 0;
+                    }
+                  });
+                },
+                onHorizontalDragEnd: (details) {
+                  if (_dragOffset < -_maxActionWidth / 2) {
+                    setState(() => _dragOffset = -_maxActionWidth);
+                  } else {
+                    setState(() => _dragOffset = 0.0);
+                  }
+                },
+                child: _SourceTile(
+                  source: widget.source,
+                  selected: widget.selected,
+                  onTap: () {
+                    if (_dragOffset != 0) {
+                      _reset();
+                    } else {
+                      widget.onTap();
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SourceTile extends StatefulWidget {
   const _SourceTile({
     required this.source,
     required this.selected,
@@ -2928,203 +3015,210 @@ class _SourceTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_SourceTile> createState() => _SourceTileState();
+}
+
+class _SourceTileState extends State<_SourceTile> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final isAdmin = source.sourceType == 'ADMIN_TEMPLATE';
+    final isAdmin = widget.source.sourceType == 'ADMIN_TEMPLATE';
     final colors = Theme.of(context).colorScheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primarySoft
-                : AppColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : AppColors.borderDefault,
-              width: selected ? 1.4 : 1.0,
+    return AnimatedScale(
+      scale: _isPressed ? 0.96 : (widget.selected ? 1.015 : 1.0),
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          borderRadius: BorderRadius.circular(18),
+          splashColor: AppColors.primary.withValues(alpha: 0.15),
+          highlightColor: AppColors.primary.withValues(alpha: 0.08),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: widget.selected
+                  ? AppColors.primarySoft
+                  : AppColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: widget.selected
+                    ? AppColors.primary
+                    : AppColors.borderDefault,
+                width: widget.selected ? 1.6 : 1.0,
+              ),
+              boxShadow: widget.selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
             ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: widget.selected
+                            ? AppColors.primary.withValues(alpha: 0.25)
+                            : (isAdmin
+                                ? AppColors.primarySoft
+                                : AppColors.surfaceStrong),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isAdmin
+                            ? Icons.verified_rounded
+                            : Icons.menu_book_rounded,
+                        color: widget.selected
+                            ? AppColors.primary
+                            : (isAdmin
+                                ? AppColors.primary
+                                : AppColors.textSecondary),
+                        size: 20,
+                      ),
                     ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.primary.withValues(alpha: 0.2)
-                          : (isAdmin
-                              ? AppColors.primarySoft
-                              : AppColors.surfaceStrong),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      isAdmin
-                          ? Icons.verified_rounded
-                          : Icons.menu_book_rounded,
-                      color: isAdmin ? AppColors.primary : AppColors.textSecondary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                source.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14.5,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            if (isAdmin)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primarySoft,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'VieGym Pro',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.source.name,
                                   style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 10,
                                     fontWeight: FontWeight.w900,
+                                    fontSize: 14.5,
+                                    color: widget.selected
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.95),
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          source.description?.isNotEmpty == true
-                              ? source.description!
-                              : 'Giáo án khoa học dành cho người tập',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.onSurfaceVariant,
+                              if (isAdmin)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primarySoft,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'VieGym Pro',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: selected ? AppColors.primary : Colors.transparent,
-                      border: Border.all(
-                        color: selected ? AppColors.primary : AppColors.borderStrong,
-                        width: 1.5,
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.source.description?.isNotEmpty == true
+                                ? widget.source.description!
+                                : 'Giáo án khoa học dành cho người tập',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: selected
-                        ? const Icon(
-                            Icons.check,
-                            size: 14,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Feature badges row
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceStrong,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.calendar_month_rounded,
-                          size: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${source.totalDays} buổi / tuần',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Feature badges row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceStrong,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.calendar_month_rounded,
+                            size: 11,
+                            color: AppColors.textSecondary,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceStrong,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: 11,
-                          color: AppColors.amber,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          '~45-60p',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.source.totalDays} buổi / tuần',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceStrong,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 11,
+                            color: AppColors.amber,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            '~45-60p',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -3162,10 +3256,11 @@ class _PickerTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: AppColors.primarySoft,
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderDefault),
               ),
-              child: Icon(icon, size: 16, color: AppColors.primary),
+              child: Icon(icon, size: 16, color: Colors.white),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -3190,6 +3285,331 @@ class _PickerTile extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeableExerciseCard extends StatefulWidget {
+  const _SwipeableExerciseCard({
+    super.key,
+    required this.index,
+    required this.exercise,
+    required this.definition,
+    required this.onEditSetsReps,
+    required this.onSwap,
+    required this.onDelete,
+  });
+
+  final int index;
+  final PlannedExercisePreview exercise;
+  final ExerciseDefinition? definition;
+  final VoidCallback onEditSetsReps;
+  final VoidCallback onSwap;
+  final VoidCallback onDelete;
+
+  @override
+  State<_SwipeableExerciseCard> createState() => _SwipeableExerciseCardState();
+}
+
+class _SwipeableExerciseCardState extends State<_SwipeableExerciseCard> {
+  double _dragOffset = 0.0;
+  static const double _maxActionWidth = 140.0;
+
+  void _reset() {
+    if (_dragOffset != 0.0) {
+      setState(() => _dragOffset = 0.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titleVi = widget.definition?.nameVi ?? widget.exercise.name;
+    final primaryMuscle = widget.definition?.primaryMuscle ??
+        widget.exercise.primaryMuscle ??
+        'Toàn thân';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
+          children: [
+            // Revealed action buttons behind the card
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceStrong,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Swap button (Blue)
+                    Material(
+                      color: const Color(0xFF2563EB),
+                      child: InkWell(
+                        onTap: () {
+                          _reset();
+                          widget.onSwap();
+                        },
+                        child: const SizedBox(
+                          width: 70,
+                          height: double.infinity,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Đổi bài',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Delete button (Red)
+                    Material(
+                      color: const Color(0xFFDC2626),
+                      child: InkWell(
+                        onTap: () {
+                          _reset();
+                          widget.onDelete();
+                        },
+                        child: const SizedBox(
+                          width: 70,
+                          height: double.infinity,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Xóa bài',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Foreground sliding card
+            GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _dragOffset = (_dragOffset + details.primaryDelta!)
+                      .clamp(-_maxActionWidth, 0.0);
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                setState(() {
+                  if (_dragOffset < -50 ||
+                      (details.primaryVelocity != null &&
+                          details.primaryVelocity! < -200)) {
+                    _dragOffset = -_maxActionWidth;
+                    HapticFeedback.selectionClick();
+                  } else {
+                    _dragOffset = 0.0;
+                  }
+                });
+              },
+              onTap: () {
+                if (_dragOffset < 0) {
+                  _reset();
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                curve: Curves.easeOutCubic,
+                transform: Matrix4.translationValues(_dragOffset, 0, 0),
+                padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.borderDefault,
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Neutral index chip (no red)
+                    Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceStrong,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.borderDefault,
+                          width: 0.8,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '#${widget.index + 1}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // Exercise Info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            titleVi,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (titleVi != widget.exercise.name)
+                            Text(
+                              widget.exercise.name,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textTertiary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              // Neutral muscle tag (no red)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceStrong,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: AppColors.borderDefault,
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: Text(
+                                  primaryMuscle,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                              if (widget.definition?.equipment != null)
+                                Text(
+                                  widget.definition!.equipment.label,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    color: AppColors.textTertiary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              // Cyan sets/reps tag
+                              InkWell(
+                                onTap: widget.onEditSetsReps,
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cyan.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: AppColors.cyan.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        widget.exercise.setsReps,
+                                        style: const TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.cyan,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      const Icon(
+                                        Icons.edit_rounded,
+                                        size: 11,
+                                        color: AppColors.cyan,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Drag indicator handle
+                    ReorderableDragStartListener(
+                      index: widget.index,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
+                        child: const Icon(
+                          Icons.drag_indicator_rounded,
+                          color: AppColors.iconSecondary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

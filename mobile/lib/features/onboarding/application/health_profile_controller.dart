@@ -46,8 +46,22 @@ class HealthProfileController extends Notifier<HealthProfile> {
     state = state.copyWith(heightCm: heightCm);
   }
 
-  void updateWeight(int weightKg) {
-    state = state.copyWith(weightKg: weightKg);
+  void updateWeight(
+    num weightKg, {
+    double? serverBmi,
+    int? serverBmr,
+    int? serverTdee,
+  }) {
+    state = state.copyWith(
+      weightKg: weightKg.round(),
+      serverBmi: serverBmi ??
+          (state.heightCm > 0
+              ? (weightKg.toDouble() /
+                  ((state.heightCm / 100) * (state.heightCm / 100)))
+              : null),
+      serverBmr: serverBmr,
+      serverTdee: serverTdee,
+    );
   }
 
   void updateTargetWeight(int targetWeightKg) {

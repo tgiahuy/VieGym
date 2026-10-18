@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../onboarding/application/health_profile_controller.dart';
+import '../data/weight_log_repository.dart';
+
 class PersonalRecordItem {
   const PersonalRecordItem({
     required this.id,
@@ -129,10 +132,28 @@ class ProgressController extends Notifier<ProgressState> {
     );
   }
 
-  void logWeight(double weightKg) {
-    final now = DateTime.now();
+  WeightLogRepository get _weightLogRepo =>
+      ref.read(weightLogRepositoryProvider);
+
+  Future<void> fetchWeightLogs() async {
+    try {
+      final logs = await _weightLogRepo.getWeightLogs();
+      if (logs.isNotEmpty) {
+        state = state.copyWith(weightLogs: logs);
+      }
+    } catch (_) {
+      // Keep local state on error / offline
+    }
+  }
+
+  Future<UpsertWeightLogResult?> logWeight(
+    double weightKg, {
+    DateTime? date,
+    String? note,
+  }) async {
+    final effectiveDate = date ?? DateTime.now();
     final dateStr =
-        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}';
+        '${effectiveDate.day.toString().padLeft(2, '0')}/${effectiveDate.month.toString().padLeft(2, '0')}';
 
     final newItem = WeightLogItem(
       id: 'w_${DateTime.now().millisecondsSinceEpoch}',
@@ -140,7 +161,42 @@ class ProgressController extends Notifier<ProgressState> {
       weightKg: weightKg,
     );
 
-    state = state.copyWith(weightLogs: [newItem, ...state.weightLogs]);
+    // 1. Optimistic update in UI
+    final existingIndex = state.weightLogs.indexWhere((w) => w.date == dateStr);
+    List<WeightLogItem> updatedLogs;
+    if (existingIndex >= 0) {
+      updatedLogs = [...state.weightLogs];
+      updatedLogs[existingIndex] = newItem;
+    } else {
+      updatedLogs = [newItem, ...state.weightLogs];
+    }
+    state = state.copyWith(weightLogs: updatedLogs);
+
+    // 2. Synchronize weight and recalculate BMI in health profile immediately
+    ref.read(healthProfileProvider.notifier).updateWeight(weightKg);
+
+    // 3. Persist to backend API (PUT /api/v1/weight-logs/{date})
+    try {
+      final result = await _weightLogRepo.upsertWeightLog(
+        effectiveDate,
+        weightKg,
+        note: note,
+      );
+
+      // 4. Update health profile with authoritative server-computed metrics
+      if (result.metricsUpdated) {
+        ref.read(healthProfileProvider.notifier).updateWeight(
+              weightKg,
+              serverBmi: result.bmi,
+              serverBmr: result.bmrKcal,
+              serverTdee: result.tdeeKcal,
+            );
+      }
+
+      return result;
+    } catch (_) {
+      return null;
+    }
   }
 
   void clearAllLogs() {

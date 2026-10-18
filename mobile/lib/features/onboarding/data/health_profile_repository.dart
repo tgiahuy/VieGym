@@ -26,18 +26,22 @@ class DioHealthProfileRepository implements HealthProfileRepository {
   final Dio _dio;
 
   static const Map<String, String> _localCodeToBackendCode = {
+    'bw': 'BODYWEIGHT',
     'db': 'DUMBBELL',
     'bb': 'BARBELL',
-    'kb': 'KETTLEBELL',
     'bench': 'BENCH',
+    'adjustable_bench': 'ADJUSTABLE_BENCH',
     'cable': 'CABLE_MACHINE',
-    'smith': 'MACHINE',
-    'lat_pulldown': 'MACHINE',
-    'bw': 'BODYWEIGHT',
-    'pullup_bar': 'PULL_UP_BAR',
+    'machine': 'MACHINE',
     'band': 'RESISTANCE_BAND',
+    'kb': 'KETTLEBELL',
+    'pullup_bar': 'PULL_UP_BAR',
+    'treadmill': 'TREADMILL',
+    // Backward-compatibility fallbacks
     'ez': 'BARBELL',
     'rack': 'BENCH',
+    'smith': 'MACHINE',
+    'lat_pulldown': 'CABLE_MACHINE',
   };
 
   @override

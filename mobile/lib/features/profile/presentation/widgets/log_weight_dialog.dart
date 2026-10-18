@@ -69,7 +69,7 @@ class _LogWeightDialogState extends ConsumerState<LogWeightDialog> {
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     final parsed = double.tryParse(
       _controller.text.replaceAll(',', '.').trim(),
     );
@@ -79,9 +79,6 @@ class _LogWeightDialogState extends ConsumerState<LogWeightDialog> {
       });
       return;
     }
-
-    ref.read(progressProvider.notifier).logWeight(parsed);
-    ref.read(healthProfileProvider.notifier).updateWeight(parsed.toInt());
 
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -108,6 +105,8 @@ class _LogWeightDialogState extends ConsumerState<LogWeightDialog> {
         ),
       ),
     );
+
+    await ref.read(progressProvider.notifier).logWeight(parsed);
   }
 
   @override

@@ -6,4 +6,5 @@ function normalizeBaseUrl(value: string): string {
 
 export const env = Object.freeze({
   apiBaseUrl: normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL ?? defaultApiBaseUrl),
+  authDisabled: import.meta.env.VITE_AUTH_DISABLED?.trim().toLowerCase() === 'true',
 })

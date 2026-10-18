@@ -2,6 +2,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 817 1527">
   <image href="body_muscles_back_v2.jpg" x="0" y="0" width="817" height="1527"/>
   <g id="muscle-regions" fill="none" pointer-events="all">
+    <path id="abductors-1" data-muscle="abductors" d="M 518 737 L 520 738 L 531 772 L 536 790 L 537 802 L 516 777 Z"/>
+    <path id="abductors-2" data-muscle="abductors" d="M 306 737 L 309 778 L 288 802 L 291 785 Z"/>
     <path id="calves-1" data-muscle="calves" d="M 508 1053 L 520 1064 L 530 1081 L 538 1109 L 543 1156 L 543 1213 L 540 1242 L 535 1262 L 530 1272 L 522 1278 L 511 1278 L 504 1274 L 498 1263 L 496 1254 L 496 1229 L 502 1159 L 504 1079 Z"/>
     <path id="calves-2" data-muscle="calves" d="M 316 1053 L 319 1056 L 321 1070 L 323 1146 L 330 1251 L 324 1271 L 315 1278 L 304 1278 L 295 1271 L 291 1263 L 285 1238 L 282 1196 L 283 1151 L 287 1113 L 295 1083 L 306 1063 Z"/>
     <path id="calves-3" data-muscle="calves" d="M 493 1053 L 496 1056 L 497 1064 L 497 1091 L 491 1182 L 489 1250 L 485 1267 L 479 1279 L 474 1285 L 467 1286 L 462 1276 L 454 1242 L 451 1219 L 451 1190 L 459 1143 L 470 1097 L 483 1064 Z"/>
@@ -14,8 +16,6 @@
     <path id="forearms-4" data-muscle="forearms" d="M 629 537 L 631 537 L 646 555 L 659 578 L 665 607 L 674 636 L 694 682 L 693 688 L 680 696 L 674 696 L 672 694 L 666 681 L 649 656 L 642 640 L 641 624 L 630 595 L 626 577 L 626 554 Z"/>
     <path id="glutes-1" data-muscle="glutes" d="M 469 669 L 481 669 L 493 673 L 504 683 L 508 691 L 511 703 L 509 778 L 507 790 L 502 801 L 490 814 L 473 821 L 456 821 L 445 818 L 432 811 L 422 801 L 418 794 L 416 780 L 416 717 L 417 709 L 422 699 L 438 682 L 454 673 Z"/>
     <path id="glutes-2" data-muscle="glutes" d="M 344 669 L 366 671 L 383 679 L 400 694 L 409 711 L 409 790 L 407 796 L 391 813 L 370 821 L 352 821 L 337 815 L 325 803 L 318 787 L 315 743 L 315 700 L 323 681 L 331 674 Z"/>
-    <path id="glutes-3" data-muscle="glutes" d="M 518 737 L 520 738 L 531 772 L 536 790 L 537 802 L 516 777 Z"/>
-    <path id="glutes-4" data-muscle="glutes" d="M 306 737 L 309 778 L 288 802 L 291 785 Z"/>
     <path id="hamstrings-1" data-muscle="hamstrings" d="M 513 787 L 522 795 L 533 810 L 542 832 L 546 864 L 544 916 L 540 894 L 531 864 L 518 832 L 505 808 L 511 797 Z"/>
     <path id="hamstrings-2" data-muscle="hamstrings" d="M 311 787 L 320 806 L 320 810 L 308 831 L 294 866 L 281 918 L 280 855 L 283 835 L 292 811 Z"/>
     <path id="hamstrings-3" data-muscle="hamstrings" d="M 400 814 L 402 814 L 402 822 L 399 863 L 391 920 L 388 928 L 380 906 L 374 880 L 369 844 L 369 827 L 390 821 Z"/>
@@ -40,5 +40,7 @@
     <path id="triceps-4" data-muscle="triceps" d="M 570 437 L 575 439 L 592 454 L 607 475 L 614 496 L 616 516 L 619 524 L 620 551 L 613 547 L 606 539 L 597 511 L 593 504 L 588 501 L 584 472 L 578 453 Z"/>
     <path id="upper_back-1" data-muscle="upper_back" d="M 343 384 L 345 393 L 345 429 L 334 433 L 317 433 L 303 428 L 291 417 L 291 412 L 325 400 L 334 394 Z"/>
     <path id="upper_back-2" data-muscle="upper_back" d="M 482 384 L 489 392 L 502 401 L 532 411 L 536 413 L 536 415 L 527 425 L 513 432 L 492 433 L 480 429 Z"/>
+    <path id="neck-1" data-muscle="neck" d="M 404 232 L 409 232 L 409 294 L 402 307 L 391 315 L 380 298 L 372 283 L 390 262 L 400 244 Z"/>
+    <path id="neck-2" data-muscle="neck" d="M 419 231 L 422 232 L 424 240 L 437 264 L 457 286 L 445 302 L 435 318 L 421 304 L 417 296 L 416 236 Z"/>
   </g>
 </svg>

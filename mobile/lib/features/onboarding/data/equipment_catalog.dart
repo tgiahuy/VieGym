@@ -18,126 +18,122 @@ class EquipmentItem {
   final IconData icon;
 }
 
+/// Danh mục 11 thiết bị chuẩn khớp 1:1 với cơ sở dữ liệu VieGym (PostgreSQL).
 const List<EquipmentItem> masterEquipmentCatalogue = [
-  // Free weights
+  // 1. Thể trọng
+  EquipmentItem(
+    id: 'bw',
+    code: 'bodyweight',
+    name: 'Trọng lượng cơ thể (Bodyweight)',
+    description: 'Các bài tập tận dụng trọng lượng cơ thể, không cần tạ',
+    category: 'Thể trọng & Calisthenics',
+    icon: Icons.accessibility_new_rounded,
+  ),
+  EquipmentItem(
+    id: 'pullup_bar',
+    code: 'pullup_bar',
+    name: 'Xà đơn (Pull-up Bar)',
+    description: 'Thanh xà treo cố định cho bài tập kéo thân trên toàn diện',
+    category: 'Thể trọng & Calisthenics',
+    icon: Icons.horizontal_rule_rounded,
+  ),
+
+  // 2. Tạ tự do
   EquipmentItem(
     id: 'db',
     code: 'dumbbell',
     name: 'Tạ đơn (Dumbbell)',
     description: 'Cặp tạ tay đa dụng cho hầu hết bài tập',
     category: 'Tạ tự do (Free Weights)',
-    icon: Icons.fitness_center_rounded,
+    icon: Icons.fitness_center_outlined,
   ),
   EquipmentItem(
     id: 'bb',
     code: 'barbell',
-    name: 'Thanh đòn Olympic & Bánh tạ',
-    description: 'Thanh tạ dài 20kg và đĩa tạ các mức',
+    name: 'Tạ đòn (Barbell)',
+    description: 'Thanh đòn tiêu chuẩn Olympic kết hợp đĩa tạ',
     category: 'Tạ tự do (Free Weights)',
     icon: Icons.fitness_center_rounded,
   ),
   EquipmentItem(
     id: 'kb',
     code: 'kettlebell',
-    name: 'Tạ bình vôi (Kettlebell)',
-    description: 'Tạ chuông tập swing, snatch, squat',
-    category: 'Tạ tự do (Free Weights)',
-    icon: Icons.fitness_center_rounded,
-  ),
-  EquipmentItem(
-    id: 'ez',
-    code: 'ez_bar',
-    name: 'Đòn zíc-zắc (EZ Bar)',
-    description: 'Bảo vệ cổ tay khi cuốn tay trước và tay sau',
+    name: 'Tạ ấm (Kettlebell)',
+    description: 'Tạ quả chuông tập swing, snatch và squat bùng nổ',
     category: 'Tạ tự do (Free Weights)',
     icon: Icons.fitness_center_rounded,
   ),
 
-  // Benches & Racks
+  // 3. Ghế & Giá đỡ
   EquipmentItem(
     id: 'bench',
     code: 'bench',
-    name: 'Ghế tập điều chỉnh (Incline/Flat)',
-    description: 'Ghế dốc nhiều góc độ để tập ngực, vai',
-    category: 'Ghế & Khung tập',
-    icon: Icons.weekend_rounded,
+    name: 'Ghế tập phẳng (Flat Bench)',
+    description: 'Ghế tập phẳng tiêu chuẩn chịu lực cao',
+    category: 'Ghế & Giá đỡ',
+    icon: Icons.chair_alt_rounded,
   ),
   EquipmentItem(
-    id: 'rack',
-    code: 'squat_rack',
-    name: 'Khung gánh tạ (Squat / Power Rack)',
-    description: 'Khung an toàn cho Squat, Bench Press, OHP',
-    category: 'Ghế & Khung tập',
-    icon: Icons.grid_view_rounded,
+    id: 'adjustable_bench',
+    code: 'adjustable_bench',
+    name: 'Ghế tập điều chỉnh (Adjustable Bench)',
+    description: 'Ghế có thể tùy chỉnh độ dốc từ phẳng, dốc lên đến dốc xuống',
+    category: 'Ghế & Giá đỡ',
+    icon: Icons.airline_seat_recline_extra_rounded,
   ),
 
-  // Machines & Cables
+  // 4. Máy & Dây cáp
   EquipmentItem(
     id: 'cable',
     code: 'cable_machine',
-    name: 'Dàn kéo cáp đa năng (Cable Station)',
-    description: 'Kéo xô, ép ngực cáp, tay sau cáp',
+    name: 'Máy cáp (Cable Station)',
+    description: 'Hệ thống ròng rọc và cáp đa hướng cung cấp lực căng liên tục',
     category: 'Máy & Dây cáp',
     icon: Icons.alt_route_rounded,
   ),
   EquipmentItem(
-    id: 'smith',
-    code: 'smith_machine',
-    name: 'Máy Smith Machine',
-    description: 'Thanh đòn có ray trượt cố định an toàn',
+    id: 'machine',
+    code: 'machine',
+    name: 'Máy tập khối (Machine)',
+    description: 'Máy tập cô lập nhóm cơ với quỹ đạo chuyển động cố định',
     category: 'Máy & Dây cáp',
-    icon: Icons.view_column_rounded,
-  ),
-  EquipmentItem(
-    id: 'lat_pulldown',
-    code: 'lat_pulldown',
-    name: 'Máy kéo xô (Lat Pulldown Machine)',
-    description: 'Chuyên biệt tập cơ lưng xô',
-    category: 'Máy & Dây cáp',
-    icon: Icons.height_rounded,
+    icon: Icons.precision_manufacturing_rounded,
   ),
 
-  // Accessories & Bodyweight
-  EquipmentItem(
-    id: 'bw',
-    code: 'bodyweight',
-    name: 'Trọng lượng cơ thể (Bodyweight)',
-    description: 'Hít đất, kéo xà, squat tay không',
-    category: 'Phụ kiện & Thể trọng',
-    icon: Icons.accessibility_new_rounded,
-  ),
-  EquipmentItem(
-    id: 'pullup_bar',
-    code: 'pullup_bar',
-    name: 'Xà đơn / Xà kép (Pull-up / Dip Bar)',
-    description: 'Thiết bị tập thân trên thể trọng',
-    category: 'Phụ kiện & Thể trọng',
-    icon: Icons.horizontal_rule_rounded,
-  ),
+  // 5. Phụ kiện & Dụng cụ bổ trợ
   EquipmentItem(
     id: 'band',
     code: 'resistance_band',
     name: 'Dây kháng lực (Resistance Bands)',
-    description: 'Dây chun đàn hồi hỗ trợ khởi động và tập bổ trợ',
-    category: 'Phụ kiện & Thể trọng',
+    description: 'Dây chun đàn hồi hỗ trợ khởi động và tăng lực cản',
+    category: 'Dụng cụ bổ trợ',
     icon: Icons.all_inclusive_rounded,
+  ),
+
+  // 6. Cardio
+  EquipmentItem(
+    id: 'treadmill',
+    code: 'treadmill',
+    name: 'Máy chạy bộ (Treadmill)',
+    description: 'Máy chạy bộ điện hỗ trợ điều chỉnh tốc độ và độ dốc',
+    category: 'Thiết bị Cardio',
+    icon: Icons.directions_run_rounded,
   ),
 ];
 
 abstract final class EquipmentPresets {
   static const fullGym = [
+    'bw',
+    'pullup_bar',
     'db',
     'bb',
     'kb',
-    'ez',
     'bench',
-    'rack',
+    'adjustable_bench',
     'cable',
-    'smith',
-    'lat_pulldown',
-    'bw',
-    'pullup_bar',
+    'machine',
     'band',
+    'treadmill',
   ];
 
   static const homeDumbbell = ['db', 'bench', 'bw', 'band'];

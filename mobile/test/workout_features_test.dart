@@ -19,6 +19,7 @@ import 'package:viegym/features/workout/presentation/exercise_detail_screen.dart
 import 'package:viegym/features/workout/presentation/exercise_library_screen.dart';
 import 'package:viegym/features/workout/presentation/favorite_exercises_screen.dart';
 import 'package:viegym/features/workout/presentation/widgets/body_muscle_map.dart';
+import 'package:viegym/features/workout/presentation/widgets/body_muscle_regions_generated.dart';
 import 'package:viegym/features/workout/presentation/widgets/exercise_muscle_visualizer.dart';
 import 'package:viegym/features/workout/presentation/widgets/exercise_thumbnail.dart';
 import 'package:viegym/features/workout/presentation/widgets/favorite_exercises_section.dart';
@@ -169,6 +170,29 @@ void main() {
         expect(MuscleGroup.fromString('Cơ mông'), equals(MuscleGroup.glutes));
         expect(MuscleGroup.fromString('Bụng'), equals(MuscleGroup.abs));
         expect(MuscleGroup.fromString('Bắp chân'), equals(MuscleGroup.calves));
+        expect(MuscleGroup.fromString('Cơ cổ'), equals(MuscleGroup.neck));
+        expect(MuscleGroup.fromString('Cổ'), equals(MuscleGroup.neck));
+        expect(MuscleGroup.fromString('neck'), equals(MuscleGroup.neck));
+        expect(
+          MuscleGroup.fromString('Cơ dạng hông'),
+          equals(MuscleGroup.abductors),
+        );
+        expect(
+          MuscleGroup.fromString('Dạng hông'),
+          equals(MuscleGroup.abductors),
+        );
+        expect(
+          MuscleGroup.fromString('abductors'),
+          equals(MuscleGroup.abductors),
+        );
+        expect(
+          MuscleGroup.fromString('abductor'),
+          equals(MuscleGroup.abductors),
+        );
+        expect(
+          MuscleGroup.fromString('Cơ khép đùi'),
+          equals(MuscleGroup.adductors),
+        );
       },
     );
   });
@@ -269,6 +293,84 @@ void main() {
           find.byType(TweenAnimationBuilder<double>).first,
         );
         expect(camera.tween.end, greaterThan(1));
+      },
+    );
+
+    test('Front and Back anatomical region maps both contain neck and abductors', () {
+      final frontRegions = generatedMuscleRegions(BodySide.front);
+      final backRegions = generatedMuscleRegions(BodySide.back);
+
+      expect(frontRegions.containsKey(MuscleGroup.neck), isTrue);
+      expect(frontRegions[MuscleGroup.neck], isNotEmpty);
+
+      expect(backRegions.containsKey(MuscleGroup.neck), isTrue);
+      expect(backRegions[MuscleGroup.neck], isNotEmpty);
+
+      expect(frontRegions.containsKey(MuscleGroup.abductors), isTrue);
+      expect(frontRegions[MuscleGroup.abductors], isNotEmpty);
+
+      expect(backRegions.containsKey(MuscleGroup.abductors), isTrue);
+      expect(backRegions[MuscleGroup.abductors], isNotEmpty);
+    });
+
+    testWidgets(
+      'ExerciseMuscleVisualizer renders Neck (Cơ cổ) with ZoomFocusCard',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ExerciseMuscleVisualizer(
+                  primaryMuscle: 'Cơ cổ',
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Cơ cổ'), findsAtLeast(1));
+        expect(find.text('Sternocleidomastoid & Splenius'), findsOneWidget);
+        expect(find.byType(BodyMuscleMap), findsAtLeast(1));
+      },
+    );
+
+    testWidgets(
+      'ExerciseMuscleVisualizer renders Hip Abductors (Cơ dạng hông) with ZoomFocusCard',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ExerciseMuscleVisualizer(
+                  primaryMuscle: 'Cơ dạng hông',
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Cơ dạng hông'), findsAtLeast(1));
+        expect(
+          find.text('Gluteus Medius & Tensor Fasciae Latae'),
+          findsOneWidget,
+        );
+        expect(find.byType(BodyMuscleMap), findsAtLeast(1));
       },
     );
   });
@@ -1336,6 +1438,88 @@ void main() {
     );
 
     testWidgets(
+      'AiWorkoutGenerateScreen allows opening bottom sheet popups to add items and swipe left to dismiss',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(home: AiWorkoutGenerateScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Check initial muscles: Cơ ngực, Cơ vai with anatomical BodyMuscleMap thumbnails
+        expect(find.byKey(const ValueKey('muscle_Cơ ngực')), findsOneWidget);
+        expect(find.byKey(const ValueKey('muscle_Cơ vai')), findsOneWidget);
+        expect(find.byType(BodyMuscleMap), findsWidgets);
+
+        // 2. Open Thêm nhóm cơ modal popup
+        expect(find.text('Thêm nhóm cơ'), findsOneWidget);
+        await tester.tap(find.text('Thêm nhóm cơ'));
+        await tester.pumpAndSettle();
+
+        // Verify popup modal appeared
+        expect(find.text('Chọn nhóm cơ mục tiêu'), findsOneWidget);
+        expect(find.text('Cơ lưng xô'), findsWidgets);
+
+        // Select Cơ lưng xô in modal
+        await tester.tap(find.text('Cơ lưng xô').last);
+        await tester.pumpAndSettle();
+
+        // Tap Xác nhận
+        await tester.tap(find.textContaining('Xác nhận'));
+        await tester.pumpAndSettle();
+
+        // Verify Cơ lưng xô is now in the selected muscles list
+        expect(find.byKey(const ValueKey('muscle_Cơ lưng xô')), findsOneWidget);
+
+        // 3. Swipe left to dismiss (huỷ chọn) Cơ lưng xô
+        await tester.drag(
+          find.byKey(const ValueKey('muscle_Cơ lưng xô')),
+          const Offset(-500, 0),
+        );
+        await tester.pumpAndSettle();
+
+        // Verify Cơ lưng xô was dismissed and SnackBar showed
+        expect(find.byKey(const ValueKey('muscle_Cơ lưng xô')), findsNothing);
+        expect(find.textContaining('Đã hủy chọn: Cơ lưng xô'), findsOneWidget);
+
+        // 4. Open Thêm thiết bị modal popup
+        expect(find.text('Thêm thiết bị'), findsOneWidget);
+        await tester.tap(find.text('Thêm thiết bị'));
+        await tester.pumpAndSettle();
+
+        // Verify popup modal appeared
+        expect(find.text('Chọn thiết bị luyện tập'), findsOneWidget);
+        expect(find.text('Đang chọn 11/11 thiết bị sẵn có'), findsOneWidget);
+
+        // Tap close button in popup
+        await tester.tap(find.byIcon(Icons.close_rounded).last);
+        await tester.pumpAndSettle();
+
+        // 5. Swipe left to dismiss equipment item (e.g. bw)
+        expect(find.byKey(const ValueKey('eq_bw')), findsOneWidget);
+        await tester.drag(
+          find.byKey(const ValueKey('eq_bw')),
+          const Offset(-500, 0),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const ValueKey('eq_bw')), findsNothing);
+        expect(
+          find.textContaining('Đã hủy chọn: Trọng lượng cơ thể (Bodyweight)'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'AI asks before changing an active workout and can append without losing progress',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);
@@ -1509,6 +1693,100 @@ void main() {
         expect(find.text('Barbell Squat'), findsAtLeast(1));
         expect(find.text('Chi tiết'), findsWidgets);
         expect(find.text('Thêm vào hôm nay'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'FavoriteExercisesScreen clicking "Thêm vào hôm nay" adds exercise to today workout schedule and session',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: FavoriteExercisesScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Thêm vào hôm nay'), findsWidgets);
+
+        // Tap the first 'Thêm vào hôm nay' button (which is Barbell Bench Press)
+        await tester.tap(find.text('Thêm vào hôm nay').first);
+        await tester.pumpAndSettle();
+
+        // Expect SnackBar confirmation
+        expect(
+          find.text('Đã thêm Barbell Bench Press vào lịch tập hôm nay.'),
+          findsOneWidget,
+        );
+
+        // Verify exercise is actually added to workoutScheduleProvider todayWorkout
+        final todaySchedule =
+            container.read(workoutScheduleProvider).todayWorkout;
+        expect(todaySchedule, isNotNull);
+        expect(
+          todaySchedule!.plannedExercises.map((e) => e.name),
+          contains('Barbell Bench Press'),
+        );
+
+        // Verify exercise is also added to workoutSessionProvider
+        final session = container.read(workoutSessionProvider);
+        expect(
+          session.exercises.map((e) => e.name),
+          contains('Barbell Bench Press'),
+        );
+      },
+    );
+
+    testWidgets(
+      'FavoriteExercisesScreen adds to today schedule even when today has no prior schedule',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // Clear all schedules for today
+        final now = DateTime.now();
+        final todayStr =
+            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        container
+            .read(workoutScheduleProvider.notifier)
+            .clearSchedulesForDate(todayStr);
+        expect(container.read(workoutScheduleProvider).todayWorkout, isNull);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: FavoriteExercisesScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Thêm vào hôm nay').first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Đã thêm Barbell Bench Press vào lịch tập hôm nay.'),
+          findsOneWidget,
+        );
+
+        final todaySchedule =
+            container.read(workoutScheduleProvider).todayWorkout;
+        expect(todaySchedule, isNotNull);
+        expect(todaySchedule!.date, todayStr);
+        expect(
+          todaySchedule.plannedExercises.map((e) => e.name),
+          contains('Barbell Bench Press'),
+        );
       },
     );
 

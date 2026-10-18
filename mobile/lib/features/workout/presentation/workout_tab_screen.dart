@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/workout_schedule_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
@@ -21,6 +22,17 @@ class WorkoutTabScreen extends ConsumerStatefulWidget {
 
 class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
   String? _openedExerciseId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(authProvider).isAuthenticated) {
+        ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
+      }
+    });
+  }
 
   void _closeOpenedItem() {
     if (_openedExerciseId != null) {
@@ -63,7 +75,9 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
     var startedAddOnWorkout = false;
     for (final exercise in selectedList) {
       startedAddOnWorkout =
-          ref.read(workoutSessionProvider.notifier).addExercise(exercise) ||
+          ref
+              .read(workoutScheduleProvider.notifier)
+              .addExerciseToTodaySchedule(exercise) ||
           startedAddOnWorkout;
     }
     if (startedAddOnWorkout && mounted) {
@@ -377,7 +391,13 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
       body: GestureDetector(
         onTap: _closeOpenedItem,
         behavior: HitTestBehavior.opaque,
-        child: ListView(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (ref.read(authProvider).isAuthenticated) {
+              await ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
+            }
+          },
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
           children: [
             // Hero Workout Card with 3D Flippable Muscle Body Map or Empty State
@@ -865,8 +885,9 @@ class _WorkoutTabScreenState extends ConsumerState<WorkoutTabScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SwipeableExerciseItem extends StatefulWidget {

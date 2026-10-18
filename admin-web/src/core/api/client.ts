@@ -2,6 +2,7 @@ import { env } from '../config/env'
 import { ApiError, type ApiResponse } from './types'
 
 let csrfTokenCache: string | null = null
+let unauthorizedHandler: (() => void) | null = null
 
 export function setCsrfToken(token: string | null): void {
   csrfTokenCache = token
@@ -9,6 +10,13 @@ export function setCsrfToken(token: string | null): void {
 
 export function getCsrfToken(): string | null {
   return csrfTokenCache
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null): () => void {
+  unauthorizedHandler = handler
+  return () => {
+    if (unauthorizedHandler === handler) unauthorizedHandler = null
+  }
 }
 
 export interface RequestOptions extends RequestInit {
@@ -42,6 +50,9 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     if (refreshed) {
       if (csrfRequired && csrfTokenCache) requestHeaders['X-CSRF-Token'] = csrfTokenCache
       response = await fetch(url, { ...customConfig, credentials: 'include', headers: requestHeaders })
+    } else {
+      setCsrfToken(null)
+      unauthorizedHandler?.()
     }
   }
 

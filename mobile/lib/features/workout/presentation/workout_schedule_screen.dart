@@ -13,6 +13,7 @@ import '../data/workout_schedule_planning_repository.dart';
 import '../domain/muscle_models.dart';
 import '../domain/workout_models.dart';
 import 'exercise_library_screen.dart';
+import 'widgets/exercise_thumbnail.dart';
 import 'widgets/flippable_muscle_card.dart';
 
 class WorkoutScheduleScreen extends ConsumerStatefulWidget {
@@ -50,12 +51,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
       if (!mounted) return;
       ref.read(exerciseCatalogControllerProvider.notifier).loadInitial();
       if (ref.read(authProvider).isAuthenticated) {
-        ref
-            .read(workoutScheduleProvider.notifier)
-            .syncFromServer(
-              from: _baseMonday.subtract(const Duration(days: 28)),
-              to: _baseMonday.add(const Duration(days: 62)),
-            );
+        ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
       }
     });
   }
@@ -1846,24 +1842,82 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
         ? '${dateParts[2]}/${dateParts[1]}/${dateParts[0]}'
         : targetDate;
 
-    final nameController = TextEditingController(text: 'Buổi tập tự do');
-    final selectedMuscles = <String>{'Ngực', 'Tay sau'};
-    var duration = 45;
-    var setsCount = 12;
-    const volumeKg = 2000.0;
+    // Check if there was an existing schedule planned for this day
+    final existingSchedule = ref
+        .read(workoutScheduleProvider)
+        .schedules
+        .where((s) => s.date == targetDate)
+        .firstOrNull;
 
-    final availableMuscles = [
-      'Ngực',
-      'Lưng',
-      'Vai',
-      'Tay trước',
-      'Tay sau',
-      'Đùi trước',
-      'Đùi sau',
-      'Mông',
-      'Bụng',
-      'Cardio',
-    ];
+    final List<_ManualLogExercise> loggedExercises = [];
+    if (existingSchedule != null &&
+        existingSchedule.plannedExercises.isNotEmpty) {
+      for (final p in existingSchedule.plannedExercises) {
+        var pSets = 3;
+        var pReps = 10;
+        final parts = p.setsReps.split(RegExp(r'[xX*]'));
+        if (parts.isNotEmpty) {
+          pSets = int.tryParse(parts[0].trim()) ?? 3;
+        }
+        if (parts.length > 1) {
+          final repDigits = parts[1].split(RegExp(r'[^0-9]')).firstWhere(
+                (s) => s.isNotEmpty,
+                orElse: () => '10',
+              );
+          pReps = int.tryParse(repDigits) ?? 10;
+        }
+
+        ExerciseDefinition? def;
+        for (final ex in exerciseCatalog) {
+          if (ex.name.toLowerCase().trim() == p.name.toLowerCase().trim() ||
+              ex.nameVi.toLowerCase().trim() == p.name.toLowerCase().trim()) {
+            def = ex;
+            break;
+          }
+        }
+        def ??= ExerciseDefinition(
+          id: 'manual_${p.name.hashCode}',
+          name: p.name,
+          nameVi: p.name,
+          primaryMuscle: p.primaryMuscle ?? 'Toàn thân',
+          primaryMuscleKey: 'chest',
+          secondaryMuscles: const [],
+          equipment: EquipmentType.bodyweight,
+          description: '',
+          instructions: const [],
+        );
+        loggedExercises.add(
+          _ManualLogExercise(
+            exercise: def,
+            sets: pSets > 0 ? pSets : 3,
+            reps: pReps > 0 ? pReps : 10,
+          ),
+        );
+      }
+    }
+
+    final initialName =
+        existingSchedule != null && existingSchedule.title.isNotEmpty
+            ? existingSchedule.title
+            : 'Buổi tập tự do';
+    final nameController = TextEditingController(text: initialName);
+
+    final selectedMuscles = <String>{
+      if (loggedExercises.isNotEmpty)
+        ...loggedExercises.map((e) => e.exercise.primaryMuscle)
+      else ...[
+        'Ngực',
+        'Tay sau',
+      ],
+    };
+
+    var setsCount = loggedExercises.isNotEmpty
+        ? loggedExercises.fold(0, (sum, e) => sum + e.sets)
+        : 12;
+    var duration = loggedExercises.isNotEmpty
+        ? (setsCount * 3).clamp(20, 180)
+        : 45;
+    const volumeKg = 2000.0;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1872,10 +1926,41 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (modalContext, setModalState) {
+            void syncStats() {
+              if (loggedExercises.isNotEmpty) {
+                setsCount = loggedExercises.fold(0, (sum, e) => sum + e.sets);
+                duration = (setsCount * 3).clamp(20, 180);
+                for (final ex in loggedExercises) {
+                  if (ex.exercise.primaryMuscle.isNotEmpty &&
+                      !selectedMuscles.contains(ex.exercise.primaryMuscle)) {
+                    selectedMuscles.add(ex.exercise.primaryMuscle);
+                  }
+                }
+              }
+            }
+
+            Future<void> openQuickPicker() async {
+              final picked = await _showExercisePickerModal(context, null);
+              if (picked != null) {
+                setModalState(() {
+                  if (!loggedExercises.any((e) => e.exercise.id == picked.id)) {
+                    loggedExercises.add(
+                      _ManualLogExercise(
+                        exercise: picked,
+                        sets: 3,
+                        reps: 10,
+                      ),
+                    );
+                    syncStats();
+                  }
+                });
+              }
+            }
+
             return SafeArea(
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(modalContext).height * 0.88,
+                  maxHeight: MediaQuery.sizeOf(modalContext).height * 0.90,
                 ),
                 padding: EdgeInsets.fromLTRB(
                   20,
@@ -1890,66 +1975,69 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                   ),
                   border: Border.all(color: AppColors.borderDefault),
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppColors.borderDefault,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.borderDefault,
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.cyan.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.edit_note_rounded,
-                              color: AppColors.cyan,
-                              size: 24,
-                            ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.cyan.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Ghi lại lịch đã tập bằng tay',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Ngày $displayDate',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.cyan,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          child: const Icon(
+                            Icons.edit_note_rounded,
+                            color: AppColors.cyan,
+                            size: 24,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Workout Name
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Ghi lại lịch đã tập bằng tay',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Ngày $displayDate',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.cyan,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Workout Name
                       const Text(
                         'TÊN BUỔI TẬP',
                         style: TextStyle(
@@ -1983,12 +2071,12 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
 
-                      // Target Muscles
-                      const Text(
-                        'NHÓM CƠ ĐÃ TẬP',
-                        style: TextStyle(
+                      // Exercises section
+                      Text(
+                        'CÁC BÀI TẬP ĐÃ TẬP (${loggedExercises.length})',
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textTertiary,
@@ -1996,53 +2084,80 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: availableMuscles.map((muscle) {
-                          final isSelected = selectedMuscles.contains(muscle);
-                          return FilterChip(
-                            label: Text(muscle),
-                            selected: isSelected,
-                            onSelected: (val) {
-                              setModalState(() {
-                                if (val) {
-                                  selectedMuscles.add(muscle);
-                                } else {
-                                  selectedMuscles.remove(muscle);
-                                }
-                              });
-                            },
-                            selectedColor: AppColors.cyan.withValues(
-                              alpha: 0.2,
-                            ),
-                            checkmarkColor: AppColors.cyan,
-                            labelStyle: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected
-                                  ? AppColors.cyan
-                                  : Colors.white70,
-                            ),
-                            backgroundColor: AppColors.surfaceElevated,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.cyan
-                                    : AppColors.borderDefault,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 18),
 
-                      // Stats Row: Duration & Sets
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
+                      if (loggedExercises.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.borderDefault,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.fitness_center_rounded,
+                                size: 28,
+                                color: AppColors.textTertiary,
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Chưa có bài tập nào được chọn',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Chọn các bài tập có sẵn trong app để ghi lại chi tiết số set, số rep',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Center(
+                                child: OutlinedButton.icon(
+                                  onPressed: openQuickPicker,
+                                  icon: const Icon(
+                                    Icons.add_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text('Thêm bài tập'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.cyan,
+                                    side: const BorderSide(
+                                      color: AppColors.cyan,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else ...[
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: loggedExercises.length,
+                          itemBuilder: (context, exIndex) {
+                            final exItem = loggedExercises[exIndex];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.surfaceElevated,
@@ -2054,135 +2169,356 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'THỜI GIAN',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () {
-                                          if (duration > 15) {
-                                            setModalState(() => duration -= 15);
-                                          }
-                                        },
-                                        icon: const Icon(
-                                          Icons.remove_circle_outline,
-                                          size: 20,
-                                          color: AppColors.textSecondary,
+                                      Container(
+                                        width: 22,
+                                        height: 22,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surfaceStrong,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${exIndex + 1}',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.textSecondary,
+                                          ),
                                         ),
                                       ),
-                                      Text(
-                                        '$duration phút',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
+                                      const SizedBox(width: 8),
+                                      ExerciseThumbnail(
+                                        exerciseId: exItem.exercise.id,
+                                        name: exItem.exercise.name,
+                                        imageUrl: exItem.exercise.thumbnailUrl,
+                                        size: 38,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              exItem.exercise.nameVi.isNotEmpty
+                                                  ? exItem.exercise.nameVi
+                                                  : exItem.exercise.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 1.5,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.cyan
+                                                        .withValues(
+                                                      alpha: 0.15,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    exItem.exercise.primaryMuscle,
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: AppColors.cyan,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    exItem.exercise.name,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 10.5,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       IconButton(
-                                        padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
-                                        onPressed: () {
-                                          if (duration < 180) {
-                                            setModalState(() => duration += 15);
-                                          }
-                                        },
+                                        padding: const EdgeInsets.all(4),
                                         icon: const Icon(
-                                          Icons.add_circle_outline,
-                                          size: 20,
-                                          color: AppColors.cyan,
+                                          Icons.close_rounded,
+                                          size: 18,
+                                          color: AppColors.error,
                                         ),
+                                        onPressed: () {
+                                          setModalState(() {
+                                            loggedExercises.removeAt(exIndex);
+                                            syncStats();
+                                          });
+                                        },
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceElevated,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: AppColors.borderDefault,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'SỐ HIỆP',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.textTertiary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () {
-                                          if (setsCount > 1) {
-                                            setModalState(() => setsCount -= 1);
-                                          }
-                                        },
-                                        icon: const Icon(
-                                          Icons.remove_circle_outline,
-                                          size: 20,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                      Text(
-                                        '$setsCount hiệp',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () {
-                                          if (setsCount < 50) {
-                                            setModalState(() => setsCount += 1);
-                                          }
-                                        },
-                                        icon: const Icon(
-                                          Icons.add_circle_outline,
-                                          size: 20,
-                                          color: AppColors.cyan,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
+                                  const SizedBox(height: 10),
 
-                      // Submit button
+                                  // Stepper Row: Số sets & Số reps
+                                  Row(
+                                    children: [
+                                      // SỐ SETS
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.surfaceStrong,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: AppColors.borderDefault,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              InkWell(
+                                                onTap: () {
+                                                  if (exItem.sets > 1) {
+                                                    setModalState(() {
+                                                      exItem.sets--;
+                                                      syncStats();
+                                                    });
+                                                  }
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors
+                                                        .surfaceElevated,
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.remove,
+                                                    size: 14,
+                                                    color: AppColors
+                                                        .textSecondary,
+                                                  ),
+                                                ),
+                                              ),
+                                              Column(
+                                                children: [
+                                                  Text(
+                                                    '${exItem.sets} Sets',
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const Text(
+                                                    'Số hiệp',
+                                                    style: TextStyle(
+                                                      fontSize: 9.5,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              InkWell(
+                                                onTap: () {
+                                                  if (exItem.sets < 30) {
+                                                    setModalState(() {
+                                                      exItem.sets++;
+                                                      syncStats();
+                                                    });
+                                                  }
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.cyan
+                                                        .withValues(
+                                                      alpha: 0.2,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.add,
+                                                    size: 14,
+                                                    color: AppColors.cyan,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+
+                                      // SỐ REPS
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.surfaceStrong,
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: AppColors.borderDefault,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              InkWell(
+                                                onTap: () {
+                                                  if (exItem.reps > 1) {
+                                                    setModalState(() {
+                                                      exItem.reps--;
+                                                      syncStats();
+                                                    });
+                                                  }
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors
+                                                        .surfaceElevated,
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.remove,
+                                                    size: 14,
+                                                    color: AppColors
+                                                        .textSecondary,
+                                                  ),
+                                                ),
+                                              ),
+                                              Column(
+                                                children: [
+                                                  Text(
+                                                    '${exItem.reps} Reps',
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                  const Text(
+                                                    'Số lần/hiệp',
+                                                    style: TextStyle(
+                                                      fontSize: 9.5,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              InkWell(
+                                                onTap: () {
+                                                  if (exItem.reps < 100) {
+                                                    setModalState(() {
+                                                      exItem.reps++;
+                                                      syncStats();
+                                                    });
+                                                  }
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.cyan
+                                                        .withValues(
+                                                      alpha: 0.2,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(6),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.add,
+                                                    size: 14,
+                                                    color: AppColors.cyan,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        Center(
+                          child: OutlinedButton.icon(
+                            onPressed: openQuickPicker,
+                            icon: const Icon(Icons.add_rounded, size: 16),
+                            label: const Text('Thêm bài tập'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.cyan,
+                              side: const BorderSide(color: AppColors.cyan),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Submit button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -2191,16 +2527,45 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                             final title = nameController.text.trim().isEmpty
                                 ? 'Buổi tập tự do'
                                 : nameController.text.trim();
+
+                            final historyExercises = loggedExercises.map((e) {
+                              return HistoryExerciseLog(
+                                exerciseId: e.exercise.id,
+                                exerciseName: e.exercise.nameVi.isNotEmpty
+                                    ? e.exercise.nameVi
+                                    : e.exercise.name,
+                                primaryMuscle: e.exercise.primaryMuscle,
+                                secondaryMuscles: e.exercise.secondaryMuscles,
+                                sets: List.generate(
+                                  e.sets,
+                                  (idx) => HistorySetLog(
+                                    setNumber: idx + 1,
+                                    weightKg: 25.0,
+                                    reps: e.reps,
+                                  ),
+                                ),
+                              );
+                            }).toList();
+
+                            final calculatedVolume = loggedExercises.isNotEmpty
+                                ? loggedExercises.fold(
+                                    0.0,
+                                    (sum, e) =>
+                                        sum + (e.sets * e.reps * 25.0),
+                                  )
+                                : volumeKg;
+
                             ref
                                 .read(workoutScheduleProvider.notifier)
                                 .recordWorkoutCompletion(
                                   workoutName: title,
                                   durationMinutes: duration,
-                                  totalVolumeKg: volumeKg,
+                                  totalVolumeKg: calculatedVolume,
                                   completedSets: setsCount,
                                   prCount: 0,
                                   date: targetDate,
                                   targetMuscles: selectedMuscles.toList(),
+                                  exercises: historyExercises,
                                 );
                             HapticFeedback.heavyImpact();
                             Navigator.pop(modalContext);
@@ -2234,12 +2599,11 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                     ],
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    );
+              );
+            },
+          );
+        },
+      );
   }
 
   @override
@@ -3207,4 +3571,16 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
       ),
     );
   }
+}
+
+class _ManualLogExercise {
+  _ManualLogExercise({
+    required this.exercise,
+    this.sets = 3,
+    this.reps = 10,
+  });
+
+  final ExerciseDefinition exercise;
+  int sets;
+  int reps;
 }

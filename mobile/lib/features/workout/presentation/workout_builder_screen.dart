@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -741,15 +742,59 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
     );
   }
 
-  void _moveExercise(int dayIndex, int exIndex, int direction) {
+  void _reorderExercise(int dayIndex, int oldIndex, int newIndex) {
     if (dayIndex < 0 || dayIndex >= _days.length) return;
     final day = _days[dayIndex];
-    final targetIndex = exIndex + direction;
-    if (targetIndex < 0 || targetIndex >= day.exercises.length) return;
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final item = day.exercises.removeAt(oldIndex);
+      day.exercises.insert(newIndex, item);
+    });
+  }
+
+  Future<void> _swapExercise(int dayIndex, int exIndex) async {
+    if (dayIndex < 0 || dayIndex >= _days.length) return;
+    final day = _days[dayIndex];
+    if (exIndex < 0 || exIndex >= day.exercises.length) return;
+    final oldModel = day.exercises[exIndex];
+
+    final dynamic result;
+    if (GoRouter.maybeOf(context) != null) {
+      result = await context.push<dynamic>(
+        '/workout/library?select=true&multi=false&title=${Uri.encodeComponent('Thay bài: ${oldModel.exercise.nameVi.isNotEmpty ? oldModel.exercise.nameVi : oldModel.exercise.name}')}',
+      );
+    } else {
+      result = await Navigator.of(context).push<dynamic>(
+        MaterialPageRoute(
+          builder: (context) => ExerciseLibraryScreen(
+            isPicker: true,
+            isMultiSelect: false,
+            title: 'Thay bài: ${oldModel.exercise.nameVi.isNotEmpty ? oldModel.exercise.nameVi : oldModel.exercise.name}',
+          ),
+        ),
+      );
+    }
+
+    if (!mounted || result == null) return;
+    final ExerciseDefinition selected;
+    if (result is ExerciseDefinition) {
+      selected = result;
+    } else if (result is List && result.isNotEmpty && result.first is ExerciseDefinition) {
+      selected = result.first as ExerciseDefinition;
+    } else {
+      return;
+    }
 
     setState(() {
-      final item = day.exercises.removeAt(exIndex);
-      day.exercises.insert(targetIndex, item);
+      day.exercises[exIndex] = _ExerciseBuilderModel(
+        exercise: selected,
+        targetSets: oldModel.targetSets,
+        targetRepsMin: oldModel.targetRepsMin,
+        targetRepsMax: oldModel.targetRepsMax,
+        restSeconds: oldModel.restSeconds,
+      );
     });
   }
 
@@ -1376,11 +1421,12 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
         backgroundColor: AppColors.backgroundDeep,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        titleSpacing: 0,
         title: const Text(
           'Workout Builder',
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            fontSize: 18,
+            fontSize: 17,
             color: AppColors.textPrimary,
           ),
         ),
@@ -1388,35 +1434,38 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
           TextButton.icon(
             style: TextButton.styleFrom(
               foregroundColor: AppColors.textSecondary,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: () => _startNewProgram(),
-            icon: const Icon(Icons.restart_alt_rounded, size: 18),
+            icon: const Icon(Icons.refresh_rounded, size: 16),
             label: const Text(
               'Tạo mới',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
+          const SizedBox(width: 4),
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size(64, 36),
+                minimumSize: const Size(56, 34),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
+                  horizontal: 10,
+                  vertical: 6,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               onPressed: _saveProgram,
-              icon: const Icon(Icons.check_rounded, size: 18),
+              icon: const Icon(Icons.check_rounded, size: 16),
               label: const Text(
                 'Lưu',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
           ),
@@ -1506,17 +1555,10 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
             // ── 1. PRESET TEMPLATES FOR BEGINNERS BANNER ──────────────────────
             Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.surfaceElevated,
-                    AppColors.violet.withValues(alpha: 0.16),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: AppColors.violet.withValues(alpha: 0.35),
+                  color: AppColors.borderDefault,
                 ),
               ),
               child: Column(
@@ -1529,12 +1571,13 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                         Container(
                           padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            color: AppColors.violet.withValues(alpha: 0.25),
+                            color: AppColors.surfaceStrong,
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.borderDefault),
                           ),
                           child: const Icon(
                             Icons.auto_awesome_rounded,
-                            color: AppColors.violet,
+                            color: AppColors.primary,
                             size: 18,
                           ),
                         ),
@@ -1545,18 +1588,22 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Text(
-                                    'Mẫu giáo án chuẩn cho người mới',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13.5,
-                                      color: AppColors.textPrimary,
+                                  Flexible(
+                                    child: Text(
+                                      'Mẫu giáo án chuẩn cho người mới',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13.5,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   SizedBox(width: 6),
                                   _BadgeTag(
                                     text: 'Gợi ý',
-                                    color: AppColors.green,
+                                    color: AppColors.primary,
                                   ),
                                 ],
                               ),
@@ -1567,6 +1614,8 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                   fontSize: 11.5,
                                   color: AppColors.textSecondary,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -1602,10 +1651,8 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                               icon: Icons.accessibility_new_rounded,
                               title: '3 Buổi Toàn thân',
                               badge: 'Khuyên dùng #1',
-                              badgeColor: AppColors.green,
                               daysCount: '3 buổi / tuần',
                               targetMuscle: 'Toàn thân • Tăng cơ toàn diện',
-                              accentColor: AppColors.green,
                               isSelected: _selectedType == 'FULL_BODY',
                               onTap: () => _applyPreset('FULL_BODY'),
                             ),
@@ -1614,10 +1661,8 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                               icon: Icons.fitness_center_rounded,
                               title: '4 Buổi Thân trên / dưới',
                               badge: 'Upper - Lower',
-                              badgeColor: AppColors.blue,
                               daysCount: '4 buổi / tuần',
                               targetMuscle: 'Cân bằng thân trên & dưới',
-                              accentColor: AppColors.blue,
                               isSelected: _selectedType == 'UPPER_LOWER',
                               onTap: () => _applyPreset('UPPER_LOWER'),
                             ),
@@ -1626,10 +1671,8 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                               icon: Icons.flash_on_rounded,
                               title: '3 Buổi PPL',
                               badge: 'PPL Tăng cơ',
-                              badgeColor: AppColors.orange,
                               daysCount: '3 buổi / tuần',
                               targetMuscle: 'Đẩy • Kéo • Chân & Bụng',
-                              accentColor: AppColors.orange,
                               isSelected: _selectedType == 'PPL',
                               onTap: () => _applyPreset('PPL'),
                             ),
@@ -1647,7 +1690,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: AppColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppColors.borderDefault),
               ),
@@ -1672,7 +1715,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                       fillColor: AppColors.surfaceStrong,
                       prefixIcon: const Icon(
                         Icons.edit_note_rounded,
-                        color: AppColors.primary,
+                        color: AppColors.iconSecondary,
                         size: 22,
                       ),
                       border: OutlineInputBorder(
@@ -1719,7 +1762,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                       fillColor: AppColors.surfaceStrong,
                       prefixIcon: const Icon(
                         Icons.splitscreen_rounded,
-                        color: AppColors.blue,
+                        color: AppColors.iconSecondary,
                         size: 20,
                       ),
                       border: OutlineInputBorder(
@@ -1780,7 +1823,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                           icon: Icons.calendar_today_rounded,
                           label: 'Số buổi',
                           value: '${_days.length} ngày',
-                          color: AppColors.primary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1789,7 +1832,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                           icon: Icons.fitness_center_rounded,
                           label: 'Tổng bài tập',
                           value: '${_calculateTotalExercises()} bài',
-                          color: AppColors.blue,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1798,7 +1841,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                           icon: Icons.timer_outlined,
                           label: 'Thời lượng/buổi',
                           value: '~45-50p',
-                          color: AppColors.cyan,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -1815,8 +1858,8 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                 Row(
                   children: [
                     Container(
-                      width: 4,
-                      height: 16,
+                      width: 3.5,
+                      height: 15,
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(2),
@@ -1839,15 +1882,15 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
+                      horizontal: 8,
                       vertical: 4,
                     ),
                   ),
-                  icon: const Icon(Icons.add_circle_outline_rounded, size: 17),
+                  icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
                   label: const Text(
                     'Thêm buổi',
                     style: TextStyle(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       fontSize: 12.5,
                     ),
                   ),
@@ -1858,7 +1901,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
 
             // Horizontal Day Pills using ChoiceChip for clean test & visual compatibility
             SizedBox(
-              height: 48,
+              height: 44,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _days.length,
@@ -1867,24 +1910,29 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                   final day = _days[index];
                   final isSelected = index == _activeDayIndex;
                   return ChoiceChip(
+                    showCheckmark: false,
                     label: Text(
                       'Buổi ${day.dayNumber}',
                       style: TextStyle(
                         fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                            ? FontWeight.w800
+                            : FontWeight.w600,
                         color: isSelected
                             ? Colors.white
                             : AppColors.textSecondary,
                       ),
                     ),
                     selected: isSelected,
-                    selectedColor: AppColors.primary,
-                    backgroundColor: AppColors.surface,
+                    selectedColor: AppColors.primarySoft,
+                    backgroundColor: AppColors.surfaceStrong,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     side: BorderSide(
                       color: isSelected
                           ? AppColors.primary
                           : AppColors.borderDefault,
+                      width: isSelected ? 1.4 : 1.0,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -2004,18 +2052,18 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
+                                color: AppColors.surfaceStrong,
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.35),
+                                  color: AppColors.borderDefault,
                                 ),
                               ),
                               child: Text(
                                 m,
                                 style: const TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.primaryLight,
-                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -2111,385 +2159,32 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                         ),
                       )
                     else
-                      ListView.builder(
+                      ReorderableListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
+                        buildDefaultDragHandles: false,
+                        onReorder: (oldIndex, newIndex) => _reorderExercise(
+                          _activeDayIndex,
+                          oldIndex,
+                          newIndex,
+                        ),
                         itemCount: currentDay.exercises.length,
                         itemBuilder: (context, exIndex) {
                           final exModel = currentDay.exercises[exIndex];
-                          final isFirst = exIndex == 0;
-                          final isLast = exIndex == currentDay.exercises.length - 1;
-
-                          return Container(
-                            key: ValueKey('ex_${exModel.exercise.id}_$exIndex'),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceStrong,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: AppColors.borderDefault,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Exercise Header: Order Badge + Thumbnail + Name + Move/Delete
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 22,
-                                      height: 22,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceElevated,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: AppColors.borderStrong,
-                                        ),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '${exIndex + 1}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    ExerciseThumbnail(
-                                      exerciseId: exModel.exercise.id,
-                                      name: exModel.exercise.name,
-                                      imageUrl: exModel.exercise.thumbnailUrl,
-                                      size: 44,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            exModel.exercise.nameVi.isNotEmpty
-                                                ? exModel.exercise.nameVi
-                                                : exModel.exercise.name,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 13.5,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 1.5,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primarySoft,
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  exModel.exercise.primaryMuscle,
-                                                  style: const TextStyle(
-                                                    fontSize: 10,
-                                                    color: AppColors.primaryLight,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  exModel.exercise.name,
-                                                  style: const TextStyle(
-                                                    fontSize: 11,
-                                                    color: AppColors.textTertiary,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    // Move Up / Down Buttons
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(
-                                        Icons.arrow_upward_rounded,
-                                        size: 17,
-                                        color: AppColors.textTertiary,
-                                      ),
-                                      onPressed: isFirst
-                                          ? null
-                                          : () => _moveExercise(
-                                                _activeDayIndex,
-                                                exIndex,
-                                                -1,
-                                              ),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(
-                                        Icons.arrow_downward_rounded,
-                                        size: 17,
-                                        color: AppColors.textTertiary,
-                                      ),
-                                      onPressed: isLast
-                                          ? null
-                                          : () => _moveExercise(
-                                                _activeDayIndex,
-                                                exIndex,
-                                                1,
-                                              ),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(
-                                        Icons.close_rounded,
-                                        size: 18,
-                                        color: AppColors.error,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          currentDay.exercises.removeAt(
-                                            exIndex,
-                                          );
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-
-                                // Quick Beginner Goal Pills
-                                SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      _GoalPresetChip(
-                                        label: '🎯 Tăng cơ (3x10-12)',
-                                        accentColor: AppColors.blue,
-                                        selected:
-                                            exModel.targetSets == 3 &&
-                                            exModel.targetRepsMin == 10 &&
-                                            exModel.targetRepsMax == 12,
-                                        onTap: () {
-                                          setState(() {
-                                            exModel.targetSets = 3;
-                                            exModel.targetRepsMin = 10;
-                                            exModel.targetRepsMax = 12;
-                                            exModel.restSeconds = 90;
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(width: 6),
-                                      _GoalPresetChip(
-                                        label: '⚡ Sức mạnh (4x6-8)',
-                                        accentColor: AppColors.amber,
-                                        selected:
-                                            exModel.targetSets == 4 &&
-                                            exModel.targetRepsMin == 6 &&
-                                            exModel.targetRepsMax == 8,
-                                        onTap: () {
-                                          setState(() {
-                                            exModel.targetSets = 4;
-                                            exModel.targetRepsMin = 6;
-                                            exModel.targetRepsMax = 8;
-                                            exModel.restSeconds = 120;
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(width: 6),
-                                      _GoalPresetChip(
-                                        label: '🔥 Săn chắc (3x15)',
-                                        accentColor: AppColors.orange,
-                                        selected:
-                                            exModel.targetSets == 3 &&
-                                            exModel.targetRepsMin == 12 &&
-                                            exModel.targetRepsMax == 15,
-                                        onTap: () {
-                                          setState(() {
-                                            exModel.targetSets = 3;
-                                            exModel.targetRepsMin = 12;
-                                            exModel.targetRepsMax = 15;
-                                            exModel.restSeconds = 60;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-
-                                // Stepper Boxes for Sets, Reps Min, Reps Max
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _ConfigBox(
-                                        label: 'Số Sets',
-                                        value: '${exModel.targetSets}',
-                                        onDecrement: () {
-                                          if (exModel.targetSets > 1) {
-                                            setState(
-                                              () => exModel.targetSets--,
-                                            );
-                                          }
-                                        },
-                                        onIncrement: () {
-                                          setState(() => exModel.targetSets++);
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _ConfigBox(
-                                        label: 'Reps Min',
-                                        value: '${exModel.targetRepsMin}',
-                                        onDecrement: () {
-                                          if (exModel.targetRepsMin > 1) {
-                                            setState(
-                                              () => exModel.targetRepsMin--,
-                                            );
-                                          }
-                                        },
-                                        onIncrement: () {
-                                          setState(() {
-                                            exModel.targetRepsMin++;
-                                            if (exModel.targetRepsMin >
-                                                exModel.targetRepsMax) {
-                                              exModel.targetRepsMax =
-                                                  exModel.targetRepsMin;
-                                            }
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _ConfigBox(
-                                        label: 'Reps Max',
-                                        value: '${exModel.targetRepsMax}',
-                                        onDecrement: () {
-                                          if (exModel.targetRepsMax >
-                                              exModel.targetRepsMin) {
-                                            setState(
-                                              () => exModel.targetRepsMax--,
-                                            );
-                                          }
-                                        },
-                                        onIncrement: () {
-                                          setState(
-                                            () => exModel.targetRepsMax++,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-
-                                // Rest Timer Quick Selector
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surfaceElevated,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: AppColors.borderDefault,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.timer_outlined,
-                                        size: 15,
-                                        color: AppColors.cyan,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      const Text(
-                                        'Nghỉ giữa hiệp:',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          color: AppColors.textSecondary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      for (final seconds in [45, 60, 90, 120])
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 6),
-                                          child: InkWell(
-                                            onTap: () {
-                                              setState(
-                                                () =>
-                                                    exModel.restSeconds = seconds,
-                                              );
-                                            },
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                            child: AnimatedContainer(
-                                              duration: const Duration(
-                                                milliseconds: 150,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 3.5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: exModel.restSeconds ==
-                                                        seconds
-                                                    ? AppColors.cyan
-                                                    : AppColors.surfaceStrong,
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                                border: Border.all(
-                                                  color: exModel.restSeconds ==
-                                                          seconds
-                                                      ? AppColors.cyan
-                                                      : AppColors.borderDefault,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                '${seconds}s',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight:
-                                                      exModel.restSeconds ==
-                                                              seconds
-                                                          ? FontWeight.w800
-                                                          : FontWeight.w500,
-                                                  color:
-                                                      exModel.restSeconds ==
-                                                              seconds
-                                                          ? Colors.black
-                                                          : AppColors
-                                                              .textSecondary,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                          return ReorderableDelayedDragStartListener(
+                            key: ValueKey('builder_drag_${exModel.exercise.id}_$exIndex'),
+                            index: exIndex,
+                            child: _SwipeableBuilderExerciseCard(
+                              key: ValueKey('builder_swipe_${exModel.exercise.id}_$exIndex'),
+                              index: exIndex,
+                              exModel: exModel,
+                              onSwap: () => _swapExercise(_activeDayIndex, exIndex),
+                              onDelete: () {
+                                setState(() {
+                                  currentDay.exercises.removeAt(exIndex);
+                                });
+                              },
+                              onChanged: () => setState(() {}),
                             ),
                           );
                         },
@@ -2501,17 +2196,10 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.violet.withValues(alpha: 0.12),
-                              AppColors.surfaceStrong,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: AppColors.surfaceElevated,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.violet.withValues(alpha: 0.3),
+                            color: AppColors.borderDefault,
                           ),
                         ),
                         child: Column(
@@ -2521,7 +2209,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                               children: [
                                 Icon(
                                   Icons.auto_awesome_rounded,
-                                  color: AppColors.violet,
+                                  color: AppColors.primary,
                                   size: 17,
                                 ),
                                 SizedBox(width: 8),
@@ -2534,7 +2222,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 13,
-                                          color: AppColors.violet,
+                                          color: AppColors.textPrimary,
                                         ),
                                       ),
                                       Text(
@@ -2562,7 +2250,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                       vertical: 7,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.surface,
+                                      color: AppColors.surfaceStrong,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: AppColors.borderDefault,
@@ -2610,12 +2298,12 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                             vertical: 3.5,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.violetSoft,
+                                            color: AppColors.primarySoft,
                                             borderRadius:
                                                 BorderRadius.circular(6),
                                             border: Border.all(
-                                              color: AppColors.violet.withValues(
-                                                alpha: 0.4,
+                                              color: AppColors.primary.withValues(
+                                                alpha: 0.35,
                                               ),
                                             ),
                                           ),
@@ -2624,7 +2312,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                               Icon(
                                                 Icons.add,
                                                 size: 13,
-                                                color: AppColors.violet,
+                                                color: AppColors.primary,
                                               ),
                                               SizedBox(width: 2),
                                               Text(
@@ -2632,7 +2320,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                                                 style: TextStyle(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w800,
-                                                  color: AppColors.violet,
+                                                  color: AppColors.primary,
                                                 ),
                                               ),
                                             ],
@@ -2658,15 +2346,362 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
   }
 }
 
+class _SwipeableBuilderExerciseCard extends StatefulWidget {
+  const _SwipeableBuilderExerciseCard({
+    super.key,
+    required this.index,
+    required this.exModel,
+    required this.onSwap,
+    required this.onDelete,
+    this.onChanged,
+  });
+
+  final int index;
+  final _ExerciseBuilderModel exModel;
+  final VoidCallback onSwap;
+  final VoidCallback onDelete;
+  final VoidCallback? onChanged;
+
+  @override
+  State<_SwipeableBuilderExerciseCard> createState() =>
+      _SwipeableBuilderExerciseCardState();
+}
+
+class _SwipeableBuilderExerciseCardState
+    extends State<_SwipeableBuilderExerciseCard> {
+  double _dragOffset = 0.0;
+  static const double _maxActionWidth = 140.0;
+
+  void _reset() {
+    if (_dragOffset != 0.0) {
+      setState(() => _dragOffset = 0.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
+          children: [
+            // Revealed action buttons behind card
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceStrong,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Thay bài tập
+                    Material(
+                      color: const Color(0xFF2563EB),
+                      child: InkWell(
+                        onTap: () {
+                          _reset();
+                          widget.onSwap();
+                        },
+                        child: const SizedBox(
+                          width: 70,
+                          height: double.infinity,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Thay bài',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Xóa bài tập
+                    Material(
+                      color: const Color(0xFFDC2626),
+                      child: InkWell(
+                        onTap: () {
+                          _reset();
+                          widget.onDelete();
+                        },
+                        child: const SizedBox(
+                          width: 70,
+                          height: double.infinity,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Xóa bài',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Foreground sliding card
+            GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  _dragOffset = (_dragOffset + details.primaryDelta!)
+                      .clamp(-_maxActionWidth, 0.0);
+                });
+              },
+              onHorizontalDragEnd: (details) {
+                setState(() {
+                  if (_dragOffset < -50 ||
+                      (details.primaryVelocity != null &&
+                          details.primaryVelocity! < -200)) {
+                    _dragOffset = -_maxActionWidth;
+                    HapticFeedback.selectionClick();
+                  } else {
+                    _dragOffset = 0.0;
+                  }
+                });
+              },
+              onTap: () {
+                if (_dragOffset < 0) {
+                  _reset();
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                curve: Curves.easeOutCubic,
+                transform: Matrix4.translationValues(_dragOffset, 0, 0),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceStrong,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.borderDefault,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Exercise Header: Order Badge + Thumbnail + Name/Muscle + Drag Handle
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: AppColors.borderStrong,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${widget.index + 1}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ExerciseThumbnail(
+                          exerciseId: widget.exModel.exercise.id,
+                          name: widget.exModel.exercise.name,
+                          imageUrl: widget.exModel.exercise.thumbnailUrl,
+                          size: 44,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.exModel.exercise.nameVi.isNotEmpty
+                                    ? widget.exModel.exercise.nameVi
+                                    : widget.exModel.exercise.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 1.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceElevated,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: AppColors.borderDefault,
+                                        width: 0.6,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      widget.exModel.exercise.primaryMuscle,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      widget.exModel.exercise.name,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textTertiary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Drag indicator handle
+                        ReorderableDragStartListener(
+                          index: widget.index,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceElevated,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.borderDefault,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.drag_indicator_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Stepper Boxes for Sets, Reps Min, Reps Max
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ConfigBox(
+                            label: 'Số Sets',
+                            value: '${widget.exModel.targetSets}',
+                            onDecrement: () {
+                              if (widget.exModel.targetSets > 1) {
+                                setState(() => widget.exModel.targetSets--);
+                                widget.onChanged?.call();
+                              }
+                            },
+                            onIncrement: () {
+                              setState(() => widget.exModel.targetSets++);
+                              widget.onChanged?.call();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ConfigBox(
+                            label: 'Reps Min',
+                            value: '${widget.exModel.targetRepsMin}',
+                            onDecrement: () {
+                              if (widget.exModel.targetRepsMin > 1) {
+                                setState(() => widget.exModel.targetRepsMin--);
+                                widget.onChanged?.call();
+                              }
+                            },
+                            onIncrement: () {
+                              setState(() {
+                                widget.exModel.targetRepsMin++;
+                                if (widget.exModel.targetRepsMin >
+                                    widget.exModel.targetRepsMax) {
+                                  widget.exModel.targetRepsMax =
+                                      widget.exModel.targetRepsMin;
+                                }
+                              });
+                              widget.onChanged?.call();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ConfigBox(
+                            label: 'Reps Max',
+                            value: '${widget.exModel.targetRepsMax}',
+                            onDecrement: () {
+                              if (widget.exModel.targetRepsMax >
+                                  widget.exModel.targetRepsMin) {
+                                setState(() => widget.exModel.targetRepsMax--);
+                                widget.onChanged?.call();
+                              }
+                            },
+                            onIncrement: () {
+                              setState(() => widget.exModel.targetRepsMax++);
+                              widget.onChanged?.call();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PresetTemplateCard extends StatelessWidget {
   const _PresetTemplateCard({
     required this.icon,
     required this.title,
     required this.badge,
-    required this.badgeColor,
     required this.daysCount,
     required this.targetMuscle,
-    required this.accentColor,
     required this.isSelected,
     required this.onTap,
   });
@@ -2674,10 +2709,8 @@ class _PresetTemplateCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String badge;
-  final Color badgeColor;
   final String daysCount;
   final String targetMuscle;
-  final Color accentColor;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -2686,17 +2719,18 @@ class _PresetTemplateCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: 180,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? accentColor.withValues(alpha: 0.15)
-              : AppColors.surface,
+              ? AppColors.primarySoft
+              : AppColors.surfaceStrong,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? accentColor : AppColors.borderDefault,
-            width: isSelected ? 1.5 : 1.0,
+            color: isSelected ? AppColors.primary : AppColors.borderDefault,
+            width: isSelected ? 1.4 : 1.0,
           ),
         ),
         child: Column(
@@ -2707,16 +2741,30 @@ class _PresetTemplateCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.2),
+                    color: isSelected
+                        ? AppColors.primary.withValues(alpha: 0.25)
+                        : AppColors.surfaceElevated,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.4)
+                          : AppColors.borderDefault,
+                    ),
                   ),
-                  child: Icon(icon, size: 16, color: accentColor),
+                  child: Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: _BadgeTag(text: badge, color: badgeColor),
+                    child: _BadgeTag(
+                      text: badge,
+                      color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -2724,10 +2772,10 @@ class _PresetTemplateCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
-                color: AppColors.textPrimary,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -2738,7 +2786,7 @@ class _PresetTemplateCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: accentColor,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -2770,64 +2818,20 @@ class _BadgeTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          fontSize: 9,
+          fontSize: 9.5,
           fontWeight: FontWeight.w800,
           color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _GoalPresetChip extends StatelessWidget {
-  const _GoalPresetChip({
-    required this.label,
-    required this.accentColor,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color accentColor;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected
-              ? accentColor.withValues(alpha: 0.22)
-              : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected ? accentColor : AppColors.borderDefault,
-            width: selected ? 1.2 : 1.0,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-            color: selected ? accentColor : AppColors.textSecondary,
-          ),
         ),
       ),
     );
@@ -2839,18 +2843,18 @@ class _StatBadge extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    required this.color,
+    this.color,
   });
 
   final IconData icon;
   final String label;
   final String value;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
       decoration: BoxDecoration(
         color: AppColors.surfaceStrong,
         borderRadius: BorderRadius.circular(12),
@@ -2858,7 +2862,7 @@ class _StatBadge extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: 16, color: color ?? AppColors.textSecondary),
           const SizedBox(height: 3),
           Text(
             value,

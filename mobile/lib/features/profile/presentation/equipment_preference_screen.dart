@@ -21,10 +21,12 @@ class _EquipmentPreferenceScreenState
   (Color, List<Color>) _getCategoryVisuals(String category) {
     if (category.contains('Tạ tự do')) {
       return (AppColors.primary, [AppColors.primary, AppColors.primaryLight]);
-    } else if (category.contains('Ghế') || category.contains('Khung')) {
+    } else if (category.contains('Ghế') || category.contains('Giá đỡ')) {
       return (Colors.purpleAccent, [Colors.deepPurple, Colors.purpleAccent]);
     } else if (category.contains('Máy') || category.contains('cáp')) {
       return (Colors.cyanAccent, [Colors.blue, Colors.cyanAccent]);
+    } else if (category.contains('Cardio')) {
+      return (AppColors.orange, [AppColors.orange, AppColors.amber]);
     } else {
       return (Colors.greenAccent, [Colors.teal, Colors.greenAccent]);
     }
@@ -241,15 +243,11 @@ class _EquipmentPreferenceScreenState
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? colors.primary.withValues(alpha: 0.1)
-                    : colors.surfaceContainer,
+                color: colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isSelected
-                      ? colors.primary
-                      : colors.outlineVariant.withValues(alpha: 0.35),
-                  width: isSelected ? 1.5 : 1.0,
+                  color: colors.outlineVariant.withValues(alpha: 0.35),
+                  width: 1.0,
                 ),
               ),
               child: InkWell(
@@ -269,7 +267,7 @@ class _EquipmentPreferenceScreenState
                             colors: gradientColors
                                 .map(
                                   (c) => c.withValues(
-                                    alpha: isSelected ? 0.35 : 0.15,
+                                    alpha: 0.15,
                                   ),
                                 )
                                 .toList(),
@@ -278,14 +276,14 @@ class _EquipmentPreferenceScreenState
                           ),
                           border: Border.all(
                             color: accentColor.withValues(
-                              alpha: isSelected ? 0.6 : 0.25,
+                              alpha: 0.25,
                             ),
                           ),
                         ),
                         child: Icon(
                           item.icon,
                           size: 26,
-                          color: isSelected ? colors.primary : accentColor,
+                          color: accentColor,
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -303,9 +301,7 @@ class _EquipmentPreferenceScreenState
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
-                                      color: isSelected
-                                          ? colors.primary
-                                          : colors.onSurface,
+                                      color: colors.onSurface,
                                     ),
                                   ),
                                 ),

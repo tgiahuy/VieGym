@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../core/auth'
+import { env } from '../../core/config/env'
 
 interface AdminSidebarProps {
   onItemClick?: () => void
@@ -153,15 +154,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onItemClick }) => {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              disabled={isLoggingOut}
-              onClick={() => void handleLogout()}
-              className="p-1.5 rounded-lg text-[#8a8d93] hover:text-[#ff5a5f] hover:bg-[#1c1d21] transition-colors duration-150 cursor-pointer disabled:opacity-50"
-              title="Đăng xuất"
-            >
-              <span className="material-symbols-outlined text-lg">logout</span>
-            </button>
+            {env.authDisabled ? (
+              <span className="rounded-md border border-[#f4b740]/30 bg-[#f4b740]/10 px-2 py-1 text-[10px] font-bold text-[#f4b740]">
+                AUTH OFF
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={isLoggingOut}
+                onClick={() => void handleLogout()}
+                className="p-1.5 rounded-lg text-[#8a8d93] hover:text-[#ff5a5f] hover:bg-[#1c1d21] transition-colors duration-150 cursor-pointer disabled:opacity-50"
+                title="Đăng xuất"
+              >
+                <span className="material-symbols-outlined text-lg">logout</span>
+              </button>
+            )}
           </div>
         </div>
       </aside>

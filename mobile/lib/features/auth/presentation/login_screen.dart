@@ -8,6 +8,7 @@ import '../../../shared/widgets/bouncing_icon_button.dart';
 import '../../../shared/widgets/brand_icons.dart';
 import '../../../shared/widgets/social_auth_button.dart';
 import '../../onboarding/application/health_profile_controller.dart';
+import '../../workout/application/workout_schedule_controller.dart';
 import '../application/auth_controller.dart';
 import '../domain/auth_state.dart';
 
@@ -93,6 +94,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Đăng nhập thành công!')));
         final targetRoute = await _resolveTargetRoute();
+        try {
+          await ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
+        } catch (_) {}
         if (mounted) {
           context.go(targetRoute);
         }

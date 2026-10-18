@@ -21,6 +21,17 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(authProvider).isAuthenticated) {
+        ref.read(progressProvider.notifier).fetchWeightLogs();
+        ref.read(healthProfileProvider.notifier).loadProfileFromRemote();
+      }
+    });
+  }
+
   void _showLogWeightDialog(BuildContext context) {
     showLogWeightModal(context, ref);
   }
@@ -36,8 +47,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         : (authState.user?.displayName ?? 'Gia Huy');
     final userEmail = authState.user?.email ?? 'viegym.user@gmail.com';
 
-    final double currentWeight =
-        (healthProfile.weightKg > 0 ? healthProfile.weightKg : 70.2).toDouble();
+    final double currentWeight = progressState.weightLogs.isNotEmpty
+        ? progressState.weightLogs.first.weightKg
+        : (healthProfile.weightKg > 0 ? healthProfile.weightKg : 70.2).toDouble();
     final double targetWeight =
         (healthProfile.targetWeightKg > 0 ? healthProfile.targetWeightKg : 68.0)
             .toDouble();
@@ -61,31 +73,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-        children: [
-          // ==========================================
-          // 1. User Information Card
-          // ==========================================
-          _UserInformationCard(
-            userName: userName,
-            userEmail: userEmail,
-            streakDays: progressState.currentStreakDays,
-            completedWorkouts: progressState.completedWorkoutsThisWeek,
-            onTap: () => context.push('/profile/user'),
-          ),
-          const SizedBox(height: 16),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          if (ref.read(authProvider).isAuthenticated) {
+            await Future.wait([
+              ref.read(healthProfileProvider.notifier).loadProfileFromRemote(),
+              ref.read(progressProvider.notifier).fetchWeightLogs(),
+            ]);
+          }
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          children: [
+            // ==========================================
+            // 1. User Information Card
+            // ==========================================
+            _UserInformationCard(
+              userName: userName,
+              userEmail: userEmail,
+              streakDays: progressState.currentStreakDays,
+              completedWorkouts: progressState.completedWorkoutsThisWeek,
+              onTap: () => context.push('/profile/user'),
+            ),
+            const SizedBox(height: 16),
 
-          // ==========================================
-          // 2. Physical Metrics Section (CHỈ SỐ THỂ CHẤT - 1 Ô NGANG)
-          // ==========================================
-          _PhysicalMetricsSection(
-            weightKg: currentWeight,
-            heightCm: heightCm,
-            bmi: bmi,
-            onEdit: () => context.push('/profile/health'),
-          ),
-          const SizedBox(height: 18),
+            // ==========================================
+            // 2. Physical Metrics Section (CHỈ SỐ THỂ CHẤT - 1 Ô NGANG)
+            // ==========================================
+            _PhysicalMetricsSection(
+              weightKg: currentWeight,
+              heightCm: heightCm,
+              bmi: bmi,
+              weightLogs: progressState.weightLogs,
+              onEdit: () => context.push('/profile/health'),
+            ),
+            const SizedBox(height: 18),
 
           // ==========================================
           // 3. Muscle Group Distribution (ĐẶT BÊN DƯỚI CHỈ SỐ THỂ CHẤT)
@@ -120,8 +142,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -321,16 +344,50 @@ class _PhysicalMetricsSection extends StatelessWidget {
     required this.heightCm,
     required this.bmi,
     required this.onEdit,
+    this.weightLogs = const [],
   });
 
   final double weightKg;
   final double heightCm;
   final double bmi;
   final VoidCallback onEdit;
+  final List<WeightLogItem> weightLogs;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+
+    String changeText = '0.0 kg';
+    Color changeColor = colors.onSurfaceVariant;
+    if (weightLogs.length >= 2) {
+      final diff = weightKg - weightLogs.last.weightKg;
+      if (diff < 0) {
+        changeText = '↓ ${(-diff).toStringAsFixed(1)} kg';
+        changeColor = AppColors.success;
+      } else if (diff > 0) {
+        changeText = '↑ ${diff.toStringAsFixed(1)} kg';
+        changeColor = AppColors.error;
+      }
+    } else if (weightLogs.isNotEmpty) {
+      changeText = 'Hôm nay';
+      changeColor = AppColors.cyan;
+    }
+
+    String bmiCategoryText = 'Bình thường';
+    Color bmiCategoryColor = AppColors.success;
+    if (bmi < 18.5) {
+      bmiCategoryText = 'Nhẹ cân';
+      bmiCategoryColor = AppColors.warning;
+    } else if (bmi < 24.9) {
+      bmiCategoryText = 'Bình thường';
+      bmiCategoryColor = AppColors.success;
+    } else if (bmi < 29.9) {
+      bmiCategoryText = 'Tiền béo phì';
+      bmiCategoryColor = AppColors.warning;
+    } else {
+      bmiCategoryText = 'Béo phì';
+      bmiCategoryColor = AppColors.error;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,8 +451,8 @@ class _PhysicalMetricsSection extends StatelessWidget {
                 child: _PhysicalMetricHorizontalItem(
                   label: 'CÂN NẶNG',
                   value: '${weightKg.toStringAsFixed(1)} kg',
-                  subtitle: '↓ 1.3 kg',
-                  subtitleColor: AppColors.success,
+                  subtitle: changeText,
+                  subtitleColor: changeColor,
                   icon: Icons.monitor_weight_outlined,
                 ),
               ),
@@ -422,9 +479,9 @@ class _PhysicalMetricsSection extends StatelessWidget {
                 child: _PhysicalMetricHorizontalItem(
                   label: 'BMI',
                   value: bmi.toStringAsFixed(1),
-                  subtitle: 'Bình thường',
-                  subtitleColor: AppColors.success,
-                  valueColor: AppColors.success,
+                  subtitle: bmiCategoryText,
+                  subtitleColor: bmiCategoryColor,
+                  valueColor: bmiCategoryColor,
                   icon: Icons.speed_rounded,
                 ),
               ),
@@ -1192,62 +1249,73 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppColors.blue.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.bar_chart_rounded,
-                      size: 16,
-                      color: AppColors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'KHỐI LƯỢNG TẬP THEO NGÀY',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurfaceVariant,
-                          letterSpacing: 0.5,
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: AppColors.blue.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 2),
-                      Row(
+                      child: const Icon(
+                        Icons.bar_chart_rounded,
+                        size: 16,
+                        color: AppColors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            volumeText,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Tổng cả tuần',
+                            'KHỐI LƯỢNG TẬP THEO NGÀY',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w800,
                               color: colors.onSurfaceVariant,
+                              letterSpacing: 0.5,
                             ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                volumeText,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Tổng cả tuần',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -1255,7 +1323,7 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
                 child: const Text(
                   '+8.5% tuần trước',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                     color: AppColors.success,
                   ),
@@ -1434,60 +1502,71 @@ class _PersonalWeightTrendCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: AppColors.cyan.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.trending_down_rounded,
-                      size: 16,
-                      color: AppColors.cyan,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'XU HƯỚNG CÂN NẶNG',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: colors.onSurfaceVariant,
-                          letterSpacing: 0.5,
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: AppColors.cyan.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 2),
-                      Row(
+                      child: const Icon(
+                        Icons.trending_down_rounded,
+                        size: 16,
+                        color: AppColors.cyan,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${currentWeightKg.toStringAsFixed(1)} kg',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'BMI: ${bmi.toStringAsFixed(1)}',
+                            'XU HƯỚNG CÂN NẶNG',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                               color: colors.onSurfaceVariant,
+                              letterSpacing: 0.5,
                             ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Text(
+                                '${currentWeightKg.toStringAsFixed(1)} kg',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'BMI: ${bmi.toStringAsFixed(1)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(

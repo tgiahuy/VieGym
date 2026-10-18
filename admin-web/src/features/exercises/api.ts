@@ -4,6 +4,8 @@ import type { ExerciseItem, ExerciseLevel } from './types'
 interface Page<T> { content: T[]; totalElements: number; page: number; size: number; totalPages: number; hasNext: boolean }
 interface ExerciseDto { id:number; name:string; slug:string; difficulty:string; description:string; instructionSteps:string[]; visibility:string; muscleGroups:{muscleGroupId:number;role:string}[]; equipment:{equipmentId:number;required:boolean}[]; version:number; updatedAt:string }
 
+const PAGE_SIZE = 500
+
 const map = (item: ExerciseDto): ExerciseItem => ({
   id: String(item.id), code: `EX-${String(item.id).padStart(4, '0')}`, nameVn: item.name,
   nameEn: item.name, primaryMuscle: item.muscleGroups[0] ? String(item.muscleGroups[0].muscleGroupId) : '',
@@ -24,7 +26,19 @@ const payload = (item: ExerciseItem) => ({
 })
 
 export const exerciseApi = {
-  async list(): Promise<ExerciseItem[]> { const page = await apiClient<Page<ExerciseDto>>('/admin/exercises?size=500'); return page.content.map(map) },
+  async list(): Promise<ExerciseItem[]> {
+    const firstPage = await apiClient<Page<ExerciseDto>>(`/admin/exercises?page=0&size=${PAGE_SIZE}`)
+
+    if (firstPage.totalPages <= 1) return firstPage.content.map(map)
+
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.totalPages - 1 }, (_, index) =>
+        apiClient<Page<ExerciseDto>>(`/admin/exercises?page=${index + 1}&size=${PAGE_SIZE}`)
+      )
+    )
+
+    return [firstPage, ...remainingPages].flatMap((page) => page.content.map(map))
+  },
   async save(item: ExerciseItem): Promise<ExerciseItem> { const editing = /^\d+$/.test(item.id); return map(await apiClient<ExerciseDto>(editing ? `/admin/exercises/${item.id}` : '/admin/exercises', { method: editing ? 'PUT' : 'POST', csrfRequired: true, body: JSON.stringify(payload(item)) })) },
   async remove(id: string): Promise<void> { await apiClient(`/admin/exercises/${id}`, { method: 'DELETE', csrfRequired: true }) },
 }

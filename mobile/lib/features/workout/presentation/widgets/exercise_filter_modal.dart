@@ -267,6 +267,12 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                     muscleGroup: MuscleGroup.lats,
                   ),
                   _buildMuscleGroupCard(
+                    title: 'Upper Back',
+                    titleVi: 'Cơ lưng trên',
+                    muscleKey: 'Lưng trên',
+                    muscleGroup: MuscleGroup.upperBack,
+                  ),
+                  _buildMuscleGroupCard(
                     title: 'Lower Back',
                     titleVi: 'Lưng dưới',
                     muscleKey: 'Lưng dưới',
@@ -277,6 +283,12 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                     titleVi: 'Cơ cầu vai',
                     muscleKey: 'Cầu vai',
                     muscleGroup: MuscleGroup.traps,
+                  ),
+                  _buildMuscleGroupCard(
+                    title: 'Neck',
+                    titleVi: 'Cơ cổ',
+                    muscleKey: 'Cổ',
+                    muscleGroup: MuscleGroup.neck,
                   ),
                   const SizedBox(height: 12),
 
@@ -331,6 +343,18 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                     titleVi: 'Bắp chân',
                     muscleKey: 'Bắp chân',
                     muscleGroup: MuscleGroup.calves,
+                  ),
+                  _buildMuscleGroupCard(
+                    title: 'Abductors',
+                    titleVi: 'Cơ dạng hông',
+                    muscleKey: 'Dạng hông',
+                    muscleGroup: MuscleGroup.abductors,
+                  ),
+                  _buildMuscleGroupCard(
+                    title: 'Adductors',
+                    titleVi: 'Cơ khép hông',
+                    muscleKey: 'Khép hông',
+                    muscleGroup: MuscleGroup.adductors,
                   ),
                 ],
 
@@ -693,15 +717,11 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected
-            ? colors.primary.withValues(alpha: 0.12)
-            : AppColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected
-              ? colors.primary.withValues(alpha: 0.6)
-              : colors.outlineVariant.withValues(alpha: 0.3),
-          width: isSelected ? 1.2 : 0.8,
+          color: colors.outlineVariant.withValues(alpha: 0.3),
+          width: 0.8,
         ),
       ),
       child: InkWell(
@@ -715,14 +735,12 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? colors.primary.withValues(alpha: 0.2)
-                      : AppColors.surfaceElevated,
+                  color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   _equipmentIcon(equipment.code),
-                  color: isSelected ? colors.primary : Colors.white70,
+                  color: Colors.white70,
                   size: 22,
                 ),
               ),
@@ -734,10 +752,10 @@ class _ExerciseFilterModalState extends ConsumerState<ExerciseFilterModal> {
                   children: [
                     Text(
                       equipment.name,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: isSelected ? colors.primary : Colors.white,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 2),

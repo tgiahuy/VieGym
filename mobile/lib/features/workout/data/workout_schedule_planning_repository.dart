@@ -39,6 +39,12 @@ class WorkoutSchedulePlanningRepository {
     });
   }
 
+  Future<void> deletePersonalProgram(int programId) async {
+    return _guard(() async {
+      await _dio.delete<dynamic>('/api/v1/workout-programs/$programId');
+    });
+  }
+
   Future<WorkoutPlanSource> createPersonalProgram({
     required String name,
     required String programType,

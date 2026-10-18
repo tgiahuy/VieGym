@@ -6,16 +6,17 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/exercise_tag_chip.dart';
 import '../../application/exercise_catalog_controller.dart';
 import '../../application/favorite_exercises_controller.dart';
+import '../../application/workout_schedule_controller.dart';
 import '../../data/exercise_catalog.dart';
 import '../../domain/workout_models.dart';
 
 class FavoriteExercisesSection extends ConsumerWidget {
   const FavoriteExercisesSection({
     super.key,
-    required this.onAddExerciseToSession,
+    this.onAddExerciseToSession,
   });
 
-  final ValueChanged<ExerciseDefinition> onAddExerciseToSession;
+  final ValueChanged<ExerciseDefinition>? onAddExerciseToSession;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -222,7 +223,23 @@ class FavoriteExercisesSection extends ConsumerWidget {
                         child: FilledButton.tonalIcon(
                           onPressed: () {
                             HapticFeedback.lightImpact();
-                            onAddExerciseToSession(exercise);
+                            if (onAddExerciseToSession != null) {
+                              onAddExerciseToSession!(exercise);
+                            } else {
+                              final startedAddOn = ref
+                                  .read(workoutScheduleProvider.notifier)
+                                  .addExerciseToTodaySchedule(exercise);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    startedAddOn
+                                        ? 'Đã tạo buổi tập thêm với ${exercise.name}.'
+                                        : 'Đã thêm ${exercise.name} vào lịch tập hôm nay.',
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
                           },
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 10),

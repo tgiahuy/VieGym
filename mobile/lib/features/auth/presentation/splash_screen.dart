@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:viegym/shared/widgets/brand_icons.dart';
 import '../../onboarding/application/health_profile_controller.dart';
+import '../../workout/application/workout_schedule_controller.dart';
 import '../application/auth_controller.dart';
 import '../domain/auth_state.dart';
 
@@ -83,6 +84,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         } else {
           isHealthCompleted = ref.read(healthProfileProvider).isCompleted;
         }
+
+        try {
+          await ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
+        } catch (_) {}
 
         final isEquipmentCompleted =
             user.equipmentCompleted ||

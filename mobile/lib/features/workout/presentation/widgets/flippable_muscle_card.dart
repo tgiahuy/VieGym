@@ -86,7 +86,24 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
   }
 
   void _syncPreferredSide() {
-    if (!_hasFrontTargets && _hasBackTargets) {
+    final all = {
+      ..._frontPrimary,
+      ..._frontSecondary,
+      ..._backPrimary,
+      ..._backSecondary,
+    };
+    final preferBack =
+        all.isNotEmpty && all.every((m) => m.primarySide == BodySide.back);
+    final preferFront =
+        all.isNotEmpty && all.any((m) => m.primarySide == BodySide.front);
+
+    if (preferBack && !preferFront) {
+      _controller.value = 1;
+      _isBack = true;
+    } else if (preferFront) {
+      _controller.value = 0;
+      _isBack = false;
+    } else if (!_hasFrontTargets && _hasBackTargets) {
       _controller.value = 1;
       _isBack = true;
     } else if (_hasFrontTargets && !_hasBackTargets) {
@@ -143,7 +160,11 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
             parsed.add(MuscleGroup.triceps);
           }
         }
-        if (norm.contains('đùi') || norm.contains('chân') || norm.contains('leg')) {
+        if ((norm.contains('đùi') &&
+                !norm.contains('khép') &&
+                !norm.contains('dạng')) ||
+            norm.contains('chân') ||
+            norm.contains('leg')) {
           if (norm.contains('sau') || norm.contains('hamstring')) {
             parsed.add(MuscleGroup.hamstrings);
           } else if (norm.contains('trước') || norm.contains('quad')) {
@@ -195,12 +216,10 @@ class _FlippableMuscleCardState extends State<FlippableMuscleCard>
   }
 
   bool get _hasFrontTargets =>
-      _frontPrimary.any((m) => m.primarySide == BodySide.front) ||
-      _frontSecondary.any((m) => m.primarySide == BodySide.front);
+      _frontPrimary.isNotEmpty || _frontSecondary.isNotEmpty;
 
   bool get _hasBackTargets =>
-      _backPrimary.any((m) => m.primarySide == BodySide.back) ||
-      _backSecondary.any((m) => m.primarySide == BodySide.back);
+      _backPrimary.isNotEmpty || _backSecondary.isNotEmpty;
 
   bool get _canFlip => true;
 

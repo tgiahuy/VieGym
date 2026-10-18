@@ -279,9 +279,10 @@ void main() {
     await tester.tap(find.text('Upper Lower cá nhân'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Phạm vi áp dụng'), findsOneWidget);
-    expect(find.text('Một ngày'), findsOneWidget);
-    expect(find.text('Cả tuần'), findsOneWidget);
+    expect(find.text('Phạm vi áp dụng'), findsNothing);
+    expect(find.text('Một ngày'), findsNothing);
+    expect(find.text('Cả tuần'), findsNothing);
+    expect(find.text('CẤU HÌNH LỊCH TẬP'), findsOneWidget);
     expect(find.textContaining('Upper A'), findsWidgets);
     expect(find.text('Xem trước lịch tập'), findsOneWidget);
   });
@@ -800,6 +801,86 @@ void main() {
     },
   );
 
+  test(
+    'syncFromServer purges mock planned schedules and clears session when server has no workout today',
+    () async {
+      final repository = _FakePlanningRepository();
+      final container = ProviderContainer(
+        overrides: [
+          workoutSchedulePlanningRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Server returns empty schedule list (no workout today or any day)
+      repository.schedules = [];
+
+      await container
+          .read(workoutScheduleProvider.notifier)
+          .syncFromServer(
+            from: DateTime.now().subtract(const Duration(days: 7)),
+            to: DateTime.now().add(const Duration(days: 7)),
+          );
+
+      final scheduleState = container.read(workoutScheduleProvider);
+      expect(scheduleState.hasTodayWorkout, isFalse);
+      expect(scheduleState.todayWorkout, isNull);
+
+      final sessionState = container.read(workoutSessionProvider);
+      expect(sessionState.exercises, isEmpty);
+    },
+  );
+
+  test(
+    'syncFromServer loads today workout into active session when server has a planned workout today',
+    () async {
+      final repository = _FakePlanningRepository();
+      final container = ProviderContainer(
+        overrides: [
+          workoutSchedulePlanningRepositoryProvider.overrideWithValue(
+            repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final today = DateTime.now();
+      repository.schedules = [
+        AppliedWorkoutSchedule(
+          id: 990,
+          date: today,
+          time: '08:00',
+          title: 'Morning Upper Body',
+          plannedExercises: const [
+            PlannedExercisePreview(
+              name: 'Barbell Bench Press',
+              setsReps: '4x10',
+              primaryMuscle: 'Ngực',
+            ),
+          ],
+        ),
+      ];
+
+      await container
+          .read(workoutScheduleProvider.notifier)
+          .syncFromServer(
+            from: today.subtract(const Duration(days: 1)),
+            to: today.add(const Duration(days: 1)),
+          );
+
+      final scheduleState = container.read(workoutScheduleProvider);
+      expect(scheduleState.hasTodayWorkout, isTrue);
+      expect(scheduleState.todayWorkout?.title, 'Morning Upper Body');
+
+      final sessionState = container.read(workoutSessionProvider);
+      expect(sessionState.title, 'Morning Upper Body');
+      expect(sessionState.exercises.isNotEmpty, isTrue);
+      expect(sessionState.exercises.first.name, 'Barbell Bench Press');
+    },
+  );
+
   testWidgets(
     'workout schedule screen on past days displays manual log CTA and hides creation options',
     (tester) async {
@@ -845,6 +926,95 @@ void main() {
       // Should have recorded workout completion into history
       final history = container.read(workoutScheduleProvider).history;
       expect(history.any((h) => h.date == pastDateStr), isTrue);
+    },
+  );
+
+  testWidgets(
+    'manual log on past day allows configuring exercises and sets/reps',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final pastDate = DateTime.now().subtract(const Duration(days: 2));
+      final pastDateStr =
+          '${pastDate.year.toString().padLeft(4, '0')}-${pastDate.month.toString().padLeft(2, '0')}-${pastDate.day.toString().padLeft(2, '0')}';
+
+      // Insert an uncompleted schedule for this past date with planned exercises
+      container.read(workoutScheduleProvider.notifier).mergeAppliedSchedules([
+        WorkoutScheduleItem(
+          id: 'past_manual_1',
+          date: pastDateStr,
+          time: '07:30',
+          title: 'Buổi Tập Ngực Quá Khứ',
+          targetMuscles: 'Ngực',
+          durationMinutes: 45,
+          plannedExercises: const [
+            PlannedExercisePreview(
+              name: 'Barbell Bench Press',
+              setsReps: '3x10',
+              primaryMuscle: 'Ngực',
+            ),
+          ],
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: WorkoutScheduleScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Select past date
+      container.read(workoutScheduleProvider.notifier).selectDate(pastDateStr);
+      await tester.pumpAndSettle();
+
+      // Tap manual log button in AppBar
+      await tester.tap(find.byIcon(Icons.edit_note_rounded));
+      await tester.pumpAndSettle();
+
+      // Verify preloaded exercise and initial sets/reps
+      expect(find.text('Barbell Bench Press'), findsWidgets);
+      expect(find.text('3 Sets'), findsOneWidget);
+      expect(find.text('10 Reps'), findsOneWidget);
+
+      // Increase sets
+      final addIcons = find.byIcon(Icons.add);
+      await tester.tap(addIcons.at(0));
+      await tester.pumpAndSettle();
+      expect(find.text('4 Sets'), findsOneWidget);
+
+      // Increase reps
+      await tester.tap(addIcons.at(1));
+      await tester.pumpAndSettle();
+      expect(find.text('11 Reps'), findsOneWidget);
+
+      // Save to history
+      await tester.tap(find.text('Lưu vào nhật ký'));
+      await tester.pumpAndSettle();
+
+      // Check recorded workout history
+      final history = container.read(workoutScheduleProvider).history;
+      final loggedHistory = history.firstWhere((h) => h.date == pastDateStr);
+      expect(loggedHistory.workoutName, 'Buổi Tập Ngực Quá Khứ');
+      expect(loggedHistory.exercises, isNotEmpty);
+      expect(
+        loggedHistory.exercises.first.exerciseName,
+        anyOf('Barbell Bench Press', 'Đẩy ngực ngang với tạ đòn'),
+      );
+      expect(loggedHistory.exercises.first.sets.length, 4);
+      expect(loggedHistory.exercises.first.sets.first.reps, 11);
+
+      // Check updated schedule item
+      final updatedSchedule = container
+          .read(workoutScheduleProvider)
+          .schedules
+          .firstWhere((s) => s.date == pastDateStr);
+      expect(updatedSchedule.status, ScheduleStatus.completed);
+      expect(updatedSchedule.plannedExercises.first.setsReps, '4x11');
     },
   );
 
@@ -1085,6 +1255,50 @@ void main() {
   );
 
   testWidgets(
+    'WorkoutBuilderScreen removes quick goal presets/rest timer and allows swiping exercise left for actions',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final fakeRepo = _FakePlanningRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutSchedulePlanningRepositoryProvider.overrideWithValue(
+              fakeRepo,
+            ),
+          ],
+          child: const MaterialApp(
+            home: WorkoutBuilderScreen(initialDate: '2026-03-02'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Quick goal chips like 'Tăng cơ (3x10-12)' and rest timers should NOT be present
+      expect(find.textContaining('Tăng cơ (3x10-12)'), findsNothing);
+      expect(find.textContaining('Nghỉ giữa hiệp'), findsNothing);
+
+      // ReorderableListView should be present for exercises
+      expect(find.byType(ReorderableListView), findsWidgets);
+
+      // Drag indicator handle should be present
+      expect(find.byIcon(Icons.drag_indicator_rounded), findsWidgets);
+
+      // Swipe first exercise to the left
+      await tester.drag(find.byIcon(Icons.drag_indicator_rounded).first, const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      // 'Thay bài' and 'Xóa bài' action buttons are revealed
+      expect(find.text('Thay bài'), findsWidgets);
+      expect(find.text('Xóa bài'), findsWidgets);
+    },
+  );
+
+  testWidgets(
     'WorkoutScheduleCreateScreen shows "Tạo thêm giáo án mới" button under personal programs',
     (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
@@ -1241,6 +1455,42 @@ void main() {
       expect(find.text('Khôi phục'), findsNothing);
     },
   );
+
+  testWidgets(
+    'WorkoutScheduleCreateScreen allows swiping personal plan left to reveal and delete program',
+    (tester) async {
+      final fakeRepo = _FakePlanningRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            workoutSchedulePlanningRepositoryProvider.overrideWithValue(
+              fakeRepo,
+            ),
+          ],
+          child: const MaterialApp(home: WorkoutScheduleCreateScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Upper Lower cá nhân'), findsOneWidget);
+
+      await tester.drag(find.text('Upper Lower cá nhân'), const Offset(-200, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Xoá giáo án'), findsWidgets);
+
+      await tester.tap(find.text('Xoá giáo án').first);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Bạn có chắc chắn muốn xoá giáo án "Upper Lower cá nhân" không? Thao tác này không thể hoàn tác.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 class _PlanningApiAdapter implements HttpClientAdapter {
@@ -1289,6 +1539,10 @@ class _PlanningApiAdapter implements HttpClientAdapter {
           'sourceType': 'USER_PROGRAM',
         },
       });
+    }
+    if (options.method == 'DELETE' &&
+        options.path.startsWith('/api/v1/workout-programs/')) {
+      return _jsonResponse(200, {'data': null});
     }
     return _jsonResponse(404, {'message': 'Not found'});
   }

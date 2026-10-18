@@ -49,6 +49,18 @@ enum MuscleGroup {
     'Adductor Longus & Magnus',
     BodySide.front,
     'adductors',
+  ),
+  abductors(
+    'Cơ dạng hông',
+    'Gluteus Medius & Tensor Fasciae Latae',
+    BodySide.back,
+    'abductors',
+  ),
+  neck(
+    'Cơ cổ',
+    'Sternocleidomastoid & Splenius',
+    BodySide.front,
+    'neck',
   );
 
   const MuscleGroup(
@@ -125,7 +137,10 @@ enum MuscleGroup {
         normalized.contains('tricep')) {
       return MuscleGroup.triceps;
     }
-    if (normalized.contains('cẳng tay') || normalized.contains('forearm')) {
+    if (normalized.contains('cẳng tay') ||
+        normalized.contains('cổ tay') ||
+        normalized.contains('wrist') ||
+        normalized.contains('forearm')) {
       return MuscleGroup.forearms;
     }
     if (normalized.contains('bụng') ||
@@ -170,8 +185,24 @@ enum MuscleGroup {
         normalized.contains('calves')) {
       return MuscleGroup.calves;
     }
-    if (normalized.contains('khép đùi') || normalized.contains('adductor')) {
+    if (normalized.contains('khép đùi') ||
+        normalized.contains('khép hông') ||
+        normalized.contains('adductor') ||
+        normalized.contains('adductors')) {
       return MuscleGroup.adductors;
+    }
+    if (normalized.contains('dạng hông') ||
+        normalized.contains('dạng đùi') ||
+        normalized.contains('cơ dạng') ||
+        normalized.contains('abductor') ||
+        normalized.contains('abductors') ||
+        normalized.contains('abduction')) {
+      return MuscleGroup.abductors;
+    }
+    if ((normalized.contains('cổ') && !normalized.contains('cổ tay')) ||
+        normalized.contains('neck') ||
+        normalized.contains('cervical')) {
+      return MuscleGroup.neck;
     }
 
     return null;
@@ -179,6 +210,8 @@ enum MuscleGroup {
 
   Offset get focusNormalizedCenter {
     switch (this) {
+      case MuscleGroup.neck:
+        return const Offset(0.50, 0.18);
       case MuscleGroup.chest:
       case MuscleGroup.upperChest:
         return const Offset(0.50, 0.27);
@@ -204,6 +237,8 @@ enum MuscleGroup {
         return const Offset(0.50, 0.37);
       case MuscleGroup.glutes:
         return const Offset(0.50, 0.47);
+      case MuscleGroup.abductors:
+        return const Offset(0.50, 0.49);
       case MuscleGroup.quads:
       case MuscleGroup.hamstrings:
       case MuscleGroup.adductors:
@@ -215,6 +250,8 @@ enum MuscleGroup {
 
   double get zoomScale {
     switch (this) {
+      case MuscleGroup.neck:
+        return 1.70;
       case MuscleGroup.chest:
       case MuscleGroup.upperChest:
       case MuscleGroup.lats:
@@ -231,6 +268,7 @@ enum MuscleGroup {
       case MuscleGroup.forearms:
       case MuscleGroup.glutes:
       case MuscleGroup.calves:
+      case MuscleGroup.abductors:
         return 1.55;
       case MuscleGroup.quads:
       case MuscleGroup.hamstrings:
@@ -241,6 +279,8 @@ enum MuscleGroup {
 
   String get anatomicalFunction {
     switch (this) {
+      case MuscleGroup.neck:
+        return 'Nâng đỡ đầu cổ, xoay, gập và duỗi đốt sống cổ an toàn.';
       case MuscleGroup.chest:
       case MuscleGroup.upperChest:
         return 'Gập, khép ngang và xoay trong khớp vai; tạo lực đẩy mạnh mẽ cho thân trên.';
@@ -266,6 +306,8 @@ enum MuscleGroup {
         return 'Duỗi và giữ thẳng cột sống thắt lưng, chống cong lưng khi chịu tải trọng.';
       case MuscleGroup.glutes:
         return 'Duỗi hông, xoay ngoài và giữ thăng bằng khung chậu khi đứng dậy.';
+      case MuscleGroup.abductors:
+        return 'Dạng hông, xoay ngoài và ổn định khung chậu khi di chuyển hoặc squat.';
       case MuscleGroup.quads:
         return 'Duỗi khớp gối và gập hông; nhóm cơ phát lực đẩy chính của thân dưới.';
       case MuscleGroup.hamstrings:

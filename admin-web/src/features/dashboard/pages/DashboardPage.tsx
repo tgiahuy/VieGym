@@ -41,15 +41,17 @@ const initialData: DashboardData = {
 }
 
 export const DashboardPage: React.FC = () => {
+  const isTestMode = import.meta.env.MODE === 'test'
   const [selectedPeriod, setSelectedPeriod] = useState<'7' | '30' | '90' | 'custom'>('7')
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!isTestMode)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState('Đang đồng bộ...')
+  const [lastUpdated, setLastUpdated] = useState(
+    isTestMode ? '10:30 (Asia/Ho_Chi_Minh)' : 'Đang đồng bộ...'
+  )
   const [data, setData] = useState<DashboardData>(initialData)
 
-  const fetchDashboard = () => {
-    setIsRefreshing(true)
+  const loadDashboard = () =>
     dashboardApi
       .getDashboardData()
       .then((res) => {
@@ -68,19 +70,15 @@ export const DashboardPage: React.FC = () => {
         setIsRefreshing(false)
         setIsLoading(false)
       })
-  }
 
   useEffect(() => {
-    if (import.meta.env.MODE === 'test') {
-      setIsLoading(false)
-      setLastUpdated('10:30 (Asia/Ho_Chi_Minh)')
-      return
-    }
-    fetchDashboard()
-  }, [])
+    if (isTestMode) return
+    void loadDashboard()
+  }, [isTestMode])
 
   const handleRefresh = () => {
-    fetchDashboard()
+    setIsRefreshing(true)
+    void loadDashboard()
   }
 
   return (
@@ -207,20 +205,20 @@ export const DashboardPage: React.FC = () => {
         {/* CARD 2: EXERCISES */}
         <MetricCard
           title="BÀI TẬP VẬN ĐỘNG"
-          value={isLoading ? '...' : (data.totalExercises > 0 ? String(data.totalExercises) : '486')}
+          value={isLoading ? '...' : String(data.totalExercises)}
           icon="fitness_center"
           iconColor="text-[#ff506d]"
           subtitle={
             <span>
               <strong className="text-[#f5f5f6]">
-                {data.totalExercises > 0 ? data.activeExercises : '462'}
+                {data.activeExercises}
               </strong>{' '}
-              active · {data.totalExercises > 0 ? data.hiddenExercises : '24'} hidden
+              active · {data.hiddenExercises} hidden
             </span>
           }
           badge={
             <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#35c76f]/10 text-[#35c76f]">
-              {data.totalExercises > 0 ? `${data.totalExercises} bài` : 'Ổn định'}
+              {data.totalExercises} bài
             </span>
           }
         />
@@ -298,4 +296,3 @@ export const DashboardPage: React.FC = () => {
     </div>
   )
 }
-

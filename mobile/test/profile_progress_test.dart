@@ -211,5 +211,33 @@ void main() {
         expect(find.textContaining('XU HƯỚNG CÂN NẶNG'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'ProfileScreen renders without any overflow on narrow screens (320px to 390px)',
+      (tester) async {
+        final screenSizes = [
+          const Size(320, 700),
+          const Size(360, 800),
+          const Size(375, 812),
+          const Size(390, 844),
+        ];
+
+        for (final size in screenSizes) {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          await tester.pumpWidget(
+            const ProviderScope(child: MaterialApp(home: ProfileScreen())),
+          );
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+        }
+      },
+    );
   });
 }

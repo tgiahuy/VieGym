@@ -24,15 +24,32 @@ String _formatDate(DateTime d) {
   return '$year-$month-$day';
 }
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ref.read(authProvider).isAuthenticated) {
+        ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
+        ref.read(progressProvider.notifier).fetchWeightLogs();
+      }
+    });
+  }
 
   void _showLogWeightDialog(BuildContext context, WidgetRef ref) {
     showLogWeightModal(context, ref);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final session = ref.watch(workoutSessionProvider);
     final schedule = ref.watch(workoutScheduleProvider);
@@ -92,7 +109,17 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: ListView(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (ref.read(authProvider).isAuthenticated) {
+              await Future.wait([
+                ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod(),
+                ref.read(healthProfileProvider.notifier).loadProfileFromRemote(),
+                ref.read(progressProvider.notifier).fetchWeightLogs(),
+              ]);
+            }
+          },
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
           children: [
             // ─────────────────────────────────────────────────────────────────
@@ -274,8 +301,9 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

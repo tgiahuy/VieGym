@@ -637,9 +637,6 @@ class _EquipmentItemCardState extends State<_EquipmentItemCard> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final accent = widget.accentColor;
-    final accentSoft = accent.withValues(alpha: 0.12);
-    final accentBorder = accent.withValues(alpha: 0.28);
-    final accentIconBg = accent.withValues(alpha: 0.16);
     final iconUnselected = accent.withValues(alpha: 0.55);
 
     return AnimatedScale(
@@ -651,13 +648,11 @@ class _EquipmentItemCardState extends State<_EquipmentItemCard> {
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: widget.isSelected ? accentSoft : colors.surfaceContainer,
+          color: colors.surfaceContainer,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: widget.isSelected
-                ? accentBorder
-                : colors.outlineVariant.withValues(alpha: 0.35),
-            width: widget.isSelected ? 1.5 : 1.0,
+            color: colors.outlineVariant.withValues(alpha: 0.35),
+            width: 1.0,
           ),
         ),
         child: Material(
@@ -682,21 +677,12 @@ class _EquipmentItemCardState extends State<_EquipmentItemCard> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: widget.isSelected
-                          ? accentIconBg
-                          : AppColors.surfaceNested,
+                      color: AppColors.surfaceNested,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: widget.isSelected
-                            ? accentBorder
-                            : Colors.transparent,
-                      ),
                     ),
                     child: Icon(
                       widget.item.icon,
-                      color: widget.isSelected
-                          ? accent
-                          : iconUnselected,
+                      color: iconUnselected,
                       size: 22,
                     ),
                   ),
@@ -732,11 +718,11 @@ class _EquipmentItemCardState extends State<_EquipmentItemCard> {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: widget.isSelected ? accent : Colors.transparent,
+                      color: widget.isSelected ? AppColors.primary : Colors.transparent,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: widget.isSelected
-                            ? accent
+                            ? AppColors.primary
                             : colors.outlineVariant.withValues(alpha: 0.6),
                         width: 1.5,
                       ),

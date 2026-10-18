@@ -81,4 +81,22 @@ describe('WorkoutPlanListPage', () => {
     const deleteBtn = screen.getByRole('button', { name: /xóa giáo án/i })
     expect(deleteBtn).toBeInTheDocument()
   })
+
+  it('updates days list in tab 2 when changing days per week in tab 1', async () => {
+    const user = userEvent.setup()
+    renderWorkoutPlanListPage()
+
+    const createBtn = screen.getByRole('button', { name: /\+ tạo giáo án mới/i })
+    await user.click(createBtn)
+
+    const daysInput = screen.getByDisplayValue('4')
+    await user.clear(daysInput)
+    await user.type(daysInput, '5')
+
+    const tab2Btn = screen.getByRole('button', { name: /2\. Lịch tập & Bài tập/i })
+    await user.click(tab2Btn)
+
+    expect(screen.getByRole('button', { name: /buổi 5/i })).toBeInTheDocument()
+  })
 })
+

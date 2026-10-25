@@ -206,7 +206,8 @@ public class AdminAiConfigurationService {
                 id,
                 "SUCCESS",
                 Map.of("active", active, "previousVersion", expected));
-        return jdbc.query("select * from ai_safety_rules where id=?", this::safetyRule, id).getFirst();
+        return jdbc.query("select * from ai_safety_rules where id=?", this::safetyRule, id)
+                .getFirst();
     }
 
     @Transactional(readOnly = true)

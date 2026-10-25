@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../profile/data/weight_log_repository.dart';
 import '../data/workout_schedule_planning_repository.dart';
 import '../domain/workout_models.dart';
 import 'workout_session_controller.dart';
@@ -736,6 +737,38 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
       from: baseMonday.subtract(const Duration(days: 28)),
       to: baseMonday.add(const Duration(days: 62)),
     );
+    await syncWorkoutLogsFromServer();
+  }
+
+  Future<void> syncWorkoutLogsFromServer() async {
+    if (!ref.read(authProvider).isAuthenticated) return;
+    try {
+      final serverLogs =
+          await ref.read(weightLogRepositoryProvider).getWorkoutLogs();
+      if (serverLogs.isNotEmpty) {
+        final serverHistoryItems = serverLogs.map((log) {
+          final dateStr = _formatDate(log.completedAt);
+          return WorkoutHistoryItem(
+            id: 'server_log_${log.id}',
+            date: dateStr,
+            workoutName: log.title,
+            durationMinutes: log.durationMinutes,
+            totalVolumeKg: log.totalVolumeKg,
+            completedSetsCount: log.totalExercises,
+            prCount: log.prCount,
+            targetMuscles: const [],
+            exercises: const [],
+          );
+        }).toList();
+
+        final localRealItems = state.history
+            .where((h) => h.id.startsWith('hist_') || h.id.startsWith('manual_'))
+            .where((h) => !serverHistoryItems.any((s) => s.date == h.date && s.workoutName == h.workoutName))
+            .toList();
+
+        state = state.copyWith(history: [...localRealItems, ...serverHistoryItems]);
+      }
+    } catch (_) {}
   }
 
   bool extendLatestPlannedSchedule({

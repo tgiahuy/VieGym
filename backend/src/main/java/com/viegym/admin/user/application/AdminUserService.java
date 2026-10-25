@@ -7,7 +7,6 @@ import com.viegym.common.api.PageResponse;
 import com.viegym.common.error.ApiErrorCode;
 import com.viegym.common.error.ApiException;
 import com.viegym.identity.AccountStatus;
-import com.viegym.identity.AuthProvider;
 import com.viegym.identity.User;
 import com.viegym.identity.UserProfile;
 import com.viegym.identity.UserProfileRepository;
@@ -55,7 +54,8 @@ public class AdminUserService {
         List<Object> params = new ArrayList<>();
 
         if (q != null && !q.isBlank()) {
-            where.append("and (lower(u.email) like ? or lower(coalesce(p.display_name, '')) like ?) ");
+            where.append(
+                    "and (lower(u.email) like ? or lower(coalesce(p.display_name, '')) like ?) ");
             String searchPattern = "%" + q.trim().toLowerCase(Locale.ROOT) + "%";
             params.add(searchPattern);
             params.add(searchPattern);
@@ -111,7 +111,8 @@ public class AdminUserService {
     }
 
     @Transactional
-    public UserSummary updateStatus(long adminId, long targetUserId, String newStatus, String reason) {
+    public UserSummary updateStatus(
+            long adminId, long targetUserId, String newStatus, String reason) {
         User user =
                 userRepository
                         .findById(targetUserId)
@@ -156,7 +157,8 @@ public class AdminUserService {
 
         String normalizedEmail = req.email().trim().toLowerCase(Locale.ROOT);
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new ApiException(ApiErrorCode.EMAIL_ALREADY_EXISTS, "Email đã tồn tại trong hệ thống");
+            throw new ApiException(
+                    ApiErrorCode.EMAIL_ALREADY_EXISTS, "Email đã tồn tại trong hệ thống");
         }
 
         UserRole role = UserRole.ADMIN;
@@ -169,7 +171,10 @@ public class AdminUserService {
         User user = User.localAdmin(normalizedEmail, tempHash, now);
         user = userRepository.save(user);
 
-        String displayName = (req.fullName() != null && !req.fullName().isBlank()) ? req.fullName().trim() : normalizedEmail;
+        String displayName =
+                (req.fullName() != null && !req.fullName().isBlank())
+                        ? req.fullName().trim()
+                        : normalizedEmail;
         UserProfile profile = new UserProfile(user, displayName);
         profileRepository.save(profile);
 
@@ -180,7 +185,13 @@ public class AdminUserService {
                 "USER",
                 user.id(),
                 "SUCCESS",
-                Map.of("email", normalizedEmail, "role", role.name(), "notes", req.notes() != null ? req.notes() : ""));
+                Map.of(
+                        "email",
+                        normalizedEmail,
+                        "role",
+                        role.name(),
+                        "notes",
+                        req.notes() != null ? req.notes() : ""));
 
         return get(user.id());
     }

@@ -18,9 +18,163 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   int _selectedTimeframe = 0; // 0 = Tuần này, 1 = Tháng này, 2 = 3 tháng qua
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(progressProvider.notifier).fetchAllProgressData();
+      ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
+    });
+  }
+
+  static DateTime? _parseWorkoutDate(String dateStr) {
+    final direct = DateTime.tryParse(dateStr);
+    if (direct != null) return DateTime(direct.year, direct.month, direct.day);
+    final parts = dateStr.split('/');
+    if (parts.length == 3) {
+      final d = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final y = int.tryParse(parts[2]);
+      if (d != null && m != null && y != null) {
+        return DateTime(y, m, d);
+      }
+    }
+    return null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(progressProvider);
     final scheduleState = ref.watch(workoutScheduleProvider);
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Compute dynamic timeframe bounds
+    DateTime timeframeStart;
+    DateTime timeframeEnd = today.add(const Duration(days: 1));
+    DateTime prevTimeframeStart;
+    DateTime prevTimeframeEnd;
+
+    final currentMonday = today.subtract(Duration(days: now.weekday - 1));
+    if (_selectedTimeframe == 0) {
+      // Tuần này (Thứ 2 đến Chủ nhật)
+      timeframeStart = currentMonday;
+      timeframeEnd = currentMonday.add(const Duration(days: 7));
+      prevTimeframeStart = currentMonday.subtract(const Duration(days: 7));
+      prevTimeframeEnd = currentMonday;
+    } else if (_selectedTimeframe == 1) {
+      // Tháng này
+      timeframeStart = DateTime(now.year, now.month, 1);
+      timeframeEnd = DateTime(now.year, now.month + 1, 1);
+      prevTimeframeStart = DateTime(now.year, now.month - 1, 1);
+      prevTimeframeEnd = timeframeStart;
+    } else {
+      // 3 tháng qua (90 ngày)
+      timeframeStart = today.subtract(const Duration(days: 90));
+      timeframeEnd = today.add(const Duration(days: 1));
+      prevTimeframeStart = today.subtract(const Duration(days: 180));
+      prevTimeframeEnd = timeframeStart;
+    }
+
+    final allHistory = scheduleState.history;
+
+    // Filter workouts in timeframe
+    final timeframeHistory = allHistory.where((h) {
+      final d = _parseWorkoutDate(h.date);
+      if (d == null) return false;
+      return !d.isBefore(timeframeStart) && d.isBefore(timeframeEnd);
+    }).toList();
+
+    final prevTimeframeHistory = allHistory.where((h) {
+      final d = _parseWorkoutDate(h.date);
+      if (d == null) return false;
+      return !d.isBefore(prevTimeframeStart) && d.isBefore(prevTimeframeEnd);
+    }).toList();
+
+    final tfVolume = timeframeHistory.fold<double>(
+      0.0,
+      (sum, h) => sum + h.totalVolumeKg,
+    );
+    final prevVolume = prevTimeframeHistory.fold<double>(
+      0.0,
+      (sum, h) => sum + h.totalVolumeKg,
+    );
+
+    final effectiveTotalVolume = (_selectedTimeframe == 0 && tfVolume == 0)
+        ? state.totalVolumeKg
+        : tfVolume;
+
+    double dynamicGrowth = 0.0;
+    if (prevVolume > 0) {
+      dynamicGrowth = ((effectiveTotalVolume - prevVolume) / prevVolume) * 100.0;
+    } else if (effectiveTotalVolume > 0) {
+      dynamicGrowth = 100.0;
+    } else if (_selectedTimeframe == 0) {
+      dynamicGrowth = state.growthRatePercentage;
+    }
+
+    final completedWorkoutsCount = timeframeHistory.isNotEmpty
+        ? timeframeHistory.length
+        : (_selectedTimeframe == 0 ? state.completedWorkoutsThisWeek : 0);
+
+    // Compute Push / Pull / Legs Volume dynamically
+    double pushVolume = 0.0;
+    double pullVolume = 0.0;
+    double legsVolume = 0.0;
+
+    for (final h in timeframeHistory) {
+      if (h.exercises.isNotEmpty) {
+        for (final ex in h.exercises) {
+          final t = '${ex.exerciseName} ${ex.primaryMuscle} ${ex.secondaryMuscles.join(' ')}'.toLowerCase();
+          final v = ex.volumeKg > 0
+              ? ex.volumeKg
+              : ex.sets.fold<double>(0.0, (s, st) => s + (st.weightKg * st.reps));
+
+          if (t.contains('ngực') || t.contains('chest') || t.contains('vai') ||
+              t.contains('shoulder') || t.contains('tricep') || t.contains('tay sau') ||
+              t.contains('bench') || t.contains('press') || t.contains('dip')) {
+            pushVolume += v;
+          } else if (t.contains('lưng') || t.contains('back') || t.contains('lat') ||
+                     t.contains('xô') || t.contains('bicep') || t.contains('tay trước') ||
+                     t.contains('pull') || t.contains('row') || t.contains('curl')) {
+            pullVolume += v;
+          } else {
+            legsVolume += v;
+          }
+        }
+      } else {
+        final t = '${h.workoutName} ${h.targetMuscles.join(' ')}'.toLowerCase();
+        if (t.contains('push') || t.contains('đẩy') || t.contains('ngực') || t.contains('vai')) {
+          pushVolume += h.totalVolumeKg;
+        } else if (t.contains('pull') || t.contains('kéo') || t.contains('lưng') || t.contains('tay')) {
+          pullVolume += h.totalVolumeKg;
+        } else {
+          legsVolume += h.totalVolumeKg;
+        }
+      }
+    }
+
+    // 7-day Completed Check-in
+    final completedDays = List.generate(7, (i) {
+      final day = currentMonday.add(Duration(days: i));
+      final hasHistory = allHistory.any((h) {
+        final d = _parseWorkoutDate(h.date);
+        return d != null && d.year == day.year && d.month == day.month && d.day == day.day;
+      });
+      final hasDailyVolume = state.dailyVolumes.any(
+        (v) => v.weekday == (i + 1) && v.volumeKg > 0,
+      );
+      final hasSchedule = scheduleState.schedules.any((s) {
+        final d = _parseWorkoutDate(s.date);
+        return d != null &&
+            d.year == day.year &&
+            d.month == day.month &&
+            d.day == day.day &&
+            s.status == ScheduleStatus.completed;
+      });
+      return hasHistory || hasDailyVolume || hasSchedule;
+    });
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -39,49 +193,66 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-        children: [
-          // 1. Timeframe Filter Selector
-          _TimeframeSelector(
-            selectedIndex: _selectedTimeframe,
-            onChanged: (index) => setState(() => _selectedTimeframe = index),
-          ),
-          const SizedBox(height: 16),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Future.wait([
+            ref.read(progressProvider.notifier).fetchAllProgressData(),
+            ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod(),
+          ]);
+        },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          children: [
+            // 1. Timeframe Filter Selector
+            _TimeframeSelector(
+              selectedIndex: _selectedTimeframe,
+              onChanged: (index) => setState(() => _selectedTimeframe = index),
+            ),
+            const SizedBox(height: 16),
 
-          // 2. Training Consistency & Adherence Hero Card
-          _ConsistencyHeroCard(
-            completedWorkouts: state.completedWorkoutsThisWeek,
-            targetWorkouts: state.targetWorkoutsPerWeek,
-            streakDays: state.currentStreakDays,
-            totalMinutes: state.totalWorkoutMinutes,
-          ),
-          const SizedBox(height: 18),
+            // 2. Training Consistency & Adherence Hero Card
+            _ConsistencyHeroCard(
+              completedWorkouts: state.completedWorkoutsThisWeek,
+              targetWorkouts: state.targetWorkoutsPerWeek,
+              streakDays: state.currentStreakDays,
+              totalMinutes: state.totalWorkoutMinutes,
+              completedDays: completedDays,
+            ),
+            const SizedBox(height: 18),
 
-          // 3. Progressive Overload & Volume Analysis
-          _VolumeProgressionCard(
-            totalVolumeKg: state.totalVolumeKg,
-            timeframeIndex: _selectedTimeframe,
-          ),
-          const SizedBox(height: 18),
+            // 3. Progressive Overload & Volume Analysis
+            _VolumeProgressionCard(
+              totalVolumeKg: effectiveTotalVolume,
+              timeframeIndex: _selectedTimeframe,
+              growthRate: dynamicGrowth,
+              completedWorkouts: completedWorkoutsCount,
+              pushVolume: pushVolume,
+              pullVolume: pullVolume,
+              legsVolume: legsVolume,
+            ),
+            const SizedBox(height: 18),
 
-          // 4. Muscle Recovery & Sets Volume Matrix (Khác biệt hoàn toàn với trang Cá nhân)
-          const _MuscleRecoveryMatrixCard(),
-          const SizedBox(height: 18),
+            // 4. Muscle Recovery & Sets Volume Matrix
+            _MuscleRecoveryMatrixCard(
+              history: allHistory,
+              now: now,
+            ),
+            const SizedBox(height: 18),
 
-          // 5. Strength Progression & PR Highlights
-          _StrengthProgressionCard(
-            personalRecords: state.personalRecords,
-            onViewAllPRs: () => context.push('/profile/records'),
-          ),
-          const SizedBox(height: 18),
+            // 5. Strength Progression & PR Highlights
+            _StrengthProgressionCard(
+              personalRecords: state.personalRecords,
+              onViewAllPRs: () => context.push('/profile/records'),
+            ),
+            const SizedBox(height: 18),
 
-          // 6. Recent Workout Activity Log
-          _WorkoutActivitySection(
-            history: scheduleState.history,
-            onViewAllHistory: () => context.push('/workout/history'),
-          ),
-        ],
+            // 6. Recent Workout Activity Log
+            _WorkoutActivitySection(
+              history: scheduleState.history,
+              onViewAllHistory: () => context.push('/workout/history'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -154,12 +325,14 @@ class _ConsistencyHeroCard extends StatelessWidget {
     required this.targetWorkouts,
     required this.streakDays,
     required this.totalMinutes,
+    required this.completedDays,
   });
 
   final int completedWorkouts;
   final int targetWorkouts;
   final int streakDays;
   final int totalMinutes;
+  final List<bool> completedDays;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +343,9 @@ class _ConsistencyHeroCard extends StatelessWidget {
     final percent = (ratio * 100).round();
 
     final days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    final completedDays = [true, false, true, false, true, false, false];
+    final effectiveCompletedDays = completedDays.length == 7
+        ? completedDays
+        : [false, false, false, false, false, false, false];
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -337,8 +512,8 @@ class _ConsistencyHeroCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(7, (i) {
-                final isDone = completedDays[i];
-                final isToday = i == 4; // T6
+                final isDone = effectiveCompletedDays[i];
+                final isToday = (i + 1 == DateTime.now().weekday);
                 return Column(
                   children: [
                     Text(
@@ -402,22 +577,45 @@ class _VolumeProgressionCard extends StatelessWidget {
   const _VolumeProgressionCard({
     required this.totalVolumeKg,
     required this.timeframeIndex,
+    required this.growthRate,
+    required this.completedWorkouts,
+    required this.pushVolume,
+    required this.pullVolume,
+    required this.legsVolume,
   });
 
   final double totalVolumeKg;
   final int timeframeIndex;
+  final double growthRate;
+  final int completedWorkouts;
+  final double pushVolume;
+  final double pullVolume;
+  final double legsVolume;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
+    final totalCategorized = pushVolume + pullVolume + legsVolume;
+    final double displayPush = totalCategorized > 0
+        ? pushVolume
+        : (totalVolumeKg > 0 ? totalVolumeKg * 0.35 : 0.0);
+    final double displayPull = totalCategorized > 0
+        ? pullVolume
+        : (totalVolumeKg > 0 ? totalVolumeKg * 0.35 : 0.0);
+    final double displayLegs = totalCategorized > 0
+        ? legsVolume
+        : (totalVolumeKg > 0 ? totalVolumeKg * 0.30 : 0.0);
+
     final volumeBreakdown = [
-      ('Đẩy (Push: Ngực, Vai, Tay sau)', 8500, AppColors.chartPrimary),
-      ('Kéo (Pull: Lưng xô, Tay trước)', 9200, AppColors.chartBlue),
-      ('Chân & Mông (Legs & Glutes)', 10800, AppColors.chartCyan),
+      ('Đẩy (Push: Ngực, Vai, Tay sau)', displayPush.round(), AppColors.chartPrimary),
+      ('Kéo (Pull: Lưng xô, Tay trước)', displayPull.round(), AppColors.chartBlue),
+      ('Chân & Mông (Legs & Glutes)', displayLegs.round(), AppColors.chartCyan),
     ];
 
     final displayTotal = totalVolumeKg.toInt();
+    final avgPerWorkout =
+        completedWorkouts > 0 ? (totalVolumeKg / completedWorkouts).round() : 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -481,15 +679,23 @@ class _VolumeProgressionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.15),
+                  color: growthRate >= 0
+                      ? Colors.green.withValues(alpha: 0.15)
+                      : Colors.red.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  '+12.4% TĂNG',
+                child: Text(
+                  growthRate > 0
+                      ? '+${growthRate.toStringAsFixed(1)}% TĂNG'
+                      : (growthRate < 0
+                          ? '${growthRate.toStringAsFixed(1)}% GIẢM'
+                          : '0.0% DUY TRÌ'),
                   style: TextStyle(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w900,
-                    color: Colors.greenAccent,
+                    color: growthRate >= 0
+                        ? Colors.greenAccent
+                        : Colors.redAccent,
                   ),
                 ),
               ),
@@ -544,7 +750,7 @@ class _VolumeProgressionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '7.125 kg/buổi',
+                      '${avgPerWorkout.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} kg/buổi',
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w800,
@@ -631,54 +837,159 @@ class _VolumeProgressionCard extends StatelessWidget {
 // 4. Muscle Recovery & Sets Volume Matrix
 // ─────────────────────────────────────────────────────────────────────────────
 class _MuscleRecoveryMatrixCard extends StatelessWidget {
-  const _MuscleRecoveryMatrixCard();
+  const _MuscleRecoveryMatrixCard({
+    required this.history,
+    required this.now,
+  });
+
+  final List<WorkoutHistoryItem> history;
+  final DateTime now;
+
+  static DateTime? _parseDate(String s) {
+    final d = DateTime.tryParse(s);
+    if (d != null) return DateTime(d.year, d.month, d.day);
+    final parts = s.split('/');
+    if (parts.length == 3) {
+      final day = int.tryParse(parts[0]);
+      final month = int.tryParse(parts[1]);
+      final year = int.tryParse(parts[2]);
+      if (day != null && month != null && year != null) {
+        return DateTime(year, month, day);
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    final matrixData = [
+    final definitions = [
       (
         'Chân & Mông (Quads, Glutes)',
-        22,
-        '10.800 kg',
-        'Hồi phục 70%',
-        Colors.orangeAccent,
+        [
+          'chân',
+          'leg',
+          'mông',
+          'glute',
+          'quad',
+          'hamstring',
+          'calf',
+          'squat',
+          'deadlift',
+          'lunge',
+          'bắp chân',
+          'đùi',
+        ],
         Icons.directions_walk_rounded,
       ),
       (
         'Ngực & Tay trước (Chest & Biceps)',
-        16,
-        '8.500 kg',
-        'Sẵn sàng (100%)',
-        Colors.greenAccent,
+        ['ngực', 'chest', 'tay trước', 'bicep', 'bench', 'curl'],
         Icons.fitness_center_rounded,
       ),
       (
         'Lưng xô (Lats & Back)',
-        18,
-        '9.200 kg',
-        'Sẵn sàng (95%)',
-        Colors.greenAccent,
+        ['lưng', 'back', 'lat', 'xô', 'row', 'pullup', 'pulldown'],
         Icons.accessibility_new_rounded,
       ),
       (
         'Vai & Cầu vai (Shoulders & Traps)',
-        12,
-        '4.200 kg',
-        'Sẵn sàng (100%)',
-        Colors.greenAccent,
+        ['vai', 'shoulder', 'deltoid', 'cầu vai', 'trap', 'ohp'],
         Icons.bolt_rounded,
       ),
       (
         'Core & Bụng (Abs & Obliques)',
-        8,
-        'Tập tự do',
-        'Sẵn sàng (100%)',
-        Colors.greenAccent,
+        ['bụng', 'core', 'abs', 'oblique', 'plank', 'crunch'],
         Icons.local_fire_department_rounded,
       ),
     ];
+
+    final matrixData = definitions.map((def) {
+      final (groupName, keywords, icon) = def;
+      int setsCount = 0;
+      double volumeKg = 0.0;
+      DateTime? latestDate;
+
+      for (final h in history) {
+        final workoutDate = _parseDate(h.date);
+        bool workoutMatched = false;
+
+        if (h.exercises.isNotEmpty) {
+          for (final ex in h.exercises) {
+            final t =
+                '${ex.exerciseName} ${ex.primaryMuscle} ${ex.secondaryMuscles.join(' ')}'
+                    .toLowerCase();
+            final matches = keywords.any((k) => t.contains(k));
+            if (matches) {
+              workoutMatched = true;
+              setsCount += ex.sets.length;
+              final exVol = ex.volumeKg > 0
+                  ? ex.volumeKg
+                  : ex.sets.fold<double>(
+                      0.0,
+                      (s, st) => s + (st.weightKg * st.reps),
+                    );
+              volumeKg += exVol;
+            }
+          }
+        } else {
+          final t =
+              '${h.workoutName} ${h.targetMuscles.join(' ')}'.toLowerCase();
+          if (keywords.any((k) => t.contains(k))) {
+            workoutMatched = true;
+            setsCount += h.completedSetsCount > 0 ? h.completedSetsCount : 4;
+            volumeKg += h.totalVolumeKg;
+          }
+        }
+
+        if (workoutMatched && workoutDate != null) {
+          if (latestDate == null || workoutDate.isAfter(latestDate)) {
+            latestDate = workoutDate;
+          }
+        }
+      }
+
+      String recoveryText = 'Sẵn sàng (100%)';
+      Color statusColor = Colors.greenAccent;
+
+      if (latestDate != null) {
+        final hoursElapsed = now.difference(latestDate).inHours;
+        if (hoursElapsed < 24) {
+          final pct = (40 + (hoursElapsed / 24.0) * 30).clamp(40, 70).round();
+          recoveryText = 'Hồi phục $pct%';
+          statusColor = Colors.orangeAccent;
+        } else if (hoursElapsed < 48) {
+          final pct = (70 + ((hoursElapsed - 24) / 24.0) * 25)
+              .clamp(70, 95)
+              .round();
+          recoveryText = 'Hồi phục tốt ($pct%)';
+          statusColor = Colors.lightGreenAccent;
+        } else {
+          recoveryText = 'Sẵn sàng (100%)';
+          statusColor = Colors.greenAccent;
+        }
+      }
+
+      String volumeDisplay;
+      if (volumeKg > 0) {
+        volumeDisplay =
+            '${volumeKg.toInt().toString().replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (m) => "${m[1]}.")} kg';
+      } else if (setsCount > 0) {
+        volumeDisplay = 'Tập tự do';
+      } else {
+        volumeDisplay = '0 kg';
+      }
+
+      return (
+        groupName,
+        setsCount,
+        volumeDisplay,
+        recoveryText,
+        statusColor,
+        icon,
+      );
+    }).toList();
 
     return Container(
       padding: const EdgeInsets.all(16),

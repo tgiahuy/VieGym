@@ -9,30 +9,30 @@
 ## Kiến trúc
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Flutter Mobile App (Android / iOS)                  │
-│  State: Riverpod  │  Router: go_router               │
-│  HTTP: Dio / dart-dio generated from OpenAPI         │
-└───────────────────────┬─────────────────────────────┘
-                        │ REST /api/v1
-                        ▼
-┌─────────────────────────────────────────────────────┐
-│  Spring Boot Backend  (Java 21 / Maven)              │
-│  Auth: Spring Security + JWT                         │
-│  DB migration: Flyway  │  ORM: Spring Data JPA       │
-└──────────┬──────────────────────────────────────────┘
-           │ HTTP /internal/v1  (X-Internal-Token)
-           ▼
-┌─────────────────────────────────────────────────────┐
-│  FastAPI AI Service  (Python 3.12 / uv)              │
-│  Stateless — no DB access                            │
-└─────────────────────────────────────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────┐
-│  PostgreSQL 16   (Flyway-managed schema)             │
-│  MinIO           (object storage — local dev)        │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────┐     ┌──────────────────────────────────────┐
+│  Flutter Mobile App (USER)           │     │  React Web Admin (ADMIN)             │
+│  Riverpod  │  go_router  │  Dio      │     │  React 19  │  TypeScript  │  Vite    │
+└──────────────────┬───────────────────┘     └──────────────────┬───────────────────┘
+                   │ REST /api/v1 (JWT Auth)                    │ REST /api/v1 (HttpOnly + CSRF)
+                   └─────────────────────┬──────────────────────┘
+                                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  Spring Boot Backend  (Java 21 / Maven)                                           │
+│  Auth: Spring Security + JWT / Cookie  │  Audience Isolation                      │
+│  DB migration: Flyway  │  ORM: Spring Data JPA                                    │
+└────────────────────────┬──────────────────────────────────────────────────────────┘
+                         │ HTTP /internal/v1  (X-Internal-Token)
+                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  FastAPI AI Service  (Python 3.12 / uv)                                           │
+│  Stateless — no DB access                                                         │
+└───────────────────────────────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│  PostgreSQL 16   (Flyway-managed schema)                                          │
+│  MinIO           (object storage — local dev)                                     │
+└───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -47,6 +47,8 @@
 | Maven Wrapper | bundled |
 | Python | 3.12 |
 | uv | latest |
+| Node.js | ≥ 20 (Node 22 LTS khuyến nghị) |
+| npm | ≥ 10 |
 | Docker | ≥ 24 |
 | Docker Compose | ≥ 2.20 |
 | Android SDK | API 34+ |
@@ -111,6 +113,22 @@ cd mobile
 flutter pub get
 flutter run --dart-define=APP_ENV=dev
 ```
+
+### 1.7 Web Admin — React + Vite
+
+Web Admin dành riêng cho quản trị viên (quản lý Exercise catalog, Food catalog, Media upload, và Audit Logs).
+
+```bash
+cd admin-web
+npm install
+npm run dev
+```
+
+Web Admin sẵn sàng tại: `http://localhost:5173` (hoặc port `3000` khi chạy bằng Docker Compose: `docker compose up -d admin-web`).
+
+**Tài khoản Admin mặc định:**
+- Email: `admin@viegym.com`
+- Mật khẩu: `Password123!`
 
 ---
 
@@ -199,6 +217,14 @@ flutter test                   # widget + unit tests
 flutter test --coverage        # với coverage report
 ```
 
+### Web Admin
+
+```bash
+cd admin-web
+npm run test                   # Vitest unit & component tests
+npm run verify                 # Test + ESLint + TypeScript typecheck
+```
+
 ---
 
 ## 4. Biến môi trường
@@ -274,11 +300,17 @@ Không chỉnh sửa model/API generated bằng tay. CI khởi động backend, 
 
 ```
 VieGym/
-├── mobile/           # Flutter app
+├── mobile/           # Flutter app (USER)
 │   └── lib/
 │       ├── core/     # config, network, router, theme
 │       ├── shared/   # reusable widgets
 │       └── api/      # generated dart-dio client
+├── admin-web/        # React + TypeScript Web Admin Dashboard
+│   ├── src/
+│   │   ├── core/     # auth context, api client, csrf, router
+│   │   └── features/ # exercises, foods, audit-logs, media
+│   ├── Dockerfile    # Multi-stage production container (Nginx)
+│   └── nginx.conf    # Nginx routing & security headers
 ├── backend/          # Spring Boot
 │   └── src/
 │       ├── main/resources/db/migration/  # Flyway scripts
@@ -299,6 +331,7 @@ VieGym/
 
 - Quy tắc làm việc với AI: [`AI_RULES.md`](AI_RULES.md).
 - Đặc tả sản phẩm: [`docs/spec/specs.md`](docs/spec/specs.md).
+- Kịch bản UAT và Demo 21 bước: [`docs/DEMO_SCRIPT_21_STEPS.md`](docs/DEMO_SCRIPT_21_STEPS.md).
 - API contract: [`docs/kientruchethong/API_SPEC.md`](docs/kientruchethong/API_SPEC.md).
 - Database contract: [`docs/kientruchatang/DATABASE.md`](docs/kientruchatang/DATABASE.md).
 - Tiến độ triển khai: [`docs/Project_Progress.md`](docs/Project_Progress.md).

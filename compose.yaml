@@ -80,6 +80,20 @@ services:
       - storage-net
     restart: unless-stopped
 
+  admin-web:
+    image: viegym/admin-web:local
+    build:
+      context: ./admin-web
+      dockerfile: Dockerfile
+    ports:
+      - "${ADMIN_WEB_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - edge-net
+    restart: unless-stopped
+
   ai-service:
     image: viegym/ai-service:local
     build:

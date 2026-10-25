@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
+import '../../workout/application/workout_schedule_controller.dart';
 import '../../workout/domain/muscle_models.dart';
 import '../../workout/presentation/widgets/body_muscle_map.dart';
 import '../application/muscle_distribution_controller.dart';
 import '../application/progress_controller.dart';
+import '../data/weight_log_repository.dart';
 import '../domain/muscle_distribution_models.dart';
 import 'widgets/log_weight_dialog.dart';
 
@@ -27,7 +29,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (ref.read(authProvider).isAuthenticated) {
         ref.read(progressProvider.notifier).fetchWeightLogs();
+        ref.read(progressProvider.notifier).fetchPersonalRecords();
         ref.read(healthProfileProvider.notifier).loadProfileFromRemote();
+        ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
       }
     });
   }
@@ -42,22 +46,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final healthProfile = ref.watch(healthProfileProvider);
     final progressState = ref.watch(progressProvider);
 
-    final userName = healthProfile.nickname.isNotEmpty
-        ? healthProfile.nickname
-        : (authState.user?.displayName ?? 'Gia Huy');
-    final userEmail = authState.user?.email ?? 'viegym.user@gmail.com';
+    final userName = healthProfile.nickname.trim().isNotEmpty
+        ? healthProfile.nickname.trim()
+        : (authState.user?.displayName.trim().isNotEmpty == true
+            ? authState.user!.displayName.trim()
+            : 'Thành viên VieGym');
+    final userEmail = authState.user?.email.trim().isNotEmpty == true
+        ? authState.user!.email.trim()
+        : 'Chưa cập nhật email';
 
     final double currentWeight = progressState.weightLogs.isNotEmpty
         ? progressState.weightLogs.first.weightKg
-        : (healthProfile.weightKg > 0 ? healthProfile.weightKg : 70.2).toDouble();
+        : (healthProfile.weightKg > 0 ? healthProfile.weightKg.toDouble() : 0.0);
     final double targetWeight =
-        (healthProfile.targetWeightKg > 0 ? healthProfile.targetWeightKg : 68.0)
-            .toDouble();
+        (healthProfile.targetWeightKg > 0 ? healthProfile.targetWeightKg.toDouble() : 0.0);
     final double heightCm =
-        (healthProfile.heightCm > 0 ? healthProfile.heightCm : 172.0)
-            .toDouble();
-    final double bmi = (healthProfile.bmi > 0 ? healthProfile.bmi : 23.73)
-        .toDouble();
+        (healthProfile.heightCm > 0 ? healthProfile.heightCm.toDouble() : 0.0);
+    final double bmi = healthProfile.bmi > 0
+        ? healthProfile.bmi.toDouble()
+        : (heightCm > 0 && currentWeight > 0
+            ? (currentWeight / ((heightCm / 100) * (heightCm / 100)))
+            : 0.0);
 
     return Scaffold(
       appBar: AppBar(
@@ -79,6 +88,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             await Future.wait([
               ref.read(healthProfileProvider.notifier).loadProfileFromRemote(),
               ref.read(progressProvider.notifier).fetchWeightLogs(),
+              ref.read(progressProvider.notifier).fetchPersonalRecords(),
+              ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod(),
             ]);
           }
         },
@@ -105,46 +116,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               heightCm: heightCm,
               bmi: bmi,
               weightLogs: progressState.weightLogs,
+              weightTrend: progressState.weightTrend,
               onEdit: () => context.push('/profile/health'),
             ),
             const SizedBox(height: 18),
 
-          // ==========================================
-          // 3. Muscle Group Distribution (ĐẶT BÊN DƯỚI CHỈ SỐ THỂ CHẤT)
-          // ==========================================
-          const _PersonalMuscleDistributionCard(),
-          const SizedBox(height: 20),
+            // ==========================================
+            // 3. Muscle Group Distribution (ĐẶT BÊN DƯỚI CHỈ SỐ THỂ CHẤT)
+            // ==========================================
+            const _PersonalMuscleDistributionCard(),
+            const SizedBox(height: 20),
 
-          // ==========================================
-          // 4. Weekly Summary Metric Cards (THỐNG KÊ TUẦN NÀY - THỜI LƯỢNG & NĂNG LƯỢNG)
-          // ==========================================
-          _WeeklySummarySection(
-            totalMinutes: progressState.totalWorkoutMinutes,
-            completedWorkouts: progressState.completedWorkoutsThisWeek,
-          ),
-          const SizedBox(height: 20),
+            // ==========================================
+            // 4. Weekly Summary Metric Cards (THỐNG KÊ TUẦN NÀY - THỜI LƯỢNG & NĂNG LƯỢNG)
+            // ==========================================
+            _WeeklySummarySection(
+              totalMinutes: progressState.totalWorkoutMinutes,
+              completedWorkouts: progressState.completedWorkoutsThisWeek,
+              caloriesBurned: progressState.weeklyCaloriesBurned,
+            ),
+            const SizedBox(height: 20),
 
-          // ==========================================
-          // 5. Daily Workout Volume Chart (CÓ TỔNG KHỐI LƯỢNG CẢ TUẦN)
-          // ==========================================
-          _PersonalDailyVolumeCard(totalVolumeKg: progressState.totalVolumeKg),
-          const SizedBox(height: 20),
+            // ==========================================
+            // 5. Daily Workout Volume Chart (CÓ TỔNG KHỐI LƯỢNG CẢ TUẦN)
+            // ==========================================
+            _PersonalDailyVolumeCard(
+              totalVolumeKg: progressState.totalVolumeKg,
+              dailyVolumes: progressState.dailyVolumes,
+              growthRatePercentage: progressState.growthRatePercentage,
+            ),
+            const SizedBox(height: 20),
 
-          // ==========================================
-          // 6. Weight Trend (XU HƯỚNG CÂN NẶNG - 30 Ngày)
-          // ==========================================
-          _PersonalWeightTrendCard(
-            currentWeightKg: currentWeight,
-            targetWeightKg: targetWeight,
-            bmi: bmi,
-            weightLogs: progressState.weightLogs,
-            onLogWeight: () => _showLogWeightDialog(context),
-          ),
-        ],
+            // ==========================================
+            // 6. Weight Trend (XU HƯỚNG CÂN NẶNG - 30 Ngày)
+            // ==========================================
+            _PersonalWeightTrendCard(
+              currentWeightKg: currentWeight,
+              targetWeightKg: targetWeight,
+              bmi: bmi,
+              weightLogs: progressState.weightLogs,
+              weightTrend: progressState.weightTrend,
+              onLogWeight: () => _showLogWeightDialog(context),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -206,7 +224,7 @@ class _UserInformationCard extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    userName.isNotEmpty ? userName[0].toUpperCase() : 'G',
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'V',
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -345,6 +363,7 @@ class _PhysicalMetricsSection extends StatelessWidget {
     required this.bmi,
     required this.onEdit,
     this.weightLogs = const [],
+    this.weightTrend,
   });
 
   final double weightKg;
@@ -352,21 +371,37 @@ class _PhysicalMetricsSection extends StatelessWidget {
   final double bmi;
   final VoidCallback onEdit;
   final List<WeightLogItem> weightLogs;
+  final WeightTrendResult? weightTrend;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    String changeText = '0.0 kg';
+    String changeText = 'Chưa có dữ liệu';
     Color changeColor = colors.onSurfaceVariant;
-    if (weightLogs.length >= 2) {
-      final diff = weightKg - weightLogs.last.weightKg;
+    if (weightTrend != null && weightTrend!.sufficientData) {
+      final diff = weightTrend!.changeKg;
       if (diff < 0) {
         changeText = '↓ ${(-diff).toStringAsFixed(1)} kg';
         changeColor = AppColors.success;
       } else if (diff > 0) {
         changeText = '↑ ${diff.toStringAsFixed(1)} kg';
         changeColor = AppColors.error;
+      } else {
+        changeText = '0.0 kg';
+        changeColor = colors.onSurfaceVariant;
+      }
+    } else if (weightLogs.length >= 2) {
+      final diff = weightKg - weightLogs[1].weightKg;
+      if (diff < 0) {
+        changeText = '↓ ${(-diff).toStringAsFixed(1)} kg';
+        changeColor = AppColors.success;
+      } else if (diff > 0) {
+        changeText = '↑ ${diff.toStringAsFixed(1)} kg';
+        changeColor = AppColors.error;
+      } else {
+        changeText = '0.0 kg';
+        changeColor = colors.onSurfaceVariant;
       }
     } else if (weightLogs.isNotEmpty) {
       changeText = 'Hôm nay';
@@ -375,7 +410,10 @@ class _PhysicalMetricsSection extends StatelessWidget {
 
     String bmiCategoryText = 'Bình thường';
     Color bmiCategoryColor = AppColors.success;
-    if (bmi < 18.5) {
+    if (bmi <= 0) {
+      bmiCategoryText = 'Chưa cập nhật';
+      bmiCategoryColor = colors.onSurfaceVariant;
+    } else if (bmi < 18.5) {
       bmiCategoryText = 'Nhẹ cân';
       bmiCategoryColor = AppColors.warning;
     } else if (bmi < 24.9) {
@@ -388,6 +426,11 @@ class _PhysicalMetricsSection extends StatelessWidget {
       bmiCategoryText = 'Béo phì';
       bmiCategoryColor = AppColors.error;
     }
+
+    final weightDisplay =
+        weightKg > 0 ? '${weightKg.toStringAsFixed(1)} kg' : '-- kg';
+    final heightDisplay = heightCm > 0 ? '${heightCm.toInt()} cm' : '-- cm';
+    final bmiDisplay = bmi > 0 ? bmi.toStringAsFixed(1) : '--';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +493,7 @@ class _PhysicalMetricsSection extends StatelessWidget {
               Expanded(
                 child: _PhysicalMetricHorizontalItem(
                   label: 'CÂN NẶNG',
-                  value: '${weightKg.toStringAsFixed(1)} kg',
+                  value: weightDisplay,
                   subtitle: changeText,
                   subtitleColor: changeColor,
                   icon: Icons.monitor_weight_outlined,
@@ -464,8 +507,8 @@ class _PhysicalMetricsSection extends StatelessWidget {
               Expanded(
                 child: _PhysicalMetricHorizontalItem(
                   label: 'CHIỀU CAO',
-                  value: '${heightCm.toInt()} cm',
-                  subtitle: 'Chuẩn thể trạng',
+                  value: heightDisplay,
+                  subtitle: heightCm > 0 ? 'Chuẩn thể trạng' : 'Chưa cập nhật',
                   subtitleColor: colors.onSurfaceVariant,
                   icon: Icons.height_rounded,
                 ),
@@ -478,10 +521,10 @@ class _PhysicalMetricsSection extends StatelessWidget {
               Expanded(
                 child: _PhysicalMetricHorizontalItem(
                   label: 'BMI',
-                  value: bmi.toStringAsFixed(1),
+                  value: bmiDisplay,
                   subtitle: bmiCategoryText,
                   subtitleColor: bmiCategoryColor,
-                  valueColor: bmiCategoryColor,
+                  valueColor: bmi > 0 ? bmiCategoryColor : null,
                   icon: Icons.speed_rounded,
                 ),
               ),
@@ -572,14 +615,22 @@ class _WeeklySummarySection extends StatelessWidget {
   const _WeeklySummarySection({
     required this.totalMinutes,
     required this.completedWorkouts,
+    this.caloriesBurned = 0,
   });
 
   final int totalMinutes;
   final int completedWorkouts;
+  final int caloriesBurned;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+
+    final avgMinutes =
+        completedWorkouts > 0 ? (totalMinutes / completedWorkouts).round() : 0;
+    final avgText = completedWorkouts > 0
+        ? 'Trung bình ~$avgMinutes phút/buổi'
+        : 'Chưa có buổi tập tuần này';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,8 +651,8 @@ class _WeeklySummarySection extends StatelessWidget {
             Expanded(
               child: _PersonalMetricTile(
                 title: 'THỜI LƯỢNG TẬP',
-                value: '${totalMinutes > 0 ? totalMinutes : 105} phút',
-                subtitle: 'Trung bình ~53 phút/buổi',
+                value: '$totalMinutes phút',
+                subtitle: avgText,
                 subtitleColor: colors.onSurfaceVariant,
                 icon: Icons.access_time_filled_rounded,
                 iconColor: AppColors.blue,
@@ -611,8 +662,10 @@ class _WeeklySummarySection extends StatelessWidget {
             Expanded(
               child: _PersonalMetricTile(
                 title: 'NĂNG LƯỢNG TIÊU THỤ',
-                value: '~788 kcal',
-                subtitle: 'Từ $completedWorkouts buổi hoàn thành',
+                value: '~$caloriesBurned kcal',
+                subtitle: completedWorkouts > 0
+                    ? 'Từ $completedWorkouts buổi hoàn thành'
+                    : '0 buổi hoàn thành',
                 subtitleColor: colors.onSurfaceVariant,
                 icon: Icons.bolt_rounded,
                 iconColor: AppColors.orange,
@@ -1221,9 +1274,15 @@ class _MuscleIntensityLegend extends StatelessWidget {
 // 5. Daily Training Volume Chart Card (Thêm tổng khối lượng cả tuần)
 // ─────────────────────────────────────────────────────────────────────────────
 class _PersonalDailyVolumeCard extends StatelessWidget {
-  const _PersonalDailyVolumeCard({required this.totalVolumeKg});
+  const _PersonalDailyVolumeCard({
+    required this.totalVolumeKg,
+    this.dailyVolumes = const [],
+    this.growthRatePercentage = 0.0,
+  });
 
   final double totalVolumeKg;
+  final List<DailyVolumeItem> dailyVolumes;
+  final double growthRatePercentage;
 
   @override
   Widget build(BuildContext context) {
@@ -1231,7 +1290,70 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
 
     final volumeText = totalVolumeKg > 0
         ? '${totalVolumeKg.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')} kg'
-        : '8.280 kg';
+        : '0 kg';
+
+    String growthText = 'Tuần này';
+    Color growthColor = colors.onSurfaceVariant;
+    if (growthRatePercentage > 0) {
+      growthText = '+${growthRatePercentage.toStringAsFixed(1)}% tuần trước';
+      growthColor = AppColors.success;
+    } else if (growthRatePercentage < 0) {
+      growthText = '${growthRatePercentage.toStringAsFixed(1)}% tuần trước';
+      growthColor = AppColors.warning;
+    }
+
+    final nowWeekday = DateTime.now().weekday;
+    final effectiveDailyVolumes = dailyVolumes.isNotEmpty
+        ? dailyVolumes
+        : [
+            DailyVolumeItem(
+              weekday: 1,
+              label: 'T2',
+              volumeKg: 0,
+              isToday: nowWeekday == 1,
+            ),
+            DailyVolumeItem(
+              weekday: 2,
+              label: 'T3',
+              volumeKg: 0,
+              isToday: nowWeekday == 2,
+            ),
+            DailyVolumeItem(
+              weekday: 3,
+              label: 'T4',
+              volumeKg: 0,
+              isToday: nowWeekday == 3,
+            ),
+            DailyVolumeItem(
+              weekday: 4,
+              label: 'T5',
+              volumeKg: 0,
+              isToday: nowWeekday == 4,
+            ),
+            DailyVolumeItem(
+              weekday: 5,
+              label: 'T6',
+              volumeKg: 0,
+              isToday: nowWeekday == 5,
+            ),
+            DailyVolumeItem(
+              weekday: 6,
+              label: 'T7',
+              volumeKg: 0,
+              isToday: nowWeekday == 6,
+            ),
+            DailyVolumeItem(
+              weekday: 7,
+              label: 'CN',
+              volumeKg: 0,
+              isToday: nowWeekday == 7,
+            ),
+          ];
+
+    final maxDailyVolume = effectiveDailyVolumes.isNotEmpty
+        ? effectiveDailyVolumes.map((d) => d.volumeKg).reduce(math.max)
+        : 0.0;
+    final maxKg = maxDailyVolume > 0 ? maxDailyVolume * 1.15 : 1000.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1317,15 +1439,15 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.15),
+                  color: growthColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  '+8.5% tuần trước',
+                child: Text(
+                  growthText,
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.success,
+                    color: growthColor,
                   ),
                 ),
               ),
@@ -1339,52 +1461,21 @@ class _PersonalDailyVolumeCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _PersonalVolumeBar(
-                  label: 'T2',
-                  valueKg: 4900,
-                  maxKg: 5000,
-                  valueLabel: '4.9k',
-                  isToday: false,
-                ),
-                _PersonalVolumeBar(
-                  label: 'T3',
-                  valueKg: 0,
-                  maxKg: 5000,
-                  isToday: false,
-                ),
-                _PersonalVolumeBar(
-                  label: 'T4',
-                  valueKg: 3400,
-                  maxKg: 5000,
-                  valueLabel: '3.4k',
-                  isToday: false,
-                ),
-                _PersonalVolumeBar(
-                  label: 'T5',
-                  valueKg: 0,
-                  maxKg: 5000,
-                  isToday: false,
-                ),
-                _PersonalVolumeBar(
-                  label: 'T6',
-                  valueKg: 0,
-                  maxKg: 5000,
-                  isToday: true,
-                ),
-                _PersonalVolumeBar(
-                  label: 'T7',
-                  valueKg: 0,
-                  maxKg: 5000,
-                  isToday: false,
-                ),
-                _PersonalVolumeBar(
-                  label: 'CN',
-                  valueKg: 0,
-                  maxKg: 5000,
-                  isToday: false,
-                ),
-              ],
+              children: effectiveDailyVolumes.map((day) {
+                String? label;
+                if (day.volumeKg >= 1000) {
+                  label = '${(day.volumeKg / 1000).toStringAsFixed(1)}k';
+                } else if (day.volumeKg > 0) {
+                  label = '${day.volumeKg.toInt()}';
+                }
+                return _PersonalVolumeBar(
+                  label: day.label,
+                  valueKg: day.volumeKg,
+                  maxKg: maxKg,
+                  valueLabel: label,
+                  isToday: day.isToday,
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -1472,6 +1563,7 @@ class _PersonalWeightTrendCard extends StatelessWidget {
     required this.targetWeightKg,
     required this.bmi,
     required this.weightLogs,
+    this.weightTrend,
     required this.onLogWeight,
   });
 
@@ -1479,11 +1571,49 @@ class _PersonalWeightTrendCard extends StatelessWidget {
   final double targetWeightKg;
   final double bmi;
   final List<WeightLogItem> weightLogs;
+  final WeightTrendResult? weightTrend;
   final VoidCallback onLogWeight;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+
+    final List<double> weights = [];
+    String startDateLabel = '';
+    String endDateLabel = 'Hôm nay';
+    double changeKg = 0.0;
+    bool hasEnoughData = false;
+
+    if (weightTrend != null && weightTrend!.points.length >= 2) {
+      hasEnoughData = true;
+      weights.addAll(weightTrend!.points.map((p) => p.weightKg));
+      changeKg = weightTrend!.changeKg;
+      if (weightTrend!.from != null) {
+        startDateLabel =
+            '${weightTrend!.from!.day.toString().padLeft(2, '0')}/${weightTrend!.from!.month.toString().padLeft(2, '0')}';
+      }
+      if (weightTrend!.to != null) {
+        endDateLabel =
+            '${weightTrend!.to!.day.toString().padLeft(2, '0')}/${weightTrend!.to!.month.toString().padLeft(2, '0')}';
+      }
+    } else if (weightLogs.length >= 2) {
+      hasEnoughData = true;
+      final chronological = weightLogs.reversed.toList();
+      weights.addAll(chronological.map((l) => l.weightKg));
+      changeKg = weightLogs.first.weightKg - weightLogs.last.weightKg;
+      startDateLabel = chronological.first.date;
+      endDateLabel = chronological.last.date;
+    }
+
+    String changeBadgeText = '0.0 kg';
+    Color changeBadgeColor = colors.onSurfaceVariant;
+    if (changeKg < 0) {
+      changeBadgeText = '↓ ${(-changeKg).toStringAsFixed(1)} kg';
+      changeBadgeColor = AppColors.success;
+    } else if (changeKg > 0) {
+      changeBadgeText = '↑ ${changeKg.toStringAsFixed(1)} kg';
+      changeBadgeColor = AppColors.error;
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1538,7 +1668,9 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                '${currentWeightKg.toStringAsFixed(1)} kg',
+                                currentWeightKg > 0
+                                    ? '${currentWeightKg.toStringAsFixed(1)} kg'
+                                    : '-- kg',
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
@@ -1548,7 +1680,7 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'BMI: ${bmi.toStringAsFixed(1)}',
+                                  bmi > 0 ? 'BMI: ${bmi.toStringAsFixed(1)}' : '',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -1567,27 +1699,28 @@ class _PersonalWeightTrendCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '↓ 1.3 kg',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.success,
+              if (hasEnoughData)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: changeBadgeColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    changeBadgeText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: changeBadgeColor,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // Line Chart with custom painter
-          if (weightLogs.isEmpty)
+          // Line Chart with custom painter or insufficient data
+          if (!hasEnoughData)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -1615,7 +1748,7 @@ class _PersonalWeightTrendCard extends StatelessWidget {
               width: double.infinity,
               child: CustomPaint(
                 painter: _PersonalWeightLineChartPainter(
-                  logs: weightLogs,
+                  weights: weights,
                   targetWeight: targetWeightKg,
                   lineColor: AppColors.cyan,
                 ),
@@ -1628,23 +1761,24 @@ class _PersonalWeightTrendCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '01/08',
+                  startDateLabel.isNotEmpty ? startDateLabel : 'Bắt đầu',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: colors.onSurfaceVariant,
                   ),
                 ),
-                Text(
-                  'Mục tiêu: ${targetWeightKg.toStringAsFixed(0)} kg',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.cyan,
+                if (targetWeightKg > 0)
+                  Text(
+                    'Mục tiêu: ${targetWeightKg.toStringAsFixed(0)} kg',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.cyan,
+                    ),
                   ),
-                ),
                 Text(
-                  'Hôm nay',
+                  endDateLabel,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -1662,23 +1796,28 @@ class _PersonalWeightTrendCard extends StatelessWidget {
 
 class _PersonalWeightLineChartPainter extends CustomPainter {
   _PersonalWeightLineChartPainter({
-    required this.logs,
+    required this.weights,
     required this.targetWeight,
     required this.lineColor,
   });
 
-  final List<WeightLogItem> logs;
+  final List<double> weights;
   final double targetWeight;
   final Color lineColor;
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (logs.isEmpty) return;
+    if (weights.length < 2) return;
 
-    final weights = [69.5, 68.9, 68.3, 67.8, 67.2];
-    final minW = targetWeight - 1.0;
-    final maxW = 70.5;
-    final range = maxW - minW;
+    double minVal = weights.reduce(math.min);
+    double maxVal = weights.reduce(math.max);
+    if (targetWeight > 0) {
+      minVal = math.min(minVal, targetWeight);
+      maxVal = math.max(maxVal, targetWeight);
+    }
+    final minW = minVal - 0.8;
+    final maxW = maxVal + 0.8;
+    final range = (maxW - minW) > 0 ? (maxW - minW) : 1.0;
 
     final points = <Offset>[];
     final stepX = size.width / (weights.length - 1);
@@ -1686,27 +1825,30 @@ class _PersonalWeightLineChartPainter extends CustomPainter {
     for (int i = 0; i < weights.length; i++) {
       final x = i * stepX;
       final yRatio = 1.0 - ((weights[i] - minW) / range).clamp(0.0, 1.0);
-      final y = yRatio * (size.height - 20) + 10;
+      final y = yRatio * (size.height - 24) + 12;
       points.add(Offset(x, y));
     }
 
     // Draw Target Dashed Line
-    final targetYRatio = 1.0 - ((targetWeight - minW) / range).clamp(0.0, 1.0);
-    final targetY = targetYRatio * (size.height - 20) + 10;
+    if (targetWeight > 0) {
+      final targetYRatio =
+          1.0 - ((targetWeight - minW) / range).clamp(0.0, 1.0);
+      final targetY = targetYRatio * (size.height - 24) + 12;
 
-    final targetPaint = Paint()
-      ..color = lineColor.withValues(alpha: 0.35)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
+      final targetPaint = Paint()
+        ..color = lineColor.withValues(alpha: 0.35)
+        ..strokeWidth = 1.2
+        ..style = PaintingStyle.stroke;
 
-    double startX = 0;
-    while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, targetY),
-        Offset(math.min(startX + 6, size.width), targetY),
-        targetPaint,
-      );
-      startX += 10;
+      double startX = 0;
+      while (startX < size.width) {
+        canvas.drawLine(
+          Offset(startX, targetY),
+          Offset(math.min(startX + 6, size.width), targetY),
+          targetPaint,
+        );
+        startX += 10;
+      }
     }
 
     // Draw Gradient Area under Line

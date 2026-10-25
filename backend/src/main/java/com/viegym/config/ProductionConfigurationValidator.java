@@ -27,7 +27,8 @@ public class ProductionConfigurationValidator {
     public ProductionConfigurationValidator(
             @Value("${JWT_SIGNING_KEY:${JWT_SECRET:}}") String jwtSigningKey,
             @Value("${AI_SERVICE_TOKEN:}") String aiServiceToken,
-            @Value("${SPRING_DATASOURCE_PASSWORD:${spring.datasource.password:}}") String dbPassword) {
+            @Value("${SPRING_DATASOURCE_PASSWORD:${spring.datasource.password:}}")
+                    String dbPassword) {
         this.jwtSigningKey = jwtSigningKey;
         this.aiServiceToken = aiServiceToken;
         this.dbPassword = dbPassword;

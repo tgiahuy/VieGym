@@ -54,13 +54,13 @@ public class AdminUserController {
             @RequestBody UpdateUserStatusRequest req,
             @AuthenticationPrincipal Jwt jwt) {
         long adminId = Long.parseLong(jwt.getSubject());
-        return ApiResponse.success(userService.updateStatus(adminId, id, req.status(), req.reason()));
+        return ApiResponse.success(
+                userService.updateStatus(adminId, id, req.status(), req.reason()));
     }
 
     @PostMapping("/invite")
     public ApiResponse<UserSummary> invite(
-            @RequestBody InviteUserRequest req,
-            @AuthenticationPrincipal Jwt jwt) {
+            @RequestBody InviteUserRequest req, @AuthenticationPrincipal Jwt jwt) {
         long adminId = Long.parseLong(jwt.getSubject());
         return ApiResponse.success(userService.invite(adminId, req));
     }

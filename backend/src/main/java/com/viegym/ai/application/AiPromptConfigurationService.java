@@ -36,7 +36,9 @@ public class AiPromptConfigurationService {
         if (rules.isEmpty()) return base;
         return new ResolvedPrompt(
                 base.version(),
-                base.content() + "\n\nACTIVE SAFETY RULES (mandatory):\n- " + String.join("\n- ", rules));
+                base.content()
+                        + "\n\nACTIVE SAFETY RULES (mandatory):\n- "
+                        + String.join("\n- ", rules));
     }
 
     public record ResolvedPrompt(String version, String content) {}

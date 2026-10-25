@@ -6,7 +6,6 @@ import '../../../shared/widgets/exercise_tag_chip.dart';
 import '../application/exercise_catalog_controller.dart';
 import '../application/favorite_exercises_controller.dart';
 import '../application/workout_schedule_controller.dart';
-import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
 import '../domain/workout_models.dart';
 

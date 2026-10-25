@@ -343,8 +343,7 @@ public class AiCoachService {
                         "WORKOUT_ENGINE",
                         "daily-v1",
                         "Create 1-3 safe Vietnamese recommendations. Use only candidate IDs and allowed actions.");
-        startRequest(
-                userId, "DAILY_RECOMMENDATION", batch.correlationId(), promptConfig.version());
+        startRequest(userId, "DAILY_RECOMMENDATION", batch.correlationId(), promptConfig.version());
         try {
             ProviderResponse response =
                     provider.generate(
@@ -955,18 +954,11 @@ public class AiCoachService {
     }
 
     private static String renderChatPrompt(String configuredPrompt, String message, String mode) {
-        return configuredPrompt
-                + "\nMode: "
-                + mode
-                + "\nUser: "
-                + message;
+        return configuredPrompt + "\nMode: " + mode + "\nUser: " + message;
     }
 
     private static String renderDailyPrompt(String configuredPrompt, LocalDate date) {
-        return configuredPrompt
-                + "\nTarget date: "
-                + date
-                + ".";
+        return configuredPrompt + "\nTarget date: " + date + ".";
     }
 
     private static void validateIdempotencyKey(String key) {

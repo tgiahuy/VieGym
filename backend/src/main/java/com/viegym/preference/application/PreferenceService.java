@@ -27,6 +27,11 @@ public class PreferenceService {
     private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {};
     private static final TypeReference<Map<String, Object>> OBJECT_MAP = new TypeReference<>() {};
     private static final int MAX_LIST_ITEMS = 100;
+
+    /** Injury flags understood by the AI exercise filter (see AiContextBuilder). */
+    public static final Set<String> INJURY_CODES =
+            Set.of("LOWER_BACK", "KNEE", "SHOULDER", "WRIST", "ELBOW", "NECK", "ANKLE", "HIP");
+
     private static final int MAX_ITEM_LENGTH = 120;
 
     private final JdbcTemplate jdbc;
@@ -44,7 +49,7 @@ public class PreferenceService {
                         """
                         select disliked_foods::text, allergies::text, dietary_constraints::text,
                                meal_preferences::text, training_preferences::text,
-                               preferred_training_time
+                               preferred_training_time, injuries::text
                         from user_preferences where user_id = ?
                         """,
                         (rs, row) ->
@@ -54,7 +59,8 @@ public class PreferenceService {
                                         readList(rs.getString(3)),
                                         readMap(rs.getString(4)),
                                         readMap(rs.getString(5)),
-                                        rs.getObject(6, LocalTime.class)),
+                                        rs.getObject(6, LocalTime.class),
+                                        readList(rs.getString(7))),
                         userId)
                 .stream()
                 .findFirst()
@@ -68,8 +74,8 @@ public class PreferenceService {
                 """
                 insert into user_preferences(
                   user_id, disliked_foods, allergies, dietary_constraints, meal_preferences,
-                  training_preferences, preferred_training_time)
-                values (?, ?::jsonb, ?::jsonb, ?::jsonb, ?::jsonb, ?::jsonb, ?)
+                  training_preferences, preferred_training_time, injuries)
+                values (?, ?::jsonb, ?::jsonb, ?::jsonb, ?::jsonb, ?::jsonb, ?, ?::jsonb)
                 on conflict (user_id) do update set
                   disliked_foods = excluded.disliked_foods,
                   allergies = excluded.allergies,
@@ -77,6 +83,7 @@ public class PreferenceService {
                   meal_preferences = excluded.meal_preferences,
                   training_preferences = excluded.training_preferences,
                   preferred_training_time = excluded.preferred_training_time,
+                  injuries = excluded.injuries,
                   updated_at = now()
                 """,
                 userId,
@@ -87,7 +94,8 @@ public class PreferenceService {
                 write(normalized.trainingPreferences()),
                 normalized.preferredTrainingTime() == null
                         ? null
-                        : Time.valueOf(normalized.preferredTrainingTime()));
+                        : Time.valueOf(normalized.preferredTrainingTime()),
+                write(normalized.injuries()));
         return normalized;
     }
 
@@ -180,7 +188,21 @@ public class PreferenceService {
                         ? Map.of()
                         : java.util.Collections.unmodifiableMap(
                                 new LinkedHashMap<>(request.trainingPreferences())),
-                request.preferredTrainingTime());
+                request.preferredTrainingTime(),
+                validateInjuries(request.injuries()));
+    }
+
+    private List<String> validateInjuries(List<String> values) {
+        if (values == null) return List.of();
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        for (String value : values) {
+            String code = value == null ? "" : value.trim().toUpperCase(java.util.Locale.ROOT);
+            if (!INJURY_CODES.contains(code)) {
+                throw validation("injuries", "INVALID", "injuries contains an unknown code");
+            }
+            normalized.add(code);
+        }
+        return List.copyOf(normalized);
     }
 
     private List<Long> validateEquipment(EquipmentPreferenceRequest request) {
@@ -243,6 +265,7 @@ public class PreferenceService {
     }
 
     private static PreferenceResponse emptyPreference() {
-        return new PreferenceResponse(List.of(), List.of(), List.of(), Map.of(), Map.of(), null);
+        return new PreferenceResponse(
+                List.of(), List.of(), List.of(), Map.of(), Map.of(), null, List.of());
     }
 }

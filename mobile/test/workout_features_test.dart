@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:viegym/core/theme/app_theme.dart';
+import 'package:viegym/features/ai/data/ai_repository.dart';
 import 'package:viegym/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:viegym/features/profile/presentation/progress_screen.dart';
 import 'package:viegym/features/workout/application/exercise_catalog_controller.dart';
@@ -32,6 +33,8 @@ import 'package:viegym/features/workout/presentation/workout_schedule_screen.dar
 import 'package:viegym/features/workout/presentation/workout_session_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_summary_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_tab_screen.dart';
+
+import 'support/fake_ai_repository.dart';
 
 void main() {
   group('RestTimerController tests', () {
@@ -1529,7 +1532,11 @@ void main() {
           tester.view.resetDevicePixelRatio();
         });
 
-        final container = ProviderContainer();
+        final container = ProviderContainer(
+          overrides: [
+            aiRepositoryProvider.overrideWithValue(FakeAiPlanRepository()),
+          ],
+        );
         addTearDown(container.dispose);
         final originalSession = container.read(workoutSessionProvider);
         final originalScheduleCount = container

@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_provider.dart';
 import '../domain/ai_models.dart';
+import '../domain/ai_plan_models.dart';
 
 final aiRepositoryProvider = Provider<AiRepository>((ref) {
   return AiRepository(ref.watch(dioProvider));
@@ -110,6 +113,78 @@ class AiRepository {
       ),
     );
   }
+
+  /// Generates one workout. [muscleCodes] and [equipmentCodes] use backend
+  /// codes (`CHEST`, `DUMBBELL`…); empty equipment = the user's saved set.
+  Future<AiWorkoutPlan> generateWorkout({
+    DateTime? targetDate,
+    required List<String> muscleCodes,
+    required List<String> equipmentCodes,
+    required int durationMinutes,
+    required String intensity,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/ai/workouts/generate',
+      data: {
+        if (targetDate != null) 'targetDate': _date(targetDate),
+        'targetMuscles': muscleCodes,
+        'equipmentCodes': equipmentCodes,
+        'durationMinutes': durationMinutes,
+        'intensity': intensity,
+      },
+      options: Options(headers: {'Idempotency-Key': _newKey('workout')}),
+    );
+    return AiWorkoutPlan.fromJson(_data(response.data));
+  }
+
+  /// Generates one meal per [mealTypes] entry (BREAKFAST, LUNCH, DINNER, SNACK).
+  Future<AiMealPlan> generateMeals({
+    DateTime? targetDate,
+    required List<String> mealTypes,
+    int? maxPrepTimeMinutes,
+    String? customPrompt,
+  }) async {
+    final prompt = customPrompt?.trim() ?? '';
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/ai/meals/generate',
+      data: {
+        if (targetDate != null) 'targetDate': _date(targetDate),
+        'mealTypes': mealTypes,
+        'maxPrepTimeMinutes': ?maxPrepTimeMinutes,
+        if (prompt.isNotEmpty)
+          'customPrompt': prompt.length > 300
+              ? prompt.substring(0, 300)
+              : prompt,
+      },
+      options: Options(headers: {'Idempotency-Key': _newKey('meals')}),
+    );
+    return AiMealPlan.fromJson(_data(response.data));
+  }
+
+  /// Applies a generated plan (or one of its meals) through the backend, which
+  /// writes it to the workout schedule or the meal diary.
+  Future<Map<String, dynamic>> applyPlan({
+    required int recommendationId,
+    required int version,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/ai/recommendations/$recommendationId/apply',
+      data: {'expectedVersion': version},
+      options: Options(
+        headers: {'Idempotency-Key': 'apply-$recommendationId-v$version'},
+      ),
+    );
+    return _map(_data(response.data)['mutationResult']);
+  }
+
+  static final Random _random = Random();
+
+  /// A fresh key per generate call; the backend replays results for a reused key.
+  static String _newKey(String prefix) =>
+      '$prefix-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+
+  static String _date(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   static AiChatMessage _message(Map<String, dynamic> json) {
     return AiChatMessage(

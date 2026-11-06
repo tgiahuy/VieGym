@@ -52,6 +52,9 @@ public class AiCoachService {
     private static final Set<String> TYPES =
             Set.of("WORKOUT", "NUTRITION", "HEALTH", "GENERAL_ADVICE");
     private static final Set<String> PRIORITIES = Set.of("LOW", "MEDIUM", "HIGH");
+    private static final int HISTORY_LIMIT = 20;
+    static final String DAILY_PURPOSE = "DAILY_RECOMMENDATION";
+    static final String MEAL_PLAN_ACTION = "ADD_MEAL_PLAN_PROPOSAL";
     private static final Set<String> ACTIONS =
             Set.of("NONE", "ADD_MEAL_ENTRY_PROPOSAL", "CREATE_WORKOUT_SCHEDULE_PROPOSAL");
 
@@ -236,13 +239,13 @@ public class AiCoachService {
                         "CHAT_COACH",
                         "chat-v1",
                         "Provide concise Vietnamese fitness guidance. Never diagnose illness.");
-        String prompt = renderChatPrompt(promptConfig.content(), content, effectiveMode);
+        String prompt = renderChatPrompt(promptConfig.content(), effectiveMode);
         startRequest(userId, "CHAT", correlationId, promptConfig.version());
         String answer;
         String safety = "NORMAL";
         String disclaimer = null;
         try {
-            if (looksLikePromptInjection(content)) {
+            if (AiPromptSafety.looksLikePromptInjection(content)) {
                 answer =
                         "Mình không thể làm theo yêu cầu thay đổi quy tắc hệ thống. Mình vẫn có thể hỗ trợ kiến thức tập luyện và dinh dưỡng an toàn.";
                 safety = "CAUTION";
@@ -258,7 +261,7 @@ public class AiCoachService {
                                         prompt,
                                         bundle.context(),
                                         bundle.candidates(),
-                                        List.of(Map.of("role", "USER", "content", content)),
+                                        history(conversationId),
                                         List.of("NONE")));
                 answer = validateChatResponse(response);
                 safety = normalizeSafety(response.safetyLevel());
@@ -305,8 +308,9 @@ public class AiCoachService {
                 jdbc.query(
                         "select r.* from ai_recommendations r join ai_generation_batches b "
                                 + "on b.id = r.generation_batch_id where r.user_id = ? "
-                                + "and r.recommendation_date = ? and b.generation_no = "
-                                + "(select max(generation_no) from ai_generation_batches where user_id = ? and target_date = ?) "
+                                + "and r.recommendation_date = ? and b.purpose = 'DAILY_RECOMMENDATION' and b.generation_no = "
+                                + "(select max(generation_no) from ai_generation_batches where user_id = ? and target_date = ? "
+                                + "and purpose = 'DAILY_RECOMMENDATION') "
                                 + "order by r.id",
                         (rs, row) -> recommendation(rs),
                         userId,
@@ -456,7 +460,7 @@ public class AiCoachService {
         }
         Integer count =
                 jdbc.queryForObject(
-                        "select count(*) from ai_generation_batches where user_id = ? and target_date = ?",
+                        "select count(*) from ai_generation_batches where user_id = ? and target_date = ? and purpose = 'DAILY_RECOMMENDATION'",
                         Integer.class,
                         userId,
                         Date.valueOf(date));
@@ -484,7 +488,9 @@ public class AiCoachService {
             Long userId, Batch batch, LocalDate date, List<ValidatedItem> items) {
         jdbc.update(
                 "update ai_recommendations set status = 'EXPIRED', updated_at = current_timestamp "
-                        + "where user_id = ? and recommendation_date = ? and status = 'PENDING'",
+                        + "where user_id = ? and recommendation_date = ? and status = 'PENDING' "
+                        + "and generation_batch_id in (select id from ai_generation_batches "
+                        + "where purpose = 'DAILY_RECOMMENDATION')",
                 userId,
                 Date.valueOf(date));
         OffsetDateTime expiresAt = date.plusDays(1).atStartOfDay(zone(userId)).toOffsetDateTime();
@@ -688,6 +694,38 @@ public class AiCoachService {
                     "targetDate",
                     targetDate.toString());
         }
+        if (MEAL_PLAN_ACTION.equals(row.allowedAction())) {
+            LocalDate targetDate = LocalDate.parse(text(row.preview(), "targetDate", ""));
+            String mealType = text(row.preview(), "mealType", "SNACK").toUpperCase();
+            Object rawEntries = row.preview().get("entries");
+            if (!(rawEntries instanceof List<?> entries) || entries.isEmpty()) {
+                throw new ApiException(
+                        ApiErrorCode.PROPOSAL_TARGET_INVALID, "Meal recommendation has no foods");
+            }
+            for (Object rawEntry : entries) {
+                Map<String, Object> entry = map(rawEntry);
+                nutrition.addEntry(
+                        userId,
+                        targetDate,
+                        new MealEntryRequest(
+                                mealType,
+                                1,
+                                number(entry.get("foodId")),
+                                new BigDecimal(String.valueOf(entry.get("servingMultiplier"))),
+                                null,
+                                null,
+                                "Applied from AI meal plan " + row.id()));
+            }
+            return Map.of(
+                    "targetType",
+                    "MEAL_PLAN",
+                    "mealType",
+                    mealType,
+                    "entryCount",
+                    entries.size(),
+                    "targetDate",
+                    targetDate.toString());
+        }
         if ("NONE".equals(row.allowedAction())) {
             return Map.of("targetType", "NONE");
         }
@@ -789,6 +827,32 @@ public class AiCoachService {
                 parseMap(rs.getString("action_preview")),
                 rs.getInt("version"),
                 time(rs.getTimestamp("expires_at")));
+    }
+
+    /**
+     * Last {@value #HISTORY_LIMIT} turns sent to the provider, oldest first, including the user
+     * message just stored. Fallback/blocked assistant replies (they carry a disclaimer) and user
+     * messages blocked as prompt injection are left out so they do not steer the model.
+     */
+    private List<Map<String, String>> history(Long conversationId) {
+        List<Map<String, String>> recent =
+                jdbc.query(
+                        "select m.role, m.content from ai_messages m "
+                                + "left join ai_requests r on r.correlation_id = m.correlation_id "
+                                + "where m.conversation_id = ? and coalesce(r.status, '') <> 'BLOCKED' "
+                                + "and (m.role = 'USER' or m.disclaimer is null) "
+                                + "order by m.created_at desc, m.id desc limit ?",
+                        (rs, row) ->
+                                Map.of(
+                                        "role",
+                                        rs.getString("role"),
+                                        "content",
+                                        rs.getString("content")),
+                        conversationId,
+                        HISTORY_LIMIT);
+        List<Map<String, String>> ordered = new ArrayList<>(recent);
+        java.util.Collections.reverse(ordered);
+        return ordered;
     }
 
     private List<AiDtos.Message> messages(Long conversationId) {
@@ -945,16 +1009,12 @@ public class AiCoachService {
         throw new ApiException(ApiErrorCode.AI_OUTPUT_INVALID, "AI safety level is invalid");
     }
 
-    private static boolean looksLikePromptInjection(String content) {
-        String normalized = content.toLowerCase();
-        return normalized.contains("ignore previous")
-                || normalized.contains("system prompt")
-                || normalized.contains("bỏ qua hướng dẫn")
-                || normalized.contains("tiết lộ prompt");
-    }
-
-    private static String renderChatPrompt(String configuredPrompt, String message, String mode) {
-        return configuredPrompt + "\nMode: " + mode + "\nUser: " + message;
+    /**
+     * The rendered prompt becomes the provider's system instruction, so the user's text is not
+     * included here; it is sent as a conversation turn instead.
+     */
+    private static String renderChatPrompt(String configuredPrompt, String mode) {
+        return configuredPrompt + "\nMode: " + mode;
     }
 
     private static String renderDailyPrompt(String configuredPrompt, LocalDate date) {

@@ -3119,6 +3119,22 @@
           "trainingPreferences": {
             "additionalProperties": {},
             "type": "object"
+          },
+          "injuries": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "LOWER_BACK",
+                "KNEE",
+                "SHOULDER",
+                "WRIST",
+                "ELBOW",
+                "NECK",
+                "ANKLE",
+                "HIP"
+              ]
+            },
+            "type": "array"
           }
         },
         "type": "object"
@@ -3153,6 +3169,22 @@
           "trainingPreferences": {
             "additionalProperties": {},
             "type": "object"
+          },
+          "injuries": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "LOWER_BACK",
+                "KNEE",
+                "SHOULDER",
+                "WRIST",
+                "ELBOW",
+                "NECK",
+                "ANKLE",
+                "HIP"
+              ]
+            },
+            "type": "array"
           }
         },
         "type": "object"

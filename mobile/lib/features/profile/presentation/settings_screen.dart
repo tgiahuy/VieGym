@@ -18,6 +18,7 @@ class AiConsentNotifier extends Notifier<bool> {
   Future<void> _load() async {
     try {
       state = await ref.read(aiRepositoryProvider).getConsent();
+      ref.read(aiConsentKnownProvider.notifier).markKnown();
     } catch (_) {
       // Consent defaults to disabled when the authoritative state is unavailable.
     }
@@ -30,6 +31,7 @@ class AiConsentNotifier extends Notifier<bool> {
     state = val;
     try {
       state = await ref.read(aiRepositoryProvider).updateConsent(val);
+      ref.read(aiConsentKnownProvider.notifier).markKnown();
     } catch (_) {
       state = previous;
       rethrow;
@@ -39,6 +41,19 @@ class AiConsentNotifier extends Notifier<bool> {
 
 final aiConsentProvider = NotifierProvider<AiConsentNotifier, bool>(
   AiConsentNotifier.new,
+);
+
+/// True once [aiConsentProvider] holds the server's value rather than the
+/// optimistic default; UI that nags about a disabled consent waits for it.
+class AiConsentKnownNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void markKnown() => state = true;
+}
+
+final aiConsentKnownProvider = NotifierProvider<AiConsentKnownNotifier, bool>(
+  AiConsentKnownNotifier.new,
 );
 
 class AudioCuesNotifier extends Notifier<bool> {

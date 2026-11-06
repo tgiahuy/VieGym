@@ -3,8 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_error_handler.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/exercise_tag_chip.dart';
+import '../../ai/data/ai_repository.dart';
+import '../../ai/domain/ai_plan_models.dart';
+import '../../ai/presentation/widgets/ai_personalization_banner.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../application/workout_schedule_controller.dart';
 import '../application/workout_session_controller.dart';
@@ -90,6 +94,28 @@ class _AiWorkoutGenerateScreenState
   bool _isGenerating = false;
   bool _generated = false;
   List<ExerciseDefinition> _generatedExercises = [];
+
+  /// Set when the backend (Gemini or its heuristic) produced the plan; null for
+  /// the offline on-device fallback.
+  AiWorkoutPlan? _aiPlan;
+
+  /// AI prescription per generated exercise, keyed by [ExerciseDefinition.id].
+  final Map<String, AiWorkoutPlanExercise> _prescriptions = {};
+
+  /// Mobile equipment ids → backend equipment codes.
+  static const Map<String, String> _equipmentCodes = {
+    'bw': 'BODYWEIGHT',
+    'pullup_bar': 'PULL_UP_BAR',
+    'db': 'DUMBBELL',
+    'bb': 'BARBELL',
+    'kb': 'KETTLEBELL',
+    'bench': 'BENCH',
+    'adjustable_bench': 'ADJUSTABLE_BENCH',
+    'cable': 'CABLE_MACHINE',
+    'machine': 'MACHINE',
+    'band': 'RESISTANCE_BAND',
+    'treadmill': 'TREADMILL',
+  };
 
   static const List<_MuscleVisualItem> _allMuscles = [
     _MuscleVisualItem(
@@ -506,11 +532,152 @@ class _AiWorkoutGenerateScreenState
     return '4 hiệp × 8-12 reps (Nghỉ 75-90s)';
   }
 
+  int _setsFor(ExerciseDefinition exercise) =>
+      _prescriptions[exercise.id]?.targetSets ?? 3;
+
+  int _targetRepsFor(ExerciseDefinition exercise) {
+    final prescription = _prescriptions[exercise.id];
+    if (prescription == null) return 10;
+    return ((prescription.targetRepsMin + prescription.targetRepsMax) / 2)
+        .round();
+  }
+
+  /// AI weight only exists when the user has history for the exercise; otherwise
+  /// keep the previous default starting load.
+  double _weightFor(ExerciseDefinition exercise) {
+    final aiWeight = _prescriptions[exercise.id]?.targetWeightKg;
+    if (aiWeight != null) return aiWeight;
+    return exercise.equipment == EquipmentType.bodyweight ? 0 : 25;
+  }
+
+  String _setsRepsFor(ExerciseDefinition exercise) {
+    final prescription = _prescriptions[exercise.id];
+    if (prescription == null) return _getSetsRepsRecommendation();
+    return '${prescription.targetSets}x${prescription.targetRepsMin}-${prescription.targetRepsMax}';
+  }
+
+  String get _intensityForGoal {
+    if (_goal.contains('Strength')) return 'HARD';
+    if (_goal.contains('Fat Burn') || _goal.contains('Mobility')) {
+      return 'LIGHT';
+    }
+    return 'MODERATE';
+  }
+
+  List<String> get _selectedMuscleCodes => _allMuscles
+      .where((muscle) => _selectedMuscles.contains(muscle.name))
+      .map((muscle) => muscle.code)
+      .toList();
+
+  List<String> get _selectedEquipmentCodes => _selectedEquipmentIds
+      .map((id) => _equipmentCodes[id])
+      .whereType<String>()
+      .toList();
+
+  /// The backend accepts today .. today+14; other dates fall back to today.
+  DateTime? get _aiTargetDate {
+    final scheduleDate = DateTime.tryParse(
+      ref.read(workoutScheduleProvider).selectedDate,
+    );
+    final requested = widget.initialDate ?? scheduleDate;
+    if (requested == null) return null;
+    final date = DateUtils.dateOnly(requested);
+    final today = DateUtils.dateOnly(DateTime.now());
+    if (date.isBefore(today) ||
+        date.isAfter(today.add(const Duration(days: 14)))) {
+      return null;
+    }
+    return date;
+  }
+
+  static const _defaultExerciseThumbnail =
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80';
+
+  ExerciseDefinition _toDefinition(AiWorkoutPlanExercise exercise) {
+    final local = findExerciseByName(exercise.name);
+    final muscle = _allMuscles
+        .where((m) => m.code == exercise.primaryMuscleCode)
+        .firstOrNull;
+    return ExerciseDefinition(
+      id: 'ex_${exercise.exerciseId}',
+      name: exercise.name,
+      nameVi: local?.nameVi ?? exercise.name,
+      primaryMuscle: muscle?.shortName ?? local?.primaryMuscle ?? 'Toàn thân',
+      primaryMuscleKey: exercise.primaryMuscleCode.toLowerCase(),
+      secondaryMuscles: local?.secondaryMuscles ?? const [],
+      equipment: _equipmentType(exercise.equipmentCodes),
+      equipmentCodes: exercise.equipmentCodes,
+      description: local?.description ?? '',
+      thumbnailUrl: local?.thumbnailUrl ?? _defaultExerciseThumbnail,
+      videoUrl: local?.videoUrl,
+      instructions: local?.instructions ?? const [],
+      commonMistakes: local?.commonMistakes ?? const [],
+    );
+  }
+
+  static EquipmentType _equipmentType(List<String> codes) {
+    if (codes.contains('BARBELL')) return EquipmentType.barbell;
+    if (codes.contains('DUMBBELL') || codes.contains('KETTLEBELL')) {
+      return EquipmentType.dumbbell;
+    }
+    if (codes.contains('CABLE_MACHINE')) return EquipmentType.cable;
+    if (codes.contains('MACHINE') || codes.contains('TREADMILL')) {
+      return EquipmentType.machine;
+    }
+    if (codes.contains('BENCH') || codes.contains('ADJUSTABLE_BENCH')) {
+      return EquipmentType.bench;
+    }
+    return EquipmentType.bodyweight;
+  }
+
+  /// Asks the backend AI planner; falls back to the on-device generator when the
+  /// backend is unreachable or returns an error.
   Future<void> _generatePlan() async {
     HapticFeedback.mediumImpact();
     setState(() => _isGenerating = true);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    try {
+      final plan = await ref
+          .read(aiRepositoryProvider)
+          .generateWorkout(
+            targetDate: _aiTargetDate,
+            muscleCodes: _selectedMuscleCodes,
+            equipmentCodes: _selectedEquipmentCodes,
+            durationMinutes: _durationMinutes.round().clamp(15, 120),
+            intensity: _intensityForGoal,
+          );
+      if (plan.exercises.isEmpty) {
+        throw StateError('Giáo án AI không có bài tập');
+      }
+      if (!mounted) return;
+      setState(() {
+        _isGenerating = false;
+        _generated = true;
+        _aiPlan = plan;
+        _prescriptions
+          ..clear()
+          ..addEntries(
+            plan.exercises.map((e) => MapEntry('ex_${e.exerciseId}', e)),
+          );
+        _generatedExercises = plan.exercises.map(_toDefinition).toList();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      final reason = ApiErrorHandler.getMessage(error);
+      await _generateLocalPlan();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'AI Coach chưa phản hồi ($reason). Đang dùng gợi ý ngoại tuyến.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
+  /// Offline on-device generator, used only when the backend is unavailable.
+  Future<void> _generateLocalPlan() async {
     final availableTypes = _resolvedEquipmentTypes;
     final targetMusclesLower = _selectedMuscles
         .map((m) => m.toLowerCase())
@@ -525,9 +692,13 @@ class _AiWorkoutGenerateScreenState
 
       final matchesMuscle = targetMusclesLower.any((rawM) {
         // Strip prefix "cơ "
-        final m = rawM.startsWith('cơ ') ? rawM.substring(3).trim() : rawM.trim();
+        final m = rawM.startsWith('cơ ')
+            ? rawM.substring(3).trim()
+            : rawM.trim();
 
-        if (m.contains('ngực') && (primaryLower.contains('ngực') || secondaryLower.any((s) => s.contains('ngực')))) {
+        if (m.contains('ngực') &&
+            (primaryLower.contains('ngực') ||
+                secondaryLower.any((s) => s.contains('ngực')))) {
           return true;
         }
         if (m.contains('vai') &&
@@ -535,12 +706,22 @@ class _AiWorkoutGenerateScreenState
                 secondaryLower.any((s) => s.contains('vai')))) {
           return true;
         }
-        if ((m.contains('lưng xô') || m.contains('lưng trên') || m.contains('lưng dưới') || m.contains('xô') || m.contains('lưng')) &&
-            (primaryLower.contains('lưng') || primaryLower.contains('xô') || secondaryLower.any((s) => s.contains('lưng') || s.contains('xô')))) {
+        if ((m.contains('lưng xô') ||
+                m.contains('lưng trên') ||
+                m.contains('lưng dưới') ||
+                m.contains('xô') ||
+                m.contains('lưng')) &&
+            (primaryLower.contains('lưng') ||
+                primaryLower.contains('xô') ||
+                secondaryLower.any(
+                  (s) => s.contains('lưng') || s.contains('xô'),
+                ))) {
           return true;
         }
         if (m.contains('cầu vai') &&
-            (primaryLower.contains('cầu vai') || primaryLower.contains('vai') || secondaryLower.any((s) => s.contains('vai')))) {
+            (primaryLower.contains('cầu vai') ||
+                primaryLower.contains('vai') ||
+                secondaryLower.any((s) => s.contains('vai')))) {
           return true;
         }
         if (m.contains('cổ') &&
@@ -548,41 +729,57 @@ class _AiWorkoutGenerateScreenState
           return true;
         }
         if (m.contains('tay trước') &&
-            (primaryLower.contains('tay trước') || secondaryLower.any((s) => s.contains('tay trước')))) {
+            (primaryLower.contains('tay trước') ||
+                secondaryLower.any((s) => s.contains('tay trước')))) {
           return true;
         }
         if (m.contains('tay sau') &&
-            (primaryLower.contains('tay sau') || secondaryLower.any((s) => s.contains('tay sau')))) {
+            (primaryLower.contains('tay sau') ||
+                secondaryLower.any((s) => s.contains('tay sau')))) {
           return true;
         }
         if (m.contains('cẳng tay') &&
-            (primaryLower.contains('cẳng tay') || primaryLower.contains('tay') || secondaryLower.any((s) => s.contains('tay')))) {
+            (primaryLower.contains('cẳng tay') ||
+                primaryLower.contains('tay') ||
+                secondaryLower.any((s) => s.contains('tay')))) {
           return true;
         }
         if (m.contains('đùi trước') &&
-            (primaryLower.contains('đùi trước') || primaryLower.contains('quad') || secondaryLower.any((s) => s.contains('đùi trước')))) {
+            (primaryLower.contains('đùi trước') ||
+                primaryLower.contains('quad') ||
+                secondaryLower.any((s) => s.contains('đùi trước')))) {
           return true;
         }
         if (m.contains('đùi sau') &&
             (primaryLower.contains('đùi sau') ||
                 primaryLower.contains('mông') ||
-                secondaryLower.any((s) => s.contains('đùi sau') || s.contains('mông')))) {
+                secondaryLower.any(
+                  (s) => s.contains('đùi sau') || s.contains('mông'),
+                ))) {
           return true;
         }
         if (m.contains('mông') &&
-            (primaryLower.contains('mông') || primaryLower.contains('đùi') || secondaryLower.any((s) => s.contains('mông')))) {
+            (primaryLower.contains('mông') ||
+                primaryLower.contains('đùi') ||
+                secondaryLower.any((s) => s.contains('mông')))) {
           return true;
         }
         if (m.contains('bắp chân') &&
-            (primaryLower.contains('bắp chân') || primaryLower.contains('chân') || secondaryLower.any((s) => s.contains('chân')))) {
+            (primaryLower.contains('bắp chân') ||
+                primaryLower.contains('chân') ||
+                secondaryLower.any((s) => s.contains('chân')))) {
           return true;
         }
         if ((m.contains('dạng hông') || m.contains('khép hông')) &&
-            (primaryLower.contains('mông') || primaryLower.contains('đùi') || secondaryLower.any((s) => s.contains('đùi')))) {
+            (primaryLower.contains('mông') ||
+                primaryLower.contains('đùi') ||
+                secondaryLower.any((s) => s.contains('đùi')))) {
           return true;
         }
         if (m.contains('bụng') &&
-            (primaryLower.contains('bụng') || primaryLower.contains('core') || secondaryLower.any((s) => s.contains('bụng')))) {
+            (primaryLower.contains('bụng') ||
+                primaryLower.contains('core') ||
+                secondaryLower.any((s) => s.contains('bụng')))) {
           return true;
         }
         return primaryLower.contains(m) || primaryLower.contains(rawM);
@@ -625,6 +822,8 @@ class _AiWorkoutGenerateScreenState
       setState(() {
         _isGenerating = false;
         _generated = true;
+        _aiPlan = null;
+        _prescriptions.clear();
         _generatedExercises = selectedList.isNotEmpty
             ? selectedList
             : exerciseCatalog.take(4).toList();
@@ -786,7 +985,9 @@ class _AiWorkoutGenerateScreenState
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.18),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.18,
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
@@ -945,10 +1146,12 @@ class _AiWorkoutGenerateScreenState
                 .map(
                   (exercise) => ScheduleDraftExercise(
                     exercise: exercise,
-                    targetSets: 3,
-                    targetRepsMin: 8,
-                    targetRepsMax: 12,
-                    restSeconds: 90,
+                    targetSets: _setsFor(exercise),
+                    targetRepsMin:
+                        _prescriptions[exercise.id]?.targetRepsMin ?? 8,
+                    targetRepsMax:
+                        _prescriptions[exercise.id]?.targetRepsMax ?? 12,
+                    restSeconds: _prescriptions[exercise.id]?.restSeconds ?? 90,
                   ),
                 )
                 .toList(),
@@ -1102,12 +1305,9 @@ class _AiWorkoutGenerateScreenState
                             name: exercise.name,
                             primaryMuscle: exercise.primaryMuscle,
                             equipment: exercise.equipment,
-                            targetSets: 3,
-                            targetReps: 10,
-                            weightKg:
-                                exercise.equipment == EquipmentType.bodyweight
-                                ? 0
-                                : 25,
+                            targetSets: _setsFor(exercise),
+                            targetReps: _targetRepsFor(exercise),
+                            weightKg: _weightFor(exercise),
                             thumbnailUrl: exercise.thumbnailUrl,
                           ),
                         )
@@ -1147,7 +1347,7 @@ class _AiWorkoutGenerateScreenState
                 .map(
                   (exercise) => PlannedExercisePreview(
                     name: exercise.name,
-                    setsReps: _getSetsRepsRecommendation(),
+                    setsReps: _setsRepsFor(exercise),
                   ),
                 )
                 .toList(),
@@ -1195,11 +1395,9 @@ class _AiWorkoutGenerateScreenState
                         name: exercise.name,
                         primaryMuscle: exercise.primaryMuscle,
                         equipment: exercise.equipment,
-                        targetSets: 3,
-                        targetReps: 10,
-                        weightKg: exercise.equipment == EquipmentType.bodyweight
-                            ? 0
-                            : 25,
+                        targetSets: _setsFor(exercise),
+                        targetReps: _targetRepsFor(exercise),
+                        weightKg: _weightFor(exercise),
                         thumbnailUrl: exercise.thumbnailUrl,
                       ),
                     )
@@ -1238,7 +1436,7 @@ class _AiWorkoutGenerateScreenState
         .map(
           (exercise) => PlannedExercisePreview(
             name: exercise.name,
-            setsReps: _getSetsRepsRecommendation(),
+            setsReps: _setsRepsFor(exercise),
           ),
         )
         .toList();
@@ -1302,11 +1500,9 @@ class _AiWorkoutGenerateScreenState
                       name: ex.name,
                       primaryMuscle: ex.primaryMuscle,
                       equipment: ex.equipment,
-                      targetSets: 3,
-                      targetReps: 10,
-                      weightKg: ex.equipment == EquipmentType.bodyweight
-                          ? 0
-                          : 25,
+                      targetSets: _setsFor(ex),
+                      targetReps: _targetRepsFor(ex),
+                      weightKg: _weightFor(ex),
                       thumbnailUrl: ex.thumbnailUrl,
                     ),
                   )
@@ -1478,7 +1674,11 @@ class _AiWorkoutGenerateScreenState
                             onPressed: () {
                               setModalState(() {
                                 tempSelected.clear();
-                                tempSelected.addAll(['Cơ ngực', 'Cơ vai', 'Cơ tay sau']);
+                                tempSelected.addAll([
+                                  'Cơ ngực',
+                                  'Cơ vai',
+                                  'Cơ tay sau',
+                                ]);
                               });
                             },
                             child: const Text('Đẩy (Push)'),
@@ -1533,7 +1733,8 @@ class _AiWorkoutGenerateScreenState
                       separatorBuilder: (_, _) => const SizedBox(height: 6),
                       itemBuilder: (context, index) {
                         final muscle = _allMuscles[index];
-                        final isSelected = tempSelected.contains(muscle.name) ||
+                        final isSelected =
+                            tempSelected.contains(muscle.name) ||
                             tempSelected.contains(muscle.shortName);
 
                         return InkWell(
@@ -1995,10 +2196,12 @@ class _AiWorkoutGenerateScreenState
     final colors = Theme.of(context).colorScheme;
 
     final selectedMuscleItems = _allMuscles
-        .where((m) =>
-            _selectedMuscles.contains(m.name) ||
-            _selectedMuscles.contains(m.shortName) ||
-            _selectedMuscles.contains(m.code))
+        .where(
+          (m) =>
+              _selectedMuscles.contains(m.name) ||
+              _selectedMuscles.contains(m.shortName) ||
+              _selectedMuscles.contains(m.code),
+        )
         .toList();
 
     final selectedEquipmentItems = _equipmentList
@@ -2038,6 +2241,8 @@ class _AiWorkoutGenerateScreenState
                 _goal = 'Tăng cơ nạc (Hypertrophy)';
                 _generated = false;
                 _generatedExercises.clear();
+                _aiPlan = null;
+                _prescriptions.clear();
               });
             },
           ),
@@ -2048,6 +2253,10 @@ class _AiWorkoutGenerateScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const AiPersonalizationBanner(
+              message:
+                  'Bật Cá nhân hoá để AI chọn mức tạ theo lịch sử tập và tránh nhóm cơ chưa phục hồi.',
+            ),
             // ── AI Hero Banner Card ───────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
@@ -2146,8 +2355,10 @@ class _AiWorkoutGenerateScreenState
                   _PresetChip(
                     label: 'Thân trên',
                     isSelected:
-                        (_selectedMuscles.contains('Cơ ngực') || _selectedMuscles.contains('Ngực')) &&
-                        (_selectedMuscles.contains('Cơ lưng xô') || _selectedMuscles.contains('Lưng xô')) &&
+                        (_selectedMuscles.contains('Cơ ngực') ||
+                            _selectedMuscles.contains('Ngực')) &&
+                        (_selectedMuscles.contains('Cơ lưng xô') ||
+                            _selectedMuscles.contains('Lưng xô')) &&
                         _selectedMuscles.length == 9,
                     onTap: () => _applyMusclePreset('upper'),
                   ),
@@ -2155,8 +2366,10 @@ class _AiWorkoutGenerateScreenState
                   _PresetChip(
                     label: 'Thân dưới & Core',
                     isSelected:
-                        (_selectedMuscles.contains('Cơ đùi trước') || _selectedMuscles.contains('Đùi trước')) &&
-                        (_selectedMuscles.contains('Cơ đùi sau') || _selectedMuscles.contains('Đùi sau')) &&
+                        (_selectedMuscles.contains('Cơ đùi trước') ||
+                            _selectedMuscles.contains('Đùi trước')) &&
+                        (_selectedMuscles.contains('Cơ đùi sau') ||
+                            _selectedMuscles.contains('Đùi sau')) &&
                         _selectedMuscles.length == 7,
                     onTap: () => _applyMusclePreset('lower'),
                   ),
@@ -2164,8 +2377,10 @@ class _AiWorkoutGenerateScreenState
                   _PresetChip(
                     label: 'Đẩy (Push)',
                     isSelected:
-                        (_selectedMuscles.contains('Cơ ngực') || _selectedMuscles.contains('Ngực')) &&
-                        (_selectedMuscles.contains('Cơ vai') || _selectedMuscles.contains('Vai')) &&
+                        (_selectedMuscles.contains('Cơ ngực') ||
+                            _selectedMuscles.contains('Ngực')) &&
+                        (_selectedMuscles.contains('Cơ vai') ||
+                            _selectedMuscles.contains('Vai')) &&
                         _selectedMuscles.length == 3,
                     onTap: () => _applyMusclePreset('push'),
                   ),
@@ -2173,8 +2388,10 @@ class _AiWorkoutGenerateScreenState
                   _PresetChip(
                     label: 'Kéo (Pull)',
                     isSelected:
-                        (_selectedMuscles.contains('Cơ lưng xô') || _selectedMuscles.contains('Lưng xô')) &&
-                        (_selectedMuscles.contains('Cơ tay trước') || _selectedMuscles.contains('Tay trước')) &&
+                        (_selectedMuscles.contains('Cơ lưng xô') ||
+                            _selectedMuscles.contains('Lưng xô')) &&
+                        (_selectedMuscles.contains('Cơ tay trước') ||
+                            _selectedMuscles.contains('Tay trước')) &&
                         _selectedMuscles.length == 5,
                     onTap: () => _applyMusclePreset('pull'),
                   ),
@@ -2993,7 +3210,9 @@ class _AiWorkoutGenerateScreenState
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Đề xuất: ${_selectedMuscles.join(' + ')} (${_generatedExercises.length} bài)',
+                            _aiPlan != null && _aiPlan!.planTitle.isNotEmpty
+                                ? '${_aiPlan!.planTitle} (${_generatedExercises.length} bài)'
+                                : 'Đề xuất: ${_selectedMuscles.join(' + ')} (${_generatedExercises.length} bài)',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
@@ -3023,13 +3242,17 @@ class _AiWorkoutGenerateScreenState
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Giáo án được tối ưu theo cơ chế lũy tiến (${_goal.split(' ').first}) với thời gian nghỉ và cường độ bài tập đã cân đối.',
+                      _aiPlan != null && _aiPlan!.rationale.isNotEmpty
+                          ? _aiPlan!.rationale
+                          : 'Giáo án được tối ưu theo cơ chế lũy tiến (${_goal.split(' ').first}) với thời gian nghỉ và cường độ bài tập đã cân đối.',
                       style: TextStyle(
                         fontSize: 11.5,
                         color: colors.onSurfaceVariant,
                         height: 1.35,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    _PlanSourceBadge(plan: _aiPlan),
                   ],
                 ),
               ),
@@ -3056,7 +3279,10 @@ class _AiWorkoutGenerateScreenState
                         _ExercisePreviewRow(
                           number: index + 1,
                           exercise: ex,
-                          sets: _getSetsRepsRecommendation(),
+                          sets:
+                              _prescriptions[ex.id]?.prescription ??
+                              _getSetsRepsRecommendation(),
+                          tip: _prescriptions[ex.id]?.coachingTip,
                         ),
                         if (!isLast)
                           Divider(
@@ -3181,7 +3407,7 @@ class _AiWorkoutGenerateScreenState
                 ),
               ],
             ),
-            if (trailing != null) trailing,
+            ?trailing,
           ],
         ),
         const SizedBox(height: 2),
@@ -3242,9 +3468,7 @@ class _PresetChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 13.5,
-                color: isSelected
-                    ? AppColors.primary
-                    : colors.onSurfaceVariant,
+                color: isSelected ? AppColors.primary : colors.onSurfaceVariant,
               ),
               const SizedBox(width: 5),
             ],
@@ -3370,11 +3594,13 @@ class _ExercisePreviewRow extends StatelessWidget {
     required this.number,
     required this.exercise,
     required this.sets,
+    this.tip,
   });
 
   final int number;
   final ExerciseDefinition exercise;
   final String sets;
+  final String? tip;
 
   @override
   Widget build(BuildContext context) {
@@ -3423,6 +3649,18 @@ class _ExercisePreviewRow extends StatelessWidget {
                     color: AppColors.green,
                   ),
                 ),
+                if (tip != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tip!,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontStyle: FontStyle.italic,
+                      color: colors.onSurfaceVariant,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -3437,6 +3675,53 @@ class _ExercisePreviewRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Tells the user where the plan came from: the AI coach, the backend's
+/// rule-based fallback, or the offline on-device generator.
+class _PlanSourceBadge extends StatelessWidget {
+  const _PlanSourceBadge({required this.plan});
+
+  final AiWorkoutPlan? plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final (IconData icon, String label, Color color) = switch (plan) {
+      null => (
+        Icons.cloud_off_rounded,
+        'Gợi ý ngoại tuyến • chưa cá nhân hoá',
+        AppColors.textSecondary,
+      ),
+      final p when p.isAiGenerated => (
+        Icons.auto_awesome_rounded,
+        p.personalized
+            ? 'AI Coach • cá nhân hoá theo hồ sơ của bạn'
+            : 'AI Coach • bật "Cá nhân hoá" để gợi ý sát hơn',
+        AppColors.primary,
+      ),
+      _ => (
+        Icons.rule_rounded,
+        'Gợi ý cơ bản • AI Coach tạm thời bận',
+        AppColors.textSecondary,
+      ),
+    };
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

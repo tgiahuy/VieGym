@@ -1,4 +1,5 @@
 import json
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -8,6 +9,7 @@ from app.models.schemas import GenerateRequest, GenerateResponse, RequestType, S
 from app.services.ai_provider import provider_for_settings
 
 router = APIRouter()
+logger = logging.getLogger("app.ai.generate")
 
 
 @router.get("/status")
@@ -15,7 +17,7 @@ async def provider_status(token: str = Depends(verify_internal_token)) -> dict[s
     return {
         "provider": settings.AI_PROVIDER,
         "model": settings.AI_MODEL,
-        "reachable": True,
+        "reachable": await provider_for_settings().reachable(),
     }
 
 
@@ -37,7 +39,17 @@ async def generate_recommendation(
         )
     try:
         return await provider_for_settings().generate(request)
-    except Exception:
+    except Exception as exc:
+        # Never log prompt/context: they contain personal health data.
+        logger.exception(
+            "AI generation failed (correlationId=%s, requestType=%s, provider=%s, model=%s, "
+            "error=%s)",
+            request.correlationId,
+            request.requestType,
+            settings.AI_PROVIDER,
+            settings.AI_MODEL,
+            type(exc).__name__,
+        )
         return GenerateResponse(
             correlationId=request.correlationId,
             content=(

@@ -10,4 +10,5 @@ public record PreferenceRequest(
         List<String> dietaryConstraints,
         Map<String, Object> mealPreferences,
         Map<String, Object> trainingPreferences,
-        LocalTime preferredTrainingTime) {}
+        LocalTime preferredTrainingTime,
+        List<String> injuries) {}

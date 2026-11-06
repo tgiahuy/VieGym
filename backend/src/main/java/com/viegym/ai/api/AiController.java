@@ -1,6 +1,7 @@
 package com.viegym.ai.api;
 
 import com.viegym.ai.application.AiCoachService;
+import com.viegym.ai.application.AiPlanService;
 import com.viegym.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/ai")
 public class AiController {
     private final AiCoachService service;
+    private final AiPlanService plans;
 
-    public AiController(AiCoachService service) {
+    public AiController(AiCoachService service, AiPlanService plans) {
         this.service = service;
+        this.plans = plans;
     }
 
     @GetMapping("/consent")
@@ -99,6 +102,28 @@ public class AiController {
             @Valid @RequestBody AiDtos.DismissRecommendation request,
             @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(service.dismiss(userId(jwt), id, request, idempotencyKey));
+    }
+
+    @PostMapping("/workouts/generate")
+    ResponseEntity<ApiResponse<AiDtos.WorkoutPlan>> generateWorkout(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody(required = false) AiDtos.GenerateWorkout request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                plans.generateWorkout(userId(jwt), request, idempotencyKey)));
+    }
+
+    @PostMapping("/meals/generate")
+    ResponseEntity<ApiResponse<AiDtos.MealPlan>> generateMeals(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody(required = false) AiDtos.GenerateMeals request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(
+                        ApiResponse.success(
+                                plans.generateMeals(userId(jwt), request, idempotencyKey)));
     }
 
     private static Long userId(Jwt jwt) {

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,16 +9,27 @@ class Settings(BaseSettings):
     INTERNAL_API_V1_STR: str = "/internal/v1"
     APP_ENV: Literal["local", "test", "staging", "production", "prod"] = "local"
     INTERNAL_SERVICE_TOKEN: str = "local-development-token"
-    AI_PROVIDER: Literal["mock", "openai"] = "mock"
-    AI_MODEL: str = "gpt-5.6-luna"
+    LOG_LEVEL: str = "INFO"
+    AI_PROVIDER: Literal["mock", "gemini"] = "mock"
+    AI_MODEL: str = "gemini-3.6-flash"
     AI_PROVIDER_API_KEY: str = ""
     AI_CONNECT_TIMEOUT_SECONDS: float = 3.0
-    AI_READ_TIMEOUT_SECONDS: float = 20.0
+    # Total budget for one /generate call, retries included. Keep it below the backend
+    # read timeout (AI_READ_TIMEOUT_MS, 26s in compose) so the backend never times out first.
+    AI_READ_TIMEOUT_SECONDS: float = 24.0
     AI_MAX_ATTEMPTS: int = 2
     AI_MAX_CONTEXT_BYTES: int = 32768
-    AI_MAX_OUTPUT_TOKENS: int = 1024
+    AI_MAX_OUTPUT_TOKENS: int = 2048
+    # None keeps the model default (recommended for Gemini 3 models).
+    AI_TEMPERATURE: float | None = None
+    AI_THINKING_LEVEL: Literal["", "MINIMAL", "LOW", "MEDIUM", "HIGH"] = "MINIMAL"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator("AI_TEMPERATURE", mode="before")
+    @classmethod
+    def blank_temperature_is_default(cls, value: object) -> object:
+        return None if value == "" else value
 
     @model_validator(mode="after")
     def validate_deployment_secrets(self) -> "Settings":

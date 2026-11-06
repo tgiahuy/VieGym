@@ -25,6 +25,7 @@ public interface AiProviderClient {
             String content,
             String safetyLevel,
             List<Map<String, Object>> items,
+            Map<String, Object> plan,
             Map<String, Object> providerMetadata) {}
 
     record ProviderStatus(String provider, String model, boolean reachable) {}

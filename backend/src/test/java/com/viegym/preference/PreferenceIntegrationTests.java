@@ -88,6 +88,27 @@ class PreferenceIntegrationTests {
     }
 
     @Test
+    void storesNormalizedInjuryCodesAndRejectsUnknownOnes() throws Exception {
+        Session owner = activate("injury@example.com");
+        mockMvc.perform(
+                        authPut(
+                                "/api/v1/preferences",
+                                owner.token(),
+                                "{\"injuries\":[\"lower_back\",\"KNEE\",\"KNEE\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.injuries.length()").value(2))
+                .andExpect(jsonPath("$.data.injuries[0]").value("LOWER_BACK"));
+        mockMvc.perform(
+                        authPut(
+                                "/api/v1/preferences",
+                                owner.token(),
+                                "{\"injuries\":[\"BROKEN_HEART\"]}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(authGet("/api/v1/preferences", owner.token()))
+                .andExpect(jsonPath("$.data.injuries[1]").value("KNEE"));
+    }
+
+    @Test
     void equipmentCatalogAndSelectionAreOwnedAndReplaceBased() throws Exception {
         Session first = activate("equipment1@example.com");
         Session second = activate("equipment2@example.com");

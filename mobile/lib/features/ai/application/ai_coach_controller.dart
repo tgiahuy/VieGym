@@ -138,6 +138,7 @@ class AiCoachController extends Notifier<AiCoachState> {
     state = state.copyWith(
       messages: [...state.messages, userMessage],
       isGenerating: true,
+      clearRetry: true,
     );
 
     try {
@@ -159,17 +160,52 @@ class AiCoachController extends Notifier<AiCoachState> {
       );
     } catch (_) {
       if (!ref.mounted) return;
-      final fallback = _buildResponse(text);
+      // Offline we only answer what can be handled safely on-device (pain
+      // safety guidance and catalog-based exercise swaps); anything else gets an
+      // honest error with a retry instead of a canned "AI" answer.
+      final local = _offlineResponse(text);
+      final now = DateTime.now().microsecondsSinceEpoch;
       state = state.copyWith(
-        messages: [...state.messages, fallback],
+        messages: [
+          ...state.messages,
+          local ??
+              AiChatMessage(
+                id: 'assistant_offline_$now',
+                sender: AiMessageSender.assistant,
+                text:
+                    'Mình chưa kết nối được AI Coach nên chưa trả lời được câu này. Hãy kiểm tra mạng rồi bấm "Thử lại".',
+              ),
+        ],
         isGenerating: false,
-        errorMessage:
-            'Đang dùng phản hồi dự phòng vì chưa kết nối được AI Coach.',
+        errorMessage: 'Chưa kết nối được AI Coach.',
+        retryText: local == null ? text : null,
       );
     }
   }
 
-  AiChatMessage _buildResponse(String rawText) {
+  /// Re-sends the last message that failed because the AI Coach was unreachable.
+  Future<void> retry() async {
+    final text = state.retryText;
+    if (text == null || state.isGenerating) return;
+    final messages = [...state.messages];
+    if (messages.isNotEmpty &&
+        messages.last.id.startsWith('assistant_offline_')) {
+      messages.removeLast();
+    }
+    if (messages.isNotEmpty &&
+        messages.last.sender == AiMessageSender.user &&
+        messages.last.text == text) {
+      messages.removeLast();
+    }
+    state = state.copyWith(
+      messages: messages,
+      clearRetry: true,
+      clearError: true,
+    );
+    await send(text);
+  }
+
+  AiChatMessage? _offlineResponse(String rawText) {
     final text = _normalize(rawText);
     final now = DateTime.now().microsecondsSinceEpoch;
     final hasPain = _containsAny(text, [
@@ -218,367 +254,7 @@ class AiCoachController extends Notifier<AiCoachState> {
       );
     }
 
-    if (_containsAny(text, [
-      'thuc don',
-      'bua an',
-      'an gi',
-      'bua trua',
-      'bua sang',
-      'bua toi',
-      'bua phu',
-      'tang co',
-      'giam mo',
-      'protein',
-    ])) {
-      return _buildMealSuggestionMessage(text, now);
-    }
-
-    if (_containsAny(text, [
-      'buoi tap',
-      'lich tap',
-      'tap gi',
-      'goi y tap',
-      'nguc',
-      'lung',
-      'chan',
-      'mong',
-      'vai',
-      'tay',
-      'full body',
-      'cardio',
-    ])) {
-      return _buildWorkoutSuggestionMessage(text, now);
-    }
-
-    return AiChatMessage(
-      id: 'assistant_general_$now',
-      sender: AiMessageSender.assistant,
-      text:
-          'Mình có thể hỗ trợ bạn gợi ý thực đơn bữa ăn dinh dưỡng, lên lịch buổi tập thông minh hoặc điều chỉnh bài tập khi bị đau/khó chịu. Bạn muốn xem gợi ý bữa ăn hay buổi tập nào?',
-    );
-  }
-
-  AiChatMessage _buildMealSuggestionMessage(String normalizedText, int now) {
-    if (normalizedText.contains('bua sang')) {
-      const proposal = MealProposal(
-        id: 'meal_breakfast_proposal',
-        status: ProposalStatus.pending,
-        mealName: 'Bữa sáng giàu năng lượng',
-        items: [
-          MealProposalItem(
-            name: 'Trứng ốp la (2 quả) & Bánh mì đen',
-            serving: '2 quả + 2 lát',
-            calories: 280,
-            protein: 18.0,
-          ),
-          MealProposalItem(
-            name: 'Yến mạch ngâm sữa chua Hy Lạp',
-            serving: '1 hũ (150g)',
-            calories: 190,
-            protein: 14.5,
-          ),
-          MealProposalItem(
-            name: 'Chuối tiêu chín',
-            serving: '1 quả (100g)',
-            calories: 89,
-            protein: 1.1,
-          ),
-        ],
-        reason:
-            'Cung cấp carb tiêu hóa chậm và protein cao để nạp năng lượng cho cả buổi sáng.',
-      );
-      return AiChatMessage(
-        id: 'assistant_meal_$now',
-        sender: AiMessageSender.assistant,
-        text:
-            'Gợi ý thực đơn Bữa sáng dinh dưỡng, chuẩn bị nhanh gọn dưới 10 phút:',
-        proposal: proposal,
-      );
-    } else if (normalizedText.contains('bua toi') ||
-        normalizedText.contains('nhe bung')) {
-      const proposal = MealProposal(
-        id: 'meal_dinner_proposal',
-        status: ProposalStatus.pending,
-        mealName: 'Bữa tối thanh nhẹ & Phục hồi',
-        items: [
-          MealProposalItem(
-            name: 'Cá hồi áp chảo sốt chanh',
-            serving: '150g',
-            calories: 280,
-            protein: 34.0,
-          ),
-          MealProposalItem(
-            name: 'Khoai lang luộc',
-            serving: '1 củ vừa (120g)',
-            calories: 110,
-            protein: 2.0,
-          ),
-          MealProposalItem(
-            name: 'Salad xà lách & Cà chua bi dầu ô liu',
-            serving: '1 đĩa lớn',
-            calories: 75,
-            protein: 1.5,
-          ),
-        ],
-        reason:
-            'Dồi dào Omega-3 chống viêm, protein nạc và chất xơ giúp tiêu hóa nhẹ nhàng trước khi ngủ.',
-      );
-      return AiChatMessage(
-        id: 'assistant_meal_$now',
-        sender: AiMessageSender.assistant,
-        text: 'Gợi ý Bữa tối lành mạnh, hỗ trợ tổng hợp cơ bắp ban đêm:',
-        proposal: proposal,
-      );
-    } else if (normalizedText.contains('bua phu') ||
-        normalizedText.contains('truoc tap') ||
-        normalizedText.contains('sau tap')) {
-      const proposal = MealProposal(
-        id: 'meal_snack_proposal',
-        status: ProposalStatus.pending,
-        mealName: 'Bữa phụ nạp năng lượng',
-        items: [
-          MealProposalItem(
-            name: 'Whey Protein Isolate (1 muỗng)',
-            serving: '1 scoop (30g)',
-            calories: 120,
-            protein: 25.0,
-          ),
-          MealProposalItem(
-            name: 'Táo tươi & Bơ đậu phộng nguyên chất',
-            serving: '1 quả + 1 thìa cafe',
-            calories: 145,
-            protein: 4.5,
-          ),
-        ],
-        reason: 'Hấp thu nhanh, chống dị hóa cơ và nạp glycogen tức thì.',
-      );
-      return AiChatMessage(
-        id: 'assistant_meal_$now',
-        sender: AiMessageSender.assistant,
-        text: 'Gợi ý Bữa phụ tiện lợi nạp năng lượng trước hoặc sau khi tập:',
-        proposal: proposal,
-      );
-    }
-
-    // Default Lunch / High protein lunch
-    const proposal = MealProposal(
-      id: 'meal_lunch_proposal',
-      status: ProposalStatus.pending,
-      mealName: 'Bữa trưa tăng cơ (High-Protein Lunch)',
-      items: [
-        MealProposalItem(
-          name: 'Ức gà áp chảo sốt tiêu đen',
-          serving: '180g',
-          calories: 285,
-          protein: 52.0,
-        ),
-        MealProposalItem(
-          name: 'Cơm gạo lứt huyết rồng',
-          serving: '1 chén (150g)',
-          calories: 180,
-          protein: 4.5,
-        ),
-        MealProposalItem(
-          name: 'Bông cải xanh & Măng tây hấp',
-          serving: '150g',
-          calories: 55,
-          protein: 4.2,
-        ),
-      ],
-      reason:
-          'Cung cấp trên 60g protein chất lượng cao cùng carbohydrate phức hợp tối ưu hồi phục glycogen.',
-    );
-    return AiChatMessage(
-      id: 'assistant_meal_$now',
-      sender: AiMessageSender.assistant,
-      text:
-          'Gợi ý thực đơn Bữa trưa tăng cơ tối ưu theo chỉ số cá nhân của bạn:',
-      proposal: proposal,
-    );
-  }
-
-  AiChatMessage _buildWorkoutSuggestionMessage(String normalizedText, int now) {
-    if (normalizedText.contains('nguc') ||
-        normalizedText.contains('tay sau') ||
-        normalizedText.contains('day') ||
-        normalizedText.contains('push')) {
-      const proposal = WorkoutProposal(
-        id: 'workout_push_proposal',
-        status: ProposalStatus.pending,
-        workoutTitle: 'Buổi tập Đẩy: Ngực & Tay sau (Push Day)',
-        focusArea: 'Cơ ngực, Vai trước & Tay sau',
-        durationMinutes: 45,
-        items: [
-          WorkoutProposalItem(
-            name: 'Incline Dumbbell Bench Press',
-            targetMuscle: 'Ngực trên',
-            setsReps: '4 hiệp × 8-10 reps',
-            restSeconds: 90,
-          ),
-          WorkoutProposalItem(
-            name: 'Barbell Flat Bench Press',
-            targetMuscle: 'Ngực giữa',
-            setsReps: '3 hiệp × 8-12 reps',
-            restSeconds: 90,
-          ),
-          WorkoutProposalItem(
-            name: 'Dumbbell Lateral Raise',
-            targetMuscle: 'Vai giữa',
-            setsReps: '4 hiệp × 12-15 reps',
-            restSeconds: 60,
-          ),
-          WorkoutProposalItem(
-            name: 'Cable Triceps Pushdown',
-            targetMuscle: 'Tay sau',
-            setsReps: '3 hiệp × 12-15 reps',
-            restSeconds: 60,
-          ),
-        ],
-        reason:
-            'Tập trung phát triển độ dày cơ ngực trên và cắt nét vai, tay sau theo cấu trúc Push tối ưu.',
-      );
-      return AiChatMessage(
-        id: 'assistant_workout_$now',
-        sender: AiMessageSender.assistant,
-        text:
-            'Gợi ý Buổi tập Ngực & Tay sau (Push Day) được cá nhân hóa theo thiết bị hiện có:',
-        proposal: proposal,
-      );
-    } else if (normalizedText.contains('lung') ||
-        normalizedText.contains('keo') ||
-        normalizedText.contains('tay truoc') ||
-        normalizedText.contains('pull')) {
-      const proposal = WorkoutProposal(
-        id: 'workout_pull_proposal',
-        status: ProposalStatus.pending,
-        workoutTitle: 'Buổi tập Kéo: Lưng xô & Tay trước (Pull Day)',
-        focusArea: 'Cơ lưng xô, Lưng giữa & Tay trước',
-        durationMinutes: 45,
-        items: [
-          WorkoutProposalItem(
-            name: 'Lat Pulldown (Kéo xô rộng tay)',
-            targetMuscle: 'Lưng xô (Lats)',
-            setsReps: '4 hiệp × 10-12 reps',
-            restSeconds: 90,
-          ),
-          WorkoutProposalItem(
-            name: 'Barbell Bent-Over Row',
-            targetMuscle: 'Lưng giữa & Cầu vai',
-            setsReps: '4 hiệp × 8-10 reps',
-            restSeconds: 90,
-          ),
-          WorkoutProposalItem(
-            name: 'Face Pulls (Kéo cáp vào mặt)',
-            targetMuscle: 'Vai sau & Trâm cơ lưng',
-            setsReps: '3 hiệp × 15 reps',
-            restSeconds: 60,
-          ),
-          WorkoutProposalItem(
-            name: 'Incline Dumbbell Bicep Curl',
-            targetMuscle: 'Tay trước (Biceps)',
-            setsReps: '3 hiệp × 10-12 reps',
-            restSeconds: 60,
-          ),
-        ],
-        reason:
-            'Tạo hình vóc dáng chữ V (V-taper) nở rộng bờ lưng và dày cơ lưng giữa.',
-      );
-      return AiChatMessage(
-        id: 'assistant_workout_$now',
-        sender: AiMessageSender.assistant,
-        text: 'Gợi ý Buổi tập Lưng xô & Tay trước (Pull Day) hiệu quả cao:',
-        proposal: proposal,
-      );
-    } else if (normalizedText.contains('chan') ||
-        normalizedText.contains('mong') ||
-        normalizedText.contains('legs') ||
-        normalizedText.contains('squat')) {
-      const proposal = WorkoutProposal(
-        id: 'workout_legs_proposal',
-        status: ProposalStatus.pending,
-        workoutTitle: 'Buổi tập Chân & Mông Toàn Diện (Leg Day)',
-        focusArea: 'Đùi trước, Đùi sau, Mông & Bắp chân',
-        durationMinutes: 50,
-        items: [
-          WorkoutProposalItem(
-            name: 'Barbell Back Squat',
-            targetMuscle: 'Đùi trước & Mông',
-            setsReps: '4 hiệp × 6-8 reps',
-            restSeconds: 120,
-          ),
-          WorkoutProposalItem(
-            name: 'Romanian Deadlift (RDL)',
-            targetMuscle: 'Đùi sau & Mông',
-            setsReps: '3 hiệp × 8-10 reps',
-            restSeconds: 90,
-          ),
-          WorkoutProposalItem(
-            name: 'Bulgarian Split Squat',
-            targetMuscle: 'Cơ đùi đơn & Mông',
-            setsReps: '3 hiệp × 10 reps/bên',
-            restSeconds: 90,
-          ),
-          WorkoutProposalItem(
-            name: 'Standing Calf Raise',
-            targetMuscle: 'Bắp chân',
-            setsReps: '4 hiệp × 15 reps',
-            restSeconds: 60,
-          ),
-        ],
-        reason:
-            'Kích thích hormone tăng trưởng, xây dựng nền tảng sức mạnh và săn chắc thân dưới.',
-      );
-      return AiChatMessage(
-        id: 'assistant_workout_$now',
-        sender: AiMessageSender.assistant,
-        text:
-            'Gợi ý Buổi tập Chân & Mông (Leg Day) đốt calo và tăng cơ mạnh mẽ:',
-        proposal: proposal,
-      );
-    }
-
-    // Default Full Body / 45-minute general workout
-    const proposal = WorkoutProposal(
-      id: 'workout_fullbody_proposal',
-      status: ProposalStatus.pending,
-      workoutTitle: 'Buổi tập Toàn Thân Tinh Gọn 45 Phút (Full Body)',
-      focusArea: 'Ngực, Lưng, Chân & Core',
-      durationMinutes: 45,
-      items: [
-        WorkoutProposalItem(
-          name: 'Goblet Squat (Tạ ấm hoặc Tạ đơn)',
-          targetMuscle: 'Chân & Core',
-          setsReps: '3 hiệp × 10-12 reps',
-          restSeconds: 90,
-        ),
-        WorkoutProposalItem(
-          name: 'Dumbbell Bench Press',
-          targetMuscle: 'Ngực & Tay sau',
-          setsReps: '3 hiệp × 10 reps',
-          restSeconds: 90,
-        ),
-        WorkoutProposalItem(
-          name: 'Dumbbell Single Arm Row',
-          targetMuscle: 'Lưng xô',
-          setsReps: '3 hiệp × 10-12 reps/bên',
-          restSeconds: 60,
-        ),
-        WorkoutProposalItem(
-          name: 'Dumbbell Overhead Shoulder Press',
-          targetMuscle: 'Vai toàn diện',
-          setsReps: '3 hiệp × 10-12 reps',
-          restSeconds: 60,
-        ),
-      ],
-      reason:
-          'Kích hoạt toàn bộ nhóm cơ chính trong thời gian ngắn, thích hợp duy trì thể lực ngày bận rộn.',
-    );
-    return AiChatMessage(
-      id: 'assistant_workout_$now',
-      sender: AiMessageSender.assistant,
-      text: 'Gợi ý Buổi tập Toàn thân (Full Body) 45 phút tinh gọn:',
-      proposal: proposal,
-    );
+    return null;
   }
 
   AiChatMessage _buildReplacementMessage(String normalizedText, int now) {

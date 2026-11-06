@@ -288,6 +288,7 @@ class AiCoachState {
     this.isLoadingRecommendations = false,
     this.effectiveMode = 'GENERAL_KNOWLEDGE',
     this.errorMessage,
+    this.retryText,
   });
 
   final List<AiChatMessage> messages;
@@ -296,6 +297,9 @@ class AiCoachState {
   final bool isLoadingRecommendations;
   final String effectiveMode;
   final String? errorMessage;
+
+  /// Last user message that failed to reach the AI Coach; enables "Thử lại".
+  final String? retryText;
 
   List<AiRecommendation> get activeRecommendations =>
       recommendations.where((r) => r.status == ProposalStatus.pending).toList();
@@ -310,6 +314,8 @@ class AiCoachState {
     String? effectiveMode,
     String? errorMessage,
     bool clearError = false,
+    String? retryText,
+    bool clearRetry = false,
   }) {
     return AiCoachState(
       messages: messages ?? this.messages,
@@ -319,6 +325,7 @@ class AiCoachState {
           isLoadingRecommendations ?? this.isLoadingRecommendations,
       effectiveMode: effectiveMode ?? this.effectiveMode,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      retryText: clearRetry ? null : retryText ?? this.retryText,
     );
   }
 }

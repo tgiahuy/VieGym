@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../application/ai_coach_controller.dart';
 import '../domain/ai_models.dart';
+import 'widgets/ai_personalization_banner.dart';
 
 class AiCoachChatScreen extends ConsumerStatefulWidget {
   const AiCoachChatScreen({super.key});
@@ -128,6 +129,11 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
               ),
             ),
           ),
+          const AiPersonalizationBanner(
+            message:
+                'AI Coach đang trả lời theo kiến thức chung. Bật Cá nhân hoá để nhận lời khuyên theo hồ sơ của bạn.',
+            margin: EdgeInsets.fromLTRB(12, 8, 12, 0),
+          ),
           // Chat Messages List
           Expanded(
             child: ListView.builder(
@@ -142,6 +148,30 @@ class _AiCoachChatScreenState extends ConsumerState<AiCoachChatScreen> {
               },
             ),
           ),
+
+          if (state.retryText != null && !state.isGenerating)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+              color: colors.errorContainer.withValues(alpha: 0.35),
+              child: Row(
+                children: [
+                  Icon(Icons.wifi_off_rounded, size: 16, color: colors.error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Chưa kết nối được AI Coach.',
+                      style: TextStyle(fontSize: 12, color: colors.onSurface),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => ref.read(aiCoachProvider.notifier).retry(),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            ),
 
           // Horizontal Quick Suggestion Chips (Gợi ý bữa ăn & buổi tập)
           Container(

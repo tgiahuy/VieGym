@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_error_handler.dart';
 import '../../../core/theme/app_theme.dart';
 import '../application/user_preference_controller.dart';
 
@@ -16,6 +17,7 @@ class UserPreferenceScreen extends ConsumerStatefulWidget {
 class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
   final _dislikedFoodController = TextEditingController();
   final _allergyController = TextEditingController();
+  bool _saving = false;
 
   static const _allMuscles = [
     'Ngực',
@@ -49,6 +51,26 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
     if (text.isNotEmpty) {
       ref.read(userPreferencesProvider.notifier).addAllergy(text);
       _allergyController.clear();
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(userPreferencesProvider.notifier).save();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã lưu tùy chọn & ràng buộc!')),
+      );
+      context.pop();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Chưa lưu được: ${ApiErrorHandler.getMessage(error)}'),
+        ),
+      );
     }
   }
 
@@ -464,6 +486,68 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Section: Injuries
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.healing_rounded,
+                        size: 18,
+                        color: AppColors.amber,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Chấn thương / Vùng cần bảo vệ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.amber,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'AI sẽ không đề xuất các bài tạo áp lực lên vùng này. Đây không phải chẩn đoán y khoa; nếu đau kéo dài hãy gặp bác sĩ.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: InjuryArea.values.map((area) {
+                      final selected = prefs.injuries.contains(area);
+                      return FilterChip(
+                        label: Text(area.label),
+                        selected: selected,
+                        onSelected: (_) => notifier.toggleInjury(area),
+                        selectedColor: AppColors.amber.withValues(alpha: 0.18),
+                        checkmarkColor: AppColors.amber,
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? AppColors.amber
+                              : colors.onSurfaceVariant,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -477,21 +561,22 @@ class _UserPreferenceScreenState extends ConsumerState<UserPreferenceScreen> {
           ),
         ),
         child: FilledButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đã lưu tùy chọn & ràng buộc!')),
-            );
-            context.pop();
-          },
+          onPressed: _saving ? null : _save,
           style: FilledButton.styleFrom(
             minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
           ),
-          icon: const Icon(Icons.check_rounded),
-          label: const Text(
-            'Lưu tùy chọn',
+          icon: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.check_rounded),
+          label: Text(
+            _saving ? 'Đang lưu...' : 'Lưu tùy chọn',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
           ),
         ),

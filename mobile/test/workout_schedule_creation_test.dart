@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:viegym/features/ai/data/ai_repository.dart';
 import 'package:viegym/features/workout/application/workout_schedule_controller.dart';
 import 'package:viegym/features/workout/application/workout_session_controller.dart';
 import 'package:viegym/features/workout/data/exercise_catalog.dart';
@@ -16,6 +17,8 @@ import 'package:viegym/features/workout/presentation/workout_builder_screen.dart
 import 'package:viegym/features/workout/presentation/workout_schedule_create_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_schedule_screen.dart';
 import 'package:viegym/features/workout/presentation/workout_tab_screen.dart';
+
+import 'support/fake_ai_repository.dart';
 
 class _FakePlanningRepository extends WorkoutSchedulePlanningRepository {
   _FakePlanningRepository() : super(Dio());
@@ -497,6 +500,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
     final repository = _FakePlanningRepository();
+    final ai = FakeAiPlanRepository();
     final selectedDate = DateTime(2099, 2, 10);
 
     await tester.pumpWidget(
@@ -505,6 +509,7 @@ void main() {
           workoutSchedulePlanningRepositoryProvider.overrideWithValue(
             repository,
           ),
+          aiRepositoryProvider.overrideWithValue(ai),
         ],
         child: MaterialApp(
           home: AiWorkoutGenerateScreen(initialDate: selectedDate),
@@ -520,6 +525,14 @@ void main() {
 
     expect(repository.submittedDirectDays, isNotNull);
     expect(repository.submittedDirectDays!.single.date, selectedDate);
+    expect(ai.workoutRequests, 1);
+    // The AI prescription is saved instead of the old fixed 3x8-12.
+    final bench = repository.submittedDirectDays!.single.exercises.first;
+    expect(bench.exercise.id, 'ex_101');
+    expect(bench.targetSets, 4);
+    expect(bench.targetRepsMin, 6);
+    expect(bench.targetRepsMax, 10);
+    expect(bench.restSeconds, 120);
   });
 
   testWidgets('proposal preview dialog allows user to interact with date box', (
@@ -961,9 +974,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: WorkoutScheduleScreen(),
-          ),
+          child: const MaterialApp(home: WorkoutScheduleScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -1289,7 +1300,10 @@ void main() {
       expect(find.byIcon(Icons.drag_indicator_rounded), findsWidgets);
 
       // Swipe first exercise to the left
-      await tester.drag(find.byIcon(Icons.drag_indicator_rounded).first, const Offset(-300, 0));
+      await tester.drag(
+        find.byIcon(Icons.drag_indicator_rounded).first,
+        const Offset(-300, 0),
+      );
       await tester.pumpAndSettle();
 
       // 'Thay bài' and 'Xóa bài' action buttons are revealed
@@ -1428,7 +1442,8 @@ void main() {
 
       // Tap sets/reps badge to open picker
       final setsRepsChips = find.byWidgetPredicate(
-        (widget) => widget is Text && widget.data != null && widget.data!.contains('x'),
+        (widget) =>
+            widget is Text && widget.data != null && widget.data!.contains('x'),
       );
       expect(setsRepsChips, findsWidgets);
       await tester.tap(setsRepsChips.first);
@@ -1475,7 +1490,10 @@ void main() {
 
       expect(find.text('Upper Lower cá nhân'), findsOneWidget);
 
-      await tester.drag(find.text('Upper Lower cá nhân'), const Offset(-200, 0));
+      await tester.drag(
+        find.text('Upper Lower cá nhân'),
+        const Offset(-200, 0),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Xoá giáo án'), findsWidgets);

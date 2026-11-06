@@ -64,7 +64,7 @@ class AiCoachServiceTests {
         when(provider.generate(any()))
                 .thenReturn(
                         new AiProviderClient.ProviderResponse(
-                                "corr", "Phản hồi an toàn", "NORMAL", List.of(), Map.of()));
+                                "corr", "Phản hồi an toàn", "NORMAL", List.of(), null, Map.of()));
 
         AiDtos.MessageExchange exchange =
                 service.sendMessage(
@@ -94,7 +94,7 @@ class AiCoachServiceTests {
         when(provider.generate(any()))
                 .thenReturn(
                         new AiProviderClient.ProviderResponse(
-                                "corr", "Phản hồi cá nhân", "NORMAL", List.of(), Map.of()));
+                                "corr", "Phản hồi cá nhân", "NORMAL", List.of(), null, Map.of()));
 
         service.sendMessage(userId, conversation.id(), new AiDtos.SendMessage("Lịch tập tuần này"));
 
@@ -141,9 +141,12 @@ class AiCoachServiceTests {
     void generationAndApplyAreIdempotentWhileDismissDoesNotMutateDomain() {
         Long userId = createUser("actions");
         service.updateConsent(userId, new AiDtos.UpdateConsent("ENABLED", "v1.0", "AI_TAB"));
-        Long foodId = jdbc.queryForObject("select min(id) from foods", Long.class);
         LocalDate date = LocalDate.now();
-        when(provider.generate(any())).thenReturn(dailyResponse(foodId, date));
+        when(provider.generate(any()))
+                .thenAnswer(
+                        invocation ->
+                                dailyResponse(
+                                        firstCandidateFoodId(invocation.getArgument(0)), date));
 
         AiDtos.DailyRecommendations first =
                 service.generateDaily(userId, new AiDtos.GenerateDaily(date), "generation-key-1");
@@ -266,6 +269,65 @@ class AiCoachServiceTests {
                 .isOne();
     }
 
+    @Test
+    void chatSendsConversationHistoryAndKeepsUserTextOutOfSystemPrompt() {
+        Long userId = createUser("history");
+        AiDtos.Conversation conversation =
+                service.createConversation(
+                        userId, new AiDtos.CreateConversation("History", "GENERAL_KNOWLEDGE"));
+        when(provider.generate(any()))
+                .thenReturn(
+                        new AiProviderClient.ProviderResponse(
+                                "corr", "Trả lời", "NORMAL", List.of(), null, Map.of()));
+
+        service.sendMessage(userId, conversation.id(), new AiDtos.SendMessage("Câu hỏi một"));
+        service.sendMessage(userId, conversation.id(), new AiDtos.SendMessage("Câu hỏi hai"));
+
+        ArgumentCaptor<AiProviderClient.ProviderRequest> captor =
+                ArgumentCaptor.forClass(AiProviderClient.ProviderRequest.class);
+        verify(provider, org.mockito.Mockito.times(2)).generate(captor.capture());
+        AiProviderClient.ProviderRequest second = captor.getAllValues().get(1);
+        assertThat(second.messages())
+                .extracting(message -> message.get("role") + ":" + message.get("content"))
+                .containsExactly("USER:Câu hỏi một", "ASSISTANT:Trả lời", "USER:Câu hỏi hai");
+        assertThat(second.renderedPrompt()).doesNotContain("Câu hỏi hai");
+    }
+
+    @Test
+    void allergiesFilterFoodCandidatesWithoutBeingSentToProvider() {
+        Long userId = createUser("allergy");
+        jdbc.update(
+                "update user_preferences set allergies = '[\"Hải sản\"]' where user_id = ?",
+                userId);
+        service.updateConsent(userId, new AiDtos.UpdateConsent("ENABLED", "v1.0", "AI_TAB"));
+        LocalDate date = LocalDate.now();
+        when(provider.generate(any()))
+                .thenAnswer(
+                        invocation ->
+                                dailyResponse(
+                                        firstCandidateFoodId(invocation.getArgument(0)), date));
+
+        service.generateDaily(userId, new AiDtos.GenerateDaily(date), "allergy-key");
+
+        ArgumentCaptor<AiProviderClient.ProviderRequest> captor =
+                ArgumentCaptor.forClass(AiProviderClient.ProviderRequest.class);
+        verify(provider).generate(captor.capture());
+        List<?> foods = (List<?>) captor.getValue().candidates().get("foods");
+        assertThat(foods).isNotEmpty();
+        assertThat(foods)
+                .extracting(food -> String.valueOf(((Map<?, ?>) food).get("name")).toLowerCase())
+                .noneMatch(name -> name.matches("(?U).*\\b(tôm|cá|mực|cua|hải sản)\\b.*"));
+        assertThat(captor.getValue().context().toString().toLowerCase())
+                .doesNotContain("hải sản", "allergies");
+    }
+
+    @SuppressWarnings("unchecked")
+    static Long firstCandidateFoodId(AiProviderClient.ProviderRequest request) {
+        List<Map<String, Object>> foods =
+                (List<Map<String, Object>>) request.candidates().get("foods");
+        return ((Number) foods.getFirst().get("id")).longValue();
+    }
+
     private AiProviderClient.ProviderResponse dailyResponse(Long foodId, LocalDate date) {
         return new AiProviderClient.ProviderResponse(
                 "corr",
@@ -299,6 +361,7 @@ class AiCoachServiceTests {
                                         date.toString()),
                                 "sourceMetrics",
                                 Map.of("remainingProteinG", 30))),
+                null,
                 Map.of("provider", "mock", "model", "test"));
     }
 
@@ -344,6 +407,7 @@ class AiCoachServiceTests {
                                                         60))),
                                 "sourceMetrics",
                                 Map.of("weeklySessions", 1))),
+                null,
                 Map.of("provider", "mock", "model", "test"));
     }
 

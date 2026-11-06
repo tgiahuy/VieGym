@@ -3,9 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_error_handler.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../ai/data/ai_repository.dart';
+import '../../ai/domain/ai_plan_models.dart';
+import '../../ai/presentation/widgets/ai_personalization_banner.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../application/nutrition_controller.dart';
+import '../data/food_image_resolver.dart';
 import '../domain/food_models.dart';
 
 class GeneratedMealIngredient {
@@ -42,6 +47,7 @@ class GeneratedMealResult {
     required this.reason,
     required this.prepTimeMinutes,
     required this.isVietnamese,
+    this.sourceNote,
   });
 
   final String mealName;
@@ -52,8 +58,13 @@ class GeneratedMealResult {
   final double totalFat;
   final List<GeneratedMealIngredient> ingredients;
   final String reason;
+
+  /// 0 = unknown (AI plans carry no prep time); the card then hides it.
   final int prepTimeMinutes;
   final bool isVietnamese;
+
+  /// Where the suggestion came from (AI coach or backend fallback).
+  final String? sourceNote;
 }
 
 class AiMealGenerateScreen extends ConsumerStatefulWidget {
@@ -76,6 +87,11 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
   Map<MealType, GeneratedMealResult> _generatedMeals = {};
   final Set<MealType> _addedMealTypes = {};
   final Map<MealType, int> _variationSeeds = {};
+
+  /// Backend-generated meals (applied through the API); absent for meals built
+  /// by the offline on-device generator.
+  final Map<MealType, AiPlannedMeal> _aiMeals = {};
+  final Set<MealType> _regenerating = {};
 
   @override
   void initState() {
@@ -105,6 +121,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
         if (_selectedMealTypes.length > 1) {
           _selectedMealTypes.remove(mealType);
           _generatedMeals.remove(mealType);
+          _aiMeals.remove(mealType);
           _addedMealTypes.remove(mealType);
         }
       } else {
@@ -130,6 +147,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
         MealType.dinner,
       ]);
       _generatedMeals.clear();
+      _aiMeals.clear();
       _addedMealTypes.clear();
     });
   }
@@ -143,8 +161,24 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
       _addedMealTypes.clear();
     });
 
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
+    try {
+      final aiMeals = await _requestAiMeals(_selectedMealTypes.toList());
+      if (!mounted) return;
+      setState(() {
+        _isGenerating = false;
+        _aiMeals
+          ..clear()
+          ..addAll(aiMeals);
+        _generatedMeals = aiMeals.map(
+          (type, meal) => MapEntry(type, _toResult(type, meal)),
+        );
+      });
+      return;
+    } catch (error) {
+      if (!mounted) return;
+      _aiMeals.clear();
+      _showOfflineNotice(error);
+    }
 
     final nutritionState = ref.read(nutritionProvider);
     final healthProfile = ref.read(healthProfileProvider);
@@ -184,8 +218,35 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
     });
   }
 
-  void _regenerateSingleMeal(MealType mealType) {
+  Future<void> _regenerateSingleMeal(MealType mealType) async {
+    if (_regenerating.contains(mealType)) return;
     HapticFeedback.selectionClick();
+    setState(() => _regenerating.add(mealType));
+    try {
+      await _regenerateSingleMealFromAi(mealType);
+    } finally {
+      if (mounted) setState(() => _regenerating.remove(mealType));
+    }
+  }
+
+  Future<void> _regenerateSingleMealFromAi(MealType mealType) async {
+    try {
+      final aiMeals = await _requestAiMeals([mealType]);
+      final meal = aiMeals[mealType];
+      if (meal != null) {
+        if (!mounted) return;
+        setState(() {
+          _aiMeals[mealType] = meal;
+          _generatedMeals[mealType] = _toResult(mealType, meal);
+          _addedMealTypes.remove(mealType);
+        });
+        return;
+      }
+    } catch (error) {
+      if (!mounted) return;
+      _showOfflineNotice(error);
+    }
+    _aiMeals.remove(mealType);
     final currentSeed = _variationSeeds[mealType] ?? 0;
     _variationSeeds[mealType] = currentSeed + 1;
 
@@ -219,6 +280,108 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
       _generatedMeals[mealType] = newMeal;
       _addedMealTypes.remove(mealType);
     });
+  }
+
+  Future<Map<MealType, AiPlannedMeal>> _requestAiMeals(
+    List<MealType> mealTypes,
+  ) async {
+    final ordered = MealType.values.where(mealTypes.contains).toList();
+    final selectedDate = DateTime.tryParse(
+      ref.read(nutritionProvider).selectedDate,
+    );
+    final today = DateUtils.dateOnly(DateTime.now());
+    final targetDate =
+        selectedDate != null &&
+            !selectedDate.isBefore(today) &&
+            !selectedDate.isAfter(today.add(const Duration(days: 14)))
+        ? selectedDate
+        : null;
+    final plan = await ref
+        .read(aiRepositoryProvider)
+        .generateMeals(
+          targetDate: targetDate,
+          mealTypes: ordered.map((type) => type.code).toList(),
+          maxPrepTimeMinutes: _prepTimePreference == 'quick' ? 20 : null,
+          customPrompt: _promptController.text,
+        );
+    final result = <MealType, AiPlannedMeal>{};
+    for (final meal in plan.meals) {
+      final type = MealType.values
+          .where((value) => value.code == meal.mealType)
+          .firstOrNull;
+      if (type != null && meal.items.isNotEmpty) result[type] = meal;
+    }
+    if (result.isEmpty) throw StateError('Thực đơn AI trống');
+    return result;
+  }
+
+  GeneratedMealResult _toResult(MealType type, AiPlannedMeal meal) {
+    return GeneratedMealResult(
+      mealName: meal.dishName,
+      mealType: type,
+      totalCalories: meal.calories.round(),
+      totalProtein: meal.protein,
+      totalCarbs: meal.carbs,
+      totalFat: meal.fat,
+      ingredients: meal.items
+          .map(
+            (item) => GeneratedMealIngredient(
+              name: item.name,
+              portion: item.portion,
+              calories: item.calories.round(),
+              protein: item.protein,
+              carbs: item.carbs,
+              fat: item.fat,
+              foodId: '${item.foodId}',
+              imageUrl: resolveFoodImageUrl(name: item.name),
+            ),
+          )
+          .toList(),
+      reason: meal.coachingReason,
+      prepTimeMinutes: 0,
+      isVietnamese: true,
+      sourceNote: meal.isAiGenerated
+          ? 'AI Coach • mục tiêu ~${meal.targetCalories} kcal, calo tính từ dữ liệu món ăn VieGym'
+          : 'Gợi ý cơ bản • AI Coach tạm thời bận',
+    );
+  }
+
+  void _showOfflineNotice(Object error) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'AI Coach chưa phản hồi (${ApiErrorHandler.getMessage(error)}). Đang dùng gợi ý ngoại tuyến.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Saves an AI meal through the backend, then reloads the diary from the
+  /// server. Returns false (after telling the user) when the request fails.
+  Future<bool> _applyAiMeal(AiPlannedMeal meal) async {
+    try {
+      await ref
+          .read(aiRepositoryProvider)
+          .applyPlan(
+            recommendationId: meal.recommendationId,
+            version: meal.version,
+          );
+      await ref.read(nutritionProvider.notifier).refreshSelectedDate();
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Không lưu được ${meal.dishName}: ${ApiErrorHandler.getMessage(error)}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    }
   }
 
   Future<bool> _showCalorieLimitDialog({
@@ -377,8 +540,24 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
       if (!proceed) return;
     }
 
-    final notifier = ref.read(nutritionProvider.notifier);
+    final aiMeal = _aiMeals[meal.mealType];
+    if (aiMeal != null) {
+      if (!await _applyAiMeal(aiMeal)) return;
+    } else {
+      _addLocally(meal);
+    }
 
+    if (!mounted) return;
+    HapticFeedback.heavyImpact();
+    setState(() => _addedMealTypes.add(meal.mealType));
+    _showAddedSnackBar(
+      'Đã thêm "${meal.mealName}" (${meal.totalCalories} kcal) vào ${meal.mealType.label}!',
+    );
+  }
+
+  /// Offline fallback: keeps the entry in local state only.
+  void _addLocally(GeneratedMealResult meal) {
+    final notifier = ref.read(nutritionProvider.notifier);
     for (final item in meal.ingredients) {
       notifier.addFoodEntry(
         foodId:
@@ -396,16 +575,12 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
             'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=500&auto=format&fit=crop&q=80',
       );
     }
+  }
 
-    HapticFeedback.heavyImpact();
-    setState(() => _addedMealTypes.add(meal.mealType));
-
-    if (!mounted) return;
+  void _showAddedSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Đã thêm "${meal.mealName}" (${meal.totalCalories} kcal) vào ${meal.mealType.label}!',
-        ),
+        content: Text(message),
         behavior: SnackBarBehavior.floating,
         action: SnackBarAction(
           label: 'Xem nhật ký',
@@ -458,37 +633,24 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
       if (!proceed) return;
     }
 
-    final notifier = ref.read(nutritionProvider.notifier);
     int totalCount = 0;
     int totalKcal = 0;
 
     for (final meal in unaddedMeals) {
-      for (final item in meal.ingredients) {
-        notifier.addFoodEntry(
-          foodId:
-              item.foodId ?? 'food_ai_${DateTime.now().millisecondsSinceEpoch}',
-          name: item.name,
-          mealType: meal.mealType,
-          calories: item.calories,
-          protein: item.protein,
-          carbs: item.carbs,
-          fat: item.fat,
-          servingAmount: 1,
-          servingUnit: item.portion,
-          imageUrl:
-              item.imageUrl ??
-              'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=500&auto=format&fit=crop&q=80',
-        );
+      final aiMeal = _aiMeals[meal.mealType];
+      if (aiMeal != null) {
+        if (!await _applyAiMeal(aiMeal)) break;
+      } else {
+        _addLocally(meal);
       }
       totalCount++;
       totalKcal += meal.totalCalories;
       _addedMealTypes.add(meal.mealType);
     }
 
+    if (totalCount == 0 || !mounted) return;
     HapticFeedback.heavyImpact();
     setState(() {});
-
-    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -1004,6 +1166,10 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const AiPersonalizationBanner(
+              message:
+                  'Bật Cá nhân hoá để AI dùng mục tiêu dinh dưỡng và lượng calo bạn đã ăn hôm nay khi lên thực đơn.',
+            ),
             // ── AI Hero Intelligence Banner ──────────────────────────────────
             Container(
               padding: const EdgeInsets.all(16),
@@ -1740,6 +1906,7 @@ class _AiMealGenerateScreenState extends ConsumerState<AiMealGenerateScreen> {
                         meal: meal,
                         isAdded: isAdded,
                         onAddMeal: () => _handleAddSingleMeal(meal),
+                        isRegenerating: _regenerating.contains(mealType),
                         onRegenerate: () => _regenerateSingleMeal(mealType),
                       ),
                     );
@@ -2078,10 +2245,12 @@ class _GeneratedMealCard extends StatelessWidget {
     required this.isAdded,
     required this.onAddMeal,
     required this.onRegenerate,
+    this.isRegenerating = false,
   });
 
   final GeneratedMealResult meal;
   final bool isAdded;
+  final bool isRegenerating;
   final VoidCallback onAddMeal;
   final VoidCallback onRegenerate;
 
@@ -2123,14 +2292,15 @@ class _GeneratedMealCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '⏱️ ~${meal.prepTimeMinutes} phút',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: colors.onSurfaceVariant,
+                if (meal.prepTimeMinutes > 0)
+                  Text(
+                    '⏱️ ~${meal.prepTimeMinutes} phút',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -2290,6 +2460,17 @@ class _GeneratedMealCard extends StatelessWidget {
                           color: colors.onSurfaceVariant,
                         ),
                       ),
+                      if (meal.sourceNote != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          meal.sourceNote!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.aiViolet,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -2300,7 +2481,7 @@ class _GeneratedMealCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: onRegenerate,
+                        onPressed: isRegenerating ? null : onRegenerate,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -2310,9 +2491,17 @@ class _GeneratedMealCard extends StatelessWidget {
                             color: colors.outlineVariant.withValues(alpha: 0.5),
                           ),
                         ),
-                        icon: const Icon(Icons.refresh_rounded, size: 18),
-                        label: const Text(
-                          'Gợi ý khác',
+                        icon: isRegenerating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.refresh_rounded, size: 18),
+                        label: Text(
+                          isRegenerating ? 'Đang tạo...' : 'Gợi ý khác',
                           style: TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/application/auth_controller.dart';
 import '../../onboarding/application/health_profile_controller.dart';
 import '../../workout/application/workout_schedule_controller.dart';
 import '../../workout/domain/workout_models.dart';
@@ -109,10 +110,8 @@ class ProgressState {
       dailyVolumes: dailyVolumes ?? this.dailyVolumes,
       lastWeekTotalVolumeKg:
           lastWeekTotalVolumeKg ?? this.lastWeekTotalVolumeKg,
-      growthRatePercentage:
-          growthRatePercentage ?? this.growthRatePercentage,
-      weeklyCaloriesBurned:
-          weeklyCaloriesBurned ?? this.weeklyCaloriesBurned,
+      growthRatePercentage: growthRatePercentage ?? this.growthRatePercentage,
+      weeklyCaloriesBurned: weeklyCaloriesBurned ?? this.weeklyCaloriesBurned,
       weightTrend: weightTrend ?? this.weightTrend,
     );
   }
@@ -191,16 +190,15 @@ class ProgressController extends Notifier<ProgressState> {
       }
     }
 
-    final effectivePRs = (_cachedPersonalRecords != null &&
-            _cachedPersonalRecords!.isNotEmpty)
+    final auth = ref.watch(authProvider);
+    final effectivePRs =
+        (_cachedPersonalRecords != null && _cachedPersonalRecords!.isNotEmpty)
         ? _cachedPersonalRecords!
         : (realPRs.isNotEmpty
-            ? [
-                ...realPRs.values,
-                ..._defaultPRs
-                    .where((d) => !realPRs.containsKey(d.exerciseName)),
-              ]
-            : _defaultPRs);
+              ? realPRs.values.toList()
+              : (auth.isAuthenticated
+                    ? const <PersonalRecordItem>[]
+                    : _defaultPRs));
 
     return ProgressState(
       completedWorkoutsThisWeek: stats['completedWorkoutsThisWeek'] as int,
@@ -248,10 +246,7 @@ class ProgressController extends Notifier<ProgressState> {
   }
 
   Future<void> fetchAllProgressData() async {
-    await Future.wait([
-      fetchWeightLogs(),
-      fetchPersonalRecords(),
-    ]);
+    await Future.wait([fetchWeightLogs(), fetchPersonalRecords()]);
   }
 
   Future<UpsertWeightLogResult?> logWeight(
@@ -295,7 +290,9 @@ class ProgressController extends Notifier<ProgressState> {
 
       // 4. Update health profile with authoritative server-computed metrics
       if (result.metricsUpdated) {
-        ref.read(healthProfileProvider.notifier).updateWeight(
+        ref
+            .read(healthProfileProvider.notifier)
+            .updateWeight(
               weightKg,
               serverBmi: result.bmi,
               serverBmr: result.bmrKcal,
@@ -350,8 +347,7 @@ class ProgressController extends Notifier<ProgressState> {
   }
 
   void deletePersonalRecord(String id) {
-    final updated =
-        state.personalRecords.where((pr) => pr.id != id).toList();
+    final updated = state.personalRecords.where((pr) => pr.id != id).toList();
     _cachedPersonalRecords = updated;
     state = state.copyWith(personalRecords: updated);
   }
@@ -381,11 +377,13 @@ class ProgressController extends Notifier<ProgressState> {
     for (final h in history) {
       final d = DateTime.tryParse(h.date);
       if (d != null) {
-        records.add(_WorkoutRecord(
-          date: _startOfDay(d),
-          durationMinutes: h.durationMinutes,
-          volumeKg: h.totalVolumeKg,
-        ));
+        records.add(
+          _WorkoutRecord(
+            date: _startOfDay(d),
+            durationMinutes: h.durationMinutes,
+            volumeKg: h.totalVolumeKg,
+          ),
+        );
       }
     }
 
@@ -396,11 +394,13 @@ class ProgressController extends Notifier<ProgressState> {
           final day = _startOfDay(d);
           final alreadyLogged = records.any((r) => r.date == day);
           if (!alreadyLogged) {
-            records.add(_WorkoutRecord(
-              date: day,
-              durationMinutes: s.durationMinutes,
-              volumeKg: 0.0,
-            ));
+            records.add(
+              _WorkoutRecord(
+                date: day,
+                durationMinutes: s.durationMinutes,
+                volumeKg: 0.0,
+              ),
+            );
           }
         }
       }
@@ -428,17 +428,21 @@ class ProgressController extends Notifier<ProgressState> {
           .fold<double>(0.0, (sum, r) => sum + r.volumeKg);
       totalVolumeThisWeek += dayVolume;
 
-      dailyVolumes.add(DailyVolumeItem(
-        weekday: i + 1,
-        label: dayLabels[i],
-        volumeKg: dayVolume,
-        isToday: isToday,
-      ));
+      dailyVolumes.add(
+        DailyVolumeItem(
+          weekday: i + 1,
+          label: dayLabels[i],
+          volumeKg: dayVolume,
+          isToday: isToday,
+        ),
+      );
     }
 
-    final lastWeekVolume = records.where((r) {
-      return !r.date.isBefore(lastMonday) && !r.date.isAfter(lastSunday);
-    }).fold<double>(0.0, (sum, r) => sum + r.volumeKg);
+    final lastWeekVolume = records
+        .where((r) {
+          return !r.date.isBefore(lastMonday) && !r.date.isAfter(lastSunday);
+        })
+        .fold<double>(0.0, (sum, r) => sum + r.volumeKg);
 
     double growthRate = 0.0;
     if (lastWeekVolume > 0) {

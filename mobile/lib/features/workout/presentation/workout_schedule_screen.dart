@@ -2615,6 +2615,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
     final todayStr = _formatDate(DateTime.now());
     final isSelectedToday = scheduleState.selectedDate == todayStr;
     final isPastDay = scheduleState.selectedDate.compareTo(todayStr) < 0;
+    final isTodayCompleted = ref.watch(isTodayWorkoutCompletedProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -2739,8 +2740,12 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                       final date = entry.value;
                       final dateStr = _formatDate(date);
                       final isSelected = dateStr == scheduleState.selectedDate;
+                      final isDateToday = dateStr == todayStr;
+                      final isDateCompleted = scheduleState.history.any((h) => h.date == dateStr) ||
+                          scheduleState.schedules.any((s) => s.date == dateStr && s.status == ScheduleStatus.completed) ||
+                          (isDateToday && isTodayCompleted);
                       final hasSchedule = scheduleState.schedules.any(
-                        (s) => s.date == dateStr,
+                        (s) => s.date == dateStr && s.status != ScheduleStatus.rest,
                       );
 
                       return Expanded(
@@ -2757,15 +2762,23 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppColors.primarySoft
-                                    : AppColors.surfaceInput,
+                                    ? (isDateCompleted
+                                          ? AppColors.success.withValues(alpha: 0.18)
+                                          : AppColors.primarySoft)
+                                    : (isDateCompleted
+                                          ? AppColors.success.withValues(alpha: 0.08)
+                                          : AppColors.surfaceInput),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected
-                                      ? AppColors.primaryBorder
-                                      : colors.outlineVariant.withValues(
-                                          alpha: 0.35,
-                                        ),
+                                      ? (isDateCompleted
+                                            ? AppColors.success.withValues(alpha: 0.7)
+                                            : AppColors.primaryBorder)
+                                      : (isDateCompleted
+                                            ? AppColors.success.withValues(alpha: 0.35)
+                                            : colors.outlineVariant.withValues(
+                                                alpha: 0.35,
+                                              )),
                                   width: 1,
                                 ),
                               ),
@@ -2778,8 +2791,12 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: isSelected
-                                          ? colors.primary
-                                          : colors.onSurfaceVariant,
+                                          ? (isDateCompleted
+                                                ? AppColors.success
+                                                : colors.primary)
+                                          : (isDateCompleted
+                                                ? AppColors.success
+                                                : colors.onSurfaceVariant),
                                     ),
                                   ),
                                   const SizedBox(height: 3),
@@ -2790,22 +2807,31 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                       fontWeight: FontWeight.w900,
                                       color: isSelected
                                           ? Colors.white
-                                          : colors.onSurface,
+                                          : (isDateCompleted
+                                                ? AppColors.success
+                                                : colors.onSurface),
                                     ),
                                   ),
                                   const SizedBox(height: 3),
-                                  Container(
-                                    width: 4,
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: hasSchedule
-                                          ? (isSelected
-                                                ? colors.primary
-                                                : colors.onSurfaceVariant)
-                                          : Colors.transparent,
+                                  if (isDateCompleted)
+                                    const Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 11,
+                                      color: AppColors.success,
+                                    )
+                                  else
+                                    Container(
+                                      width: 4,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: hasSchedule
+                                            ? (isSelected
+                                                  ? colors.primary
+                                                  : colors.onSurfaceVariant)
+                                            : Colors.transparent,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -2821,7 +2847,10 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
 
             // Scheduled Workout Card Section
             if (selectedDaySchedules.isEmpty)
-              Container(
+              if (isSelectedToday && isTodayCompleted)
+                _buildTodayCompletedSummaryCard(context, scheduleState, colors)
+              else
+                Container(
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   color: colors.surfaceContainer,
@@ -2998,6 +3027,9 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                 final isSwiped = _swipedScheduleId == item.id;
 
                 final plannedList = item.plannedExercises;
+                final isItemCompleted = isPastDay ||
+                    item.status == ScheduleStatus.completed ||
+                    (isSelectedToday && isTodayCompleted);
 
                 return Stack(
                   children: [
@@ -3084,9 +3116,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      if (isPastDay ||
-                                          item.status ==
-                                              ScheduleStatus.completed) ...[
+                                      if (isItemCompleted) ...[
                                         Container(
                                           margin: const EdgeInsets.only(
                                             bottom: 6,
@@ -3240,7 +3270,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                     letterSpacing: 0.8,
                                   ),
                                 ),
-                                if (!isPastDay)
+                                if (!isItemCompleted)
                                   InkWell(
                                     onTap: () =>
                                         _showEditExercisesSheet(context, item),
@@ -3282,7 +3312,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                               return Material(
                                 color: Colors.transparent,
                                 child: InkWell(
-                                  onTap: !isPastDay
+                                  onTap: !isItemCompleted
                                       ? () => _showEditExercisesSheet(
                                           context,
                                           item,
@@ -3329,7 +3359,7 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                                 color: AppColors.textSecondary,
                                               ),
                                             ),
-                                            if (!isPastDay) ...[
+                                            if (!isItemCompleted) ...[
                                               const SizedBox(width: 6),
                                               const Icon(
                                                 Icons.tune_rounded,
@@ -3347,8 +3377,8 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                             }),
                             const SizedBox(height: 14),
 
-                            // 6. Actions: For past days show [Đã hoàn thành] + [🗑️ Xóa], for today/future show [Đổi buổi] [Đổi ngày] [🗑️ Xóa]
-                            if (isPastDay) ...[
+                            // 6. Actions: For completed days show [Đã hoàn thành] + [🗑️ Xóa], for planned show [Đổi buổi] [Đổi ngày] [🗑️ Xóa]
+                            if (isItemCompleted) ...[
                               Row(
                                 children: [
                                   Expanded(
@@ -3529,10 +3559,8 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
                                 ],
                               ),
                             ],
-                            if (isSelectedToday) ...[
+                            if (isSelectedToday && !isItemCompleted) ...[
                               const SizedBox(height: 12),
-
-                              // 7. Primary CTA: [ ▶ Bắt đầu tập ngay ] (Chỉ hiển thị cho ngày hôm nay)
                               SizedBox(
                                 width: double.infinity,
                                 child: FilledButton.icon(
@@ -3569,6 +3597,133 @@ class _WorkoutScheduleScreenState extends ConsumerState<WorkoutScheduleScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTodayCompletedSummaryCard(
+    BuildContext context,
+    WorkoutScheduleState scheduleState,
+    ColorScheme colors,
+  ) {
+    final todayStr = _formatDate(DateTime.now());
+    final todayHistory = scheduleState.history
+        .where((h) => h.date == todayStr)
+        .firstOrNull;
+    final workoutName = todayHistory?.workoutName ?? 'Buổi tập hôm nay';
+    final targetMuscles = todayHistory != null && todayHistory.targetMuscles.isNotEmpty
+        ? todayHistory.targetMuscles.join(' • ')
+        : 'Toàn thân';
+    final duration = todayHistory?.durationMinutes ?? 45;
+    final volume = todayHistory?.totalVolumeKg ?? 0;
+    final sets = todayHistory?.completedSetsCount ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.success.withValues(alpha: 0.4),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 13,
+                  color: AppColors.success,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'ĐÃ HOÀN THÀNH HÔM NAY',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.success,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            workoutName,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Nhóm cơ: $targetMuscles',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.cyan,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildCompletedStat(Icons.timer_outlined, '$duration phút'),
+                _buildCompletedStat(Icons.fitness_center_rounded, '${volume.toStringAsFixed(0)} kg'),
+                _buildCompletedStat(Icons.format_list_numbered_rounded, '$sets hiệp'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedStat(IconData icon, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: AppColors.iconSecondary),
+        const SizedBox(width: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 }

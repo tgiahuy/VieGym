@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/application/auth_controller.dart';
 import '../../workout/application/workout_schedule_controller.dart';
 import '../../workout/domain/muscle_models.dart';
 import '../../workout/domain/workout_models.dart';
@@ -121,14 +122,19 @@ class MuscleDistributionController extends Notifier<MuscleDistributionState> {
 
     double totalVolume = muscleVolumes.values.fold(0.0, (a, b) => a + b);
 
-    // If history has zero volume in this timeframe, use realistic calibrated sample distribution
+    final bool isAuthenticated = ref.read(authProvider).isAuthenticated;
     final Map<MuscleGroup, int> percentages;
     if (totalVolume <= 0) {
-      final fallback = _getCalibratedFallback(timeframe);
-      percentages = fallback.percentages;
-      totalVolume = fallback.totalVolume;
-      for (final entry in fallback.volumes.entries) {
-        muscleVolumes[entry.key] = entry.value;
+      if (isAuthenticated) {
+        percentages = {for (final m in coreMuscles) m: 0};
+        totalVolume = 0.0;
+      } else {
+        final fallback = _getCalibratedFallback(timeframe);
+        percentages = fallback.percentages;
+        totalVolume = fallback.totalVolume;
+        for (final entry in fallback.volumes.entries) {
+          muscleVolumes[entry.key] = entry.value;
+        }
       }
     } else {
       percentages = _calculateLargestRemainderPercentages(

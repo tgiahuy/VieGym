@@ -2544,6 +2544,7 @@ class _WorkoutScheduleCreateScreenState
               physics: const NeverScrollableScrollPhysics(),
               buildDefaultDragHandles: false,
               itemCount: exercises.length,
+              // ignore: deprecated_member_use
               onReorder: _moveExercise,
               itemBuilder: (context, index) {
                 final ex = exercises[index];

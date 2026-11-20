@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/dio_provider.dart';
 import '../domain/food_models.dart';
+import 'food_image_resolver.dart';
 
 final nutritionRepositoryProvider = Provider<NutritionRepository>((ref) {
   return NutritionRepository(ref.watch(dioProvider));
@@ -19,12 +20,35 @@ class NutritionRepository {
         if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
         if (category != null && category != 'ALL') 'category': category,
         'page': 0,
-        'size': 100,
+        'size': 500,
         'sort': 'name,asc',
       },
     );
     final data = _map(response.data?['data']);
-    return _list(data['content']).map(FoodApiMapper.food).toList();
+    final allItems = _list(data['content']);
+    final totalPages = data['totalPages'] as int? ?? 1;
+
+    if (totalPages > 1) {
+      final otherPages = await Future.wait([
+        for (int p = 1; p < totalPages; p++)
+          _dio.get<Map<String, dynamic>>(
+            '/api/v1/foods',
+            queryParameters: {
+              if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+              if (category != null && category != 'ALL') 'category': category,
+              'page': p,
+              'size': 100,
+              'sort': 'name,asc',
+            },
+          ),
+      ]);
+      for (final r in otherPages) {
+        final pData = _map(r.data?['data']);
+        allItems.addAll(_list(pData['content']));
+      }
+    }
+
+    return allItems.map(FoodApiMapper.food).toList();
   }
 
   Future<FoodItem> getFood(String id) async {
@@ -149,6 +173,23 @@ class FoodApiMapper {
     final nutrition = _map(json['nutritionPerServing']);
     final grams = _doubleOrNull(serving['gramsPerServing']);
     final unit = '${serving['amount'] ?? 1} ${serving['unit'] ?? 'phần'}';
+    final slug = json['slug'] as String?;
+    final name = json['name'] as String?;
+    final category = json['category'] as String?;
+    final rawMedia = (json['media'] as List<dynamic>?) ?? [];
+    String? serverImg;
+    for (final m in rawMedia) {
+      if (m is Map<String, dynamic> &&
+          m['url'] is String &&
+          (m['url'] as String).isNotEmpty) {
+        serverImg = m['url'] as String;
+        break;
+      }
+    }
+    final resolvedImg = (serverImg != null && serverImg.isNotEmpty)
+        ? serverImg
+        : resolveFoodImageUrl(slug: slug, name: name, category: category);
+
     return FoodItem(
       id: '${json['id']}',
       name: '${json['name'] ?? ''}',
@@ -158,7 +199,7 @@ class FoodApiMapper {
       baseProtein: _number(nutrition['proteinG']),
       baseCarbs: _number(nutrition['carbsG']),
       baseFat: _number(nutrition['fatG']),
-      imageUrl: '',
+      imageUrl: resolvedImg,
       description: '${json['sourceNote'] ?? ''}',
       gramsPerServing: grams,
       estimated: json['estimated'] as bool? ?? true,

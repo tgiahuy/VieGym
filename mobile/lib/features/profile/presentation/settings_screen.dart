@@ -318,6 +318,23 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(
+                    Icons.event_available_rounded,
+                    color: AppColors.aiViolet,
+                  ),
+                  title: const Text(
+                    'Lịch trình luyện tập được cá nhân hoá',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  subtitle: const Text(
+                    'AI lên lịch tập theo thời gian cụ thể để đạt mục tiêu của bạn.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push('/ai/personalized-schedule'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
                   title: const Text(
                     'Chi tiết quyền riêng tư & Dữ liệu AI',

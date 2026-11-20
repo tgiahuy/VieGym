@@ -106,7 +106,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
     double dynamicGrowth = 0.0;
     if (prevVolume > 0) {
-      dynamicGrowth = ((effectiveTotalVolume - prevVolume) / prevVolume) * 100.0;
+      dynamicGrowth =
+          ((effectiveTotalVolume - prevVolume) / prevVolume) * 100.0;
     } else if (effectiveTotalVolume > 0) {
       dynamicGrowth = 100.0;
     } else if (_selectedTimeframe == 0) {
@@ -125,18 +126,35 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     for (final h in timeframeHistory) {
       if (h.exercises.isNotEmpty) {
         for (final ex in h.exercises) {
-          final t = '${ex.exerciseName} ${ex.primaryMuscle} ${ex.secondaryMuscles.join(' ')}'.toLowerCase();
+          final t =
+              '${ex.exerciseName} ${ex.primaryMuscle} ${ex.secondaryMuscles.join(' ')}'
+                  .toLowerCase();
           final v = ex.volumeKg > 0
               ? ex.volumeKg
-              : ex.sets.fold<double>(0.0, (s, st) => s + (st.weightKg * st.reps));
+              : ex.sets.fold<double>(
+                  0.0,
+                  (s, st) => s + (st.weightKg * st.reps),
+                );
 
-          if (t.contains('ngực') || t.contains('chest') || t.contains('vai') ||
-              t.contains('shoulder') || t.contains('tricep') || t.contains('tay sau') ||
-              t.contains('bench') || t.contains('press') || t.contains('dip')) {
+          if (t.contains('ngực') ||
+              t.contains('chest') ||
+              t.contains('vai') ||
+              t.contains('shoulder') ||
+              t.contains('tricep') ||
+              t.contains('tay sau') ||
+              t.contains('bench') ||
+              t.contains('press') ||
+              t.contains('dip')) {
             pushVolume += v;
-          } else if (t.contains('lưng') || t.contains('back') || t.contains('lat') ||
-                     t.contains('xô') || t.contains('bicep') || t.contains('tay trước') ||
-                     t.contains('pull') || t.contains('row') || t.contains('curl')) {
+          } else if (t.contains('lưng') ||
+              t.contains('back') ||
+              t.contains('lat') ||
+              t.contains('xô') ||
+              t.contains('bicep') ||
+              t.contains('tay trước') ||
+              t.contains('pull') ||
+              t.contains('row') ||
+              t.contains('curl')) {
             pullVolume += v;
           } else {
             legsVolume += v;
@@ -144,9 +162,15 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         }
       } else {
         final t = '${h.workoutName} ${h.targetMuscles.join(' ')}'.toLowerCase();
-        if (t.contains('push') || t.contains('đẩy') || t.contains('ngực') || t.contains('vai')) {
+        if (t.contains('push') ||
+            t.contains('đẩy') ||
+            t.contains('ngực') ||
+            t.contains('vai')) {
           pushVolume += h.totalVolumeKg;
-        } else if (t.contains('pull') || t.contains('kéo') || t.contains('lưng') || t.contains('tay')) {
+        } else if (t.contains('pull') ||
+            t.contains('kéo') ||
+            t.contains('lưng') ||
+            t.contains('tay')) {
           pullVolume += h.totalVolumeKg;
         } else {
           legsVolume += h.totalVolumeKg;
@@ -159,7 +183,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       final day = currentMonday.add(Duration(days: i));
       final hasHistory = allHistory.any((h) {
         final d = _parseWorkoutDate(h.date);
-        return d != null && d.year == day.year && d.month == day.month && d.day == day.day;
+        return d != null &&
+            d.year == day.year &&
+            d.month == day.month &&
+            d.day == day.day;
       });
       final hasDailyVolume = state.dailyVolumes.any(
         (v) => v.weekday == (i + 1) && v.volumeKg > 0,
@@ -173,6 +200,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             s.status == ScheduleStatus.completed;
       });
       return hasHistory || hasDailyVolume || hasSchedule;
+    });
+
+    final scheduledDays = List.generate(7, (i) {
+      final day = currentMonday.add(Duration(days: i));
+      return scheduleState.schedules.any((s) {
+        final d = _parseWorkoutDate(s.date);
+        return d != null &&
+            d.year == day.year &&
+            d.month == day.month &&
+            d.day == day.day &&
+            s.status == ScheduleStatus.planned;
+      });
     });
 
     return Scaffold(
@@ -217,6 +256,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               streakDays: state.currentStreakDays,
               totalMinutes: state.totalWorkoutMinutes,
               completedDays: completedDays,
+              scheduledDays: scheduledDays,
             ),
             const SizedBox(height: 18),
 
@@ -233,10 +273,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             const SizedBox(height: 18),
 
             // 4. Muscle Recovery & Sets Volume Matrix
-            _MuscleRecoveryMatrixCard(
-              history: allHistory,
-              now: now,
-            ),
+            _MuscleRecoveryMatrixCard(history: allHistory, now: now),
             const SizedBox(height: 18),
 
             // 5. Strength Progression & PR Highlights
@@ -326,6 +363,15 @@ class _ConsistencyHeroCard extends StatelessWidget {
     required this.streakDays,
     required this.totalMinutes,
     required this.completedDays,
+    this.scheduledDays = const [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ],
   });
 
   final int completedWorkouts;
@@ -333,6 +379,7 @@ class _ConsistencyHeroCard extends StatelessWidget {
   final int streakDays;
   final int totalMinutes;
   final List<bool> completedDays;
+  final List<bool> scheduledDays;
 
   @override
   Widget build(BuildContext context) {
@@ -514,6 +561,9 @@ class _ConsistencyHeroCard extends StatelessWidget {
               children: List.generate(7, (i) {
                 final isDone = effectiveCompletedDays[i];
                 final isToday = (i + 1 == DateTime.now().weekday);
+                final hasSchedule =
+                    i < scheduledDays.length && scheduledDays[i];
+
                 return Column(
                   children: [
                     Text(
@@ -533,13 +583,20 @@ class _ConsistencyHeroCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDone
-                            ? colors.primary
+                            ? AppColors.success
                             : (isToday
-                                  ? colors.primary.withValues(alpha: 0.2)
+                                  ? colors.primary.withValues(alpha: 0.15)
                                   : colors.surfaceContainer),
                         border: isToday
                             ? Border.all(color: colors.primary, width: 1.2)
-                            : null,
+                            : (hasSchedule && !isDone
+                                  ? Border.all(
+                                      color: colors.primary.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      width: 1.2,
+                                    )
+                                  : null),
                       ),
                       alignment: Alignment.center,
                       child: isDone
@@ -557,7 +614,18 @@ class _ConsistencyHeroCard extends StatelessWidget {
                                       color: colors.primary,
                                     ),
                                   )
-                                : null),
+                                : (hasSchedule
+                                      ? Container(
+                                          width: 5,
+                                          height: 5,
+                                          decoration: BoxDecoration(
+                                            color: colors.primary.withValues(
+                                              alpha: 0.8,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        )
+                                      : null)),
                     ),
                   ],
                 );
@@ -608,14 +676,23 @@ class _VolumeProgressionCard extends StatelessWidget {
         : (totalVolumeKg > 0 ? totalVolumeKg * 0.30 : 0.0);
 
     final volumeBreakdown = [
-      ('Đẩy (Push: Ngực, Vai, Tay sau)', displayPush.round(), AppColors.chartPrimary),
-      ('Kéo (Pull: Lưng xô, Tay trước)', displayPull.round(), AppColors.chartBlue),
+      (
+        'Đẩy (Push: Ngực, Vai, Tay sau)',
+        displayPush.round(),
+        AppColors.chartPrimary,
+      ),
+      (
+        'Kéo (Pull: Lưng xô, Tay trước)',
+        displayPull.round(),
+        AppColors.chartBlue,
+      ),
       ('Chân & Mông (Legs & Glutes)', displayLegs.round(), AppColors.chartCyan),
     ];
 
     final displayTotal = totalVolumeKg.toInt();
-    final avgPerWorkout =
-        completedWorkouts > 0 ? (totalVolumeKg / completedWorkouts).round() : 0;
+    final avgPerWorkout = completedWorkouts > 0
+        ? (totalVolumeKg / completedWorkouts).round()
+        : 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -688,8 +765,8 @@ class _VolumeProgressionCard extends StatelessWidget {
                   growthRate > 0
                       ? '+${growthRate.toStringAsFixed(1)}% TĂNG'
                       : (growthRate < 0
-                          ? '${growthRate.toStringAsFixed(1)}% GIẢM'
-                          : '0.0% DUY TRÌ'),
+                            ? '${growthRate.toStringAsFixed(1)}% GIẢM'
+                            : '0.0% DUY TRÌ'),
                   style: TextStyle(
                     fontSize: 9.5,
                     fontWeight: FontWeight.w900,
@@ -837,10 +914,7 @@ class _VolumeProgressionCard extends StatelessWidget {
 // 4. Muscle Recovery & Sets Volume Matrix
 // ─────────────────────────────────────────────────────────────────────────────
 class _MuscleRecoveryMatrixCard extends StatelessWidget {
-  const _MuscleRecoveryMatrixCard({
-    required this.history,
-    required this.now,
-  });
+  const _MuscleRecoveryMatrixCard({required this.history, required this.now});
 
   final List<WorkoutHistoryItem> history;
   final DateTime now;
@@ -934,8 +1008,8 @@ class _MuscleRecoveryMatrixCard extends StatelessWidget {
             }
           }
         } else {
-          final t =
-              '${h.workoutName} ${h.targetMuscles.join(' ')}'.toLowerCase();
+          final t = '${h.workoutName} ${h.targetMuscles.join(' ')}'
+              .toLowerCase();
           if (keywords.any((k) => t.contains(k))) {
             workoutMatched = true;
             setsCount += h.completedSetsCount > 0 ? h.completedSetsCount : 4;

@@ -49,6 +49,10 @@ class ResilientNetworkImage extends StatelessWidget {
       child: Image.network(
         url,
         fit: fit,
+        headers: const {
+          'User-Agent':
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 VieGymApp/1.0',
+        },
         semanticLabel: semanticLabel,
         width: double.infinity,
         height: double.infinity,

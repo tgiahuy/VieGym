@@ -13,6 +13,7 @@ import '../../profile/application/progress_controller.dart';
 import '../../profile/presentation/widgets/log_weight_dialog.dart';
 import '../../workout/application/workout_schedule_controller.dart';
 import '../../workout/application/workout_session_controller.dart';
+import '../../workout/domain/workout_models.dart';
 import '../../workout/presentation/widgets/flippable_muscle_card.dart';
 import '../../workout/presentation/widgets/today_workout_empty_state.dart';
 import 'widgets/weekly_progress_card.dart';
@@ -215,12 +216,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // ─────────────────────────────────────────────────────────────────
             // 2. Weekly Progress Card (Tiến độ & Chuỗi ngày trong tuần)
             // ─────────────────────────────────────────────────────────────────
-            WeeklyProgressCard(
-              completedWorkouts: progress.completedWorkoutsThisWeek,
-              targetWorkouts: progress.targetWorkoutsPerWeek,
-              streakDays: progress.currentStreakDays,
-              onTap: () => context.push('/progress'),
-            ),
+            () {
+              final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
+              final currentMonday = today.subtract(Duration(days: now.weekday - 1));
+
+              final weeklyCompletedDays = List.generate(7, (i) {
+                final dayDate = currentMonday.add(Duration(days: i));
+                final dayDateStr = _formatDate(dayDate);
+                final isToday = (i == (now.weekday - 1));
+                final hasHistory = schedule.history.any((h) =>
+                    h.date == dayDateStr &&
+                    (h.completedSetsCount > 0 || h.totalVolumeKg > 0 || h.durationMinutes > 0));
+                final hasCompletedSchedule = schedule.schedules.any(
+                  (s) => s.date == dayDateStr && s.status == ScheduleStatus.completed,
+                );
+                return hasHistory || hasCompletedSchedule || (isToday && isTodayCompleted);
+              });
+
+              final weeklyScheduledDays = List.generate(7, (i) {
+                final dayDate = currentMonday.add(Duration(days: i));
+                final dayDateStr = _formatDate(dayDate);
+                return schedule.schedules.any(
+                  (s) => s.date == dayDateStr && s.status == ScheduleStatus.planned,
+                );
+              });
+
+              return WeeklyProgressCard(
+                completedWorkouts: progress.completedWorkoutsThisWeek,
+                targetWorkouts: progress.targetWorkoutsPerWeek,
+                streakDays: progress.currentStreakDays,
+                completedDays: weeklyCompletedDays,
+                scheduledDays: weeklyScheduledDays,
+                onTap: () => context.push('/progress'),
+              );
+            }(),
             const SizedBox(height: 16),
 
             // ─────────────────────────────────────────────────────────────────

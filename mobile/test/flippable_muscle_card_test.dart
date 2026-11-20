@@ -107,9 +107,7 @@ void main() {
           const MaterialApp(
             home: Scaffold(
               body: Center(
-                child: FlippableMuscleCard(
-                  targetMuscles: ['Cơ cổ'],
-                ),
+                child: FlippableMuscleCard(targetMuscles: ['Cơ cổ']),
               ),
             ),
           ),
@@ -135,9 +133,7 @@ void main() {
           const MaterialApp(
             home: Scaffold(
               body: Center(
-                child: FlippableMuscleCard(
-                  targetMuscles: ['Cơ dạng hông'],
-                ),
+                child: FlippableMuscleCard(targetMuscles: ['Cơ dạng hông']),
               ),
             ),
           ),
@@ -205,10 +201,7 @@ void main() {
                         ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              targetMuscles = [
-                                ...targetMuscles,
-                                'Lưng xô',
-                              ];
+                              targetMuscles = [...targetMuscles, 'Lưng xô'];
                             });
                           },
                           child: const Text('Add Back Exercise'),
@@ -245,12 +238,12 @@ void main() {
         final container = ProviderContainer();
         addTearDown(container.dispose);
 
-        final scheduleNotifier =
-            container.read(workoutScheduleProvider.notifier);
+        final scheduleNotifier = container.read(
+          workoutScheduleProvider.notifier,
+        );
 
         // Delete all existing today schedules
-        final todayItem =
-            container.read(workoutScheduleProvider).todayWorkout;
+        final todayItem = container.read(workoutScheduleProvider).todayWorkout;
         if (todayItem != null) {
           scheduleNotifier.deleteSchedule(todayItem.id);
         }
@@ -260,10 +253,7 @@ void main() {
           container.read(workoutScheduleProvider).hasTodayWorkout,
           isFalse,
         );
-        expect(
-          container.read(workoutSessionProvider).exercises,
-          isEmpty,
-        );
+        expect(container.read(workoutSessionProvider).exercises, isEmpty);
       },
     );
   });

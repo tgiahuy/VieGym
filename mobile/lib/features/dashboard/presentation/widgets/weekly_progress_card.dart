@@ -9,12 +9,16 @@ class WeeklyProgressCard extends StatelessWidget {
     required this.targetWorkouts,
     required this.streakDays,
     required this.onTap,
+    this.completedDays = const [false, false, false, false, false, false, false],
+    this.scheduledDays = const [false, false, false, false, false, false, false],
   });
 
   final int completedWorkouts;
   final int targetWorkouts;
   final int streakDays;
   final VoidCallback onTap;
+  final List<bool> completedDays;
+  final List<bool> scheduledDays;
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +121,9 @@ class WeeklyProgressCard extends StatelessWidget {
                   final dayLabel = days[index];
                   final isToday = index == todayWeekdayIndex;
                   final isCompleted =
-                      index == 0 || index == 2; // e.g. T2, T4 completed
+                      index < completedDays.length && completedDays[index];
+                  final hasSchedule =
+                      index < scheduledDays.length && scheduledDays[index];
 
                   return Column(
                     children: [
@@ -137,6 +143,7 @@ class WeeklyProgressCard extends StatelessWidget {
                       _DayIndicator(
                         isCompleted: isCompleted,
                         isToday: isToday,
+                        hasSchedule: hasSchedule,
                         primaryColor: colors.primary,
                       ),
                     ],
@@ -155,10 +162,11 @@ class _DayIndicator extends StatelessWidget {
   const _DayIndicator({
     required this.isCompleted,
     required this.isToday,
+    required this.hasSchedule,
     required this.primaryColor,
   });
 
-  final bool isCompleted, isToday;
+  final bool isCompleted, isToday, hasSchedule;
   final Color primaryColor;
 
   @override
@@ -193,10 +201,35 @@ class _DayIndicator extends StatelessWidget {
         ),
         child: Center(
           child: Container(
-            width: 4,
-            height: 4,
+            width: hasSchedule ? 7 : 4,
+            height: hasSchedule ? 7 : 4,
             decoration: BoxDecoration(
               color: primaryColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (hasSchedule) {
+      return Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: primaryColor.withValues(alpha: 0.6),
+            width: 1.2,
+          ),
+        ),
+        child: Center(
+          child: Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.8),
               shape: BoxShape.circle,
             ),
           ),
@@ -211,7 +244,7 @@ class _DayIndicator extends StatelessWidget {
         color: AppColors.surfaceElevated,
         shape: BoxShape.circle,
       ),
-      child: Center(
+      child: const Center(
         child: Text(
           '•',
           style: TextStyle(

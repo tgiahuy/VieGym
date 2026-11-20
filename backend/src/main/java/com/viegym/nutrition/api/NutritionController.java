@@ -46,7 +46,7 @@ public class NutritionController {
                                 category,
                                 PageRequest.of(
                                         Math.max(0, page),
-                                        Math.min(Math.max(1, size), 100),
+                                        Math.min(Math.max(1, size), 1000),
                                         parseSort(sort)))));
     }
 

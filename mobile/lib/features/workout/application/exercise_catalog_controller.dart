@@ -60,6 +60,7 @@ class ExerciseCatalogState {
     this.error,
     this.exercises = const [],
     this.rawSummaries = const [],
+    this.totalElements = 0,
   });
 
   final String query;
@@ -74,6 +75,7 @@ class ExerciseCatalogState {
   final String? error;
   final List<ExerciseDefinition> exercises;
   final List<ExerciseApiSummary> rawSummaries;
+  final int totalElements;
 
   ExerciseCatalogState copyWith({
     String? query,
@@ -88,6 +90,7 @@ class ExerciseCatalogState {
     String? error,
     List<ExerciseDefinition>? exercises,
     List<ExerciseApiSummary>? rawSummaries,
+    int? totalElements,
     bool clearMuscleGroup = false,
     bool clearEquipment = false,
     bool clearDifficulty = false,
@@ -108,6 +111,7 @@ class ExerciseCatalogState {
       error: error,
       exercises: exercises ?? this.exercises,
       rawSummaries: rawSummaries ?? this.rawSummaries,
+      totalElements: totalElements ?? this.totalElements,
     );
   }
 }
@@ -133,16 +137,45 @@ class ExerciseCatalogController extends Notifier<ExerciseCatalogState> {
         size: 150,
       );
 
-      final mapped = res.items.map((e) => e.toExerciseDefinition()).toList();
+      final allSummaries = List<ExerciseApiSummary>.from(res.items);
+
+      if (res.totalPages > 1) {
+        final remainingPages = await Future.wait([
+          for (int p = 1; p < res.totalPages; p++)
+            repo.getExercises(
+              q: state.query.isNotEmpty ? state.query : null,
+              muscleGroupId: state.muscleGroupId,
+              equipmentId: state.equipmentId,
+              difficulty: state.difficulty,
+              compatibleWithMyEquipment: state.compatibleWithMyEquipment,
+              page: p,
+              size: 150,
+            ),
+        ]);
+        for (final pRes in remainingPages) {
+          allSummaries.addAll(pRes.items);
+        }
+      }
+
+      final mapped = allSummaries.map((e) => e.toExerciseDefinition()).toList();
+      if (!ref.mounted) return;
       state = state.copyWith(
         isLoading: false,
         exercises: mapped,
-        rawSummaries: res.items,
-        page: 0,
-        hasMore: !res.isLastPage,
+        rawSummaries: allSummaries,
+        page: res.totalPages > 1 ? res.totalPages - 1 : 0,
+        totalElements: res.totalElements,
+        hasMore: false,
       );
     } catch (err) {
-      state = state.copyWith(isLoading: false, error: err.toString());
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isLoading: false,
+        error: err.toString(),
+        exercises: state.exercises.isEmpty ? exerciseCatalog : state.exercises,
+        totalElements:
+            state.totalElements == 0 ? exerciseCatalog.length : state.totalElements,
+      );
     }
   }
 

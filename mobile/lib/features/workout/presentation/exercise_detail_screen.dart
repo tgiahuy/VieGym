@@ -9,6 +9,7 @@ import '../application/favorite_exercises_controller.dart';
 import '../application/workout_session_controller.dart';
 import '../data/exercise_catalog.dart';
 import 'widgets/common_mistakes_card.dart';
+import 'widgets/exercise_motion_player_banner.dart';
 import 'widgets/muscle_target_card.dart';
 
 class ExerciseDetailScreen extends ConsumerWidget {
@@ -71,52 +72,11 @@ class ExerciseDetailScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
         children: [
-          // Media / Video Simulation Banner
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [
-                  colors.primaryContainer,
-                  colors.surfaceContainerHighest,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.primary.withValues(alpha: 0.85),
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Video kỹ thuật chuẩn form',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          // Authentic Exercise Media / 2-Phase Motion Banner
+          ExerciseMotionPlayerBanner(
+            startImageUrl: exercise.thumbnailUrl,
+            peakImageUrl: exercise.videoUrl,
+            exerciseName: exercise.name,
           ),
           const SizedBox(height: 16),
 

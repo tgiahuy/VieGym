@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,7 @@ import 'package:viegym/features/workout/application/rest_timer_controller.dart';
 import 'package:viegym/features/workout/application/workout_schedule_controller.dart';
 import 'package:viegym/features/workout/application/workout_session_controller.dart';
 import 'package:viegym/features/workout/data/exercise_catalog.dart';
+import 'package:viegym/features/workout/data/exercise_catalog_repository.dart';
 import 'package:viegym/features/workout/domain/exercise_api_models.dart';
 import 'package:viegym/features/workout/domain/muscle_models.dart';
 import 'package:viegym/features/workout/domain/workout_models.dart';
@@ -299,22 +301,25 @@ void main() {
       },
     );
 
-    test('Front and Back anatomical region maps both contain neck and abductors', () {
-      final frontRegions = generatedMuscleRegions(BodySide.front);
-      final backRegions = generatedMuscleRegions(BodySide.back);
+    test(
+      'Front and Back anatomical region maps both contain neck and abductors',
+      () {
+        final frontRegions = generatedMuscleRegions(BodySide.front);
+        final backRegions = generatedMuscleRegions(BodySide.back);
 
-      expect(frontRegions.containsKey(MuscleGroup.neck), isTrue);
-      expect(frontRegions[MuscleGroup.neck], isNotEmpty);
+        expect(frontRegions.containsKey(MuscleGroup.neck), isTrue);
+        expect(frontRegions[MuscleGroup.neck], isNotEmpty);
 
-      expect(backRegions.containsKey(MuscleGroup.neck), isTrue);
-      expect(backRegions[MuscleGroup.neck], isNotEmpty);
+        expect(backRegions.containsKey(MuscleGroup.neck), isTrue);
+        expect(backRegions[MuscleGroup.neck], isNotEmpty);
 
-      expect(frontRegions.containsKey(MuscleGroup.abductors), isTrue);
-      expect(frontRegions[MuscleGroup.abductors], isNotEmpty);
+        expect(frontRegions.containsKey(MuscleGroup.abductors), isTrue);
+        expect(frontRegions[MuscleGroup.abductors], isNotEmpty);
 
-      expect(backRegions.containsKey(MuscleGroup.abductors), isTrue);
-      expect(backRegions[MuscleGroup.abductors], isNotEmpty);
-    });
+        expect(backRegions.containsKey(MuscleGroup.abductors), isTrue);
+        expect(backRegions[MuscleGroup.abductors], isNotEmpty);
+      },
+    );
 
     testWidgets(
       'ExerciseMuscleVisualizer renders Neck (Cơ cổ) with ZoomFocusCard',
@@ -330,9 +335,7 @@ void main() {
           const MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
-                child: ExerciseMuscleVisualizer(
-                  primaryMuscle: 'Cơ cổ',
-                ),
+                child: ExerciseMuscleVisualizer(primaryMuscle: 'Cơ cổ'),
               ),
             ),
           ),
@@ -359,9 +362,7 @@ void main() {
           const MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
-                child: ExerciseMuscleVisualizer(
-                  primaryMuscle: 'Cơ dạng hông',
-                ),
+                child: ExerciseMuscleVisualizer(primaryMuscle: 'Cơ dạng hông'),
               ),
             ),
           ),
@@ -1734,8 +1735,9 @@ void main() {
         );
 
         // Verify exercise is actually added to workoutScheduleProvider todayWorkout
-        final todaySchedule =
-            container.read(workoutScheduleProvider).todayWorkout;
+        final todaySchedule = container
+            .read(workoutScheduleProvider)
+            .todayWorkout;
         expect(todaySchedule, isNotNull);
         expect(
           todaySchedule!.plannedExercises.map((e) => e.name),
@@ -1786,8 +1788,9 @@ void main() {
           findsOneWidget,
         );
 
-        final todaySchedule =
-            container.read(workoutScheduleProvider).todayWorkout;
+        final todaySchedule = container
+            .read(workoutScheduleProvider)
+            .todayWorkout;
         expect(todaySchedule, isNotNull);
         expect(todaySchedule!.date, todayStr);
         expect(
@@ -1969,6 +1972,33 @@ void main() {
     );
 
     test(
+      'ExerciseCatalogController.loadInitial fetches all pages and synchronizes complete exercise list',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            exerciseCatalogRepositoryProvider.overrideWithValue(
+              _FakeMultiPageExerciseRepo(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final controller = container.read(
+          exerciseCatalogControllerProvider.notifier,
+        );
+        await controller.loadInitial();
+
+        final state = container.read(exerciseCatalogControllerProvider);
+        expect(state.isLoading, isFalse);
+        expect(state.exercises.length, 376);
+        expect(state.totalElements, 376);
+        expect(state.hasMore, isFalse);
+        expect(state.exercises.first.id, 'ex_1');
+        expect(state.exercises.last.id, 'ex_376');
+      },
+    );
+
+    test(
       'ExerciseApiSummary and ExerciseApiDetail map JSON and convert to ExerciseDefinition correctly',
       () {
         final summaryJson = {
@@ -2092,4 +2122,55 @@ class _SeededExerciseCatalogController extends ExerciseCatalogController {
 
   @override
   Future<void> loadInitial() async {}
+}
+
+class _FakeMultiPageExerciseRepo extends ExerciseCatalogRepository {
+  _FakeMultiPageExerciseRepo() : super(Dio());
+
+  @override
+  Future<ExercisePageResult> getExercises({
+    String? q,
+    int? muscleGroupId,
+    int? equipmentId,
+    String? difficulty,
+    bool? compatibleWithMyEquipment,
+    int page = 0,
+    int size = 150,
+    String sort = 'name,asc',
+  }) async {
+    final pageItems = List<ExerciseApiSummary>.generate(page < 2 ? 150 : 76, (
+      i,
+    ) {
+      final id = page * 150 + i + 1;
+      return ExerciseApiSummary(
+        id: id,
+        name: 'Exercise $id',
+        searchName: 'exercise $id',
+        slug: 'exercise-$id',
+        difficulty: 'BEGINNER',
+        muscleGroups: const [
+          ExerciseMuscleGroupApiItem(
+            muscleGroupId: 1,
+            code: 'CHEST',
+            name: 'Ngực',
+            role: 'PRIMARY',
+          ),
+        ],
+        equipment: const [
+          ExerciseEquipmentApiItem(
+            equipmentId: 1,
+            code: 'BODYWEIGHT',
+            name: 'Bodyweight',
+          ),
+        ],
+      );
+    });
+
+    return ExercisePageResult(
+      items: pageItems,
+      totalElements: 376,
+      totalPages: 3,
+      isLastPage: page >= 2,
+    );
+  }
 }

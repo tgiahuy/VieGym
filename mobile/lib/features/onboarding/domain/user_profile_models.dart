@@ -221,7 +221,8 @@ class HealthProfile {
     this.experience = TrainingExperience.intermediate,
     this.workoutDaysPerWeek = 4,
     this.sessionDurationMinutes = 60,
-    this.isCompleted = true,
+    this.roadmapWeeks = 8,
+    this.isCompleted = false,
     this.serverBmi,
     this.serverBmr,
     this.serverTdee,
@@ -243,6 +244,7 @@ class HealthProfile {
   final TrainingExperience experience;
   final int workoutDaysPerWeek;
   final int sessionDurationMinutes;
+  final int roadmapWeeks;
   final bool isCompleted;
 
   final double? serverBmi;
@@ -307,6 +309,7 @@ class HealthProfile {
     TrainingExperience? experience,
     int? workoutDaysPerWeek,
     int? sessionDurationMinutes,
+    int? roadmapWeeks,
     bool? isCompleted,
     double? serverBmi,
     int? serverBmr,
@@ -330,6 +333,7 @@ class HealthProfile {
       workoutDaysPerWeek: workoutDaysPerWeek ?? this.workoutDaysPerWeek,
       sessionDurationMinutes:
           sessionDurationMinutes ?? this.sessionDurationMinutes,
+      roadmapWeeks: roadmapWeeks ?? this.roadmapWeeks,
       isCompleted: isCompleted ?? this.isCompleted,
       serverBmi: serverBmi ?? this.serverBmi,
       serverBmr: serverBmr ?? this.serverBmr,

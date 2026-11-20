@@ -50,7 +50,7 @@ public class ExerciseCatalogController {
             @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt != null ? Long.valueOf(jwt.getSubject()) : null;
         int safePage = Math.max(0, page);
-        int safeSize = Math.min(Math.max(1, size), 200);
+        int safeSize = Math.min(Math.max(1, size), 1000);
 
         Sort sorting = parseSort(sort);
         PageRequest pageRequest = PageRequest.of(safePage, safeSize, sorting);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/health_profile_controller.dart';
 import '../data/equipment_catalog.dart';
 
@@ -27,6 +28,12 @@ class _EquipmentOnboardingScreenState
     super.dispose();
   }
 
+  String get _accountKey {
+    final user = ref.read(authProvider).user;
+    if (user == null) return 'default';
+    return user.email.isNotEmpty ? user.email : user.id;
+  }
+
   Future<void> _finish() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
@@ -35,6 +42,7 @@ class _EquipmentOnboardingScreenState
       await ref
           .read(equipmentOnboardingCompletedProvider.notifier)
           .saveAndComplete(selected);
+      await ref.read(healthProfileProvider.notifier).clearDraft(_accountKey);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -60,6 +68,7 @@ class _EquipmentOnboardingScreenState
       await ref
           .read(equipmentOnboardingCompletedProvider.notifier)
           .saveAndComplete({});
+      await ref.read(healthProfileProvider.notifier).clearDraft(_accountKey);
     } catch (_) {
       ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
     } finally {

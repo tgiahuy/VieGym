@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/ai/presentation/ai_coach_chat_screen.dart';
 import '../../features/ai/presentation/ai_consent_screen.dart';
 import '../../features/ai/presentation/ai_conversation_history_screen.dart';
+import '../../features/ai/presentation/ai_personalized_schedule_screen.dart';
 import '../../features/ai/presentation/ai_tab_screen.dart';
 import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
@@ -425,6 +426,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/ai/history',
         name: 'ai-history',
         builder: (context, state) => const AiConversationHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/ai/personalized-schedule',
+        name: 'ai-personalized-schedule',
+        builder: (context, state) => const AiPersonalizedScheduleScreen(),
       ),
     ],
   );

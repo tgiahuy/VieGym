@@ -29,11 +29,11 @@ class ExerciseThumbnail extends StatelessWidget {
     if (imageUrl != null && imageUrl!.trim().isNotEmpty) {
       return imageUrl!.trim();
     }
-    final def = findExercise(exerciseId);
+    final def = findExercise(exerciseId) ?? findExerciseByName(name ?? '');
     if (def != null && def.thumbnailUrl.isNotEmpty) {
       return def.thumbnailUrl;
     }
-    return 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80';
+    return resolveExerciseCdnImage(name ?? exerciseId);
   }
 
   @override

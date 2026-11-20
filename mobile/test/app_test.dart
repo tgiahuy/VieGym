@@ -91,11 +91,15 @@ void main() {
         await tester.pumpAndSettle();
         final exception = tester.takeException();
         if (exception != null) {
-          for (final renderObject in tester.allRenderObjects.whereType<RenderFlex>()) {
-            final hasOverflow = renderObject.toString().contains('OVERFLOWING') ||
+          for (final renderObject
+              in tester.allRenderObjects.whereType<RenderFlex>()) {
+            final hasOverflow =
+                renderObject.toString().contains('OVERFLOWING') ||
                 renderObject.toStringDeep().contains('overflowed');
             if (hasOverflow) {
-              debugPrint('FOUND_OVERFLOW_FLEX_TAB_$label:\n${renderObject.toStringDeep()}');
+              debugPrint(
+                'FOUND_OVERFLOW_FLEX_TAB_$label:\n${renderObject.toStringDeep()}',
+              );
             }
           }
         }

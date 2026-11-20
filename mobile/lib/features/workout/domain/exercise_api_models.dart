@@ -1,3 +1,4 @@
+import '../data/exercise_catalog.dart';
 import 'workout_models.dart';
 
 class ExerciseApiSummary {
@@ -34,6 +35,21 @@ class ExerciseApiSummary {
             .toList() ??
         [];
 
+    final mediaList = (json['media'] as List<dynamic>?) ?? [];
+    String? thumb = json['thumbnailUrl'] as String?;
+    String? vid = json['videoUrl'] as String?;
+    for (final m in mediaList) {
+      if (m is Map<String, dynamic>) {
+        final role = m['role'] as String?;
+        final url = m['url'] as String?;
+        if ((role == 'THUMBNAIL' || role == 'GALLERY') && (thumb == null || thumb.isEmpty)) {
+          thumb = url;
+        } else if (role == 'PRIMARY_VIDEO' && (vid == null || vid.isEmpty)) {
+          vid = url;
+        }
+      }
+    }
+
     return ExerciseApiSummary(
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
@@ -41,8 +57,8 @@ class ExerciseApiSummary {
       slug: json['slug'] as String? ?? '',
       difficulty: json['difficulty'] as String? ?? 'BEGINNER',
       description: json['description'] as String?,
-      thumbnailUrl: json['thumbnailUrl'] as String?,
-      videoUrl: json['videoUrl'] as String?,
+      thumbnailUrl: thumb,
+      videoUrl: vid,
       muscleGroups: muscleGroupsList,
       equipment: equipmentList,
       isFavorite: json['isFavorite'] as bool? ?? false,
@@ -78,19 +94,33 @@ class ExerciseApiSummary {
         .map((m) => m.name)
         .toList();
 
+    final existingDef = findExerciseByName(name) ?? findExercise('ex_$id');
+    final thumb = (thumbnailUrl != null && thumbnailUrl!.isNotEmpty)
+        ? thumbnailUrl!
+        : (existingDef?.thumbnailUrl.isNotEmpty == true
+            ? existingDef!.thumbnailUrl
+            : resolveExerciseCdnImage(slug.isNotEmpty ? slug : name));
+    final vid = (videoUrl != null && videoUrl!.isNotEmpty)
+        ? videoUrl
+        : (existingDef?.videoUrl ?? resolveExerciseCdnVideo(slug.isNotEmpty ? slug : name));
+
     return ExerciseDefinition(
       id: 'ex_$id',
       name: name,
-      nameVi: name,
+      nameVi: (existingDef != null && existingDef.nameVi.isNotEmpty)
+          ? existingDef.nameVi
+          : name,
       primaryMuscle: primary.name,
       primaryMuscleKey: primary.code.toLowerCase(),
       secondaryMuscles: secondary,
       equipment: _mapEquipment(equipment),
       equipmentIds: equipment.map((item) => item.equipmentId).toList(),
       equipmentCodes: equipment.map((item) => item.code).toList(),
-      description: description ?? '',
-      instructions: const [],
-      commonMistakes: const [],
+      description: description ?? (existingDef?.description ?? ''),
+      thumbnailUrl: thumb,
+      videoUrl: vid,
+      instructions: existingDef?.instructions ?? const [],
+      commonMistakes: existingDef?.commonMistakes ?? const [],
     );
   }
 
@@ -211,6 +241,21 @@ class ExerciseApiDetail {
             .toList() ??
         [];
 
+    final mediaList = (json['media'] as List<dynamic>?) ?? [];
+    String? thumb = json['thumbnailUrl'] as String?;
+    String? vid = json['videoUrl'] as String?;
+    for (final m in mediaList) {
+      if (m is Map<String, dynamic>) {
+        final role = m['role'] as String?;
+        final url = m['url'] as String?;
+        if ((role == 'THUMBNAIL' || role == 'GALLERY') && (thumb == null || thumb.isEmpty)) {
+          thumb = url;
+        } else if (role == 'PRIMARY_VIDEO' && (vid == null || vid.isEmpty)) {
+          vid = url;
+        }
+      }
+    }
+
     return ExerciseApiDetail(
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
@@ -218,8 +263,8 @@ class ExerciseApiDetail {
       slug: json['slug'] as String? ?? '',
       difficulty: json['difficulty'] as String? ?? 'BEGINNER',
       description: json['description'] as String?,
-      thumbnailUrl: json['thumbnailUrl'] as String?,
-      videoUrl: json['videoUrl'] as String?,
+      thumbnailUrl: thumb,
+      videoUrl: vid,
       instructionSteps: steps,
       commonMistakes: mistakes,
       safetyNotes: safety,
@@ -268,19 +313,33 @@ class ExerciseApiDetail {
       );
     }).toList();
 
+    final existingDef = findExerciseByName(name) ?? findExercise('ex_$id');
+    final thumb = (thumbnailUrl != null && thumbnailUrl!.isNotEmpty)
+        ? thumbnailUrl!
+        : (existingDef?.thumbnailUrl.isNotEmpty == true
+            ? existingDef!.thumbnailUrl
+            : resolveExerciseCdnImage(slug.isNotEmpty ? slug : name));
+    final vid = (videoUrl != null && videoUrl!.isNotEmpty)
+        ? videoUrl
+        : (existingDef?.videoUrl ?? resolveExerciseCdnVideo(slug.isNotEmpty ? slug : name));
+
     return ExerciseDefinition(
       id: 'ex_$id',
       name: name,
-      nameVi: name,
+      nameVi: (existingDef != null && existingDef.nameVi.isNotEmpty)
+          ? existingDef.nameVi
+          : name,
       primaryMuscle: primary.name,
       primaryMuscleKey: primary.code.toLowerCase(),
       secondaryMuscles: secondary,
       equipment: ExerciseApiSummary._mapEquipment(equipment),
       equipmentIds: equipment.map((item) => item.equipmentId).toList(),
       equipmentCodes: equipment.map((item) => item.code).toList(),
-      description: description ?? '',
-      instructions: instructionSteps,
-      commonMistakes: mistakeObjects,
+      description: description ?? (existingDef?.description ?? ''),
+      thumbnailUrl: thumb,
+      videoUrl: vid,
+      instructions: instructionSteps.isNotEmpty ? instructionSteps : (existingDef?.instructions ?? const []),
+      commonMistakes: mistakeObjects.isNotEmpty ? mistakeObjects : (existingDef?.commonMistakes ?? const []),
     );
   }
 }

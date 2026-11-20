@@ -21,7 +21,7 @@ class HealthProfileOnboardingScreen extends ConsumerStatefulWidget {
 class _HealthProfileOnboardingScreenState
     extends ConsumerState<HealthProfileOnboardingScreen> {
   int _currentStep = 1;
-  static const int _totalSteps = 11;
+  static const int _totalSteps = 12;
   static const int _currentYear = 2026;
   bool _isSubmitting = false;
 
@@ -41,11 +41,13 @@ class _HealthProfileOnboardingScreenState
   TrainingExperience? _selectedExperience;
   int? _selectedDaysPerWeek;
   int? _selectedDurationMinutes;
+  int _selectedRoadmapWeeks = 8;
 
   @override
   void initState() {
     super.initState();
     final profile = ref.read(healthProfileProvider);
+    _selectedRoadmapWeeks = profile.roadmapWeeks;
     final auth = ref.read(authProvider);
     final initialName = profile.nickname.isNotEmpty
         ? profile.nickname
@@ -59,6 +61,55 @@ class _HealthProfileOnboardingScreenState
     _heightFocusNode = FocusNode();
     _weightFocusNode = FocusNode();
     _targetWeightFocusNode = FocusNode();
+    Future<void>.microtask(_restoreSavedDraft);
+  }
+
+  String get _accountKey {
+    final user = ref.read(authProvider).user;
+    if (user == null) return 'default';
+    return user.email.isNotEmpty ? user.email : user.id;
+  }
+
+  Future<void> _restoreSavedDraft() async {
+    final draft = await ref
+        .read(healthProfileProvider.notifier)
+        .restoreDraft(_accountKey);
+    if (!mounted || draft == null) return;
+    final p = draft.profile;
+    setState(() {
+      _currentStep = draft.currentStep.clamp(1, _totalSteps);
+      if (p.nickname.isNotEmpty) {
+        _nicknameController.text = p.nickname;
+      }
+      _heightController.text = '${p.heightCm}';
+      _weightController.text = '${p.weightKg}';
+      _targetWeightController.text = '${p.targetWeightKg}';
+      _selectedRoadmapWeeks = p.roadmapWeeks;
+      if (draft.genderSelected) _selectedGender = p.gender;
+      if (draft.goalSelected) _selectedGoal = p.goal;
+      if (draft.activitySelected) _selectedActivityLevel = p.activityLevel;
+      if (draft.experienceSelected) _selectedExperience = p.experience;
+      if (draft.daysSelected) _selectedDaysPerWeek = p.workoutDaysPerWeek;
+      if (draft.durationSelected) {
+        _selectedDurationMinutes = p.sessionDurationMinutes;
+      }
+    });
+  }
+
+  Future<void> _persistDraft({bool? healthCompleted}) async {
+    await ref
+        .read(healthProfileProvider.notifier)
+        .saveDraft(
+          _accountKey,
+          currentStep: _currentStep,
+          healthCompleted: healthCompleted,
+          genderSelected: _selectedGender != null,
+          goalSelected: _selectedGoal != null,
+          activitySelected: _selectedActivityLevel != null,
+          experienceSelected: _selectedExperience != null,
+          daysSelected: _selectedDaysPerWeek != null,
+          durationSelected: _selectedDurationMinutes != null,
+        );
   }
 
   @override
@@ -114,6 +165,7 @@ class _HealthProfileOnboardingScreenState
 
     if (_currentStep < _totalSteps) {
       setState(() => _currentStep++);
+      _persistDraft();
     } else {
       _finishHealthProfile();
     }
@@ -122,6 +174,7 @@ class _HealthProfileOnboardingScreenState
   void _previousStep() {
     if (_currentStep > 1) {
       setState(() => _currentStep--);
+      _persistDraft();
     } else {
       if (context.canPop()) {
         context.pop();
@@ -155,6 +208,7 @@ class _HealthProfileOnboardingScreenState
     setState(() => _isSubmitting = true);
     try {
       await ref.read(healthProfileProvider.notifier).submitInitialProfile();
+      await _persistDraft(healthCompleted: true);
       if (!mounted) return;
       final profile = ref.read(healthProfileProvider);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -407,6 +461,24 @@ class _HealthProfileOnboardingScreenState
                 const SizedBox(height: 20),
               ] else if (_currentStep == 8) ...[
                 Text(
+                  'Thời gian lộ trình tập luyện',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Chọn khoảng thời gian bạn muốn đạt tới mục tiêu một cách an toàn nhất',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ] else if (_currentStep == 9) ...[
+                Text(
                   'Kinh nghiệm tập luyện?',
                   style: TextStyle(
                     fontSize: 26,
@@ -423,7 +495,7 @@ class _HealthProfileOnboardingScreenState
                   ),
                 ),
                 const SizedBox(height: 20),
-              ] else if (_currentStep == 9) ...[
+              ] else if (_currentStep == 10) ...[
                 Text(
                   'Bạn sẽ tập bao nhiêu buổi 1 tuần?',
                   style: TextStyle(
@@ -441,7 +513,7 @@ class _HealthProfileOnboardingScreenState
                   ),
                 ),
                 const SizedBox(height: 20),
-              ] else if (_currentStep == 10) ...[
+              ] else if (_currentStep == 11) ...[
                 Text(
                   '1 buổi tập của bạn kéo dài bao lâu?',
                   style: TextStyle(
@@ -459,7 +531,7 @@ class _HealthProfileOnboardingScreenState
                   ),
                 ),
                 const SizedBox(height: 20),
-              ] else if (_currentStep == 11) ...[
+              ] else if (_currentStep == 12) ...[
                 Text(
                   'Chúng tôi sẽ tối ưu lịch tập và thực đơn của bạn!',
                   style: TextStyle(
@@ -1040,6 +1112,7 @@ class _HealthProfileOnboardingScreenState
                                             value: profile.targetWeightKg,
                                             min: 30,
                                             max: 200,
+                                            showRangeBadge: false,
                                             onChanged: _setTargetWeight,
                                           ),
                                         ],
@@ -1339,6 +1412,17 @@ class _HealthProfileOnboardingScreenState
                                       );
                                     }),
                                   ] else if (_currentStep == 8) ...[
+                                    _RoadmapDurationStep(
+                                      profile: profile,
+                                      selectedWeeks: _selectedRoadmapWeeks,
+                                      onChanged: (weeks) {
+                                        setState(
+                                          () => _selectedRoadmapWeeks = weeks,
+                                        );
+                                        notifier.updateRoadmapWeeks(weeks);
+                                      },
+                                    ),
+                                  ] else if (_currentStep == 9) ...[
                                     ...TrainingExperience.values.map((exp) {
                                       final (
                                         badge,
@@ -1384,7 +1468,7 @@ class _HealthProfileOnboardingScreenState
                                         },
                                       );
                                     }),
-                                  ] else if (_currentStep == 9) ...[
+                                  ] else if (_currentStep == 10) ...[
                                     _ModernSelectionCard(
                                       title: '2 - 3 buổi / tuần',
                                       description:
@@ -1465,7 +1549,7 @@ class _HealthProfileOnboardingScreenState
                                         );
                                       },
                                     ),
-                                  ] else if (_currentStep == 10) ...[
+                                  ] else if (_currentStep == 11) ...[
                                     _ModernSelectionCard(
                                       title: '30 - 45 phút',
                                       description:
@@ -1552,7 +1636,7 @@ class _HealthProfileOnboardingScreenState
                                         );
                                       },
                                     ),
-                                  ] else if (_currentStep == 11) ...[
+                                  ] else if (_currentStep == 12) ...[
                                     _AiPlanOptimizationSummary(
                                       profile: profile,
                                     ),
@@ -1585,10 +1669,16 @@ class _HealthProfileOnboardingScreenState
                 ),
               ] else if (_currentStep == 3 ||
                   _currentStep == 4 ||
-                  _currentStep == 5) ...[
+                  _currentStep == 5 ||
+                  _currentStep == 8) ...[
                 const SizedBox(height: 12),
                 FilledButton(
-                  onPressed: _nextStep,
+                  onPressed: () {
+                    if (_currentStep == 8) {
+                      notifier.updateRoadmapWeeks(_selectedRoadmapWeeks);
+                    }
+                    _nextStep();
+                  },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -1605,7 +1695,7 @@ class _HealthProfileOnboardingScreenState
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                   ),
                 ),
-              ] else if (_currentStep == 11) ...[
+              ] else if (_currentStep == 12) ...[
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: _isSubmitting ? null : _finishHealthProfile,
@@ -1960,6 +2050,7 @@ class _DirectNumericInputCard extends StatefulWidget {
     this.focusNode,
     this.textInputAction,
     this.onEditingComplete,
+    this.showRangeBadge = true,
   });
 
   final String label;
@@ -1973,6 +2064,7 @@ class _DirectNumericInputCard extends StatefulWidget {
   final FocusNode? focusNode;
   final TextInputAction? textInputAction;
   final VoidCallback? onEditingComplete;
+  final bool showRangeBadge;
 
   @override
   State<_DirectNumericInputCard> createState() =>
@@ -2078,25 +2170,26 @@ class _DirectNumericInputCardState extends State<_DirectNumericInputCard> {
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceNested,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.borderDefault),
-                  ),
-                  child: Text(
-                    '${widget.min} – ${widget.max} ${widget.unit}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
+                if (widget.showRangeBadge)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceNested,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.borderDefault),
+                    ),
+                    child: Text(
+                      '${widget.min} – ${widget.max} ${widget.unit}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 14),
@@ -2226,13 +2319,11 @@ class _BmiSpectrumBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    final (label, color) = bmi < 18.5
-        ? ('Thiếu cân', AppColors.warning)
+    final color = bmi < 18.5
+        ? AppColors.warning
         : (bmi < 24.9
-              ? ('Chuẩn cân đối', AppColors.success)
-              : (bmi < 29.9
-                    ? ('Thừa cân nhẹ', AppColors.warning)
-                    : ('Cần giảm cân', AppColors.error)));
+              ? AppColors.success
+              : (bmi < 29.9 ? AppColors.warning : AppColors.error));
 
     final normalized = ((bmi - 15.0) / (35.0 - 15.0)).clamp(0.0, 1.0);
 
@@ -2280,27 +2371,13 @@ class _BmiSpectrumBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: color.withValues(alpha: 0.4)),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      bmi.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: color,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  bmi.toStringAsFixed(1),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
                 ),
               ),
             ],
@@ -2886,6 +2963,373 @@ class _SummaryBulletPoint extends StatelessWidget {
                   fontSize: 12,
                   color: AppColors.textSecondary,
                   height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoadmapDurationStep extends StatelessWidget {
+  const _RoadmapDurationStep({
+    required this.profile,
+    required this.selectedWeeks,
+    required this.onChanged,
+  });
+
+  final HealthProfile profile;
+  final int selectedWeeks;
+  final ValueChanged<int> onChanged;
+
+  static const List<int> _presets = [2, 4, 8, 12, 16, 24];
+
+  (int minSafe, int recMin, int recMax, String paceHint) _calculateAdvice() {
+    final diffKg = (profile.targetWeightKg - profile.weightKg).abs();
+
+    if (profile.goal == FitnessGoal.loseFat ||
+        profile.targetWeightKg < profile.weightKg) {
+      if (diffKg > 0) {
+        final minSafe = (diffKg / 0.8).ceil().clamp(4, 52);
+        final recMin = (diffKg / 0.6).ceil().clamp(4, 52);
+        final recMax = (diffKg / 0.4).ceil().clamp(recMin + 2, 52);
+        return (
+          minSafe,
+          recMin,
+          recMax,
+          'Mức giảm mỡ an toàn được khuyến nghị là 0.4 – 0.6 kg/tuần để giữ cơ và tránh mệt mỏi.',
+        );
+      }
+      return (
+        4,
+        8,
+        12,
+        'Chu kỳ 8 – 12 tuần giúp cơ thể đốt mỡ đều đặn và định hình vóc dáng bền vững.',
+      );
+    }
+
+    if (profile.goal == FitnessGoal.gainMuscle ||
+        profile.targetWeightKg > profile.weightKg) {
+      if (diffKg > 0) {
+        final minSafe = (diffKg / 0.5).ceil().clamp(6, 52);
+        final recMin = (diffKg / 0.35).ceil().clamp(6, 52);
+        final recMax = (diffKg / 0.2).ceil().clamp(recMin + 4, 52);
+        return (
+          minSafe,
+          recMin,
+          recMax,
+          'Mức tăng cân/cơ nạc an toàn là 0.2 – 0.35 kg/tuần để hạn chế tích mỡ thừa.',
+        );
+      }
+      return (
+        6,
+        8,
+        16,
+        'Cơ bắp cần ít nhất 8 – 16 tuần tăng tải tiến bộ để thấy rõ sự phát triển về kích thước.',
+      );
+    }
+
+    return (
+      4,
+      8,
+      12,
+      'Chu kỳ 8 – 12 tuần giúp tối ưu sức mạnh thần kinh - cơ và duy trì thói quen bền vững.',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final diffKg = (profile.targetWeightKg - profile.weightKg).abs();
+    final (minSafe, recMin, recMax, paceHint) = _calculateAdvice();
+
+    final bool isTooShort = selectedWeeks < minSafe;
+    final bool isFast = selectedWeeks >= minSafe && selectedWeeks < recMin;
+    final bool isOptimal = selectedWeeks >= recMin && selectedWeeks <= recMax;
+
+    final Color statusColor;
+    final IconData statusIcon;
+    final String statusTitle;
+    final String statusBody;
+
+    if (isTooShort) {
+      statusColor = AppColors.warning;
+      statusIcon = Icons.warning_amber_rounded;
+      final paceText = diffKg > 0
+          ? ' (~${(diffKg / selectedWeeks).toStringAsFixed(1)} kg/tuần)'
+          : '';
+      statusTitle = 'Cảnh báo: Thời gian quá ngắn!';
+      statusBody =
+          'Đặt mục tiêu trong $selectedWeeks tuần$paceText dễ gây quá tải, mất cơ hoặc kiệt sức. Để an toàn, bạn nên chọn tối thiểu $recMin tuần.';
+    } else if (isFast) {
+      statusColor = AppColors.info;
+      statusIcon = Icons.info_outline_rounded;
+      statusTitle = 'Tốc độ khá nhanh — cần kỷ luật cao';
+      statusBody =
+          'Bạn có thể đạt mục tiêu trong $selectedWeeks tuần nếu tuân thủ sát sao dinh dưỡng và giấc ngủ. Mức lý tưởng nhất là $recMin – $recMax tuần.';
+    } else if (isOptimal) {
+      statusColor = AppColors.success;
+      statusIcon = Icons.verified_rounded;
+      statusTitle = 'Khoảng thời gian lý tưởng & an toàn nhất!';
+      statusBody =
+          'Lộ trình $selectedWeeks tuần phù hợp với nhịp thích nghi sinh lý, giúp bạn tiến bộ đều đặn và hạn chế chấn thương.';
+    } else {
+      statusColor = AppColors.cyan;
+      statusIcon = Icons.spa_rounded;
+      statusTitle = 'Lộ trình thong thả & bền vững';
+      statusBody =
+          'Thời gian $selectedWeeks tuần giúp bạn giảm áp lực, dễ duy trì thói quen lâu dài và giữ kết quả ổn định.';
+    }
+
+    final weeklyPace = diffKg > 0
+        ? '${(diffKg / selectedWeeks).toStringAsFixed(2)} kg/tuần'
+        : 'Tối ưu vóc dáng';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Selected Weeks Display Card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: colors.surfaceContainer,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isTooShort
+                  ? AppColors.warning.withValues(alpha: 0.7)
+                  : AppColors.primary.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Thời gian dự kiến',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$selectedWeeks',
+                            style: TextStyle(
+                              fontSize: 38,
+                              fontWeight: FontWeight.w900,
+                              color: isTooShort
+                                  ? AppColors.warning
+                                  : AppColors.primary,
+                              height: 1.05,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'tuần',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: colors.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceNested,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          diffKg > 0
+                              ? '${profile.weightKg}kg → ${profile.targetWeightKg}kg'
+                              : profile.goal.badge,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          weeklyPace,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: isTooShort
+                                ? AppColors.warning
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Slider(
+                value: selectedWeeks.toDouble().clamp(2, 36),
+                min: 2,
+                max: 36,
+                divisions: 34,
+                activeColor: isTooShort ? AppColors.warning : AppColors.primary,
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  onChanged(v.round());
+                },
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _presets.map((w) {
+                  final active = selectedWeeks == w;
+                  return ChoiceChip(
+                    label: Text('$w tuần'),
+                    selected: active,
+                    selectedColor: AppColors.primarySoft,
+                    side: BorderSide(
+                      color: active ? AppColors.primary : AppColors.border,
+                    ),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: active ? AppColors.primary : AppColors.textPrimary,
+                    ),
+                    onSelected: (_) {
+                      HapticFeedback.selectionClick();
+                      onChanged(w);
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Dynamic Warning / Safety Feedback Banner
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: statusColor.withValues(alpha: 0.45)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(statusIcon, color: statusColor, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      statusTitle,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w900,
+                        color: statusColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      statusBody,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: colors.onSurface.withValues(alpha: 0.9),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Recommended Safe Range Card
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.aiVioletSoft,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.aiViolet.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.aiViolet,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Lời khuyên an toàn: $recMin – $recMax tuần',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.aiViolet,
+                      ),
+                    ),
+                  ),
+                  if (!isOptimal)
+                    TextButton(
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        onChanged(recMin);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Áp dụng',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.aiViolet,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                paceHint,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colors.onSurface.withValues(alpha: 0.85),
+                  height: 1.4,
                 ),
               ),
             ],

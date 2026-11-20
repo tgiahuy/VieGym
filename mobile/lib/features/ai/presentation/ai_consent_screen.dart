@@ -148,7 +148,7 @@ class AiConsentScreen extends ConsumerWidget {
                       ),
                       SizedBox(width: 8),
                       Text(
-                        'Chế độ Kiến thức Phổ quát (General Knowledge)',
+                        'Chế độ Kiến thức Phổ quát',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13,

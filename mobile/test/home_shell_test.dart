@@ -8,9 +8,7 @@ import 'package:viegym/features/onboarding/domain/user_profile_models.dart';
 import 'package:viegym/features/shell/presentation/home_shell.dart';
 
 void main() {
-  Widget buildApp({
-    List overrides = const [],
-  }) {
+  Widget buildApp({List overrides = const []}) {
     final router = GoRouter(
       initialLocation: '/home',
       routes: [
@@ -68,15 +66,14 @@ void main() {
 
     return ProviderScope(
       overrides: overrides.cast(),
-      child: MaterialApp.router(
-        routerConfig: router,
-      ),
+      child: MaterialApp.router(routerConfig: router),
     );
   }
 
   group('HomeShell Instagram-style Navigation Bar', () {
-    testWidgets('renders all 5 Instagram navigation tabs without text labels',
-        (tester) async {
+    testWidgets('renders all 5 Instagram navigation tabs without text labels', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
@@ -102,8 +99,9 @@ void main() {
       expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
     });
 
-    testWidgets('tapping Workout tab navigates and activates solid icon',
-        (tester) async {
+    testWidgets('tapping Workout tab navigates and activates solid icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
@@ -136,69 +134,73 @@ void main() {
       expect(find.text('H'), findsOneWidget);
     });
 
-    testWidgets('displays badge dot on profile tab when unread notifications exist',
-        (tester) async {
-      await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'displays badge dot on profile tab when unread notifications exist',
+      (tester) async {
+        await tester.pumpWidget(buildApp());
+        await tester.pumpAndSettle();
 
-      // notificationsProvider has unreadCount > 0 by default, so badge is rendered
-      final profileNav = find.byKey(const ValueKey('nav_profile'));
-      expect(profileNav, findsOneWidget);
+        // notificationsProvider has unreadCount > 0 by default, so badge is rendered
+        final profileNav = find.byKey(const ValueKey('nav_profile'));
+        expect(profileNav, findsOneWidget);
 
-      final badgeFinder = find.descendant(
-        of: profileNav,
-        matching: find.byType(Container),
-      );
-      expect(badgeFinder, findsWidgets);
-    });
+        final badgeFinder = find.descendant(
+          of: profileNav,
+          matching: find.byType(Container),
+        );
+        expect(badgeFinder, findsWidgets);
+      },
+    );
 
-    testWidgets('hides bottom navigation bar on scroll down and shows on scroll up',
-        (tester) async {
-      await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'hides bottom navigation bar on scroll down and shows on scroll up',
+      (tester) async {
+        await tester.pumpWidget(buildApp());
+        await tester.pumpAndSettle();
 
-      final slideFinder = find.byType(AnimatedSlide);
-      expect(slideFinder, findsOneWidget);
-      AnimatedSlide slideWidget = tester.widget(slideFinder);
-      expect(slideWidget.offset, Offset.zero);
+        final slideFinder = find.byType(AnimatedSlide);
+        expect(slideFinder, findsOneWidget);
+        AnimatedSlide slideWidget = tester.widget(slideFinder);
+        expect(slideWidget.offset, Offset.zero);
 
-      // Scroll down (reverse direction) -> hides downwards
-      final context = tester.element(find.text('Home Screen'));
-      UserScrollNotification(
-        context: context,
-        metrics: FixedScrollMetrics(
-          minScrollExtent: 0,
-          maxScrollExtent: 1000,
-          pixels: 100,
-          viewportDimension: 600,
-          axisDirection: AxisDirection.down,
-          devicePixelRatio: 1,
-        ),
-        direction: ScrollDirection.reverse,
-      ).dispatch(context);
+        // Scroll down (reverse direction) -> hides downwards
+        final context = tester.element(find.text('Home Screen'));
+        UserScrollNotification(
+          context: context,
+          metrics: FixedScrollMetrics(
+            minScrollExtent: 0,
+            maxScrollExtent: 1000,
+            pixels: 100,
+            viewportDimension: 600,
+            axisDirection: AxisDirection.down,
+            devicePixelRatio: 1,
+          ),
+          direction: ScrollDirection.reverse,
+        ).dispatch(context);
 
-      await tester.pumpAndSettle();
-      slideWidget = tester.widget(slideFinder);
-      expect(slideWidget.offset, const Offset(0, 1.8));
+        await tester.pumpAndSettle();
+        slideWidget = tester.widget(slideFinder);
+        expect(slideWidget.offset, const Offset(0, 1.8));
 
-      // Scroll up (forward direction) -> reappears
-      UserScrollNotification(
-        context: context,
-        metrics: FixedScrollMetrics(
-          minScrollExtent: 0,
-          maxScrollExtent: 1000,
-          pixels: 50,
-          viewportDimension: 600,
-          axisDirection: AxisDirection.down,
-          devicePixelRatio: 1,
-        ),
-        direction: ScrollDirection.forward,
-      ).dispatch(context);
+        // Scroll up (forward direction) -> reappears
+        UserScrollNotification(
+          context: context,
+          metrics: FixedScrollMetrics(
+            minScrollExtent: 0,
+            maxScrollExtent: 1000,
+            pixels: 50,
+            viewportDimension: 600,
+            axisDirection: AxisDirection.down,
+            devicePixelRatio: 1,
+          ),
+          direction: ScrollDirection.forward,
+        ).dispatch(context);
 
-      await tester.pumpAndSettle();
-      slideWidget = tester.widget(slideFinder);
-      expect(slideWidget.offset, Offset.zero);
-    });
+        await tester.pumpAndSettle();
+        slideWidget = tester.widget(slideFinder);
+        expect(slideWidget.offset, Offset.zero);
+      },
+    );
   });
 }
 

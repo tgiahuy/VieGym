@@ -12,7 +12,7 @@ const masterFoodCatalog = <FoodItem>[
     baseCarbs: 56,
     baseFat: 10,
     imageUrl:
-        'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=500&auto=format&fit=crop&q=80',
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Ph%E1%BB%9F_b%C3%B2%2C_C%E1%BA%A7u_Gi%E1%BA%A5y%2C_H%C3%A0_N%E1%BB%99i.jpg/500px-Ph%E1%BB%9F_b%C3%B2%2C_C%E1%BA%A7u_Gi%E1%BA%A5y%2C_H%C3%A0_N%E1%BB%99i.jpg',
     description:
         'Phở bò truyền thống với bánh phở tươi, thịt bò tái nạm và nước dùng thanh ngọt đậm đà.',
     servingOptions: [
@@ -47,7 +47,7 @@ const masterFoodCatalog = <FoodItem>[
     baseCarbs: 58,
     baseFat: 17,
     imageUrl:
-        'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=500&auto=format&fit=crop&q=80',
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Bun-Bo-Hue-from-Huong-Giang-2011.jpg/500px-Bun-Bo-Hue-from-Huong-Giang-2011.jpg',
     description:
         'Bún bò Huế cay nồng thơm mùi sả mắm ruốc, ăn kèm thịt bò bắp, chả cua và rau sống.',
     servingOptions: [
@@ -76,7 +76,7 @@ const masterFoodCatalog = <FoodItem>[
     baseCarbs: 70,
     baseFat: 23,
     imageUrl:
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80',
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/C%C6%A1m_T%E1%BA%A5m%2C_Da_Nang%2C_Vietnam.jpg/500px-C%C6%A1m_T%E1%BA%A5m%2C_Da_Nang%2C_Vietnam.jpg',
     description:
         'Cơm tấm Sài Gòn ăn kèm sườn nướng mỡ hành, bì heo sợi, chả trứng hấp và đồ chua.',
     servingOptions: [
@@ -105,7 +105,7 @@ const masterFoodCatalog = <FoodItem>[
     baseCarbs: 48,
     baseFat: 16,
     imageUrl:
-        'https://images.unsplash.com/photo-1626804475297-41608ea09aeb?w=500&auto=format&fit=crop&q=80',
+        'https://upload.wikimedia.org/wikipedia/commons/0/0c/B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng.png',
     description:
         'Bánh mì giòn rụm kẹp thịt chả lụa, pate gan, dưa leo và ngò rí tươi.',
     servingOptions: [
@@ -266,7 +266,7 @@ const masterFoodCatalog = <FoodItem>[
     baseCarbs: 30,
     baseFat: 0.2,
     imageUrl:
-        'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?w=500&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&auto=format&fit=crop&q=80',
     description:
         'Khoai lang mật/khoai lang vàng ngọt bùi, nguồn carb chậm tuyệt vời trước buổi tập.',
     servingOptions: [

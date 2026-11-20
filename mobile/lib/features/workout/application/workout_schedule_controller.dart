@@ -228,7 +228,7 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
         exercises: const [
           HistoryExerciseLog(
             exerciseId: 'ex_squat',
-            exerciseName: 'Barbell Back Squat',
+            exerciseName: 'Barbell Squat',
             primaryMuscle: 'Đùi trước',
             secondaryMuscles: ['Mông', 'Đùi sau'],
             sets: [
@@ -323,7 +323,7 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
       ),
       WorkoutHistoryItem(
         id: 'hist_4',
-        date: '$currentYear-$currentMonth-26',
+        date: '$currentYear-$currentMonth-15',
         workoutName: 'Push Focus — Vai & Ngực trên',
         durationMinutes: 52,
         totalVolumeKg: 2560,
@@ -382,6 +382,10 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
           (previous == null ||
               !previous.isAuthenticated ||
               previous.user?.id != next.user?.id)) {
+        state = state.copyWith(
+          schedules: state.schedules.where((s) => !s.id.startsWith('sch_')).toList(),
+          history: state.history.where((h) => !h.id.startsWith('hist_')).toList(),
+        );
         syncCurrentPeriod();
       } else if (!next.isAuthenticated && previous?.isAuthenticated == true) {
         ref.read(workoutSessionProvider.notifier).clearSession();
@@ -393,7 +397,8 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
       }
     });
 
-    if (ref.read(authProvider).isAuthenticated) {
+    final isAuthenticated = ref.read(authProvider).isAuthenticated;
+    if (isAuthenticated) {
       Future.microtask(() => syncCurrentPeriod());
     }
 
@@ -457,23 +462,6 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
             : current.targetMuscles,
       );
       state = state.copyWith(schedules: updated);
-    } else {
-      final timeStr =
-          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-      final newSchedule = WorkoutScheduleItem(
-        id: 'manual_${now.millisecondsSinceEpoch}',
-        date: today,
-        time: timeStr,
-        title: session.title.isNotEmpty ? session.title : 'Buổi tập hôm nay',
-        targetMuscles: targetMuscles.isNotEmpty ? targetMuscles : 'Toàn thân',
-        durationMinutes: (session.exercises.length * 10).clamp(30, 90),
-        status: ScheduleStatus.planned,
-        plannedExercises: previews,
-      );
-      final remaining = state.schedules
-          .where((s) => !(s.date == today && s.status == ScheduleStatus.rest))
-          .toList();
-      state = state.copyWith(schedules: [...remaining, newSchedule]);
     }
   }
 
@@ -745,29 +733,27 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
     try {
       final serverLogs =
           await ref.read(weightLogRepositoryProvider).getWorkoutLogs();
-      if (serverLogs.isNotEmpty) {
-        final serverHistoryItems = serverLogs.map((log) {
-          final dateStr = _formatDate(log.completedAt);
-          return WorkoutHistoryItem(
-            id: 'server_log_${log.id}',
-            date: dateStr,
-            workoutName: log.title,
-            durationMinutes: log.durationMinutes,
-            totalVolumeKg: log.totalVolumeKg,
-            completedSetsCount: log.totalExercises,
-            prCount: log.prCount,
-            targetMuscles: const [],
-            exercises: const [],
-          );
-        }).toList();
+      final serverHistoryItems = serverLogs.map((log) {
+        final dateStr = _formatDate(log.completedAt);
+        return WorkoutHistoryItem(
+          id: 'server_log_${log.id}',
+          date: dateStr,
+          workoutName: log.title,
+          durationMinutes: log.durationMinutes,
+          totalVolumeKg: log.totalVolumeKg,
+          completedSetsCount: log.totalExercises,
+          prCount: log.prCount,
+          targetMuscles: const [],
+          exercises: const [],
+        );
+      }).toList();
 
-        final localRealItems = state.history
-            .where((h) => h.id.startsWith('hist_') || h.id.startsWith('manual_'))
-            .where((h) => !serverHistoryItems.any((s) => s.date == h.date && s.workoutName == h.workoutName))
-            .toList();
+      final localRealItems = state.history
+          .where((h) => (h.id.startsWith('local_') || h.id.startsWith('manual_')) && !h.id.startsWith('hist_'))
+          .where((h) => !serverHistoryItems.any((s) => s.date == h.date && s.workoutName == h.workoutName))
+          .toList();
 
-        state = state.copyWith(history: [...localRealItems, ...serverHistoryItems]);
-      }
+      state = state.copyWith(history: [...localRealItems, ...serverHistoryItems]);
     } catch (_) {}
   }
 
@@ -968,7 +954,7 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
   }) {
     final targetDate = date ?? _formatDate(DateTime.now());
     final newHistoryItem = WorkoutHistoryItem(
-      id: 'hist_${DateTime.now().millisecondsSinceEpoch}',
+      id: 'local_completed_${DateTime.now().millisecondsSinceEpoch}',
       date: targetDate,
       workoutName: workoutName,
       durationMinutes: durationMinutes,
@@ -979,13 +965,14 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
       exercises: exercises,
     );
 
-    final activeScheduleId = state.schedules
+    final activeSchedule = state.schedules
         .where(
           (item) =>
-              item.date == targetDate && item.status == ScheduleStatus.planned,
+              item.date == targetDate && item.status != ScheduleStatus.rest,
         )
-        .lastOrNull
-        ?.id;
+        .lastOrNull ??
+        state.schedules.where((item) => item.date == targetDate).lastOrNull;
+
     final plannedFromExercises = exercises.isNotEmpty
         ? exercises.map((e) {
             final reps = e.sets.isNotEmpty ? e.sets.first.reps : 10;
@@ -997,22 +984,23 @@ class WorkoutScheduleController extends Notifier<WorkoutScheduleState> {
           }).toList()
         : const <PlannedExercisePreview>[];
 
-    var updatedSchedules = state.schedules.map((item) {
-      if (item.id == activeScheduleId) {
-        return item.copyWith(
-          status: ScheduleStatus.completed,
-          plannedExercises: plannedFromExercises.isNotEmpty
-              ? plannedFromExercises
-              : item.plannedExercises,
-        );
-      }
-      return item;
-    }).toList();
-
-    if (activeScheduleId == null &&
-        !state.schedules.any((s) => s.date == targetDate)) {
+    List<WorkoutScheduleItem> updatedSchedules;
+    if (activeSchedule != null) {
+      updatedSchedules = state.schedules.map((item) {
+        if (item.id == activeSchedule.id) {
+          return item.copyWith(
+            status: ScheduleStatus.completed,
+            title: workoutName.isNotEmpty ? workoutName : item.title,
+            plannedExercises: plannedFromExercises.isNotEmpty
+                ? plannedFromExercises
+                : item.plannedExercises,
+          );
+        }
+        return item;
+      }).toList();
+    } else {
       updatedSchedules = [
-        ...updatedSchedules,
+        ...state.schedules,
         WorkoutScheduleItem(
           id: 'manual_${DateTime.now().millisecondsSinceEpoch}',
           date: targetDate,

@@ -76,7 +76,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (authState.status == AuthStatus.authenticated &&
           authState.user != null) {
         final user = authState.user!;
+        final accountKey = user.email.isNotEmpty ? user.email : user.id;
         var isHealthCompleted = user.healthProfileCompleted;
+        var isEquipmentCompleted = user.equipmentCompleted;
+
+        if (!isHealthCompleted || !isEquipmentCompleted) {
+          await ref
+              .read(healthProfileProvider.notifier)
+              .restoreDraft(accountKey);
+        }
+
         if (isHealthCompleted) {
           await ref
               .read(healthProfileProvider.notifier)
@@ -89,9 +98,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           await ref.read(workoutScheduleProvider.notifier).syncCurrentPeriod();
         } catch (_) {}
 
-        final isEquipmentCompleted =
-            user.equipmentCompleted ||
+        isEquipmentCompleted =
+            isEquipmentCompleted ||
             ref.read(equipmentOnboardingCompletedProvider);
+
+        if (user.healthProfileCompleted && user.equipmentCompleted) {
+          await ref.read(healthProfileProvider.notifier).clearDraft(accountKey);
+        }
 
         final targetRoute = resolveOnboardingRoute(
           isAuthenticated: true,

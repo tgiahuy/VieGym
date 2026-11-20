@@ -487,6 +487,7 @@ const ModalFormContent: React.FC<FormContentProps> = ({
               <img
                 src={image}
                 alt="Preview"
+                referrerPolicy="no-referrer"
                 className="w-14 h-14 rounded-lg object-cover border border-[#292a2f] bg-[#222327] shrink-0"
               />
               <div className="flex flex-col">

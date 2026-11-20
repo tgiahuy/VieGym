@@ -2163,6 +2163,7 @@ class _WorkoutBuilderScreenState extends ConsumerState<WorkoutBuilderScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         buildDefaultDragHandles: false,
+                        // ignore: deprecated_member_use
                         onReorder: (oldIndex, newIndex) => _reorderExercise(
                           _activeDayIndex,
                           oldIndex,

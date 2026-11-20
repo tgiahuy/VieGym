@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/equipment_catalog.dart';
 import '../data/health_profile_repository.dart';
+import '../data/onboarding_draft_storage.dart';
 import '../domain/user_profile_models.dart';
 
 class HealthProfileController extends Notifier<HealthProfile> {
@@ -9,6 +10,61 @@ class HealthProfileController extends Notifier<HealthProfile> {
 
   HealthProfileRepository get _repo =>
       ref.read(healthProfileRepositoryProvider);
+
+  OnboardingDraftStorage get _draftStorage =>
+      ref.read(onboardingDraftStorageProvider);
+
+  Future<OnboardingDraft?> restoreDraft(String accountKey) async {
+    final draft = await _draftStorage.load(accountKey);
+    if (draft == null) return null;
+    state = draft.profile;
+    if (draft.equipmentIds.isNotEmpty) {
+      ref
+          .read(userEquipmentProvider.notifier)
+          .applyPreset(draft.equipmentIds);
+    }
+    if (draft.equipmentCompleted) {
+      ref.read(equipmentOnboardingCompletedProvider.notifier).complete();
+    } else {
+      ref.read(equipmentOnboardingCompletedProvider.notifier).reset();
+    }
+    return draft;
+  }
+
+  Future<void> saveDraft(
+    String accountKey, {
+    required int currentStep,
+    bool? healthCompleted,
+    bool? equipmentCompleted,
+    bool genderSelected = false,
+    bool goalSelected = false,
+    bool activitySelected = false,
+    bool experienceSelected = false,
+    bool daysSelected = false,
+    bool durationSelected = false,
+  }) async {
+    final draft = OnboardingDraft(
+      currentStep: currentStep,
+      profile: state.copyWith(
+        isCompleted: healthCompleted ?? state.isCompleted,
+      ),
+      healthCompleted: healthCompleted ?? state.isCompleted,
+      equipmentCompleted:
+          equipmentCompleted ?? ref.read(equipmentOnboardingCompletedProvider),
+      equipmentIds: ref.read(userEquipmentProvider).toList(),
+      genderSelected: genderSelected,
+      goalSelected: goalSelected,
+      activitySelected: activitySelected,
+      experienceSelected: experienceSelected,
+      daysSelected: daysSelected,
+      durationSelected: durationSelected,
+    );
+    await _draftStorage.save(accountKey, draft);
+  }
+
+  Future<void> clearDraft(String accountKey) async {
+    await _draftStorage.clear(accountKey);
+  }
 
   void completeProfile() {
     state = state.copyWith(isCompleted: true);
@@ -88,6 +144,10 @@ class HealthProfileController extends Notifier<HealthProfile> {
     state = state.copyWith(sessionDurationMinutes: minutes);
   }
 
+  void updateRoadmapWeeks(int weeks) {
+    state = state.copyWith(roadmapWeeks: weeks.clamp(2, 52));
+  }
+
   void updateProfile({
     String? nickname,
     BiologicalGender? gender,
@@ -157,6 +217,7 @@ class HealthProfileController extends Notifier<HealthProfile> {
       targetWeightKg: state.targetWeightKg,
       workoutDaysPerWeek: state.workoutDaysPerWeek,
       sessionDurationMinutes: state.sessionDurationMinutes,
+      roadmapWeeks: state.roadmapWeeks,
       isCompleted: true,
     );
   }
@@ -168,6 +229,7 @@ class HealthProfileController extends Notifier<HealthProfile> {
       targetWeightKg: state.targetWeightKg,
       workoutDaysPerWeek: state.workoutDaysPerWeek,
       sessionDurationMinutes: state.sessionDurationMinutes,
+      roadmapWeeks: state.roadmapWeeks,
       isCompleted: true,
     );
   }
@@ -212,7 +274,7 @@ final userEquipmentProvider =
 
 class EquipmentOnboardingNotifier extends Notifier<bool> {
   @override
-  bool build() => true;
+  bool build() => false;
 
   void complete() => state = true;
   void reset() => state = false;

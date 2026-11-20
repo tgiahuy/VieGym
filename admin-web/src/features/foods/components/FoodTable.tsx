@@ -94,6 +94,7 @@ export const FoodTable: React.FC<FoodTableProps> = ({
                         <img
                           src={food.image}
                           alt={food.nameVi}
+                          referrerPolicy="no-referrer"
                           className="w-11 h-11 rounded-lg object-cover border border-[#292a2f] bg-[#222327] shrink-0"
                           onError={(e) => {
                             // Fallback if image fails to load

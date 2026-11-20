@@ -34,15 +34,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<String> _resolveTargetRoute() async {
     final user = ref.read(authProvider).user;
+    final accountKey = user != null
+        ? (user.email.isNotEmpty ? user.email : user.id)
+        : 'default';
     var isHealthCompleted = user?.healthProfileCompleted ?? false;
+    var isEquipmentCompleted = user?.equipmentCompleted ?? false;
+
+    if (!isHealthCompleted || !isEquipmentCompleted) {
+      await ref.read(healthProfileProvider.notifier).restoreDraft(accountKey);
+    }
+
     if (isHealthCompleted) {
       await ref.read(healthProfileProvider.notifier).loadProfileFromRemote();
     } else {
       isHealthCompleted = ref.read(healthProfileProvider).isCompleted;
     }
-    final isEquipmentCompleted =
-        (user?.equipmentCompleted ?? false) ||
+
+    isEquipmentCompleted =
+        isEquipmentCompleted ||
         ref.read(equipmentOnboardingCompletedProvider);
+
+    if (user != null &&
+        user.healthProfileCompleted &&
+        user.equipmentCompleted) {
+      await ref.read(healthProfileProvider.notifier).clearDraft(accountKey);
+    }
+
     return resolveOnboardingRoute(
       isAuthenticated: true,
       isHealthProfileCompleted: isHealthCompleted,
